@@ -175,6 +175,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const terminalBtn = document.getElementById('terminal-btn');
     const sendBtn = document.getElementById('send-btn');
     const remoteText = document.getElementById('remote-text');
+    const unblockerBtn = document.getElementById('unblocker-btn');
+
+    if (unblockerBtn) {
+        unblockerBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showToast("👆 Drag this to your Bookmark Bar!");
+        });
+    }
 
     // --- START BACKEND LOGIC (Protocol Launch) ---
     if (startBackendBtn) {
