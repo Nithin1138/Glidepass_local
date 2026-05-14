@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlidePass | Your Phone as a Power Input</title>
+    <meta name="description" content="GlidePass turns your smartphone into a low-latency intelligent input companion for your computer. Instant sync, realistic typing, and restricted site bypass.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <nav class="glass-nav">
+        <div class="nav-content">
+            <div class="logo">
+                <i data-lucide="zap"></i>
+                <span>GLIDEPASS</span>
+            </div>
+            <div class="nav-links">
+                <a href="#product">Product</a>
+                <a href="#documentation">Docs</a>
+                <a href="#downloads">Downloads</a>
+                <a href="#onboarding" class="cta-mini">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero" id="product">
+        <div class="hero-content">
+            <div class="badge">v1.4.1 Production Grade</div>
+            <h1>Turn your Phone into an <span>Intelligent Input Layer</span></h1>
+            <p>Instant local text transfer, human-like typing simulation, and real-time synchronization. No cloud, no lag, just speed.</p>
+            
+            <div class="hero-btns">
+                <a href="#onboarding" class="btn-primary">Setup Guide</a>
+                <a href="#downloads" class="btn-secondary">Download Assets</a>
+            </div>
+        </div>
+        
+        <div class="hero-visual">
+            <div class="visual-container">
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="typing-indicator">Syncing...</div>
+                        <div class="phone-input">Hello from my phone!</div>
+                    </div>
+                </div>
+                <div class="connection-line"></div>
+                <div class="laptop-mockup">
+                    <div class="laptop-screen">
+                        <div class="code-editor">
+                            <span class="line">const glide = "awesome";</span>
+                            <span class="line cursor">Hello from my phone!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="section-title">
+            <h2>Built for Performance</h2>
+            <p>Engineered for developers, students, and privacy-focused power users.</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <i data-lucide="zap"></i>
+                <h3>Flash Paste</h3>
+                <p>Immediate high-speed text transfer using clipboard injection with smart fallback.</p>
+            </div>
+            <div class="feature-card">
+                <i data-lucide="keyboard"></i>
+                <h3>Realistic Typing</h3>
+                <p>Human-like keyboard event simulation to bypass restricted environment blocks.</p>
+            </div>
+            <div class="feature-card">
+                <i data-lucide="shield-check"></i>
+                <h3>Local Only</h3>
+                <p>Data stays in temporary memory and never leaves your local Wi-Fi network.</p>
+            </div>
+            <div class="feature-card">
+                <i data-lucide="refresh-cw"></i>
+                <h3>Live Sync</h3>
+                <p>End-to-end synchronization latency target below 50ms for real-time control.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="onboarding-guide" id="onboarding">
+        <div class="section-title">
+            <h2>Getting Started</h2>
+            <p>Three steps to a faster workflow.</p>
+        </div>
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">01</div>
+                <h3>Launch Server</h3>
+                <p>Run the GlidePass executable on your laptop and click "Start Server".</p>
+            </div>
+            <div class="step">
+                <div class="step-number">02</div>
+                <h3>Pair Device</h3>
+                <p>Scan the generated QR code with your smartphone to establish a local link.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">03</div>
+                <h3>Start Injecting</h3>
+                <p>Type on your phone and watch it appear on your laptop instantly.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="downloads" id="downloads">
+        <div class="section-title">
+            <h2>Downloads</h2>
+            <p>Get the latest version for your platform.</p>
+        </div>
+        <div class="download-grid">
+            <div class="download-card">
+                <i data-lucide="chrome"></i>
+                <h3>Chrome Extension</h3>
+                <p>Unpacked Extension for protocol launching.</p>
+                <a href="#" class="btn-download">Get Extension</a>
+            </div>
+            <div class="download-card">
+                <i data-lucide="monitor"></i>
+                <h3>Mac Backend</h3>
+                <p>Standalone .app for macOS Intel/M1/M2.</p>
+                <a href="#" class="btn-download">Download .dmg</a>
+            </div>
+            <div class="download-card">
+                <i data-lucide="window"></i>
+                <h3>Windows Backend</h3>
+                <p>Portable .exe for Windows 10/11.</p>
+                <a href="#" class="btn-download">Download .exe</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="documentation" id="documentation">
+        <div class="docs-container">
+            <aside class="docs-nav">
+                <h4>Fundamentals</h4>
+                <a href="#setup">Setup Guide</a>
+                <a href="#modes">Input Modes</a>
+                <h4>Developer API</h4>
+                <a href="#endpoints">Core Endpoints</a>
+                <a href="#payloads">Payload Schema</a>
+                <a href="#security">Security Specs</a>
+            </aside>
+            <main class="docs-content">
+                <div id="setup">
+                    <h2>Setup Guide</h2>
+                    <p>To begin, download the server for your OS. Ensure your phone and laptop are on the same Wi-Fi network.</p>
+                    <pre><code>$ ./GlidePassServer --port 8000</code></pre>
+                </div>
+                <div id="modes">
+                    <h2>Input Modes</h2>
+                    <ul>
+                        <li><strong>Flash:</strong> High-speed paste via clipboard.</li>
+                        <li><strong>Type:</strong> Native key injection (Quartz/SendInput).</li>
+                        <li><strong>Inject:</strong> Code-safe injection with auto-indent clearing.</li>
+                    </ul>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="logo">
+                <i data-lucide="zap"></i>
+                <span>GLIDEPASS</span>
+            </div>
+            <p>&copy; 2026 GlidePass. Built for power users.</p>
+        </div>
+    </footer>
+
+    <script src="./main.js"></script>
+</body>
+</html>
