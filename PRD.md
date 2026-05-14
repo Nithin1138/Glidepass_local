@@ -1,8 +1,8 @@
 # 📝 Product Requirements Document (PRD): GlidePass
 
-**Status:** Final / Production Ready  
+**Status:** Final / Engineering Ready  
 **Author:** Nithin  
-**Version:** 1.4 (Definitive)
+**Version:** 1.4.1 (Final Engineering Handoff)
 
 ---
 
@@ -15,7 +15,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 ## 3. Goals & Objectives
 *   **Near-Real-Time Execution:** End-to-end synchronization latency target below 50ms.
 *   **Restricted Environment Support:** Human-like typing simulation for environments where direct clipboard pasting is unavailable or restricted.
-*   **Privacy First:** Ensure all data remains on the local Wi-Fi network with zero intentional long-term persistence.
+*   **Privacy First:** Ensure all data remains on the local Wi-Fi network with temporary in-memory handling only.
 *   **Seamless Onboarding:** One-click server start and QR-based mobile connection.
 
 ## 4. Target Audience
@@ -36,7 +36,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 3.  **Pairing**: Mobile scans QR and establishes WebSocket/HTTP connection.
 4.  **Submission**: User submits text from mobile controller.
 5.  **Injection**: Keyboard engine executes native events on the active host window.
-6.  **Feedback**: Status feedback and execution confirmation sent to mobile UI.
+6.  **Feedback**: Execution confirmation and status pushed via WebSocket.
 
 ## 6. Functional Requirements
 
@@ -50,22 +50,40 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 *   **Inject**: Cleaned text injection with auto-formatting/indentation clearing for code.
 *   **Live Sync**: Real-time character synchronization between mobile input and host cursor.
 
-### FR-03: Human-Like Typing Simulation
-*   Simulate keyboard events with configurable WPM and human-like timing variance.
-*   Handle IDE auto-indentation by clearing leading whitespace on new lines.
-
-### FR-04: API Contract (Core Endpoints)
+### FR-03: API Contract (Core Endpoints)
 
 | Endpoint | Method | Purpose |
 | :--- | :--- | :--- |
-| `/get_config` | GET | Retrieve host IP and session token |
-| `/paste` | POST | Send text input and mode parameters |
-| `/poll_paste` | GET | Long-polling endpoint for mobile sync |
-| `/shutdown` | GET | Securely terminate the backend server |
-| `/copy` | GET | Retrieve host clipboard for mobile pull |
+| `/session/create` | POST | Generate session token and pairing QR |
+| `/ws/connect` | WebSocket | Establish live bi-directional sync |
+| `/input/send` | POST | Send text payload and mode parameters |
+| `/clipboard/get` | GET | Retrieve host clipboard for mobile pull |
+| `/server/terminate` | POST | Securely shutdown (requires token) |
+
+### FR-04: Payload Structure (Sample JSON)
+```json
+{
+   "session_id": "abc123",
+   "mode": "type",
+   "content": "Hello World",
+   "wpm": 80,
+   "timestamp": "2026-05-14T20:15:00Z"
+}
+```
 
 ### FR-05: Session State Model
-*   **Idle** → **Server Started** → **Waiting for Pairing** → **Connected** → **Active Input** → **Disconnected**
+```mermaid
+graph TD
+    A[Idle] --> B[Server Started]
+    B --> C[Waiting for Pairing]
+    C --> D[Connected]
+    D --> E[Active Input]
+    D --> F[Connection Lost]
+    F --> G[Reconnect Attempt]
+    G --> D
+    E --> H[Completed]
+    H --> I[Disconnected]
+```
 
 ## 7. Platform & Connection Requirements
 
@@ -84,7 +102,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 
 ## 9. Diagnostics & Observability
 *   **Local Logging**: Connection events and session errors logged locally on the host machine.
-*   **24-Hour Retention**: Logs are retained temporarily (24 hours by default) for debugging and then automatically deleted.
+*   **24-Hour Retention**: Logs are retained temporarily for debugging and then automatically deleted.
 *   **Debug Mode**: Optional detailed tracing for development and troubleshooting.
 
 ## 10. Risks & Assumptions
@@ -97,7 +115,6 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 ### Assumptions:
 *   User devices share the same local sub-network.
 *   Host system grants necessary Accessibility/Input permissions.
-*   Target applications accept simulated system-level keyboard events.
 
 ## 11. Competitive Advantage
 
