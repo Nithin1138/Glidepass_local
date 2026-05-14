@@ -26,38 +26,56 @@ const CursorSpotlight = () => {
       style={{
         background: useTransform(
           [mouseX, mouseY],
-          ([x, y]) => `radial-gradient(800px at ${x}px ${y}px, rgba(163, 106, 82, 0.08), transparent 80%)`
+          ([x, y]) => `radial-gradient(600px at ${x}px ${y}px, rgba(99, 102, 241, 0.08), rgba(236, 72, 153, 0.02), transparent 80%)`
         ),
       }}
     />
   );
 };
 
-const BorderBeam = () => (
-  <div className="absolute inset-0 rounded-[inherit] [mask-image:linear-gradient(white,transparent)] pointer-events-none">
-    <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/50 to-accent/0 h-[1px] top-0 animate-[shimmer_3s_infinite]" />
-  </div>
-);
+const BackgroundOrbs = () => {
+  return (
+    <div className="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
+      <motion.div 
+        animate={{ 
+          x: [0, 100, 0], 
+          y: [0, 50, 0],
+          scale: [1, 1.2, 1]
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full"
+      />
+      <motion.div 
+        animate={{ 
+          x: [0, -100, 0], 
+          y: [0, 100, 0],
+          scale: [1, 1.3, 1]
+        }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-rose-500/10 blur-[120px] rounded-full"
+      />
+    </div>
+  );
+};
 
 // --- COMPONENTS ---
 
 const Navbar = () => {
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-black/20 backdrop-blur-xl">
+    <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-black/40 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
-        <div className="flex items-center gap-3 font-outfit font-black text-xl tracking-tighter group cursor-pointer">
-          <Zap className="text-accent fill-accent group-hover:scale-110 transition-transform" size={26} />
-          <span className="mt-1 group-hover:text-accent transition-colors">GLIDEPASS</span>
+        <div className="flex items-center gap-3 font-outfit font-black text-xl tracking-tighter">
+          <Zap className="text-indigo-500 fill-indigo-500 animate-pulse" size={26} />
+          <span className="mt-1 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">GLIDEPASS</span>
         </div>
-        <div className="hidden md:flex items-center gap-12 text-[11px] font-bold tracking-[0.2em] uppercase text-white/40">
-          <Link href="#features" className="hover:text-white transition-colors duration-300">Features</Link>
-          <Link href="#visualization" className="hover:text-white transition-colors duration-300">Technology</Link>
-          <Link href="#downloads" className="hover:text-white transition-colors duration-300">Downloads</Link>
+        <div className="hidden md:flex items-center gap-10 text-[11px] font-bold tracking-[0.2em] uppercase text-white/40">
+          <Link href="#features" className="hover:text-indigo-400 transition-colors duration-300">Features</Link>
+          <Link href="#visualization" className="hover:text-rose-400 transition-colors duration-300">Technology</Link>
+          <Link href="#downloads" className="hover:text-amber-400 transition-colors duration-300">Downloads</Link>
         </div>
-        <Link href="#setup" className="relative px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest overflow-hidden group">
-          <span className="relative z-10 text-white group-hover:text-black transition-colors duration-500">Get Started</span>
-          <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
-          <div className="absolute inset-0 border border-white/20" />
+        <Link href="#setup" className="relative group bg-white text-black px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500">
+          <span className="relative z-10 group-hover:text-white transition-colors duration-500">Get Started</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-rose-600 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
         </Link>
       </div>
     </nav>
@@ -67,45 +85,43 @@ const Navbar = () => {
 const Hero = () => {
   return (
     <section className="relative pt-64 pb-32 px-6 overflow-hidden">
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1400px] h-[1000px] bg-accent/5 blur-[180px] rounded-full -z-10 animate-pulse" />
-      
-      <div className="max-w-7xl mx-auto text-center relative z-10">
+      <div className="max-w-6xl mx-auto text-center relative z-10">
         <motion.h1 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-7xl md:text-9xl lg:text-[160px] font-outfit font-black tracking-tighter leading-[0.8] mb-16"
+          className="text-6xl md:text-8xl lg:text-[140px] font-outfit font-black tracking-tighter leading-[0.8] mb-12"
         >
-          The Input <br />
-          <span className="inline-block py-6 text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/10">
-            Evolution
+          <span className="inline-block py-4 text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/20">
+            Intelligent
+          </span>
+          <br />
+          <span className="inline-block py-4 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-rose-400 to-amber-400">
+            Layer
           </span>
         </motion.h1>
         
         <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 1 }}
-          className="text-lg md:text-2xl text-white/30 max-w-2xl mx-auto mb-20 font-inter leading-relaxed tracking-tight"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="text-lg md:text-2xl text-white/40 max-w-2xl mx-auto mb-16 font-inter leading-relaxed tracking-tight"
         >
-          Instant local text transfer, human-like typing simulation, and real-time input orchestration. Reimagined for the modern desktop.
+          The ultimate input orchestration engine. Instant local transfer, realistic typing, and biometric-grade security. Redefining how you interact.
         </motion.p>
         
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 1 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-8"
+          className="flex flex-col sm:flex-row items-center justify-center gap-6"
         >
-          <Link href="#setup" className="group relative bg-accent text-white px-12 py-6 rounded-2xl font-bold overflow-hidden shadow-2xl shadow-accent/20 transition-transform hover:scale-[1.02]">
-            <div className="relative z-10 flex items-center gap-3">
-               Setup Guide
-               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </div>
-            <div className="absolute inset-0 bg-accent-light opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <Link href="#setup" className="group relative px-10 py-5 rounded-2xl font-bold overflow-hidden shadow-2xl shadow-indigo-500/20">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-rose-600 transition-transform group-hover:scale-110 duration-500" />
+            <span className="relative flex items-center gap-3 text-white">
+              Setup Guide
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </span>
           </Link>
-          <Link href="#downloads" className="px-12 py-6 rounded-2xl font-bold border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] transition-all duration-300 backdrop-blur-sm">
-            Downloads
+          <Link href="#downloads" className="px-10 py-5 rounded-2xl font-bold border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20 transition-all duration-300">
+            Download Assets
           </Link>
         </motion.div>
       </div>
@@ -137,53 +153,54 @@ const Visualization = () => {
   const laptopRotate = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
   return (
-    <section id="visualization" ref={sectionRef} className="py-52 px-6">
+    <section id="visualization" ref={sectionRef} className="py-40 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="relative bg-white/[0.01] border border-white/[0.04] rounded-[80px] p-20 md:p-40 overflow-hidden shadow-[inset_0_0_80px_rgba(255,255,255,0.01)]">
-          <div className="grid lg:grid-cols-2 gap-32 items-center relative z-10">
+        <div className="relative bg-white/[0.01] border border-white/[0.08] rounded-[64px] p-16 md:p-32 overflow-hidden group">
+          <div className="grid lg:grid-cols-2 gap-24 items-center relative z-10">
             
             {/* Phone Side */}
-            <div className="flex justify-center" style={{ perspective: "1500px" }}>
+            <div className="flex justify-center" style={{ perspective: "1200px" }}>
               <motion.div 
                 style={{ transformStyle: "preserve-3d", rotateY: phoneRotate }}
-                className="w-[220px] h-[460px] bg-[#080808] border-[12px] border-[#151515] rounded-[50px] p-8 shadow-[0_40px_120px_rgba(0,0,0,0.9)] relative"
+                className="w-[200px] h-[420px] bg-[#0a0a0a] border-[10px] border-[#1a1a1a] rounded-[40px] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative overflow-hidden"
               >
-                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-6 bg-[#151515] rounded-full shadow-inner" />
-                <div className="mt-28 text-center">
-                   <p className="text-[11px] text-white/20 font-black tracking-[0.4em] uppercase mb-10">Sync</p>
-                   <div className="bg-[#a36a52] p-6 rounded-2xl text-white text-sm font-bold shadow-[0_20px_50px_rgba(163,106,82,0.4)] leading-relaxed">
+                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-50" />
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-5 bg-[#1a1a1a] rounded-full shadow-inner" />
+                <div className="mt-24 text-center relative z-10">
+                   <p className="text-[10px] text-indigo-400 font-black tracking-[0.3em] uppercase mb-8 animate-pulse">Syncing</p>
+                   <div className="bg-gradient-to-br from-indigo-600 to-rose-600 p-5 rounded-2xl text-white text-sm font-semibold shadow-[0_15px_40px_rgba(99,102,241,0.3)] leading-snug">
                      {text}
                    </div>
                 </div>
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-28 h-1.5 bg-white/[0.05] rounded-full" />
               </motion.div>
             </div>
 
             {/* Laptop Side */}
-            <div className="flex justify-center" style={{ perspective: "1500px" }}>
+            <div className="flex justify-center" style={{ perspective: "1200px" }}>
               <motion.div 
                 style={{ transformStyle: "preserve-3d", rotateY: laptopRotate }}
-                className="w-full max-w-2xl aspect-[1.7/1] bg-[#080808] border-[16px] border-[#151515] rounded-[40px] p-12 shadow-[0_40px_120px_rgba(0,0,0,0.9)] relative"
+                className="w-full max-w-xl aspect-[1.6/1] bg-[#0a0a0a] border-[14px] border-[#1a1a1a] rounded-[32px] p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative"
               >
-                <div className="flex gap-2.5 mb-10">
-                  <div className="w-3.5 h-3.5 rounded-full bg-white/[0.06]" />
-                  <div className="w-3.5 h-3.5 rounded-full bg-white/[0.06]" />
-                  <div className="w-3.5 h-3.5 rounded-full bg-white/[0.06]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50" />
+                <div className="flex gap-2 mb-8 relative z-10">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500/20" />
+                  <div className="w-3 h-3 rounded-full bg-rose-500/20" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/20" />
                 </div>
-                <div className="font-mono text-lg space-y-4">
-                  <p className="text-white/20">const glide = <span className="text-accent">"awesome"</span>;</p>
+                <div className="font-mono text-base space-y-3 relative z-10">
+                  <p className="text-white/20">const glide = <span className="text-indigo-400">"awesome"</span>;</p>
                   <p className="text-white/80 leading-relaxed tracking-tight">
                     {text}
-                    <span className="inline-block w-[1.5px] h-6 bg-accent ml-2 animate-pulse" />
+                    <span className="inline-block w-[1px] h-5 bg-rose-400 ml-1 animate-pulse" />
                   </p>
                 </div>
                 
                 {/* Connection Visual */}
-                <div className="absolute -left-60 top-1/2 -translate-y-1/2 w-60 h-[2px] bg-gradient-to-r from-accent/50 to-transparent hidden xl:block overflow-visible">
+                <div className="absolute -left-48 top-1/2 -translate-y-1/2 w-48 h-[1px] bg-gradient-to-r from-indigo-500/40 via-rose-500/20 to-transparent hidden xl:block overflow-visible">
                   <motion.div 
                     animate={{ left: ["-10%", "110%"] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-4 text-4xl filter drop-shadow(0 0 15px #a36a52)"
+                    className="absolute -top-4 text-3xl filter drop-shadow(0 0 15px #6366f1)"
                   >
                     🛰️
                   </motion.div>
@@ -192,7 +209,7 @@ const Visualization = () => {
             </div>
           </div>
           
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-accent/[0.03] blur-[150px] -z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-indigo-500/5 via-rose-500/5 to-transparent blur-[120px] -z-10" />
         </div>
       </div>
     </section>
@@ -201,23 +218,21 @@ const Visualization = () => {
 
 const Features = () => {
   const features = [
-    { title: "Flash Paste", desc: "Immediate high-speed text transfer using clipboard injection with smart fallback.", icon: <Zap size={22} /> },
-    { title: "Realistic Typing", desc: "Human-like keyboard event simulation to bypass restricted environment blocks.", icon: <Keyboard size={22} /> },
-    { title: "Local-Only", desc: "Zero-cloud persistence. Data exists only in temporary memory during active sessions.", icon: <ShieldCheck size={22} /> },
-    { title: "Orchestration", desc: "Turn your phone into a remote control layer for macros and terminal commands.", icon: <RefreshCw size={22} /> }
+    { title: "Flash Paste", desc: "Immediate high-speed text transfer using clipboard injection with smart fallback.", icon: <Zap size={22} />, color: "border-indigo-500/20 shadow-indigo-500/5" },
+    { title: "Realistic Typing", desc: "Human-like keyboard event simulation to bypass restricted environment blocks.", icon: <Keyboard size={22} />, color: "border-rose-500/20 shadow-rose-500/5" },
+    { title: "Local-Only", desc: "Zero-cloud persistence. Data exists only in temporary memory during active sessions.", icon: <ShieldCheck size={22} />, color: "border-amber-500/20 shadow-amber-500/5" },
+    { title: "Orchestration", desc: "Turn your phone into a remote control layer for macros and terminal commands.", icon: <RefreshCw size={22} />, color: "border-indigo-500/20 shadow-indigo-500/5" }
   ];
 
   return (
-    <section id="features" className="py-52 px-8 relative overflow-hidden">
-      <div className="absolute top-1/2 right-[-10%] w-[800px] h-[800px] bg-accent/[0.04] blur-[140px] rounded-full -z-10" />
-      
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-32">
-          <div className="max-w-xl">
-            <h2 className="text-5xl md:text-8xl font-outfit font-black tracking-tighter mb-8 leading-[0.9]">The Standard.</h2>
-            <p className="text-white/40 font-medium text-xl leading-relaxed">Engineered to eliminate friction between your ideas and your machine.</p>
+    <section id="features" className="py-40 px-8 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-24">
+          <div>
+            <h2 className="text-5xl md:text-7xl font-outfit font-black tracking-tighter mb-4">The Input Standard</h2>
+            <p className="text-white/40 max-w-md font-medium text-lg leading-relaxed">Engineered to eliminate friction between your ideas and your machine.</p>
           </div>
-          <div className="h-[1px] flex-1 bg-white/[0.08] hidden md:block mb-8 ml-16" />
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-indigo-500/20 to-transparent hidden md:block mb-6 ml-12" />
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -226,17 +241,16 @@ const Features = () => {
               key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1, duration: 1 }}
-              className="group p-12 bg-white/[0.02] border border-white/[0.04] rounded-[48px] hover:border-accent/40 hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden"
+              transition={{ delay: i * 0.1, duration: 0.8 }}
+              className={`p-10 bg-white/[0.01] border ${f.color} rounded-[40px] hover:scale-[1.02] hover:bg-white/[0.03] transition-all duration-700 group shadow-2xl`}
             >
-              <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-10 text-accent group-hover:scale-110 group-hover:bg-accent group-hover:text-white transition-all duration-500 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-8 text-white group-hover:text-indigo-400 transition-colors duration-500">
                 {f.icon}
               </div>
-              <h3 className="text-2xl font-bold mb-5 font-outfit">{f.title}</h3>
-              <p className="text-[16px] text-white/40 leading-relaxed font-inter">
+              <h3 className="text-2xl font-bold mb-4 font-outfit tracking-tight">{f.title}</h3>
+              <p className="text-[15px] text-white/40 leading-relaxed font-inter">
                 {f.desc}
               </p>
-              <BorderBeam />
             </motion.div>
           ))}
         </div>
@@ -247,7 +261,9 @@ const Features = () => {
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen selection:bg-accent/30 selection:text-white">
+    <main className="relative min-h-screen">
+      <div className="mesh-gradient" />
+      <BackgroundOrbs />
       <CursorSpotlight />
       <Navbar />
       <Hero />
@@ -255,22 +271,20 @@ export default function Home() {
       <Features />
       
       {/* Downloads */}
-      <section id="downloads" className="py-52 px-8 bg-black/40 border-t border-white/[0.04]">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
+      <section id="downloads" className="py-40 px-8">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
            {[
-             { title: "Chrome Extension", icon: <Globe />, label: "Install" },
-             { title: "macOS Backend", icon: <Monitor />, label: "Download .dmg" },
-             { title: "Windows Backend", icon: <Monitor />, label: "Download .exe" }
+             { title: "Chrome Extension", icon: <Globe />, label: "Install", color: "hover:border-indigo-500/30 shadow-indigo-500/10" },
+             { title: "macOS Backend", icon: <Monitor />, label: "Download .dmg", color: "hover:border-rose-500/30 shadow-rose-500/10" },
+             { title: "Windows Backend", icon: <Monitor />, label: "Download .exe", color: "hover:border-amber-500/30 shadow-amber-500/10" }
            ].map((d, i) => (
-             <div key={i} className="group p-14 bg-white/[0.01] border border-white/[0.04] rounded-[56px] text-center hover:bg-white/[0.03] transition-all duration-700 relative overflow-hidden">
-               <div className="w-24 h-24 bg-accent/5 rounded-[36px] flex items-center justify-center text-accent mx-auto mb-10 group-hover:scale-110 group-hover:bg-accent/10 transition-all duration-500 shadow-2xl">
+             <div key={i} className={`group p-10 bg-white/[0.01] border border-white/[0.05] rounded-[40px] text-center transition-all duration-500 ${d.color} shadow-2xl`}>
+               <div className="w-20 h-20 bg-white/[0.03] rounded-[28px] flex items-center justify-center text-white mx-auto mb-8 group-hover:scale-110 group-hover:text-indigo-400 transition-all">
                  {d.icon}
                </div>
-               <h3 className="text-2xl font-bold mb-12 font-outfit uppercase tracking-widest leading-none">{d.title}</h3>
-               <button className="relative w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] overflow-hidden group/btn">
-                  <span className="relative z-10 text-white group-hover/btn:text-black transition-colors duration-500">{d.label}</span>
-                  <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500 ease-out" />
-                  <div className="absolute inset-0 border border-white/10" />
+               <h3 className="text-xl font-bold mb-8 font-outfit uppercase tracking-[0.2em]">{d.title}</h3>
+               <button className="w-full py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all duration-500">
+                 {d.label}
                </button>
              </div>
            ))}
@@ -278,18 +292,18 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-40 border-t border-white/[0.04] bg-[#020202]">
-        <div className="max-w-7xl mx-auto px-8 flex flex-col items-center gap-20">
-          <div className="flex items-center gap-4 font-outfit font-black text-3xl tracking-tighter">
-            <Zap className="text-accent fill-accent" size={36} />
+      <footer className="py-32 border-t border-white/[0.03] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-8 flex flex-col items-center gap-16 relative z-10">
+          <div className="flex items-center gap-3 font-outfit font-black text-2xl tracking-tighter">
+            <Zap className="text-indigo-500 fill-indigo-500" size={32} />
             <span className="mt-1">GLIDEPASS</span>
           </div>
-          <div className="flex gap-16 text-[11px] font-black uppercase tracking-[0.4em] text-white/10 hover:text-white/40 transition-colors">
-            <Link href="#" className="hover:text-accent">Twitter</Link>
-            <Link href="#" className="hover:text-accent">GitHub</Link>
-            <Link href="#" className="hover:text-accent">Discord</Link>
+          <div className="flex gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
+            <Link href="#" className="hover:text-indigo-400 transition-colors">Twitter</Link>
+            <Link href="#" className="hover:text-rose-400 transition-colors">GitHub</Link>
+            <Link href="#" className="hover:text-amber-400 transition-colors">Discord</Link>
           </div>
-          <p className="text-[11px] text-white/[0.05] font-mono tracking-widest">© 2026 GLIDEPASS. DESIGNED FOR THE ELITE.</p>
+          <p className="text-[10px] text-white/10 font-mono tracking-widest">© 2026 GLIDEPASS. BUILT FOR THE FUTURE.</p>
         </div>
       </footer>
     </main>
