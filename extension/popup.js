@@ -3,6 +3,99 @@ let mobileUrl = '';
 let injectionMode = null;
 let liveSync = false;
 
+const BOOKMARKLET_TEMPLATE = `javascript:(function(){
+  if(window.__glidepad_active) { alert("GlidePass Unblocker already active on this page."); return; }
+  window.__glidepad_active=true;
+  window.__gp_abort=false;
+  
+  const op=Event.prototype.preventDefault;
+  Event.prototype.preventDefault=function(){
+    if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type)) return;
+    return op.apply(this,arguments)
+  };
+
+  function ul(r){
+    const ev=["copy","paste","cut","contextmenu","selectstart","beforeinput"];
+    ev.forEach(t=>r.addEventListener(t,e=>e.stopImmediatePropagation(),true));
+    const al=r.querySelectorAll?r.querySelectorAll("*"):[];
+    al.forEach(el=>{if(el.shadowRoot)ul(el.shadowRoot)})
+  };
+  ul(document);
+  const ob=new MutationObserver(()=>ul(document));
+  ob.observe(document.documentElement,{childList:true,subtree:true});
+  
+  const s=document.createElement("style");
+  s.innerHTML="*{-webkit-user-select:text!important;user-select:text!important;pointer-events:auto!important;}";
+  document.head.appendChild(s);
+  
+  const n=document.createElement("div");
+  n.id="__gp_container";
+  n.innerHTML='<div id="__gp_note" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#0a0a0a;color:#fff;padding:14px 24px;border-radius:16px;border:1px solid #d97757;font-family:sans-serif;font-weight:900;font-size:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,0,0,0.5);transition:all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);opacity:0;transform:translate(-50%, -40px);"><span style="color:#d97757;font-size:18px;">🛰️</span> BYPASS ACTIVATED</div>';
+  document.body.appendChild(n);
+  
+  function showN(t,c="#d97757"){
+    const e=document.getElementById("__gp_note");
+    if(!e)return;
+    e.innerHTML=\`<span style="color:\${c};font-size:18px;">🛰️</span> \${t}\`;
+    e.style.opacity="1";
+    e.style.transform="translate(-50%, 0)";
+    setTimeout(()=>{
+      e.style.opacity="0";
+      e.style.transform="translate(-50%, -40px)"
+    },3000)
+  }
+  
+  setTimeout(()=>showN("BYPASS ACTIVATED"),10);
+  
+  let lastId="";
+  const wait=(ms)=>new Promise(res=>setTimeout(res,ms));
+  
+  async function poller(){
+    while(true){
+      try{
+        const res=await fetch("BACKEND_URL/poll_paste?last_id="+lastId+"&t="+Date.now(),{
+          cache:"no-store",
+          mode: "cors"
+        });
+        const data=await res.json();
+        if(data.status==="success"){
+          lastId=data.id;
+          if(data.text && data.text.indexOf("STOP_PASTE")!==-1){
+            window.__gp_abort=true;
+            showN("PASTING STOPPED","#ef4444");
+            continue;
+          }
+          
+          const el=document.activeElement;
+          if(el && ("value" in el || el.isContentEditable)){
+             const inject=(c)=>{
+                if("value" in el) {
+                   const start=el.selectionStart;
+                   const end=el.selectionEnd;
+                   el.value=el.value.substring(0,start)+c+el.value.substring(end);
+                   el.selectionStart=el.selectionEnd=start+c.length;
+                } else {
+                   const sel=window.getSelection();
+                   const range=sel.getRangeAt(0);
+                   range.deleteContents();
+                   range.insertNode(document.createTextNode(c));
+                }
+                el.dispatchEvent(new Event("input",{bubbles:true}));
+             };
+             inject(data.text);
+             showN("TEXT INJECTED");
+          }
+        } else {
+          await wait(1000);
+        }
+      } catch(e) {
+        await wait(3000);
+      }
+    }
+  }
+  poller();
+})();`;
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log("GlidePass: Popup Loaded");
     
@@ -130,6 +223,13 @@ async function checkServerStatus() {
             if (qrContainerHome) {
                 qrContainerHome.innerHTML = '';
                 new QRCode(qrContainerHome, { text: mobileUrl, width: 100, height: 100 });
+            }
+
+            // Update Bookmarklet
+            const unblockerBtn = document.getElementById('unblocker-btn');
+            if (unblockerBtn) {
+                const bookmarkletCode = BOOKMARKLET_TEMPLATE.replace('BACKEND_URL', SERVER_URL);
+                unblockerBtn.href = bookmarkletCode;
             }
         } else {
             throw new Error();

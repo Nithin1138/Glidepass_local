@@ -358,3 +358,70 @@ textarea {
 
 .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #222; padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
 .toast.show { opacity: 1; }
+
+/* Bookmarklet Styling */
+.bookmarklet-box {
+    margin-top: 20px;
+    padding: 14px;
+    background: rgba(217, 119, 87, 0.05);
+    border: 1px dashed rgba(217, 119, 87, 0.2);
+    border-radius: 12px;
+    text-align: left;
+}
+
+.bookmarklet-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent-color);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.bookmarklet-box p {
+    font-size: 0.65rem;
+    color: #888;
+    margin: 0 0 10px 0;
+}
+
+.drag-instruction {
+    font-size: 0.55rem;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.drag-instruction code {
+    background: #222;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #aaa;
+}
+
+.draggable-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-color);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: grab;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(217, 119, 87, 0.3);
+}
+
+.draggable-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(217, 119, 87, 0.4);
+    filter: brightness(1.1);
+}
+
+.draggable-btn:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}

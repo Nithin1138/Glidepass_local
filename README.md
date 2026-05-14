@@ -25,7 +25,16 @@ GlidePass is a powerful cross-device productivity tool that bridges the gap betw
 - Scan the **QR Code** with your phone.
 - Start sending text!
 
-## 🛡️ Privacy & Security
+## 🛡️ Nuclear Unblocker (Bypass Restrictions)
+
+GlidePass includes a powerful "Nuclear Unblocker" bookmarklet for sites that disable right-click, copy, or paste.
+
+1. **Enable Bookmark Bar**: Press `Ctrl+Shift+B` (Windows/Linux) or `Cmd+Shift+B` (Mac).
+2. **Drag the Button**: Open the GlidePass extension and drag the **"UNBLOCKER"** button to your bookmark bar.
+3. **Activate**: When on a restricted site, click the **UNBLOCKER** bookmark.
+4. **Enjoy**: Selection and pasting will be forced back to life!
+
+## 🔒 Privacy & Security
 GlidePass runs entirely on your **local Wi-Fi network**. Your data never leaves your devices and is never sent to the cloud.
 
 ---
