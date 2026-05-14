@@ -324,10 +324,10 @@ const Features = () => {
       icon: <RefreshCw size={22} />, 
       span: "md:col-span-2",
       visual: (
-        <div className="mt-8 p-4 bg-black/40 border border-white/5 rounded-xl font-mono text-[10px] text-indigo-400/60 overflow-hidden">
-          <div className="flex gap-1 mb-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+        <div className="mt-4 p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[9px] text-indigo-400/60 overflow-hidden">
+          <div className="flex gap-1 mb-1.5">
+            <div className="w-1 h-1 rounded-full bg-white/10" />
+            <div className="w-1 h-1 rounded-full bg-white/10" />
           </div>
           <p className="">$ glide --tunnel --secure</p>
           <p className="text-white/20">&gt; establishing handshake...</p>
@@ -337,14 +337,14 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-32 px-8 relative overflow-hidden">
+    <section id="features" className="py-16 px-8 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-20">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-10">
           <div>
-            <h2 className="text-4xl md:text-6xl font-outfit font-black tracking-tighter mb-2">The Input Standard</h2>
-            <p className="text-white/40 max-w-sm font-medium text-base leading-relaxed font-inter">Engineered to eliminate friction between your ideas and your machine.</p>
+            <h2 className="text-4xl md:text-5xl font-outfit font-black tracking-tighter mb-2">The Input Standard</h2>
+            <p className="text-white/30 max-w-sm font-medium text-sm leading-relaxed font-inter">Engineered to eliminate friction between your ideas and your machine.</p>
           </div>
-          <div className="h-[1px] flex-1 bg-gradient-to-r from-indigo-500/20 to-transparent hidden md:block mb-4 ml-12" />
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-indigo-500/10 to-transparent hidden md:block mb-4 ml-12" />
         </div>
         
         <div className="grid md:grid-cols-3 gap-6">
@@ -359,24 +359,24 @@ const Features = () => {
                 e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                 e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
               }}
-              className={`relative group p-10 bg-white/[0.01] border border-white/[0.05] rounded-[40px] overflow-hidden transition-all duration-700 ${f.span}`}
+              className={`relative group p-6 md:p-8 bg-white/[0.01] border border-white/[0.05] rounded-[32px] overflow-hidden transition-all duration-700 ${f.span}`}
             >
               {/* Cursor Follow Glow (Inherits vars from parent) */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(99,102,241,0.06)_0%,_transparent_50%)]" />
               
               <div className="relative z-10 h-full flex flex-col">
-                <div className="w-12 h-12 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-8 text-white group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500">
+                <div className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-5 text-white group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500">
                   {f.icon}
                 </div>
-                <h3 className="text-2xl font-bold mb-4 font-outfit tracking-tight">{f.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed font-inter max-w-[280px]">
+                <h3 className="text-xl font-bold mb-2 font-outfit tracking-tight">{f.title}</h3>
+                <p className="text-sm text-white/30 leading-relaxed font-inter max-w-[280px]">
                   {f.desc}
                 </p>
                 {f.visual}
               </div>
 
               {/* Decorative Border Glow */}
-              <div className="absolute inset-0 border border-white/0 group-hover:border-indigo-500/20 rounded-[40px] transition-colors duration-700" />
+              <div className="absolute inset-0 border border-white/0 group-hover:border-indigo-500/20 rounded-[32px] transition-colors duration-700" />
             </motion.div>
           ))}
         </div>
