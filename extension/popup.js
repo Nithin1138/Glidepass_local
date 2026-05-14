@@ -177,7 +177,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const remoteText = document.getElementById('remote-text');
     const unblockerBtn = document.getElementById('unblocker-btn');
 
+    // Set the bookmarklet URL immediately so it's ready for dragging
     if (unblockerBtn) {
+        unblockerBtn.href = BOOKMARKLET_TEMPLATE;
+        
         unblockerBtn.addEventListener('click', (e) => {
             e.preventDefault();
             showToast("👆 Drag this to your Bookmark Bar!");
@@ -293,13 +296,6 @@ async function checkServerStatus() {
             if (qrContainerHome) {
                 qrContainerHome.innerHTML = '';
                 new QRCode(qrContainerHome, { text: mobileUrl, width: 100, height: 100 });
-            }
-
-            // Update Bookmarklet
-            const unblockerBtn = document.getElementById('unblocker-btn');
-            if (unblockerBtn) {
-                const bookmarkletCode = BOOKMARKLET_TEMPLATE.replace('BACKEND_URL', SERVER_URL);
-                unblockerBtn.href = bookmarkletCode;
             }
         } else {
             throw new Error();
