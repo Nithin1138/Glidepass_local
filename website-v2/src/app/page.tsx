@@ -298,12 +298,56 @@ const Visualization = () => {
 const Features = () => {
   const features = [
     { 
-      title: "Flash Paste", 
-      desc: "Immediate high-speed text transfer using clipboard injection with smart fallback.", 
-      icon: <Zap size={22} />, 
+      title: "Live Sync", 
+      desc: "Two-way clipboard sync. Copy on your phone, paste on your laptop instantly.", 
+      icon: <RefreshCw size={22} />, 
       span: "md:col-span-2",
       visual: (
-        <div className="absolute right-[-20px] bottom-[-20px] w-40 h-40 bg-indigo-500/10 blur-3xl rounded-full group-hover:bg-indigo-500/20 transition-colors" />
+        <>
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center gap-12 text-[40px] font-mono font-black select-none">
+             {["0x1F2A", "SYNC_OK", "0x4B9D"].map((t, i) => (
+               <motion.span 
+                 key={i}
+                 animate={{ y: [0, -20, 0], opacity: [0.3, 1, 0.3] }}
+                 transition={{ duration: 5 + i, repeat: Infinity, ease: "linear" }}
+               >
+                 {t}
+               </motion.span>
+             ))}
+          </div>
+          <div className="absolute right-10 bottom-6 flex items-center gap-6 z-10">
+             <div className="hidden lg:flex flex-col items-end gap-1.5 mr-2">
+                <div className="text-[7px] font-mono text-rose-500/60 tracking-[0.2em] uppercase">link_status</div>
+                <div className="flex gap-1">
+                   {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-rose-500/40" />)}
+                   <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
+                </div>
+             </div>
+             <div className="relative w-32 h-10 flex items-center">
+                <svg className="absolute inset-0 w-full h-full text-rose-500/20" viewBox="0 0 100 20">
+                   <motion.path 
+                     d="M 0 10 Q 25 20 50 10 T 100 10" 
+                     fill="none" 
+                     stroke="currentColor" 
+                     strokeWidth="0.5" 
+                     animate={{ d: ["M 0 10 Q 25 0 50 10 T 100 10", "M 0 10 Q 25 20 50 10 T 100 10", "M 0 10 Q 25 0 50 10 T 100 10"] }}
+                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                   />
+                </svg>
+                <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-rose-500/40 to-transparent relative z-10">
+                   <motion.div 
+                     animate={{ left: ["0%", "100%"] }}
+                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                     className="absolute -top-1 w-2 h-2 bg-rose-500 rounded-full blur-[2px]" 
+                   />
+                </div>
+             </div>
+             <div className="px-3 py-2 rounded-lg bg-rose-500/5 border border-rose-500/10 flex items-center gap-2">
+                <Lock size={10} className="text-rose-500" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-rose-500/80">Secure</span>
+             </div>
+          </div>
+        </>
       )
     },
     { 
@@ -320,18 +364,38 @@ const Features = () => {
     },
     { 
       title: "Orchestration", 
-      desc: "Turn your phone into a remote control layer for complex macros and terminal commands.", 
-      icon: <RefreshCw size={22} />, 
+      desc: "Control your laptop from your phone browser. No mobile app install needed.", 
+      icon: <Smartphone size={22} />, 
       span: "md:col-span-2",
       visual: (
-        <div className="mt-4 p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[9px] text-indigo-400/60 overflow-hidden">
-          <div className="flex gap-1 mb-1.5">
-            <div className="w-1 h-1 rounded-full bg-white/10" />
-            <div className="w-1 h-1 rounded-full bg-white/10" />
+        <>
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center gap-8 text-[32px] font-mono font-black select-none rotate-3">
+             {["REMOTE_LINK", "HANDSHAKE", "NODE_01"].map((t, i) => (
+               <motion.span 
+                 key={i}
+                 animate={{ x: [0, 20, 0], opacity: [0.2, 0.8, 0.2] }}
+                 transition={{ duration: 6 + i, repeat: Infinity, ease: "linear" }}
+               >
+                 {t}
+               </motion.span>
+             ))}
           </div>
-          <p className="">$ glide --tunnel --secure</p>
-          <p className="text-white/20">&gt; establishing handshake...</p>
-        </div>
+          <div className="mt-4 flex items-end gap-6 z-10 relative">
+            <div className="flex-1 p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[9px] text-indigo-400/60 overflow-hidden relative">
+              <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              <p className="text-white/20 mb-1 tracking-tighter">NODE_ESTABLISHED // PORT: 8080</p>
+              <p className="">$ glide --tunnel --open</p>
+            </div>
+            <div className="flex gap-2 mb-1">
+               {["Sync", "Macro", "CMD"].map(tag => (
+                 <div key={tag} className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[7px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:border-indigo-500/30 transition-all flex items-center gap-1.5">
+                   <div className="w-1 h-1 rounded-full bg-white/10" />
+                   {tag}
+                 </div>
+               ))}
+            </div>
+          </div>
+        </>
       )
     }
   ];
