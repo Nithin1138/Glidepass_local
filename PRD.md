@@ -2,7 +2,7 @@
 
 **Status:** Draft / Active Development  
 **Author:** Nithin  
-**Version:** 1.1 (Improved)
+**Version:** 1.2 (Final Refinement)
 
 ---
 
@@ -10,32 +10,33 @@
 GlidePass turns a smartphone into a low-latency input companion for laptops and desktops, enabling instant local text transfer, human-like typing simulation, and real-time synchronization without relying on cloud services.
 
 ## 2. Problem Statement
-Users frequently need to move text (links, credentials, code snippets, or notes) from their mobile devices to their laptops. Existing solutions (cloud notes, messaging themselves) are slow, require internet access, and are often blocked by corporate firewalls or "anti-paste" restrictions on specific websites.
+Users frequently need to move text (links, credentials, code snippets, or notes) from their mobile devices to their laptops. Existing solutions (cloud notes, messaging themselves) are slow, require internet access, and are often blocked by corporate firewalls or restricted environments where clipboard pasting is disabled.
 
 ## 3. Goals & Objectives
-*   **Zero-Latency Transfer:** Eliminate the need for cloud intermediaries.
-*   **Bypass Restrictions:** Allow text input on websites that disable the "Paste" function.
+*   **High-Speed Transfer:** Near real-time transfer with perceived latency below 50ms.
+*   **Restricted Environment Support:** Human-like typing simulation for environments where direct clipboard pasting is unavailable or restricted.
 *   **Privacy First:** Ensure all data remains on the local Wi-Fi network.
 *   **Ease of Use:** One-click server start and QR-based mobile connection.
 
 ## 4. Target Audience
 *   **Developers:** Moving code snippets from mobile documentation to IDEs.
 *   **Students:** Quick notes transfer from phone to assignment docs.
-*   **Security-Conscious Users:** Transferring sensitive text snippets or temporary credentials without cloud persistence.
+*   **Privacy-Focused Users:** Transferring sensitive text snippets or temporary credentials without intentional long-term persistence.
 
-## 5. System Architecture
-**Laptop/Desktop (Host):**
-*   **FastAPI Backend**: Core logic server.
-*   **Clipboard Manager**: System-level clipboard access.
-*   **Keyboard Simulation Engine**: `pyautogui` / AppleScript integration.
-*   **QR Generation Service**: Local IP-based discovery.
+## 5. System Architecture & Request Flow
 
-**Mobile (Controller):**
-*   **Browser-Based UI**: Cross-platform web interface.
-*   **WebSocket Client**: For real-time typing events.
+### Components:
+*   **FastAPI Backend (Host)**: Core logic server and QR generation.
+*   **Keyboard Simulation Engine**: System-level injection (pyautogui/AppleScript).
+*   **Mobile Browser UI**: Cross-platform controller.
 
-**Communication:**
-*   **Local Wi-Fi Channel**: Secure HTTP/WebSocket communication between host and mobile.
+### Request Flow:
+1.  **Launch**: User starts GlidePass server on Laptop.
+2.  **Discovery**: Backend generates session token + QR code based on local IP.
+3.  **Pairing**: Mobile scans QR and establishes WebSocket/HTTP connection.
+4.  **Submission**: User submits text from mobile controller.
+5.  **Injection**: Keyboard engine executes events on the active host window.
+6.  **Feedback**: Success/Error status is pushed back to the mobile UI.
 
 ## 6. Functional Requirements
 
@@ -44,36 +45,40 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 *   The server must be startable via a custom macOS protocol (`glidepass://`) from a browser extension.
 
 ### FR-02: Mobile Controller Interface
-*   A web-based interface accessible via mobile browser.
 *   Must support multiple modes: Flash (Paste), Type (Simulated), Inject (Cleaned), and Live Sync.
 
-### FR-03: Typing Simulation (Anti-Paste Bypass)
-*   The system must simulate keyboard events using `pyautogui`.
-*   Support for configurable WPM (Words Per Minute).
-*   Must handle IDE auto-indentation issues by clearing whitespace on new lines.
+### FR-03: Human-Like Typing Simulation
+*   Simulate keyboard events with configurable WPM and human-like timing variance.
+*   Handle IDE auto-indentation by clearing leading whitespace on new lines.
 
 ### FR-04: Live Synchronization
-*   Synchronize changes using WebSocket events with update frequency < 50ms.
-*   Support for character addition, deletion, and basic cursor tracking.
-*   Automatic handling of connection loss and resync.
+*   Synchronize changes via WebSockets with update frequency < 50ms.
+*   Automatic handling of connection loss and session resync.
 
 ### FR-05: Bidirectional Clipboard
-*   The mobile device must be able to "pull" the laptop's current clipboard content.
+*   Mobile client must be able to request and view the host's current clipboard content.
 
-## 7. Security & Privacy Requirements
-*   **Local Only:** No data persistence; traffic never leaves the local network.
-*   **Session Security:** Device pairing via QR code containing temporary session tokens.
-*   **Auto-Expiry:** Automatic session termination after periods of inactivity.
-*   **Data Integrity:** Optional PIN-based authentication for sensitive transfers.
-*   **No Trace:** No data is stored on the host machine once the transfer is complete.
+## 7. Platform & Connection Requirements
 
-## 8. Failure Scenarios & Error Handling
-*   **Network Disconnect:** Mobile UI must show an "Offline" status if the local Wi-Fi connection drops.
-*   **Host Sleep:** System should attempt to keep the backend alive or notify the mobile client if the laptop enters sleep mode.
-*   **Focus Loss:** If the target window on the laptop loses focus, the typing engine should pause to avoid "ghost typing."
-*   **QR Expiration:** Generated QR codes should be valid for a limited time to prevent unauthorized access.
+### Platform Permissions:
+*   **macOS**: Accessibility permissions (for keyboard simulation) and Clipboard access.
+*   **Windows**: Keyboard hook permissions and Clipboard access.
 
-## 9. Competitive Advantage
+### Connection Constraints (MVP):
+*   **1:1 Ratio**: One active host machine to one active mobile controller.
+*   **Local Only**: Both devices must be on the same sub-network.
+
+## 8. Security & Data Handling
+*   **No Intentional Long-Term Persistence**: Data exists only in temporary memory (RAM) during active sessions and is removed after transfer completion.
+*   **Session Security**: Device pairing via QR code containing temporary, non-reusable session tokens.
+*   **Auto-Expiry**: Automatic session termination after 15 minutes of inactivity.
+
+## 9. Failure Scenarios & Error Handling
+*   **Focus Loss**: Typing engine must pause if the host's target window loses focus.
+*   **Network Drop**: Mobile UI shows immediate "Disconnected" state if the heartbeat fails.
+*   **Conflict Handling**: If the host is manually typing, the remote engine should yield or notify the user.
+
+## 10. Competitive Advantage
 
 | Feature | GlidePass | KDE Connect | Pushbullet | Phone Link |
 | :--- | :---: | :---: | :---: | :---: |
@@ -82,24 +87,28 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 | **Live Typing** | **Yes** | Partial | No | No |
 | **Local Only** | **Yes** | Yes | No | Partial |
 
-## 10. Roadmap: MVP vs Future
+## 11. MVP vs Future Scope
 
-**MVP (Phase 1):**
-*   Local FastAPI server & Standalone Executable.
-*   QR-based pairing.
-*   Flash & Type modes (Keyboard simulation).
-*   Clipboard pull from laptop.
+### Phase 1 (In-Scope):
+*   Local FastAPI server & Standalone Binary.
+*   QR-pairing & Type simulation.
+*   Basic Live Sync.
 
-**Future Features (Phase 2):**
-*   Full WebSocket-based Live Sync.
-*   Multi-device "Target" switching.
-*   Local File Transfer.
-*   Voice-to-Text injection.
+### Out of Scope (Phase 1):
+*   Internet-based/Remote synchronization.
+*   Cloud storage or history persistence.
+*   File transfer / Screen sharing.
+*   Multi-user collaboration.
 
-## 11. Success Metrics
-*   **Setup Time:** Under 2 minutes for first-time users.
-*   **Reliability:** $\ge 95\%$ successful text injection across supported apps and browser environments.
-*   **Usage:** Reduction in "Message to self" workflows for local text transfer.
+## 12. Success Metrics
+
+| Metric | Target |
+| :--- | :--- |
+| **First-time setup** | < 2 min |
+| **Typing response** | < 50 ms |
+| **Successful transfer rate** | ≥ 95% |
+| **Average transfer completion** | < 3 sec |
+| **User retention after first use** | ≥ 60% |
 
 ---
 *End of PRD*
