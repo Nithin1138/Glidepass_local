@@ -180,19 +180,13 @@ body {
 
 .helper-text { font-size: 0.6rem; color: #444; }
 
-/* Command Center Styles */
-.command-center {
+/* Header Styles */
+.minimal-header {
     display: flex;
-    flex-direction: column;
-    padding: 12px;
-    height: 100%;
-    gap: 10px;
-}
-
-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    width: 100%;
 }
 
 .top-label {
@@ -455,13 +449,6 @@ textarea {
 }
 
 /* Header & Bypass View Styles */
-.minimal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 4px;
-}
-
 .icon-link-btn {
     background: rgba(217, 119, 87, 0.1);
     border: 1px solid rgba(217, 119, 87, 0.2);
