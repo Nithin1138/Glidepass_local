@@ -34,3 +34,8 @@ starter_log.txt
 .idea/
 *.swp
 *.swo
+
+# PyInstaller
+build/
+dist/
+*.spec

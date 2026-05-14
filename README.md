@@ -34,6 +34,15 @@ Since GlidePass types for you, macOS requires security permissions:
 
 ---
 
+## 📦 Sharing with Others (Standalone Mode)
+
+If you want to share GlidePass with a friend who doesn't have Python installed:
+1. Go to the `dist/` folder in this repository.
+2. Share the `GlidePassServer` executable with them.
+3. They can simply double-click it to start the backend! (They will still need to load the Chrome extension folder).
+
+---
+
 ## 🚀 How to Use
 
 ### 1. Start the Backend

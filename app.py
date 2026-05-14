@@ -41,9 +41,20 @@ print(f"\n--- NEARBY AI RUNNING ---")
 print(f"Local Access: http://localhost:8000")
 print(f"Mobile Access: http://{get_local_ip()}:8000\n")
 
+import sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 @app.get("/")
 async def index():
-    return FileResponse("templates/index.html")
+    return FileResponse(resource_path("templates/index.html"))
 
 @app.get("/get_config")
 async def get_config():
@@ -220,5 +231,7 @@ async def paste(data: dict):
             return {"status": "success"}
             
     return {"status": "error", "message": "No text provided"}
-            
-    return {"status": "error", "message": "No text provided"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
