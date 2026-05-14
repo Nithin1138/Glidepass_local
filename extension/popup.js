@@ -176,6 +176,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const remoteText = document.getElementById('remote-text');
     const unblockerBtn = document.getElementById('unblocker-btn');
+    const openBypassBtn = document.getElementById('open-bypass-btn');
+    const bypassView = document.getElementById('bypass-view');
+    const backFromBypass = document.getElementById('back-from-bypass');
+
+    // Navigation for Bypass View
+    if (openBypassBtn) {
+        openBypassBtn.addEventListener('click', () => {
+            initialView.classList.remove('active');
+            bypassView.classList.add('active');
+        });
+    }
+
+    if (backFromBypass) {
+        backFromBypass.addEventListener('click', () => {
+            bypassView.classList.remove('active');
+            initialView.classList.add('active');
+        });
+    }
 
     // Set the bookmarklet URL immediately so it's ready for dragging
     if (unblockerBtn) {

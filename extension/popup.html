@@ -18,6 +18,10 @@
                     <i data-lucide="zap" class="zap-icon"></i>
                     <span>GLIDEPASS</span>
                 </div>
+                <button id="open-bypass-btn" class="icon-link-btn" title="Restricted Site?">
+                    <i data-lucide="shield-off" size="14"></i>
+                    <span>siteBlock?</span>
+                </button>
             </header>
             
             <main class="onboarding">
@@ -54,21 +58,44 @@
                 </div>
                 
                 <p class="helper-text">Make sure <code>launcher.py</code> is running on your laptop.</p>
+            </main>
+        </div>
 
-                <!-- Bookmarklet Section -->
+        <!-- Bypass & Bookmarklet View -->
+        <div id="bypass-view" class="view">
+            <header class="minimal-header">
+                <button id="back-from-bypass" class="back-btn">
+                    <i data-lucide="chevron-left" size="16"></i>
+                </button>
+                <div class="logo-stack">
+                    <span>GLIDEPAD SETUP</span>
+                </div>
+            </header>
+            
+            <main class="bypass-onboarding">
+                <div class="hero-section">
+                    <h1>Bypass Restrictions</h1>
+                    <p>Use GlidePad to force selection and pasting on blocked sites.</p>
+                </div>
+
                 <div class="bookmarklet-box">
-                    <div class="bookmarklet-header">
-                        <i data-lucide="shield-off" size="12"></i>
-                        <span>NUCLEAR UNBLOCKER</span>
-                    </div>
-                    <p>Bypass copy/paste blocks on restricted sites.</p>
                     <div class="drag-instruction">
-                        Press <code>Ctrl+Shift+B</code>, then drag the button to your Bookmark Bar:
+                        1. Press <code>Ctrl+Shift+B</code> to show Bookmark Bar.
                     </div>
-                    <a id="unblocker-btn" class="draggable-btn" draggable="true" href="#">
-                        <i data-lucide="zap" size="14"></i>
-                        GLIDEPAD
-                    </a>
+                    <div class="drag-instruction">
+                        2. Drag this button to the bar:
+                    </div>
+                    
+                    <div class="drag-zone">
+                        <a id="unblocker-btn" class="draggable-btn" draggable="true" href="#">
+                            <i data-lucide="zap" size="14"></i>
+                            GLIDEPAD
+                        </a>
+                    </div>
+
+                    <div class="drag-instruction" style="margin-top: 15px;">
+                        3. Click the bookmark on any blocked site!
+                    </div>
                 </div>
             </main>
         </div>

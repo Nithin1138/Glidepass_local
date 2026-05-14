@@ -425,3 +425,93 @@ textarea {
     cursor: grabbing;
     transform: scale(0.98);
 }
+
+/* Header Action Button */
+.header-action-mini {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-action-mini:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.header-action-mini i {
+    color: var(--accent-color);
+}
+
+/* Header & Bypass View Styles */
+.minimal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.icon-link-btn {
+    background: rgba(217, 119, 87, 0.1);
+    border: 1px solid rgba(217, 119, 87, 0.2);
+    color: var(--accent-color);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-link-btn:hover {
+    background: rgba(217, 119, 87, 0.2);
+    transform: translateY(-1px);
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.back-btn:hover {
+    color: #fff;
+}
+
+.bypass-onboarding {
+    padding: 20px;
+    text-align: center;
+}
+
+.drag-zone {
+    padding: 20px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.bookmarklet-box {
+    background: #111;
+    border: 1px solid #222;
+    padding: 20px;
+    border-radius: 16px;
+}
