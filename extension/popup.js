@@ -2,6 +2,7 @@ const SERVER_URL = 'http://localhost:8000';
 let mobileUrl = '';
 let injectionMode = null;
 let liveSync = false;
+let sessionId = null;
 
 const BOOKMARKLET_TEMPLATE = `javascript:(function(){
   if(window.__glidepad_active) {
@@ -301,6 +302,7 @@ async function checkServerStatus() {
         if (response.ok) {
             const data = await response.json();
             mobileUrl = data.mobile_url;
+            sessionId = data.session_id;
             
             if (statusDot) {
                 statusDot.style.background = '#4ade80';
@@ -313,7 +315,8 @@ async function checkServerStatus() {
             
             if (qrContainerHome) {
                 qrContainerHome.innerHTML = '';
-                new QRCode(qrContainerHome, { text: mobileUrl, width: 100, height: 100 });
+                const pairingUrl = data.pairing_qr || mobileUrl;
+                new QRCode(qrContainerHome, { text: pairingUrl, width: 100, height: 100 });
             }
         } else {
             throw new Error();

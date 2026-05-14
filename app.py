@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import httpx, json
+import uuid
 from datetime import datetime
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 import pyautogui
@@ -29,7 +30,12 @@ def get_local_ip():
     except:
         return "127.0.0.1"
 
+# Session management as per PRD
+SESSION_TOKEN = str(uuid.uuid4())[:8] # Simple temporary token for pairing
+active_connections = []
+
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import WebSocket, WebSocketDisconnect
 
 app = FastAPI()
 
@@ -61,13 +67,37 @@ def resource_path(relative_path):
 async def index():
     return FileResponse(resource_path("templates/index.html"))
 
+# PRD: /server/terminate (Secure POST version)
+@app.post("/server/terminate")
+async def terminate_server(data: dict):
+    token = data.get("session_id")
+    if token != SESSION_TOKEN:
+        return {"status": "error", "message": "Invalid session token"}
+    
+    def kill_server():
+        time.sleep(0.5)
+        os._exit(0)
+    
+    import threading
+    threading.Thread(target=kill_server).start()
+    return {"status": "success", "message": "Server terminating..."}
+
+# PRD: /session/create (POST version)
+@app.post("/session/create")
+async def create_session():
+    return await get_config()
+
+# PRD: /get_config (Aliased for compatibility)
+@app.get("/session/create")
 @app.get("/get_config")
 async def get_config():
     ip = get_local_ip()
     return {
         "status": "success",
         "local_ip": ip,
-        "mobile_url": f"http://{ip}:8000"
+        "mobile_url": f"http://{ip}:8000",
+        "session_id": SESSION_TOKEN,
+        "pairing_qr": f"http://{ip}:8000?sid={SESSION_TOKEN}"
     }
 
 @app.get("/shutdown")
@@ -125,6 +155,11 @@ async def get_clipboard():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# PRD: /clipboard/get
+@app.get("/clipboard/get")
+async def prd_get_clipboard():
+    return await get_clipboard()
+
 @app.get("/poll_paste")
 async def poll_paste(last_id: int = 0):
     # Wait up to 30 seconds for a new paste (Long Polling)
@@ -179,14 +214,28 @@ def perform_typing(text, wpm):
             time.sleep(0.05) # Small wait for IDE to auto-indent
     print("Typing task finished/stopped")
 
+# PRD: /ws/connect (WebSocket Support)
+@app.websocket("/ws/connect")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    active_connections.append(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle incoming WebSocket data if needed
+    except WebSocketDisconnect:
+        active_connections.remove(websocket)
+
+# PRD: /input/send (Aliased for compatibility)
+@app.post("/input/send")
 @app.post("/paste")
 async def paste(data: dict):
     global pending_paste, last_synced_text, stop_typing
     stop_typing = False 
-    text = data.get("text", "")
-    mode = data.get("mode", "flash")
-    
     try:
+        # PRD uses "content" for the text payload
+        text = data.get("content") or data.get("text", "")
+        mode = data.get("mode", "flash")
         wpm = int(data.get("wpm", 40))
     except:
         wpm = 40
