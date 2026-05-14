@@ -8,16 +8,33 @@
 :root {
   --background: #050505;
   --foreground: #ffffff;
+  --accent: #a36a52;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter);
+  overflow-x: hidden;
+}
+
+/* 50L Premium Noise Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 * {
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
 .scroll-smooth {
@@ -28,10 +45,15 @@ body {
 .glass {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 ::selection {
-  background: #a36a52;
+  background: var(--accent);
   color: white;
+}
+
+/* High-End Typography Refinement */
+h1, h2, h3 {
+  letter-spacing: -0.04em;
 }
