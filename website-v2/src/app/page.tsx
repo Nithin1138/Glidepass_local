@@ -1,11 +1,23 @@
 "use client";
 
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock } from "lucide-react";
+import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 
 // --- UI UTILITIES ---
+
+const CountUp = ({ to }: { to: number }) => {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest).toLocaleString());
+
+  useEffect(() => {
+    const controls = animate(count, to, { duration: 2, ease: "easeOut" });
+    return controls.stop;
+  }, [count, to]);
+
+  return <motion.span>{rounded}</motion.span>;
+};
 
 const CursorSpotlight = () => {
   const mouseX = useMotionValue(0);
@@ -108,7 +120,7 @@ const Hero = () => {
               ))}
             </div>
             <span className="text-[11px] font-bold tracking-tight text-white/60">
-              Joined by <span className="text-white">15,000+</span> professionals
+              Joined by <span className="text-white"><CountUp to={2481} />+</span> professionals
             </span>
           </div>
         </motion.div>
@@ -274,35 +286,34 @@ const Visualization = () => {
                   </div>
                 </div>
                 
-                {/* Connection Visual (Data Beam) */}
-                <div className="absolute -left-40 top-1/2 -translate-y-1/2 w-40 h-[1px] bg-gradient-to-r from-indigo-500/40 via-rose-500/20 to-transparent hidden xl:block overflow-visible">
+                {/* Data Stream Animation (Visible on LG and above) */}
+                <div className="absolute -left-[200px] top-1/2 -translate-y-1/2 w-[200px] h-[2px] bg-gradient-to-r from-indigo-500/60 via-rose-500/40 to-transparent hidden lg:block overflow-visible">
                   {[0, 1, 2].map((i) => (
                     <motion.div 
                       key={i}
                       initial={{ left: "-10%", opacity: 0 }}
                       animate={{ 
                         left: ["-10%", "110%"],
-                        opacity: [0, 1, 1, 0]
+                        opacity: [0, 1, 1, 0],
+                        scale: [1, 1.5, 1]
                       }}
                       transition={{ 
-                        duration: 3, 
+                        duration: 2.5, 
                         repeat: Infinity, 
-                        ease: "linear",
-                        delay: i * 1
+                        delay: i * 0.8,
+                        ease: "linear" 
                       }}
-                      className="absolute -top-3 px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 backdrop-blur-sm shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                      className="absolute -top-2 w-6 h-4 bg-gradient-to-r from-indigo-500 to-rose-500 rounded-full blur-[1px] shadow-[0_0_25px_rgba(244,63,94,0.8)] flex items-center justify-center"
                     >
-                      <span className="text-[6px] font-mono text-indigo-400 font-bold uppercase tracking-widest whitespace-nowrap">
-                        {i === 0 ? "TX_SYNC" : i === 1 ? "DATA_PACKET" : "SECURE_LINK"}
-                      </span>
+                       <div className="w-full h-[1px] bg-white/60" />
                     </motion.div>
                   ))}
                   
-                  {/* Glowing Particle Beam */}
+                  {/* Glowing Path Pulse */}
                   <motion.div 
-                    animate={{ left: ["-10%", "110%"] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-[1px] w-4 h-[3px] bg-white rounded-full blur-[2px] shadow-[0_0_10px_#fff]"
+                    animate={{ opacity: [0.2, 0.5, 0.2] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="absolute inset-0 bg-indigo-500/30 blur-md"
                   />
                 </div>
               </motion.div>
@@ -464,6 +475,112 @@ const Features = () => {
   );
 };
 
+const SetupGuide = () => {
+  const [method, setMethod] = useState<"device" | "extension">("device");
+
+  const deviceSteps = [
+    { 
+      step: "01", 
+      title: "Run Backend", 
+      desc: "Open the app on your laptop. It will start a local server instantly.",
+      icon: <Monitor size={20} />
+    },
+    { 
+      step: "02", 
+      title: "Open Local UI", 
+      desc: "A browser tab will open. Scan the QR code or copy the link to your phone.",
+      icon: <Smartphone size={20} />
+    },
+    { 
+      step: "03", 
+      title: "Start Syncing", 
+      desc: "Begin sharing text between your phone and laptop with zero latency.",
+      icon: <Zap size={20} />
+    }
+  ];
+
+  const extensionSteps = [
+    { 
+      step: "01", 
+      title: "Run Backend", 
+      desc: "Keep the backend app running on your laptop for the secure tunnel.",
+      icon: <Monitor size={20} />
+    },
+    { 
+      step: "02", 
+      title: "Pin Extension", 
+      desc: "Open Chrome, click the GlidePass icon, and grab your session link.",
+      icon: <Globe size={20} />
+    },
+    { 
+      step: "03", 
+      title: "Start Syncing", 
+      desc: "Open the link on your phone browser and start moving text instantly.",
+      icon: <Zap size={20} />
+    }
+  ];
+
+  const activeSteps = method === "device" ? deviceSteps : extensionSteps;
+
+  return (
+    <div className="max-w-7xl mx-auto px-8">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
+        <div>
+          <h3 className="text-4xl font-black font-outfit tracking-tighter uppercase mb-2">Setup Guide</h3>
+          <p className="text-white/30 text-sm font-medium font-inter">Follow the steps below to initialize your link.</p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex p-1.5 bg-white/[0.03] border border-white/[0.05] rounded-2xl relative">
+          <motion.div 
+            animate={{ x: method === "device" ? 0 : "100%" }}
+            className="absolute top-1.5 left-1.5 w-[calc(50%-6px)] h-[calc(100%-12px)] bg-white rounded-xl"
+          />
+          <button 
+            onClick={() => setMethod("device")}
+            className={`relative z-10 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors duration-500 ${method === "device" ? "text-black" : "text-white/40"}`}
+          >
+            In-Device
+          </button>
+          <button 
+            onClick={() => setMethod("extension")}
+            className={`relative z-10 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors duration-500 ${method === "extension" ? "text-black" : "text-white/40"}`}
+          >
+            With Extension
+          </button>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-16 relative">
+        <div className="absolute top-12 left-0 w-full h-[1px] bg-gradient-to-r from-indigo-500/20 via-rose-500/20 to-transparent hidden md:block" />
+        
+        <AnimatePresence mode="wait">
+          {activeSteps.map((s, i) => (
+            <motion.div 
+              key={method + i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ delay: i * 0.1 }}
+              className="relative"
+            >
+              <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-black text-xs mb-8 relative z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                {s.step}
+              </div>
+              <h4 className="text-xl font-bold mb-4 font-outfit tracking-tight flex items-center gap-3">
+                {s.title}
+              </h4>
+              <p className="text-sm text-white/40 leading-relaxed font-inter max-w-[240px]">
+                {s.desc}
+              </p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   return (
     <main className="relative min-h-screen">
@@ -487,63 +604,99 @@ export default function Home() {
              {[
                { 
                  title: "Chrome Extension", 
-                 icon: <Globe size={32} />, 
+                 icon: <Globe size={28} />, 
                  label: "Add to Chrome", 
                  version: "v1.4.2", 
                  size: "2.1 MB",
-                 color: "group-hover:border-indigo-500/30 group-hover:bg-indigo-500/[0.02]",
-                 glow: "bg-indigo-500/5"
+                 theme: "indigo",
+                 gradient: "from-indigo-500/30 to-transparent",
+                 btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
+                 borderHover: "group-hover/card:border-indigo-500/40",
+                 iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10"
                },
                { 
                  title: "macOS Backend", 
-                 icon: <Monitor size={32} />, 
+                 icon: <Monitor size={28} />, 
                  label: "Download .dmg", 
                  version: "v1.4.1", 
                  size: "42.5 MB",
-                 color: "group-hover:border-rose-500/30 group-hover:bg-rose-500/[0.02]",
-                 glow: "bg-rose-500/5"
+                 theme: "rose",
+                 gradient: "from-rose-500/30 to-transparent",
+                 btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
+                 borderHover: "group-hover/card:border-rose-500/40",
+                 iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10"
                },
                { 
                  title: "Windows Backend", 
-                 icon: <Monitor size={32} />, 
+                 icon: <Monitor size={28} />, 
                  label: "Download .exe", 
                  version: "v1.4.1", 
                  size: "38.2 MB",
-                 color: "group-hover:border-amber-500/30 group-hover:bg-amber-500/[0.02]",
-                 glow: "bg-amber-500/5"
+                 theme: "amber",
+                 gradient: "from-amber-500/30 to-transparent",
+                 btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
+                 borderHover: "group-hover/card:border-amber-500/40",
+                 iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10"
                }
              ].map((d, i) => (
                <motion.div 
                  key={i} 
                  initial={{ opacity: 0, y: 20 }}
                  whileInView={{ opacity: 1, y: 0 }}
-                 transition={{ delay: i * 0.1 }}
-                 className={`group relative p-10 bg-white/[0.01] border border-white/[0.05] rounded-[48px] text-center transition-all duration-700 overflow-hidden ${d.color}`}
+                 transition={{ delay: i * 0.1, duration: 0.8 }}
+                 onMouseMove={(e) => {
+                   const rect = e.currentTarget.getBoundingClientRect();
+                   e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
+                   e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
+                 }}
+                 className="group/card relative p-8 bg-[#050505] border border-white/[0.04] rounded-[32px] overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]"
                >
-                 {/* Platform Ambient Glow */}
-                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10 ${d.glow}`} />
+                 {/* Cursor Spotlight Glow */}
+                 <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(255,255,255,0.03)_0%,_transparent_60%)]" />
                  
-                 <div className="relative z-10">
-                   <div className="w-24 h-24 bg-white/[0.03] border border-white/[0.05] rounded-[32px] flex items-center justify-center text-white/40 mx-auto mb-8 group-hover:scale-110 group-hover:text-white transition-all duration-500">
-                     {d.icon}
-                   </div>
-                   
-                   <div className="mb-10">
-                     <h3 className="text-xl font-bold mb-2 font-outfit uppercase tracking-[0.2em]">{d.title}</h3>
-                     <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-white/20 uppercase tracking-widest">
-                       <span>{d.version}</span>
-                       <span className="w-1 h-1 rounded-full bg-white/10" />
-                       <span>{d.size}</span>
+                 {/* Corner Gradient Blob */}
+                 <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${d.gradient} rounded-full blur-[40px] opacity-30 group-hover/card:opacity-80 transition-opacity duration-700 pointer-events-none`} />
+
+                 <div className="relative z-10 flex flex-col h-full">
+                   {/* Header / Meta */}
+                   <div className="flex justify-between items-start mb-16">
+                     <div className={`w-14 h-14 bg-white/[0.02] border border-white/[0.05] rounded-2xl flex items-center justify-center text-white/30 transition-all duration-500 group-hover/card:scale-110 ${d.iconGlow}`}>
+                       {d.icon}
+                     </div>
+                     <div className="text-right">
+                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">{d.version}</div>
+                       <div className="text-[9px] font-mono uppercase tracking-widest text-white/20">{d.size}</div>
                      </div>
                    </div>
 
-                   <button className="relative w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] overflow-hidden transition-all duration-500 border border-white/10 hover:border-white/40 bg-white/[0.02] hover:bg-white text-white hover:text-black">
-                     {d.label}
-                   </button>
+                   {/* Title & Action */}
+                   <div className="mt-auto">
+                     <h3 className="text-2xl font-black font-outfit tracking-tighter text-white/70 group-hover/card:text-white transition-colors duration-500 mb-6">{d.title}</h3>
+                     
+                     <button className={`group/btn relative w-full overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 flex items-center justify-between transition-all duration-500 hover:border-white/40 hover:shadow-2xl ${d.btnGradient}`}>
+                       {/* Shimmer Effect */}
+                       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+                       
+                       <span className="text-[10px] font-black uppercase tracking-widest text-white group-hover/btn:scale-105 transition-all duration-500 z-10">
+                         {d.label}
+                       </span>
+                       <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center group-hover/btn:bg-white group-hover/btn:shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all duration-500 z-10">
+                          <ArrowRight size={14} className="text-white group-hover/btn:text-black group-hover/btn:-rotate-45 transition-all duration-500" />
+                       </div>
+                     </button>
+                   </div>
                  </div>
+
+                 {/* Outer Active Border */}
+                 <div className={`absolute inset-0 border border-transparent rounded-[32px] pointer-events-none transition-colors duration-700 ${d.borderHover}`} />
                </motion.div>
              ))}
           </div>
+        </div>
+
+        {/* Setup Guide */}
+        <div className="mt-40 pt-40 border-t border-white/[0.03]">
+          <SetupGuide />
         </div>
       </section>
 
