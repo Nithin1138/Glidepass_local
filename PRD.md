@@ -1,8 +1,8 @@
 # 📝 Product Requirements Document (PRD): GlidePass
 
-**Status:** Draft / Production Ready  
+**Status:** Final / Production Ready  
 **Author:** Nithin  
-**Version:** 1.3 (Production Grade)
+**Version:** 1.4 (Definitive)
 
 ---
 
@@ -45,7 +45,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 *   The server must be startable via a custom macOS protocol (`glidepass://`) from a browser extension.
 
 ### FR-02: Input Modes
-*   **Flash**: Direct system-level clipboard paste into the target field.
+*   **Flash**: Immediate high-speed text transfer using clipboard injection. Automatically falls back to **Type Mode** if pasting is restricted.
 *   **Type**: Human-like keyboard event simulation for bypassing paste blocks.
 *   **Inject**: Cleaned text injection with auto-formatting/indentation clearing for code.
 *   **Live Sync**: Real-time character synchronization between mobile input and host cursor.
@@ -54,12 +54,18 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 *   Simulate keyboard events with configurable WPM and human-like timing variance.
 *   Handle IDE auto-indentation by clearing leading whitespace on new lines.
 
-### FR-04: Live Synchronization
-*   Synchronize changes via WebSockets with end-to-end latency < 50ms.
-*   Automatic handling of connection loss and session resync.
+### FR-04: API Contract (Core Endpoints)
 
-### FR-05: Bidirectional Clipboard
-*   Mobile client must be able to request and view the host's current clipboard content.
+| Endpoint | Method | Purpose |
+| :--- | :--- | :--- |
+| `/get_config` | GET | Retrieve host IP and session token |
+| `/paste` | POST | Send text input and mode parameters |
+| `/poll_paste` | GET | Long-polling endpoint for mobile sync |
+| `/shutdown` | GET | Securely terminate the backend server |
+| `/copy` | GET | Retrieve host clipboard for mobile pull |
+
+### FR-05: Session State Model
+*   **Idle** → **Server Started** → **Waiting for Pairing** → **Connected** → **Active Input** → **Disconnected**
 
 ## 7. Platform & Connection Requirements
 
@@ -78,8 +84,8 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 
 ## 9. Diagnostics & Observability
 *   **Local Logging**: Connection events and session errors logged locally on the host machine.
+*   **24-Hour Retention**: Logs are retained temporarily (24 hours by default) for debugging and then automatically deleted.
 *   **Debug Mode**: Optional detailed tracing for development and troubleshooting.
-*   **Self-Cleaning**: Logs are automatically cleared after session termination to ensure privacy.
 
 ## 10. Risks & Assumptions
 
@@ -98,11 +104,23 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 | Feature | GlidePass | KDE Connect | Pushbullet | Phone Link |
 | :--- | :---: | :---: | :---: | :---: |
 | **Internet Needed** | **No** | No | Yes | Partial |
-| **Anti-Paste Bypass**| **Yes** | No | No | No |
-| **Live Typing** | **Yes** | Partial | No | No |
+| **Human-like Typing Support**| **Yes** | No | No | No |
+| **Live Sync Typing** | **Yes** | Partial | No | No |
 | **Local Only** | **Yes** | Yes | No | Partial |
 
-## 12. Success Metrics
+## 12. MVP vs Future Scope
+
+### Phase 1 (In-Scope):
+*   Local FastAPI server & Standalone Binary.
+*   QR-pairing & Type simulation.
+*   Basic Live Sync & Clipboard Pull.
+
+### Out of Scope (Phase 1):
+*   Internet-based/Remote synchronization.
+*   Cloud storage or history persistence.
+*   **Input Orchestration**: Remote macros, IDE controls, or voice-to-action triggers (Planned for Phase 2).
+
+## 13. Success Metrics
 
 | Metric | Target |
 | :--- | :--- |
