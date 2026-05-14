@@ -4,13 +4,16 @@ let injectionMode = null;
 let liveSync = false;
 
 const BOOKMARKLET_TEMPLATE = `javascript:(function(){
-  if(window.__glidepad_active) { alert("GlidePass Unblocker already active on this page."); return; }
+  if(window.__glidepad_active) {
+    showN("ALREADY ACTIVE", "#f59e0b");
+    return;
+  }
   window.__glidepad_active=true;
   window.__gp_abort=false;
   
   const op=Event.prototype.preventDefault;
   Event.prototype.preventDefault=function(){
-    if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type)) return;
+    if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type))return;
     return op.apply(this,arguments)
   };
 
@@ -47,53 +50,112 @@ const BOOKMARKLET_TEMPLATE = `javascript:(function(){
   
   setTimeout(()=>showN("BYPASS ACTIVATED"),10);
   
-  let lastId="";
+  let lastId=localStorage.getItem("__gp_last_id")||"";
+  let seenIds=new Set();
+  let seenTxt=new Map();
+  let queue=[];
+  
   const wait=(ms)=>new Promise(res=>setTimeout(res,ms));
   
   async function poller(){
     while(true){
+      if(window.__gp_abort_poller) break;
       try{
-        const res=await fetch("BACKEND_URL/poll_paste?last_id="+lastId+"&t="+Date.now(),{
+        const res=await fetch("https://bypass-backend-nms1.onrender.com/api/v1/paste/poll?last_id="+lastId+"&t="+Date.now(),{
+          headers:{"x-device-id":"b8b989d6-dca0-4d98-a0e4-2556c5fbc4a1"},
           cache:"no-store",
-          mode: "cors"
+          mode: "cors",
+          credentials: "omit"
         });
         const data=await res.json();
         if(data.status==="success"){
           lastId=data.id;
-          if(data.text && data.text.indexOf("STOP_PASTE")!==-1){
+          localStorage.setItem("__gp_last_id",lastId);
+          const txt=data.text||"";
+          const mode=data.mode||"";
+          if(mode==="system"||txt.indexOf("STOP_PASTE")!==-1){
             window.__gp_abort=true;
+            queue=[];
             showN("PASTING STOPPED","#ef4444");
             continue;
           }
-          
-          const el=document.activeElement;
-          if(el && ("value" in el || el.isContentEditable)){
-             const inject=(c)=>{
-                if("value" in el) {
-                   const start=el.selectionStart;
-                   const end=el.selectionEnd;
-                   el.value=el.value.substring(0,start)+c+el.value.substring(end);
-                   el.selectionStart=el.selectionEnd=start+c.length;
-                } else {
-                   const sel=window.getSelection();
-                   const range=sel.getRangeAt(0);
-                   range.deleteContents();
-                   range.insertNode(document.createTextNode(c));
-                }
-                el.dispatchEvent(new Event("input",{bubbles:true}));
-             };
-             inject(data.text);
-             showN("TEXT INJECTED");
-          }
-        } else {
-          await wait(1000);
+          const now=Date.now();
+          const txtHash=btoa(txt.substring(0,100)).replace(/=/g,"");
+          if(seenIds.has(data.id)||(seenTxt.has(txtHash)&&now-seenTxt.get(txtHash)<2000))continue;
+          seenIds.add(data.id);
+          seenTxt.set(txtHash,now);
+          queue.push(data);
+        }else{
+          await wait(500)
         }
-      } catch(e) {
-        await wait(3000);
+      }catch(e){
+        console.log("GP Poll Error:", e);
+        await wait(2000);
       }
     }
   }
+  
+  async function executor(){
+    while(true){
+      if(window.__gp_abort){
+        queue=[];
+        window.__gp_abort=false;
+        await wait(100);
+        continue;
+      }
+      if(queue.length>0){
+        const data=queue.shift();
+        if(!data)continue;
+        let wpm=data.wpm||40;
+        let txt=data.text;
+        let isRealistic=data.realistic||false;
+        
+        const el=document.activeElement;
+        if(el&&("value" in el||el.isContentEditable)){
+          const inject=(c)=>{
+            if("value" in el){
+              const start=el.selectionStart;
+              const end=el.selectionEnd;
+              if(start!==undefined&&start!==null){
+                el.value=el.value.substring(0,start)+c+el.value.substring(end);
+                el.selectionStart=el.selectionEnd=start+c.length;
+              }else{
+                el.value+=c;
+              }
+            }else{
+               const sel=window.getSelection();
+               if(sel.rangeCount){
+                 const range=sel.getRangeAt(0);
+                 range.deleteContents();
+                 range.insertNode(document.createTextNode(c));
+                 range.collapse(false);
+                 sel.removeAllRanges();
+                 sel.addRange(range);
+               }
+            }
+            el.dispatchEvent(new Event("input",{bubbles:true}));
+            el.dispatchEvent(new Event("change",{bubbles:true}))
+          };
+          
+          if(isRealistic){
+            for(let i=0;i<txt.length;i++){
+              if(window.__gp_abort)break;
+              inject(txt[i]);
+              let d=60000/(wpm*5);
+              if(txt[i]===" ")d*=1.2;
+              await wait(d*(0.8+Math.random()*0.4));
+            }
+          }else{
+            if(!window.__gp_abort)inject(txt);
+          }
+        }
+      }
+      await wait(100);
+    }
+  }
+  
   poller();
+  executor();
 })();`;
 
 document.addEventListener('DOMContentLoaded', () => {
