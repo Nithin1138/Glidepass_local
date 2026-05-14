@@ -274,15 +274,36 @@ const Visualization = () => {
                   </div>
                 </div>
                 
-                {/* Connection Visual (Satellite) */}
+                {/* Connection Visual (Data Beam) */}
                 <div className="absolute -left-40 top-1/2 -translate-y-1/2 w-40 h-[1px] bg-gradient-to-r from-indigo-500/40 via-rose-500/20 to-transparent hidden xl:block overflow-visible">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ left: "-10%", opacity: 0 }}
+                      animate={{ 
+                        left: ["-10%", "110%"],
+                        opacity: [0, 1, 1, 0]
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity, 
+                        ease: "linear",
+                        delay: i * 1
+                      }}
+                      className="absolute -top-3 px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 backdrop-blur-sm shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                    >
+                      <span className="text-[6px] font-mono text-indigo-400 font-bold uppercase tracking-widest whitespace-nowrap">
+                        {i === 0 ? "TX_SYNC" : i === 1 ? "DATA_PACKET" : "SECURE_LINK"}
+                      </span>
+                    </motion.div>
+                  ))}
+                  
+                  {/* Glowing Particle Beam */}
                   <motion.div 
                     animate={{ left: ["-10%", "110%"] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-3.5 text-2xl filter drop-shadow(0 0 10px #6366f1)"
-                  >
-                    🛰️
-                  </motion.div>
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="absolute -top-[1px] w-4 h-[3px] bg-white rounded-full blur-[2px] shadow-[0_0_10px_#fff]"
+                  />
                 </div>
               </motion.div>
             </div>
@@ -303,99 +324,93 @@ const Features = () => {
       icon: <RefreshCw size={22} />, 
       span: "md:col-span-2",
       visual: (
-        <>
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center gap-12 text-[40px] font-mono font-black select-none">
-             {["0x1F2A", "SYNC_OK", "0x4B9D"].map((t, i) => (
-               <motion.span 
-                 key={i}
-                 animate={{ y: [0, -20, 0], opacity: [0.3, 1, 0.3] }}
-                 transition={{ duration: 5 + i, repeat: Infinity, ease: "linear" }}
-               >
-                 {t}
-               </motion.span>
-             ))}
-          </div>
-          <div className="absolute right-10 bottom-6 flex items-center gap-6 z-10">
-             <div className="hidden lg:flex flex-col items-end gap-1.5 mr-2">
-                <div className="text-[7px] font-mono text-rose-500/60 tracking-[0.2em] uppercase">link_status</div>
-                <div className="flex gap-1">
-                   {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-rose-500/40" />)}
-                   <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                </div>
-             </div>
-             <div className="relative w-32 h-10 flex items-center">
-                <svg className="absolute inset-0 w-full h-full text-rose-500/20" viewBox="0 0 100 20">
-                   <motion.path 
-                     d="M 0 10 Q 25 20 50 10 T 100 10" 
-                     fill="none" 
-                     stroke="currentColor" 
-                     strokeWidth="0.5" 
-                     animate={{ d: ["M 0 10 Q 25 0 50 10 T 100 10", "M 0 10 Q 25 20 50 10 T 100 10", "M 0 10 Q 25 0 50 10 T 100 10"] }}
-                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                   />
-                </svg>
-                <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-rose-500/40 to-transparent relative z-10">
-                   <motion.div 
-                     animate={{ left: ["0%", "100%"] }}
-                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                     className="absolute -top-1 w-2 h-2 bg-rose-500 rounded-full blur-[2px]" 
-                   />
-                </div>
-             </div>
-             <div className="px-3 py-2 rounded-lg bg-rose-500/5 border border-rose-500/10 flex items-center gap-2">
-                <Lock size={10} className="text-rose-500" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-rose-500/80">Secure</span>
+        <div className="absolute right-10 bottom-6 flex items-center gap-6">
+          <div className="hidden lg:flex flex-col items-end gap-1.5 mr-2">
+             <div className="text-[7px] font-mono text-rose-500/60 tracking-[0.2em] uppercase">link_status</div>
+             <div className="flex gap-1">
+                {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-rose-500/40" />)}
+                <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
              </div>
           </div>
-        </>
+          <div className="relative w-32 h-10 flex items-center">
+             <svg className="absolute inset-0 w-full h-full text-rose-500/20" viewBox="0 0 100 20">
+                <motion.path 
+                  d="M 0 10 Q 25 20 50 10 T 100 10" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="0.5" 
+                  animate={{ d: ["M 0 10 Q 25 0 50 10 T 100 10", "M 0 10 Q 25 20 50 10 T 100 10", "M 0 10 Q 25 0 50 10 T 100 10"] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+             </svg>
+             <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-rose-500/40 to-transparent relative z-10">
+                <motion.div 
+                  animate={{ left: ["0%", "100%"] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  className="absolute -top-1 w-2 h-2 bg-rose-500 rounded-full blur-[2px]" 
+                />
+             </div>
+             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[6px] font-mono text-white/10 uppercase tracking-tighter whitespace-nowrap">id: 0x4f2a_tunnel</div>
+          </div>
+          <div className="px-3 py-2 rounded-lg bg-rose-500/5 border border-rose-500/10 flex items-center gap-2">
+             <Lock size={10} className="text-rose-500" />
+             <span className="text-[8px] font-black uppercase tracking-widest text-rose-500/80">Secure</span>
+          </div>
+        </div>
       )
     },
     { 
       title: "Realistic Typing", 
       desc: "Human-like keyboard event simulation.", 
       icon: <Keyboard size={22} />, 
-      span: "md:col-span-1" 
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-6 flex flex-wrap gap-1 opacity-20 group-hover:opacity-40 transition-opacity">
+           {["SHIFT", "CMD", "V", "↵"].map(key => (
+             <div key={key} className="px-1.5 py-1 rounded-sm border border-white/20 text-[6px] font-mono">{key}</div>
+           ))}
+        </div>
+      )
     },
     { 
       title: "Local-Only", 
       desc: "Zero-cloud persistence. Data stays in RAM.", 
       icon: <ShieldCheck size={22} />, 
-      span: "md:col-span-1" 
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-6">
+           <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <motion.div 
+                animate={{ width: ["0%", "15%", "12%"] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="h-full bg-indigo-500/40" 
+              />
+           </div>
+           <div className="mt-1 text-[6px] font-mono text-white/20 uppercase">Ram Usage: 0.1%</div>
+        </div>
+      )
     },
     { 
-      title: "Orchestration", 
+      title: "Remote Control", 
       desc: "Control your laptop from your phone browser. No mobile app install needed.", 
       icon: <Smartphone size={22} />, 
       span: "md:col-span-2",
       visual: (
-        <>
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center gap-8 text-[32px] font-mono font-black select-none rotate-3">
-             {["REMOTE_LINK", "HANDSHAKE", "NODE_01"].map((t, i) => (
-               <motion.span 
-                 key={i}
-                 animate={{ x: [0, 20, 0], opacity: [0.2, 0.8, 0.2] }}
-                 transition={{ duration: 6 + i, repeat: Infinity, ease: "linear" }}
-               >
-                 {t}
-               </motion.span>
+        <div className="mt-4 flex items-end gap-6">
+          <div className="flex-1 p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[9px] text-indigo-400/60 overflow-hidden relative">
+            <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <p className="text-white/20 mb-1 tracking-tighter">NODE_ESTABLISHED // PORT: 8080</p>
+            <p className="">$ glide --tunnel --open</p>
+          </div>
+          <div className="flex gap-2 mb-1">
+             {["Sync", "Macro", "CMD"].map(tag => (
+               <div key={tag} className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[7px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:border-indigo-500/30 transition-all flex items-center gap-1.5">
+                 <div className="w-1 h-1 rounded-full bg-white/10" />
+                 {tag}
+               </div>
              ))}
           </div>
-          <div className="mt-4 flex items-end gap-6 z-10 relative">
-            <div className="flex-1 p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[9px] text-indigo-400/60 overflow-hidden relative">
-              <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              <p className="text-white/20 mb-1 tracking-tighter">NODE_ESTABLISHED // PORT: 8080</p>
-              <p className="">$ glide --tunnel --open</p>
-            </div>
-            <div className="flex gap-2 mb-1">
-               {["Sync", "Macro", "CMD"].map(tag => (
-                 <div key={tag} className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[7px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:border-indigo-500/30 transition-all flex items-center gap-1.5">
-                   <div className="w-1 h-1 rounded-full bg-white/10" />
-                   {tag}
-                 </div>
-               ))}
-            </div>
-          </div>
-        </>
+        </div>
       )
     }
   ];
@@ -461,23 +476,74 @@ export default function Home() {
       <Features />
       
       {/* Downloads */}
-      <section id="downloads" className="py-40 px-8">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
-           {[
-             { title: "Chrome Extension", icon: <Globe />, label: "Install", color: "hover:border-indigo-500/30 shadow-indigo-500/10" },
-             { title: "macOS Backend", icon: <Monitor />, label: "Download .dmg", color: "hover:border-rose-500/30 shadow-rose-500/10" },
-             { title: "Windows Backend", icon: <Monitor />, label: "Download .exe", color: "hover:border-amber-500/30 shadow-amber-500/10" }
-           ].map((d, i) => (
-             <div key={i} className={`group p-10 bg-white/[0.01] border border-white/[0.05] rounded-[40px] text-center transition-all duration-500 ${d.color} shadow-2xl`}>
-               <div className="w-20 h-20 bg-white/[0.03] rounded-[28px] flex items-center justify-center text-white mx-auto mb-8 group-hover:scale-110 group-hover:text-indigo-400 transition-all">
-                 {d.icon}
-               </div>
-               <h3 className="text-xl font-bold mb-8 font-outfit uppercase tracking-[0.2em]">{d.title}</h3>
-               <button className="w-full py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all duration-500">
-                 {d.label}
-               </button>
-             </div>
-           ))}
+      <section id="downloads" className="py-40 px-8 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-24">
+            <h2 className="text-4xl md:text-6xl font-outfit font-black tracking-tighter mb-4 text-white">Ready to Sync?</h2>
+            <p className="text-white/30 max-w-lg mx-auto font-medium text-base font-inter">Download the backend for your OS and install the extension to start your local sync tunnel.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+             {[
+               { 
+                 title: "Chrome Extension", 
+                 icon: <Globe size={32} />, 
+                 label: "Add to Chrome", 
+                 version: "v1.4.2", 
+                 size: "2.1 MB",
+                 color: "group-hover:border-indigo-500/30 group-hover:bg-indigo-500/[0.02]",
+                 glow: "bg-indigo-500/5"
+               },
+               { 
+                 title: "macOS Backend", 
+                 icon: <Monitor size={32} />, 
+                 label: "Download .dmg", 
+                 version: "v1.4.1", 
+                 size: "42.5 MB",
+                 color: "group-hover:border-rose-500/30 group-hover:bg-rose-500/[0.02]",
+                 glow: "bg-rose-500/5"
+               },
+               { 
+                 title: "Windows Backend", 
+                 icon: <Monitor size={32} />, 
+                 label: "Download .exe", 
+                 version: "v1.4.1", 
+                 size: "38.2 MB",
+                 color: "group-hover:border-amber-500/30 group-hover:bg-amber-500/[0.02]",
+                 glow: "bg-amber-500/5"
+               }
+             ].map((d, i) => (
+               <motion.div 
+                 key={i} 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 transition={{ delay: i * 0.1 }}
+                 className={`group relative p-10 bg-white/[0.01] border border-white/[0.05] rounded-[48px] text-center transition-all duration-700 overflow-hidden ${d.color}`}
+               >
+                 {/* Platform Ambient Glow */}
+                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10 ${d.glow}`} />
+                 
+                 <div className="relative z-10">
+                   <div className="w-24 h-24 bg-white/[0.03] border border-white/[0.05] rounded-[32px] flex items-center justify-center text-white/40 mx-auto mb-8 group-hover:scale-110 group-hover:text-white transition-all duration-500">
+                     {d.icon}
+                   </div>
+                   
+                   <div className="mb-10">
+                     <h3 className="text-xl font-bold mb-2 font-outfit uppercase tracking-[0.2em]">{d.title}</h3>
+                     <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-white/20 uppercase tracking-widest">
+                       <span>{d.version}</span>
+                       <span className="w-1 h-1 rounded-full bg-white/10" />
+                       <span>{d.size}</span>
+                     </div>
+                   </div>
+
+                   <button className="relative w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] overflow-hidden transition-all duration-500 border border-white/10 hover:border-white/40 bg-white/[0.02] hover:bg-white text-white hover:text-black">
+                     {d.label}
+                   </button>
+                 </div>
+               </motion.div>
+             ))}
+          </div>
         </div>
       </section>
 
