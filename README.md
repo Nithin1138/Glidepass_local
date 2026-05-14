@@ -1,81 +1,32 @@
 # 🚀 GlidePass
 
-GlidePass is a powerful cross-device clipboard and text injection tool. It allows you to seamlessly send text from your mobile device directly into your laptop's active window, supporting realistic typing, instant pasting, and live synchronization.
+GlidePass is a powerful cross-device productivity tool that bridges the gap between your mobile device and your laptop. It allows you to use your phone as a remote clipboard and a "virtual keyboard" for your computer.
 
----
+## ✨ Key Features
+- **Flash Paste**: Instantly paste text from your phone to your laptop.
+- **Realistic Typing**: Simulate human-like typing at various speeds (WPM) to bypass paste restrictions.
+- **Live Sync**: Watch text appear on your laptop in real-time as you type on your mobile device.
+- **Universal Clipboard**: Copy text from your laptop and instantly see it on your mobile device.
+- **Standalone Mode**: Run the backend as a single executable without needing to install Python.
 
-## 🛠️ One-Time Setup (First Use Only)
+## 🛠️ Quick Start
 
-Follow these steps to get everything running on your Mac:
-
-### 1. Install Dependencies
-Ensure you have Python 3 installed, then run the following in your terminal:
-```bash
-pip install fastapi uvicorn pyautogui pyperclip httpx
-```
-
-### 2. Register the Backend Launcher
-GlidePass uses a custom macOS protocol (`glidepass://`) to start the server directly from Chrome. Run this script to create and register the launcher app:
-```bash
-python3 create_starter_app.py
-```
-*This will create `GlidePassStarter.app` in your project folder.*
-
-### 3. Grant macOS Permissions
-Since GlidePass types for you, macOS requires security permissions:
-1. Go to **System Settings > Privacy & Security > Accessibility**.
-2. Add and enable your **Terminal** (and **Chrome** if needed).
-3. (Optional) Also enable **Screen Recording** if you face issues with `pyautogui`.
-
-### 4. Install the Chrome Extension
+### 1. Install the Extension
 1. Open Chrome and go to `chrome://extensions`.
-2. Enable **Developer mode** (top right toggle).
-3. Click **Load unpacked** and select the `extension` folder in this repository.
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select the `extension` folder.
+
+### 2. Start the Backend
+- **Option A (Easy)**: Go to the `dist/` folder and run `GlidePassServer`.
+- **Option B (Dev)**: Run `python3 app.py`.
+
+### 3. Connect & Go
+- Click **START BACKEND SERVER** in the extension.
+- Scan the **QR Code** with your phone.
+- Start sending text!
+
+## 🛡️ Privacy & Security
+GlidePass runs entirely on your **local Wi-Fi network**. Your data never leaves your devices and is never sent to the cloud.
 
 ---
-
-## 📦 Sharing with Others (Standalone Mode)
-
-If you want to share GlidePass with a friend who doesn't have Python installed:
-1. Go to the `dist/` folder in this repository.
-2. Share the `GlidePassServer` executable with them.
-3. They can simply double-click it to start the backend! (They will still need to load the Chrome extension folder).
-
----
-
-## 🚀 How to Use
-
-### 1. Start the Backend
-Open the GlidePass extension in Chrome and click **START BACKEND SERVER**. 
-* Chrome will ask: "Open GlidePassStarter?" — Click **Open**.
-* The status dot will turn **Green** 🟢 once the server is ready.
-
-### 2. Connect Your Mobile Device
-* Once the server is online, a **QR Code** will appear in the extension.
-* Scan it with your phone to open the mobile controller interface.
-
-### 3. Dispatch Text
-On your mobile device, type or paste text and choose a mode:
-* **FLASH (Default)**: Instant Command+V paste.
-* **INJECT**: Cleans the text (removes extra spaces/newlines) and pastes it.
-* **TYPE**: Simulates realistic human typing at a configurable WPM.
-* **LIVE SYNC**: As you type on mobile, the text appears live on your laptop.
-
----
-
-## 🔍 Troubleshooting
-
-### Server won't start?
-Check the `starter_log.txt` file in the project directory. It captures all errors during the startup process.
-
-### Permission Popups
-If you see a "Terminal wants to control this computer" message, click **Allow**. This is required for the text injection to work.
-
-### Architecture Errors
-If you are on an Apple Silicon (M1/M2/M3) Mac, ensure you ran the latest `create_starter_app.py`, which is optimized to prevent Rosetta compatibility issues.
-
----
-
-## 🛡️ Security
-GlidePass runs entirely on your local network. Your data never leaves your home Wi-Fi.
-# Glidepass_local
+*Created with ❤️ for seamless productivity.*

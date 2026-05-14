@@ -9,6 +9,11 @@ import time
 import socket
 import os
 import asyncio
+import platform
+
+# Detect OS
+IS_MAC = platform.system() == "Darwin"
+CMD_KEY = "command" if IS_MAC else "ctrl"
 
 # Simple queue to store the last paste for the browser listener
 pending_paste = {"text": "", "id": 0}
@@ -79,10 +84,13 @@ async def shutdown():
 @app.get("/open_terminal")
 async def open_terminal():
     try:
-        # Powerful AppleScript to open Terminal and CD into current folder
         path = os.getcwd()
-        cmd = f"osascript -e 'tell application \"Terminal\"' -e 'do script \"cd {path}\"' -e 'activate' -e 'end tell'"
-        os.system(cmd)
+        if IS_MAC:
+            cmd = f"osascript -e 'tell application \"Terminal\"' -e 'do script \"cd {path}\"' -e 'activate' -e 'end tell'"
+            os.system(cmd)
+        else:
+            # Windows: Open CMD in current path
+            os.system(f'start cmd /K "cd /d {path}"')
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -96,7 +104,7 @@ async def copy_from_laptop():
         time.sleep(0.1)
         
         # Trigger system copy
-        pyautogui.hotkey('command', 'c')
+        pyautogui.hotkey(CMD_KEY, 'c')
         time.sleep(0.4) # Wait a bit longer for clipboard
         
         text = pyperclip.paste()
@@ -151,10 +159,13 @@ def perform_typing(text, wpm):
         # If not the first line, we just pressed Enter.
         # Many IDEs auto-indent. We need to clear that to avoid "staircase" effect.
         if i > 0:
-            # Command+Left moves to the very start of the line
-            pyautogui.hotkey('command', 'left')
-            # Shift+Command+Right selects the auto-indentation
-            pyautogui.hotkey('shift', 'command', 'right')
+            # Command+Left moves to the very start of the line (Home on Windows)
+            if IS_MAC:
+                pyautogui.hotkey('command', 'left')
+                pyautogui.hotkey('shift', 'command', 'right')
+            else:
+                pyautogui.press('home')
+                pyautogui.hotkey('shift', 'end')
             # Backspace clears it
             pyautogui.press('backspace')
 
@@ -196,7 +207,10 @@ async def paste(data: dict):
             text = " ".join(text.split())
             pyperclip.copy(text)
             time.sleep(0.1)
-            os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
+            if IS_MAC:
+                os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
+            else:
+                pyautogui.hotkey('ctrl', 'v')
             return {"status": "success"}
 
         elif mode == "type":
@@ -227,7 +241,10 @@ async def paste(data: dict):
         else: # Default: Flash
             pyperclip.copy(text)
             time.sleep(0.1)
-            os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
+            if IS_MAC:
+                os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
+            else:
+                pyautogui.hotkey('ctrl', 'v')
             return {"status": "success"}
             
     return {"status": "error", "message": "No text provided"}
