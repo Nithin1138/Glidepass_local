@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlidePass Command Center</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="lib/lucide.min.js"></script>
+    <script src="lib/qrcode.min.js"></script>
+</head>
+<body>
+    <div id="app-wrapper">
+        <!-- Initial Connection View -->
+        <div id="initial-view" class="view active">
+            <div class="glow-orb"></div>
+            <header class="minimal-header">
+                <div class="logo-stack">
+                    <i data-lucide="zap" class="zap-icon"></i>
+                    <span>GLIDEPASS</span>
+                </div>
+            </header>
+            
+            <main class="onboarding">
+                <div class="hero-section">
+                    <h1>Ready to Sync?</h1>
+                    <p>Start your local backend to bridge your devices.</p>
+                </div>
+
+
+                <div class="qr-preview-container" id="qr-home">
+                    <div id="qrcode-home"></div>
+                    <div class="qr-placeholder" id="qr-loader">
+                        <div class="spinner"></div>
+                        <span style="color: #888; margin-top: 10px;">Waiting for backend...</span>
+                        <div class="startup-guide" style="margin-top: 15px; padding: 10px; background: #111; border-radius: 8px; border: 1px dashed #333;">
+                            <p style="font-size: 0.55rem; color: #555; margin-bottom: 5px;">TO START MANUALLY:</p>
+                            <code style="font-size: 0.65rem; color: var(--accent-color);">python3 launcher.py</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="url-badge" id="url-badge-home">http://0.0.0.0:8000</div>
+
+                <div class="header-actions-row" style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button class="header-btn" id="start-backend-btn" style="flex: 1; justify-content: center; padding: 12px; border-radius: 12px; display: flex; background: #fff; border: 1px solid #fff; color: #000; font-weight: 600;">
+                        <i data-lucide="zap" size="14"></i>
+                        <span>START SERVER</span>
+                    </button>
+
+                    <button class="header-btn disconnect-btn" id="stop-server-btn" style="flex: 1; display: none; justify-content: center; padding: 12px; border-radius: 12px;">
+                        <i data-lucide="power" size="14"></i>
+                        <span>STOP SERVER</span>
+                    </button>
+                </div>
+                
+                <p class="helper-text">Make sure <code>launcher.py</code> is running on your laptop.</p>
+            </main>
+        </div>
+
+        <!-- Main Command Center View -->
+        <div id="command-center-view" class="view">
+            <div class="command-center">
+                <header>
+                    <div class="top-label">
+                        <i data-lucide="wifi" size="10"></i>
+                        <span>REMOTE COMMAND CENTER <span class="status-dot"></span></span>
+                    </div>
+                    <div class="controls-row">
+                        <div class="toggle-btn" id="live-sync-toggle">
+                            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                            <span>LIVE SYNC</span>
+                        </div>
+                        <button class="disconnect-btn" id="disconnect-btn">
+                            <i data-lucide="link-2-off" size="12"></i>
+                            <span>DISCONNECT</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="injection-area">
+                    <div class="textarea-wrapper">
+                        <textarea id="remote-text" placeholder="Paste content for remote injection..."></textarea>
+                    </div>
+                    <div class="status-message" id="sync-status">
+                        <span class="icon">⏸️</span>
+                        <span>Live Sync OFF: Type freely. Press 'Send to Target' to blink or type content at once.</span>
+                    </div>
+                </div>
+
+                <div class="mode-grid">
+                    <div class="mode-card" id="inject-mode">
+                        <div class="mode-header">
+                            <div class="mode-title">
+                                <i data-lucide="keyboard" size="14"></i>
+                                <span>Inject</span>
+                            </div>
+                        </div>
+                        <p>One line flash</p>
+                    </div>
+                    <div class="mode-card" id="typing-mode">
+                        <div class="mode-header">
+                            <div class="mode-title">
+                                <i data-lucide="navigation" size="14"></i>
+                                <span>Typing</span>
+                            </div>
+                            <select id="wpm-select" class="wpm-dropdown">
+                                <option value="30">30</option>
+                                <option value="35">35</option>
+                                <option value="40" selected>40</option>
+                                <option value="45">45</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <p>Human simulation</p>
+                    </div>
+                </div>
+
+                <button class="primary-action" id="send-btn">
+                    <i data-lucide="zap" size="16"></i>
+                    SEND TO TARGET CURSOR
+                </button>
+
+                <div class="footer-actions">
+                    <button class="stop-btn" id="stop-btn">
+                        <span class="red-dot"></span>
+                        Stop Pasting
+                    </button>
+                    <button class="history-btn" id="history-btn">
+                        <i data-lucide="qr-code" size="14"></i>
+                        Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Overlay for Sharing -->
+    <div id="qr-overlay" class="overlay">
+        <div class="qr-card">
+            <button class="close-overlay" id="close-qr"><i data-lucide="x" size="20"></i></button>
+            <h3>Mobile Access</h3>
+            <div id="qrcode-share"></div>
+            <div class="url-display" id="mobile-url-display"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

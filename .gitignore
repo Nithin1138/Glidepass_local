@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+
+# GlidePass Specific
+GlidePassStarter.app/
+starter_log.txt
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
