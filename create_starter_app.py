@@ -19,7 +19,13 @@ def create_app():
         
     os.makedirs(macos_dir, exist_ok=True)
     
-    # 2. Create the executable script with FULL ABSOLUTE PATHS
+    # 2. Add Icon to Resources
+    resources_dir = os.path.join(contents_dir, "Resources")
+    os.makedirs(resources_dir, exist_ok=True)
+    if os.path.exists(os.path.join(PROJECT_DIR, "logo.icns")):
+        subprocess.run(["cp", os.path.join(PROJECT_DIR, "logo.icns"), os.path.join(resources_dir, "AppIcon.icns")])
+    
+    # 3. Create the executable script with FULL ABSOLUTE PATHS
     executable_path = os.path.join(macos_dir, "GlidePassStarter")
     with open(executable_path, "w") as f:
         f.write("#!/bin/bash\n")
@@ -54,6 +60,8 @@ def create_app():
         <string>arm64</string>
         <string>x86_64</string>
     </array>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

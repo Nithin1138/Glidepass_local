@@ -4,8 +4,9 @@
     --border-color: #222;
     --text-main: #fff;
     --text-muted: #666;
-    --accent-color: #a36a52; /* Tan/Brown */
-    --accent-glow: rgba(163, 106, 82, 0.3);
+    --accent-color: #f59e0b;
+    /* Amber */
+    --accent-glow: rgba(245, 158, 11, 0.2);
     --red-status: #ff4d4d;
     --green-status: #4ade80;
     --font-main: 'Inter', -apple-system, sans-serif;
@@ -82,15 +83,29 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.75rem;
     font-weight: 900;
     letter-spacing: 0.15em;
     padding: 16px;
     color: var(--accent-color);
 }
 
-.zap-icon {
-    filter: drop-shadow(0 0 8px var(--accent-color));
+.app-icon-small {
+    width: 25px;
+    height: 25px;
+    background: #000;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.app-icon-small img {
+    width: 130%;
+    height: 130%;
+    object-fit: contain;
+    filter: invert(1) hue-rotate(180deg) brightness(1.2);
 }
 
 .hero-section h1 {
@@ -147,7 +162,11 @@ body {
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 .url-badge {
     background: #111;
@@ -162,7 +181,7 @@ body {
 .connect-btn-main {
     width: 100%;
     background: var(--accent-color);
-    color: rgba(0,0,0,0.9);
+    color: rgba(0, 0, 0, 0.9);
     border: none;
     padding: 10px;
     border-radius: 10px;
@@ -176,9 +195,15 @@ body {
     transition: all 0.2s;
 }
 
-.connect-btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(163,106,82,0.3); }
+.connect-btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(163, 106, 82, 0.3);
+}
 
-.helper-text { font-size: 0.6rem; color: #444; }
+.helper-text {
+    font-size: 0.6rem;
+    color: #444;
+}
 
 /* Header Styles */
 .minimal-header {
@@ -234,7 +259,8 @@ body {
     border-color: #444;
 }
 
-.header-btn:active, .connect-btn-main:active {
+.header-btn:active,
+.connect-btn-main:active {
     transform: scale(0.96);
     filter: brightness(1.2);
 }
@@ -252,12 +278,43 @@ body {
     flex: 1;
 }
 
-.toggle-btn span { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
-.toggle-track { width: 24px; height: 12px; background: #222; border-radius: 6px; position: relative; }
-.toggle-thumb { width: 8px; height: 8px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; }
-.toggle-btn.active .toggle-track { background: #fff; }
-.toggle-btn.active .toggle-thumb { transform: translateX(12px); background: #000; }
-.toggle-btn.active span { color: #fff; }
+.toggle-btn span {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.toggle-track {
+    width: 24px;
+    height: 12px;
+    background: #222;
+    border-radius: 6px;
+    position: relative;
+}
+
+.toggle-thumb {
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s;
+}
+
+.toggle-btn.active .toggle-track {
+    background: #fff;
+}
+
+.toggle-btn.active .toggle-thumb {
+    transform: translateX(12px);
+    background: #000;
+}
+
+.toggle-btn.active span {
+    color: #fff;
+}
 
 .disconnect-btn {
     background: #1a0f0f;
@@ -273,8 +330,20 @@ body {
     cursor: pointer;
 }
 
-.injection-area { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.textarea-wrapper { flex: 1; position: relative; border-radius: 12px; overflow: hidden; }
+.injection-area {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.textarea-wrapper {
+    flex: 1;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
 textarea {
     width: 100%;
     height: 100%;
@@ -289,14 +358,55 @@ textarea {
     outline: none;
 }
 
-.status-message { display: flex; gap: 6px; font-size: 0.58rem; color: #555; line-height: 1.2; padding: 0 4px; }
+.status-message {
+    display: flex;
+    gap: 6px;
+    font-size: 0.58rem;
+    color: #555;
+    line-height: 1.2;
+    padding: 0 4px;
+}
 
-.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.mode-card { background: #111; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px; cursor: pointer; transition: all 0.2s; }
-.mode-card.active { border-color: #444; background: #1a1a1a; }
-.mode-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.mode-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem; color: #fff; }
-.mode-card p { font-size: 0.6rem; color: var(--text-muted); }
+.mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mode-card {
+    background: #111;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-card.active {
+    border-color: #444;
+    background: #1a1a1a;
+}
+
+.mode-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.mode-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #fff;
+}
+
+.mode-card p {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
 
 .wpm-dropdown {
     background: #222;
@@ -310,7 +420,7 @@ textarea {
 
 .primary-action {
     background: var(--accent-color);
-    color: rgba(0,0,0,0.8);
+    color: rgba(0, 0, 0, 0.8);
     border: none;
     padding: 12px;
     border-radius: 10px;
@@ -324,7 +434,12 @@ textarea {
     box-shadow: 0 4px 10px rgba(163, 106, 82, 0.1);
 }
 
-.footer-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.footer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
 .footer-actions button {
     background: #0d0d0d;
     border: 1px solid var(--border-color);
@@ -340,18 +455,86 @@ textarea {
     gap: 6px;
 }
 
-.red-dot { width: 5px; height: 5px; background: var(--red-status); border-radius: 50%; }
+.red-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--red-status);
+    border-radius: 50%;
+}
 
 /* Overlay & Toast */
-.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center; }
-.overlay.active { display: flex; }
-.qr-card { background: #fff; padding: 24px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #000; }
-.qr-card h3 { font-size: 1rem; font-weight: 800; }
-.url-display { background: #f0f0f0; padding: 6px; border-radius: 6px; font-size: 0.6rem; color: #666; font-family: monospace; width: 100%; text-align: center; }
-.close-overlay { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #999; cursor: pointer; }
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
 
-.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #222; padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
-.toast.show { opacity: 1; }
+.overlay.active {
+    display: flex;
+}
+
+.qr-card {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #000;
+}
+
+.qr-card h3 {
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.url-display {
+    background: #f0f0f0;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    color: #666;
+    font-family: monospace;
+    width: 100%;
+    text-align: center;
+}
+
+.close-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+}
+
+.toast {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.toast.show {
+    opacity: 1;
+}
 
 /* Bookmarklet Styling */
 .bookmarklet-box {

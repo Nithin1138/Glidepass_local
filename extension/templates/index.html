@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GlidePass Mobile Command</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #080808;
+            --card-bg: #121212;
+            --border-color: #222;
+            --text-main: #fff;
+            --text-muted: #666;
+            --accent-color: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.2);
+            --red-status: #ff4d4d;
+            --green-status: #4ade80;
+            --font-main: 'Inter', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: hidden;
+        }
+
+        #app-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view {
+            width: 100%;
+            flex: 1;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: none;
+            flex-direction: column;
+            padding: 15px; /* Reduced padding */
+        }
+
+        .view.active {
+            opacity: 1;
+            pointer-events: auto;
+            display: flex;
+        }
+
+        .glow-orb {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Initial View */
+        .onboarding {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex: 1;
+            gap: 24px;
+            z-index: 1;
+        }
+
+        .logo-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .zap-icon {
+            color: var(--accent-color);
+            filter: drop-shadow(0 0 15px var(--accent-color));
+        }
+
+        .logo-text {
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            color: var(--accent-color);
+        }
+
+        .hero-section h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .hero-section p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .connect-btn-main {
+            width: 100%;
+            background: var(--accent-color);
+            color: rgba(0,0,0,0.9);
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(163,106,82,0.2);
+        }
+
+        /* Command Center View */
+        .command-center {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .top-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ff7e4d;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--green-status);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--green-status);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-btn {
+            background: #111;
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn.active {
+            background: #1a1a1a;
+            color: #fff;
+            border-color: #444;
+        }
+
+        .disconnect-btn {
+            background: #1a0f0f;
+            border: 1px solid #331a1a;
+            color: var(--red-status);
+        }
+
+        .injection-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .textarea-wrapper {
+            height: 180px;
+            background: #0d0d0d;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        .status-message {
+            display: flex;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mode-card {
+            background: #111;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-card.active, .header-btn.active {
+            background: rgba(163, 106, 82, 0.15) !important;
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 20px rgba(163, 106, 82, 0.15) !important;
+            color: #fff !important;
+        }
+        
+        .mode-card.active .mode-title {
+            color: var(--accent-color);
+        }
+
+        .mode-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .mode-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .mode-card p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* WPM Selector Styles */
+        .wpm-selector-row {
+            padding: 5px 0;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .wpm-options {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .wpm-opt {
+            flex: 1;
+            background: #111;
+            border: 1px solid #222;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #555;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .wpm-opt.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px rgba(163, 106, 82, 0.3);
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .primary-action {
+            background: var(--accent-color);
+            color: rgba(0,0,0,0.9);
+            border: none;
+            padding: 20px;
+            border-radius: 18px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(163, 106, 82, 0.2);
+        }
+
+        .footer-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .footer-actions button {
+            background: #0d0d0d;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show { opacity: 1; }
+
+        @media (max-height: 700px) {
+            .hero-section h1 { font-size: 1.5rem; }
+            .textarea-wrapper { padding: 12px; }
+            textarea { font-size: 0.95rem; }
+            .primary-action { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-wrapper">
+        <!-- Initial View -->
+        <div id="initial-view" class="view active">
+            <div class="glow-orb"></div>
+            <div class="onboarding">
+                <div class="logo-stack">
+                    <div style="width: 80px; height: 80px; background: #000; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 20px;">
+                        <img src="/logo.png" alt="Logo" style="width: 130%; height: 130%; object-fit: contain; filter: invert(1) hue-rotate(180deg) brightness(1.2);" />
+                    </div>
+                    <span class="logo-text">GLIDEPASS</span>
+                </div>
+                <div class="hero-section">
+                    <h1>Linked Up</h1>
+                    <p>Connected to laptop command center. Ready to bridge your data.</p>
+                </div>
+                <button class="connect-btn-main" id="launch-btn">
+                    <span>ENTER COMMAND CENTER</span>
+                    <i data-lucide="chevron-right" size="20"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Command Center View -->
+        <div id="command-center-view" class="view">
+            <div class="command-center">
+                <header>
+                    <div class="top-label">
+                        <i data-lucide="wifi" size="14"></i>
+                        <span>REMOTE COMMAND CENTER <span class="status-dot"></span></span>
+                    </div>
+                    <div class="controls-row">
+                        <div class="header-btn" id="live-sync-toggle">
+                            <i data-lucide="refresh-cw" size="16"></i>
+                            <span>LIVE SYNC</span>
+                        </div>
+                        <button class="header-btn disconnect-btn" id="disconnect-btn">
+                            <i data-lucide="link-2-off" size="16"></i>
+                            <span>DISCONNECT</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="injection-area">
+                    <div class="textarea-wrapper">
+                        <textarea id="remote-text" placeholder="Type or paste content here..."></textarea>
+                    </div>
+                    <div class="status-message" id="sync-status">
+                        <span>⏸️ Live Sync OFF: Dispatch manually with button below.</span>
+                    </div>
+                </div>
+
+                <div class="mode-grid">
+                    <div class="mode-card" id="inject-mode">
+                        <div class="mode-header">
+                            <div class="mode-title">
+                                <i data-lucide="keyboard" size="18"></i>
+                                <span>Inject</span>
+                            </div>
+                        </div>
+                        <p>One line flash</p>
+                    </div>
+                    <div class="mode-card" id="typing-mode">
+                        <div class="mode-header">
+                            <div class="mode-title">
+                                <i data-lucide="navigation" size="18"></i>
+                                <span>Typing</span>
+                            </div>
+                        </div>
+                        <p>Human simulation</p>
+                    </div>
+                </div>
+
+                <!-- Horizontal WPM Selector -->
+                <div class="wpm-selector-row" id="wpm-selector" style="display: none;">
+                    <span style="font-size: 0.65rem; color: #555; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 5px; display: block;">TYPING SPEED (WPM)</span>
+                    <div class="wpm-options" style="display: flex; gap: 8px;">
+                        <div class="wpm-opt" data-value="30">30</div>
+                        <div class="wpm-opt" data-value="35">35</div>
+                        <div class="wpm-opt active" data-value="40">40</div>
+                        <div class="wpm-opt" data-value="45">45</div>
+                        <div class="wpm-opt" data-value="50">50</div>
+                    </div>
+                </div>
+
+                <button class="primary-action" id="send-btn">
+                    <i data-lucide="zap" size="20"></i>
+                    SEND TO LAPTOP
+                </button>
+
+                <div class="footer-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button id="fetch-btn">
+                        <i data-lucide="download" size="16"></i>
+                        Fetch
+                    </button>
+                    <button id="select-copy-btn" style="border-color: #333;">
+                        <i data-lucide="copy" size="16"></i>
+                        Select Copy
+                    </button>
+                </div>
+
+                <div class="footer-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <button id="stop-paste-btn" style="border-color: var(--red-status); color: var(--red-status);">
+                        <i data-lucide="square" size="16"></i>
+                        Stop Pasting
+                    </button>
+                    <button id="reset-btn">
+                        <i data-lucide="trash-2" size="16"></i>
+                        Clear Area
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        lucide.createIcons();
+
+        const initialView = document.getElementById('initial-view');
+        const commandCenterView = document.getElementById('command-center-view');
+        const launchBtn = document.getElementById('launch-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const remoteText = document.getElementById('remote-text');
+        const sendBtn = document.getElementById('send-btn');
+        const liveSyncBtn = document.getElementById('live-sync-toggle');
+        const syncStatusText = document.getElementById('sync-status');
+        const injectCard = document.getElementById('inject-mode');
+        const typingCard = document.getElementById('typing-mode');
+        
+        let injectionMode = null;
+        let liveSync = false;
+        let selectedWpm = 40;
+
+        // View Transitions
+        launchBtn.addEventListener('click', () => {
+            initialView.classList.remove('active');
+            commandCenterView.classList.add('active');
+        });
+
+        disconnectBtn.addEventListener('click', () => {
+            if (confirm("Disconnect and reset session?")) {
+                commandCenterView.classList.remove('active');
+                initialView.classList.add('active');
+                resetSession();
+            }
+        });
+
+        function resetSession() {
+            remoteText.value = '';
+            liveSync = false;
+            injectionMode = null;
+            liveSyncBtn.classList.remove('active');
+            injectCard.classList.remove('active');
+            typingCard.classList.remove('active');
+            document.getElementById('wpm-selector').style.display = 'none';
+            updateSyncStatus();
+        }
+
+        // Live Sync
+        liveSyncBtn.addEventListener('click', () => {
+            liveSync = !liveSync;
+            liveSyncBtn.classList.toggle('active', liveSync);
+            updateSyncStatus();
+        });
+
+        function updateSyncStatus() {
+            if (liveSync) {
+                syncStatusText.innerHTML = `<span>📡 Live Sync ON: Typing live on laptop.</span>`;
+            } else {
+                syncStatusText.innerHTML = `<span>⏸️ Live Sync OFF: Dispatch manually.</span>`;
+            }
+        }
+
+        // Mode Selection
+        injectCard.addEventListener('click', () => {
+            if (injectionMode === 'inject') {
+                injectionMode = null;
+                injectCard.classList.remove('active');
+            } else {
+                injectionMode = 'inject';
+                injectCard.classList.add('active');
+                typingCard.classList.remove('active');
+                document.getElementById('wpm-selector').style.display = 'none';
+            }
+        });
+
+        typingCard.addEventListener('click', () => {
+            if (injectionMode === 'typing') {
+                injectionMode = null;
+                typingCard.classList.remove('active');
+                document.getElementById('wpm-selector').style.display = 'none';
+            } else {
+                injectionMode = 'typing';
+                typingCard.classList.add('active');
+                injectCard.classList.remove('active');
+                document.getElementById('wpm-selector').style.display = 'block';
+            }
+        });
+
+        // WPM Selection
+        document.querySelectorAll('.wpm-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.wpm-opt').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                selectedWpm = parseInt(opt.dataset.value);
+            });
+        });
+
+        // Send Logic
+        sendBtn.addEventListener('click', async () => {
+            const text = remoteText.value;
+            if (!text && injectionMode !== 'sync') return;
+
+            sendBtn.innerHTML = '<i data-lucide="loader" class="spin"></i>';
+            lucide.createIcons();
+
+            try {
+                let mode = 'flash';
+                if (injectionMode === 'inject') mode = 'inject';
+                if (injectionMode === 'typing') mode = 'type';
+
+                const response = await fetch('/paste', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        mode: mode,
+                        wpm: selectedWpm
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('Dispatched!');
+                    if (!liveSync) remoteText.value = '';
+                }
+            } catch (e) {
+                showToast('Error Connecting');
+            } finally {
+                setTimeout(() => {
+                    sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
+                    lucide.createIcons();
+                }, 800);
+            }
+        });
+
+        // Live Typing
+        remoteText.addEventListener('input', () => {
+            if (liveSync) syncToLaptop();
+        });
+
+        async function syncToLaptop() {
+            try {
+                await fetch('/paste', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: remoteText.value,
+                        mode: 'sync',
+                        wpm: selectedWpm
+                    })
+                });
+            } catch (e) {}
+        }
+
+        // Fetch Laptop Clipboard
+        document.getElementById('fetch-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/get_clipboard');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    remoteText.value = data.text;
+                    showToast('Fetched Clipboard!');
+                }
+            } catch (e) {
+                showToast('Fetch Failed');
+            }
+        });
+
+        // Select Copy (Now Remote Capture from Laptop)
+        document.getElementById('select-copy-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/copy');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    remoteText.value = data.text;
+                    showToast('Captured from Laptop!');
+                    
+                    // Also copy to mobile clipboard for convenience
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(data.text);
+                    }
+                } else {
+                    showToast(data.message || 'Nothing Selected');
+                }
+            } catch (e) {
+                showToast('Capture Failed');
+            }
+        });
+
+        // Stop Pasting
+        document.getElementById('stop-paste-btn').addEventListener('click', async () => {
+            try {
+                await fetch('/stop');
+                showToast('❌ Stopping...');
+            } catch (e) {}
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            resetSession();
+            showToast('Session Reset');
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // Auto-enter if already linked (optional)
+        // setTimeout(() => launchBtn.click(), 500); 
+    </script>
+</body>
+</html>

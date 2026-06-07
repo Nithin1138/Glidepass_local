@@ -67,6 +67,14 @@ def resource_path(relative_path):
 async def index():
     return FileResponse(resource_path("templates/index.html"))
 
+@app.get("/logo.png")
+async def get_logo():
+    # Attempt to serve from bundled resource
+    logo_path = resource_path("logo.png")
+    if os.path.exists(logo_path):
+        return FileResponse(logo_path)
+    return {"status": "error", "message": "Logo not found"}
+
 # PRD: /server/terminate (Secure POST version)
 @app.post("/server/terminate")
 async def terminate_server(data: dict):
@@ -236,11 +244,15 @@ async def paste(data: dict):
         # PRD uses "content" for the text payload
         text = data.get("content") or data.get("text", "")
         mode = data.get("mode", "flash")
-        wpm = int(data.get("wpm", 40))
-    except:
-        wpm = 40
+        try:
+            wpm = int(data.get("wpm", 40))
+        except (ValueError, TypeError):
+            wpm = 40
+    except Exception as e:
+        return {"status": "error", "message": f"Data parsing error: {str(e)}"}
     
     if text is not None:
+        print(f"[PASTE] Triggering {mode} mode | Content: {text[:20]}...")
         if not text:
             if last_synced_text and mode == "sync":
                 pyautogui.press('backspace')
@@ -251,53 +263,83 @@ async def paste(data: dict):
 
         pending_paste["text"] = text
         pending_paste["id"] += 1
-        
-        if mode == "inject":
-            text = " ".join(text.split())
-            pyperclip.copy(text)
-            time.sleep(0.1)
-            if IS_MAC:
-                os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
-            else:
-                pyautogui.hotkey('ctrl', 'v')
-            return {"status": "success"}
+    
+    if mode == "inject":
+        text = " ".join(text.split())
+        pyperclip.copy(text)
+        time.sleep(0.3) # Increased for stability
+        if IS_MAC:
+            # Targeted AppleScript for frontmost app with brace syntax
+            script = 'tell application "System Events" to keystroke "v" using {command down}'
+            os.system(f"osascript -e '{script}'")
+        else:
+            pyautogui.hotkey('ctrl', 'v')
+        return {"status": "success"}
 
-        elif mode == "type":
-            # Run typing in a separate thread to keep server responsive to /stop
-            import threading
-            threading.Thread(target=perform_typing, args=(text, wpm)).start()
-            return {"status": "success", "message": "Typing started"}
+    elif mode == "type":
+        # Run typing in a separate thread to keep server responsive to /stop
+        import threading
+        threading.Thread(target=perform_typing, args=(text, wpm)).start()
+        return {"status": "success", "message": "Typing started"}
+    
+    elif mode == "sync":
+        # Better diffing for Live Sync
+        if text.startswith(last_synced_text):
+            new_chars = text[len(last_synced_text):]
+            if new_chars:
+                pyautogui.write(new_chars)
+        elif last_synced_text.startswith(text):
+            backspaces = len(last_synced_text) - len(text)
+            for _ in range(backspaces):
+                pyautogui.press('backspace')
+        else:
+            # Total change (paste or middle edit)
+            pass
         
-        elif mode == "sync":
-            # Better diffing for Live Sync
-            if text.startswith(last_synced_text):
-                new_chars = text[len(last_synced_text):]
-                if new_chars:
-                    pyautogui.write(new_chars)
-            elif last_synced_text.startswith(text):
-                backspaces = len(last_synced_text) - len(text)
-                for _ in range(backspaces):
-                    pyautogui.press('backspace')
-            else:
-                # Total change (paste or middle edit)
-                # For safety in sync mode, we just update state without typing 
-                # to avoid massive messy typing if user pastes something big
-                pass
-            
-            last_synced_text = text
-            return {"status": "success"}
-            
-        else: # Default: Flash
-            pyperclip.copy(text)
+        last_synced_text = text
+        return {"status": "success"}
+        
+    else: # Default: Flash
+        pyperclip.copy(text)
+        # CRITICAL: Wait for clipboard to actually take the text
+        # Some apps are slow to register the new clipboard content
+        time.sleep(0.5) 
+        
+        if IS_MAC:
+            # Small pre-delay to let OS handle the focus shift
             time.sleep(0.1)
-            if IS_MAC:
-                os.system("osascript -e 'tell application \"System Events\" to keystroke \"v\" using {command down}'")
-            else:
-                pyautogui.hotkey('ctrl', 'v')
-            return {"status": "success"}
+            # Use a more robust AppleScript injection
+            # We tell the frontmost application explicitly to paste
+            script = (
+                'tell application "System Events" to tell (first process whose frontmost is true) '
+                'to keystroke "v" using {command down}'
+            )
+            print(f"[DEBUG] Executing AppleScript for paste...")
+            result = os.system(f"osascript -e '{script}'")
             
+            if result != 0:
+                print(f"[WARNING] AppleScript paste failed (code {result}). Trying fallback...")
+                pyautogui.hotkey('command', 'v')
+            else:
+                print(f"[DEBUG] AppleScript paste successful.")
+        else:
+            pyautogui.hotkey('ctrl', 'v')
+        return {"status": "success"}
+    
     return {"status": "error", "message": "No text provided"}
 
 if __name__ == "__main__":
     import uvicorn
+    
+    if IS_MAC:
+        # Quick check for Accessibility permissions
+        print("\n--- MAC PERMISSION CHECK ---")
+        check_cmd = 'osascript -e "tell application \"System Events\" to get name of first process whose frontmost is true" > /dev/null 2>&1'
+        if os.system(check_cmd) != 0:
+            print("⚠️ WARNING: Accessibility permissions might be missing.")
+            print("To fix: System Settings > Privacy & Security > Accessibility")
+            print("Ensure your Terminal/IDE/Python is allowed to control your computer.\n")
+        else:
+            print("✅ Accessibility permissions confirmed.\n")
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

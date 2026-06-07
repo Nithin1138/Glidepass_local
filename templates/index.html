@@ -12,8 +12,8 @@
             --border-color: #222;
             --text-main: #fff;
             --text-muted: #666;
-            --accent-color: #a36a52;
-            --accent-glow: rgba(163, 106, 82, 0.3);
+            --accent-color: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.2);
             --red-status: #ff4d4d;
             --green-status: #4ade80;
             --font-main: 'Inter', -apple-system, sans-serif;
@@ -212,11 +212,49 @@
         }
 
         .textarea-wrapper {
+            position: relative;
             height: 180px;
             background: #0d0d0d;
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 15px;
+        }
+
+        #countdown-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 16px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        .timer-circle {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .timer-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--accent-color);
+        }
+
+        .timer-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            text-transform: uppercase;
         }
 
         textarea {
@@ -229,6 +267,17 @@
             line-height: 1.6;
             resize: none;
             outline: none;
+        }
+
+        textarea:disabled {
+            color: #444;
+        }
+
+        .primary-action:disabled {
+            background: #222;
+            color: #444;
+            box-shadow: none;
+            cursor: not-allowed;
         }
 
         .status-message {
@@ -390,7 +439,9 @@
             <div class="glow-orb"></div>
             <div class="onboarding">
                 <div class="logo-stack">
-                    <i data-lucide="zap" class="zap-icon" size="48"></i>
+                    <div style="width: 80px; height: 80px; background: #000; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 20px;">
+                        <img src="/logo.png" alt="Logo" style="width: 130%; height: 130%; object-fit: contain; filter: invert(1) hue-rotate(180deg) brightness(1.2);" />
+                    </div>
                     <span class="logo-text">GLIDEPASS</span>
                 </div>
                 <div class="hero-section">
@@ -426,6 +477,12 @@
 
                 <div class="injection-area">
                     <div class="textarea-wrapper">
+                        <div id="countdown-overlay">
+                            <div class="timer-circle">
+                                <span class="timer-value" id="timer-count">0s</span>
+                            </div>
+                            <span class="timer-label">Typing...</span>
+                        </div>
                         <textarea id="remote-text" placeholder="Type or paste content here..."></textarea>
                     </div>
                     <div class="status-message" id="sync-status">
@@ -592,18 +649,19 @@
         });
 
         // Send Logic
+        let typingTimer = null;
+
         sendBtn.addEventListener('click', async () => {
             const text = remoteText.value;
             if (!text && injectionMode !== 'sync') return;
 
+            const mode = injectionMode === 'inject' ? 'inject' : (injectionMode === 'typing' ? 'type' : 'flash');
+            
+            // UI state: Loading
             sendBtn.innerHTML = '<i data-lucide="loader" class="spin"></i>';
             lucide.createIcons();
 
             try {
-                let mode = 'flash';
-                if (injectionMode === 'inject') mode = 'inject';
-                if (injectionMode === 'typing') mode = 'type';
-
                 const response = await fetch('/paste', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -616,17 +674,72 @@
 
                 if (response.ok) {
                     showToast('Dispatched!');
-                    if (!liveSync) remoteText.value = '';
+                    
+                    if (mode === 'type') {
+                        startCountdown(text, selectedWpm);
+                    } else {
+                        if (!liveSync) remoteText.value = '';
+                    }
                 }
             } catch (e) {
                 showToast('Error Connecting');
             } finally {
                 setTimeout(() => {
-                    sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
-                    lucide.createIcons();
+                    if (!typingTimer) {
+                        sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
+                        lucide.createIcons();
+                    }
                 }, 800);
             }
         });
+
+        function startCountdown(text, wpm) {
+            const overlay = document.getElementById('countdown-overlay');
+            const timerCount = document.getElementById('timer-count');
+            
+            // Estimation logic matching app.py
+            const cpm = wpm * 5;
+            const typingInterval = 60 / cpm;
+            const numLines = text.split('\n').length;
+            // Total seconds = (chars * interval) + (lines * 0.05) + buffer
+            let totalSeconds = (text.length * typingInterval) + (numLines * 0.05);
+            totalSeconds = Math.ceil(totalSeconds * 1.1); // 10% safety buffer
+
+            // UI state: Active typing
+            overlay.style.display = 'flex';
+            sendBtn.disabled = true;
+            remoteText.disabled = true;
+            
+            let remaining = totalSeconds;
+            timerCount.textContent = `${remaining}s`;
+
+            if (typingTimer) clearInterval(typingTimer);
+            
+            typingTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    stopCountdown();
+                } else {
+                    timerCount.textContent = `${remaining}s`;
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (typingTimer) {
+                clearInterval(typingTimer);
+                typingTimer = null;
+            }
+            
+            const overlay = document.getElementById('countdown-overlay');
+            overlay.style.display = 'none';
+            sendBtn.disabled = false;
+            remoteText.disabled = false;
+            sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
+            lucide.createIcons();
+            
+            if (!liveSync) remoteText.value = '';
+        }
 
         // Live Typing
         remoteText.addEventListener('input', () => {
@@ -687,6 +800,7 @@
             try {
                 await fetch('/stop');
                 showToast('❌ Stopping...');
+                stopCountdown();
             } catch (e) {}
         });
 
