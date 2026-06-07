@@ -735,7 +735,7 @@ export default function Home() {
                 title: "macOS Backend",
                 icon: <Monitor size={28} />,
                 label: "Copy Install Cmd",
-                installCommand: "curl -sSL http://localhost:3000/install-mac.sh | bash",
+                installCommand: "curl -sSL https://glidepass.vercel.app/install-mac.sh | bash",
                 version: "v1.4.1",
                 size: "42.5 MB",
                 theme: "rose",
