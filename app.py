@@ -65,7 +65,19 @@ def resource_path(relative_path):
 
 @app.get("/")
 async def index():
-    return FileResponse(resource_path("templates/index.html"))
+    response = FileResponse(resource_path("templates/index.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@app.get("/center")
+async def center():
+    response = FileResponse(resource_path("templates/center.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.get("/logo.png")
 async def get_logo():

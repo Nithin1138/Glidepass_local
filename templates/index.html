@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,15 +8,15 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-color: #080808;
+            --bg-color: #000000;
             --card-bg: #121212;
-            --border-color: #222;
-            --text-main: #fff;
-            --text-muted: #666;
-            --accent-color: #f59e0b;
-            --accent-glow: rgba(245, 158, 11, 0.2);
+            --border-color: #121212;
+            --text-main: #F5F5F5;
+            --text-muted: #A0AEC0;
+            --accent-color: #48BB78;
+            --accent-glow: rgba(72, 187, 120, 0.3);
             --red-status: #ff4d4d;
-            --green-status: #4ade80;
+            --green-status: #48BB78;
             --font-main: 'Inter', -apple-system, sans-serif;
         }
 
@@ -56,25 +57,112 @@
             transition: opacity 0.3s ease;
             display: none;
             flex-direction: column;
-            padding: 15px; /* Reduced padding */
+            padding: 15px;
+            /* Reduced padding */
         }
 
         .view.active {
             opacity: 1;
             pointer-events: auto;
             display: flex;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .glow-orb {
+        .space-bg {
             position: absolute;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-            pointer-events: none;
+            inset: 0;
+            background: #000000;
+            overflow: hidden;
             z-index: 0;
+        }
+
+        .nebula {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%; left: -50%;
+            background: radial-gradient(circle at 50% 50%, rgba(72, 187, 120, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 30% 70%, rgba(43, 108, 176, 0.12) 0%, transparent 35%),
+                        radial-gradient(circle at 70% 30%, rgba(128, 90, 213, 0.08) 0%, transparent 35%);
+            filter: blur(40px);
+            animation: nebula-drift 30s infinite alternate linear;
+            pointer-events: none;
+        }
+
+        @keyframes nebula-drift {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(30deg) scale(1.1); }
+        }
+
+        .stars {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            display: block;
+            background: transparent;
+        }
+
+        .layer1 {
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.6), rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: star-drift-1 40s linear infinite;
+            opacity: 0.9;
+        }
+
+        .layer2 {
+            background-image: 
+                radial-gradient(1px 1px at 50px 100px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 100px 200px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 150px 50px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 200px 150px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 250px 250px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 300px 300px;
+            animation: star-drift-2 70s linear infinite;
+            opacity: 0.6;
+        }
+
+        .layer3 {
+            background-image: 
+                radial-gradient(1px 1px at 100px 50px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 200px 150px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 300px 300px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 350px 100px, rgba(255,255,255,0.8), rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 400px 400px;
+            animation: star-drift-3 100s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes star-drift-1 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -400px; }
+        }
+        @keyframes star-drift-2 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -600px; }
+        }
+        @keyframes star-drift-3 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -800px; }
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         /* Initial View */
@@ -124,7 +212,7 @@
         .connect-btn-main {
             width: 100%;
             background: var(--accent-color);
-            color: rgba(0,0,0,0.9);
+            color: rgba(0, 0, 0, 0.9);
             border: none;
             padding: 18px;
             border-radius: 16px;
@@ -136,7 +224,7 @@
             justify-content: center;
             gap: 12px;
             margin-top: 20px;
-            box-shadow: 0 10px 30px rgba(163,106,82,0.2);
+            box-shadow: 0 10px 30px var(--accent-glow);
         }
 
         /* Command Center View */
@@ -157,7 +245,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: #ff7e4d;
+            color: var(--accent-color);
             font-size: 0.7rem;
             font-weight: 800;
             letter-spacing: 0.1em;
@@ -178,7 +266,7 @@
         }
 
         .header-btn {
-            background: #111;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 12px 16px;
             border-radius: 14px;
@@ -193,14 +281,14 @@
         }
 
         .header-btn.active {
-            background: #1a1a1a;
+            background: var(--accent-color);
             color: #fff;
-            border-color: #444;
+            border-color: var(--accent-color);
         }
 
         .disconnect-btn {
-            background: #1a0f0f;
-            border: 1px solid #331a1a;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             color: var(--red-status);
         }
 
@@ -214,7 +302,7 @@
         .textarea-wrapper {
             position: relative;
             height: 180px;
-            background: #0d0d0d;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 15px;
@@ -270,12 +358,12 @@
         }
 
         textarea:disabled {
-            color: #444;
+            color: var(--border-color);
         }
 
         .primary-action:disabled {
             background: #222;
-            color: #444;
+            color: var(--border-color);
             box-shadow: none;
             cursor: not-allowed;
         }
@@ -295,7 +383,7 @@
         }
 
         .mode-card {
-            background: #111;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 16px;
@@ -303,13 +391,14 @@
             transition: all 0.2s;
         }
 
-        .mode-card.active, .header-btn.active {
-            background: rgba(163, 106, 82, 0.15) !important;
+        .mode-card.active,
+        .header-btn.active {
+            background: var(--accent-glow) !important;
             border-color: var(--accent-color) !important;
-            box-shadow: 0 0 20px rgba(163, 106, 82, 0.15) !important;
+            box-shadow: 0 0 20px var(--accent-glow) !important;
             color: #fff !important;
         }
-        
+
         .mode-card.active .mode-title {
             color: var(--accent-color);
         }
@@ -340,38 +429,48 @@
             padding: 5px 0;
             animation: fadeIn 0.3s ease;
         }
-        
+
         .wpm-options {
             display: flex;
             gap: 8px;
         }
-        
+
         .wpm-opt {
             flex: 1;
-            background: #111;
+            background: var(--card-bg);
             border: 1px solid #222;
             padding: 10px;
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 800;
-            color: #555;
+            color: var(--text-muted);
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .wpm-opt.active {
             background: var(--accent-color);
             color: #000;
             border-color: var(--accent-color);
-            box-shadow: 0 4px 15px rgba(163, 106, 82, 0.3);
+            box-shadow: 0 4px 15px var(--accent-glow);
         }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         .primary-action {
             background: var(--accent-color);
-            color: rgba(0,0,0,0.9);
+            color: rgba(0, 0, 0, 0.9);
             border: none;
             padding: 20px;
             border-radius: 18px;
@@ -382,7 +481,7 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            box-shadow: 0 4px 20px rgba(163, 106, 82, 0.2);
+            box-shadow: 0 4px 20px var(--accent-glow);
         }
 
         .footer-actions {
@@ -392,7 +491,7 @@
         }
 
         .footer-actions button {
-            background: #0d0d0d;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 14px;
@@ -411,36 +510,71 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: #222;
-            color: #fff;
-            padding: 10px 20px;
+            background: #ff4d4d;
+            /* Base red for claymorphic error */
+            color: #ffffff;
+            padding: 14px 28px;
             border-radius: 30px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 800;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
             z-index: 1000;
+            border: none;
+            /* Claymorphic 3D shadow effect */
+            box-shadow:
+                6px 6px 12px rgba(0, 0, 0, 0.4),
+                -2px -2px 8px rgba(255, 255, 255, 0.05),
+                inset 4px 4px 10px rgba(255, 255, 255, 0.4),
+                inset -4px -4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .toast.show { opacity: 1; }
+        .toast.success {
+            background: #4691d7;
+            /* Blue for success */
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
 
         @media (max-height: 700px) {
-            .hero-section h1 { font-size: 1.5rem; }
-            .textarea-wrapper { padding: 12px; }
-            textarea { font-size: 0.95rem; }
-            .primary-action { padding: 16px; }
+            .hero-section h1 {
+                font-size: 1.5rem;
+            }
+
+            .textarea-wrapper {
+                padding: 12px;
+            }
+
+            textarea {
+                font-size: 0.95rem;
+            }
+
+            .primary-action {
+                padding: 16px;
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="app-wrapper">
         <!-- Initial View -->
-        <div id="initial-view" class="view active">
-            <div class="glow-orb"></div>
-            <div class="onboarding">
+        <div id="initial-view" class="view active" style="overflow: hidden; position: relative;">
+            <div class="space-bg">
+                <div class="nebula"></div>
+                <div class="stars layer1"></div>
+                <div class="stars layer2"></div>
+                <div class="stars layer3"></div>
+            </div>
+            <div class="onboarding" style="position: relative; z-index: 1;">
                 <div class="logo-stack">
-                    <div style="width: 80px; height: 80px; background: #000; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 20px;">
-                        <img src="/logo.png" alt="Logo" style="width: 130%; height: 130%; object-fit: contain; filter: invert(1) hue-rotate(180deg) brightness(1.2);" />
+                    <div
+                        style="width: 80px; height: 80px; background: var(--bg-color); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 20px;">
+                        <img src="/logo.png" alt="Logo"
+                            style="width: 130%; height: 130%; object-fit: contain; filter: invert(1) hue-rotate(180deg) brightness(1.2);" />
                     </div>
                     <span class="logo-text">GLIDEPASS</span>
                 </div>
@@ -455,369 +589,16 @@
             </div>
         </div>
 
-        <!-- Command Center View -->
-        <div id="command-center-view" class="view">
-            <div class="command-center">
-                <header>
-                    <div class="top-label">
-                        <i data-lucide="wifi" size="14"></i>
-                        <span>REMOTE COMMAND CENTER <span class="status-dot"></span></span>
-                    </div>
-                    <div class="controls-row">
-                        <div class="header-btn" id="live-sync-toggle">
-                            <i data-lucide="refresh-cw" size="16"></i>
-                            <span>LIVE SYNC</span>
-                        </div>
-                        <button class="header-btn disconnect-btn" id="disconnect-btn">
-                            <i data-lucide="link-2-off" size="16"></i>
-                            <span>DISCONNECT</span>
-                        </button>
-                    </div>
-                </header>
-
-                <div class="injection-area">
-                    <div class="textarea-wrapper">
-                        <div id="countdown-overlay">
-                            <div class="timer-circle">
-                                <span class="timer-value" id="timer-count">0s</span>
-                            </div>
-                            <span class="timer-label">Typing...</span>
-                        </div>
-                        <textarea id="remote-text" placeholder="Type or paste content here..."></textarea>
-                    </div>
-                    <div class="status-message" id="sync-status">
-                        <span>⏸️ Live Sync OFF: Dispatch manually with button below.</span>
-                    </div>
-                </div>
-
-                <div class="mode-grid">
-                    <div class="mode-card" id="inject-mode">
-                        <div class="mode-header">
-                            <div class="mode-title">
-                                <i data-lucide="keyboard" size="18"></i>
-                                <span>Inject</span>
-                            </div>
-                        </div>
-                        <p>One line flash</p>
-                    </div>
-                    <div class="mode-card" id="typing-mode">
-                        <div class="mode-header">
-                            <div class="mode-title">
-                                <i data-lucide="navigation" size="18"></i>
-                                <span>Typing</span>
-                            </div>
-                        </div>
-                        <p>Human simulation</p>
-                    </div>
-                </div>
-
-                <!-- Horizontal WPM Selector -->
-                <div class="wpm-selector-row" id="wpm-selector" style="display: none;">
-                    <span style="font-size: 0.65rem; color: #555; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 5px; display: block;">TYPING SPEED (WPM)</span>
-                    <div class="wpm-options" style="display: flex; gap: 8px;">
-                        <div class="wpm-opt" data-value="30">30</div>
-                        <div class="wpm-opt" data-value="35">35</div>
-                        <div class="wpm-opt active" data-value="40">40</div>
-                        <div class="wpm-opt" data-value="45">45</div>
-                        <div class="wpm-opt" data-value="50">50</div>
-                    </div>
-                </div>
-
-                <button class="primary-action" id="send-btn">
-                    <i data-lucide="zap" size="20"></i>
-                    SEND TO LAPTOP
-                </button>
-
-                <div class="footer-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button id="fetch-btn">
-                        <i data-lucide="download" size="16"></i>
-                        Fetch
-                    </button>
-                    <button id="select-copy-btn" style="border-color: #333;">
-                        <i data-lucide="copy" size="16"></i>
-                        Select Copy
-                    </button>
-                </div>
-
-                <div class="footer-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                    <button id="stop-paste-btn" style="border-color: var(--red-status); color: var(--red-status);">
-                        <i data-lucide="square" size="16"></i>
-                        Stop Pasting
-                    </button>
-                    <button id="reset-btn">
-                        <i data-lucide="trash-2" size="16"></i>
-                        Clear Area
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
-
-    <div id="toast" class="toast"></div>
 
     <script>
         lucide.createIcons();
 
-        const initialView = document.getElementById('initial-view');
-        const commandCenterView = document.getElementById('command-center-view');
         const launchBtn = document.getElementById('launch-btn');
-        const disconnectBtn = document.getElementById('disconnect-btn');
-        const remoteText = document.getElementById('remote-text');
-        const sendBtn = document.getElementById('send-btn');
-        const liveSyncBtn = document.getElementById('live-sync-toggle');
-        const syncStatusText = document.getElementById('sync-status');
-        const injectCard = document.getElementById('inject-mode');
-        const typingCard = document.getElementById('typing-mode');
-        
-        let injectionMode = null;
-        let liveSync = false;
-        let selectedWpm = 40;
-
-        // View Transitions
         launchBtn.addEventListener('click', () => {
-            initialView.classList.remove('active');
-            commandCenterView.classList.add('active');
+            window.location.href = '/center';
         });
-
-        disconnectBtn.addEventListener('click', () => {
-            if (confirm("Disconnect and reset session?")) {
-                commandCenterView.classList.remove('active');
-                initialView.classList.add('active');
-                resetSession();
-            }
-        });
-
-        function resetSession() {
-            remoteText.value = '';
-            liveSync = false;
-            injectionMode = null;
-            liveSyncBtn.classList.remove('active');
-            injectCard.classList.remove('active');
-            typingCard.classList.remove('active');
-            document.getElementById('wpm-selector').style.display = 'none';
-            updateSyncStatus();
-        }
-
-        // Live Sync
-        liveSyncBtn.addEventListener('click', () => {
-            liveSync = !liveSync;
-            liveSyncBtn.classList.toggle('active', liveSync);
-            updateSyncStatus();
-        });
-
-        function updateSyncStatus() {
-            if (liveSync) {
-                syncStatusText.innerHTML = `<span>📡 Live Sync ON: Typing live on laptop.</span>`;
-            } else {
-                syncStatusText.innerHTML = `<span>⏸️ Live Sync OFF: Dispatch manually.</span>`;
-            }
-        }
-
-        // Mode Selection
-        injectCard.addEventListener('click', () => {
-            if (injectionMode === 'inject') {
-                injectionMode = null;
-                injectCard.classList.remove('active');
-            } else {
-                injectionMode = 'inject';
-                injectCard.classList.add('active');
-                typingCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'none';
-            }
-        });
-
-        typingCard.addEventListener('click', () => {
-            if (injectionMode === 'typing') {
-                injectionMode = null;
-                typingCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'none';
-            } else {
-                injectionMode = 'typing';
-                typingCard.classList.add('active');
-                injectCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'block';
-            }
-        });
-
-        // WPM Selection
-        document.querySelectorAll('.wpm-opt').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('.wpm-opt').forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                selectedWpm = parseInt(opt.dataset.value);
-            });
-        });
-
-        // Send Logic
-        let typingTimer = null;
-
-        sendBtn.addEventListener('click', async () => {
-            const text = remoteText.value;
-            if (!text && injectionMode !== 'sync') return;
-
-            const mode = injectionMode === 'inject' ? 'inject' : (injectionMode === 'typing' ? 'type' : 'flash');
-            
-            // UI state: Loading
-            sendBtn.innerHTML = '<i data-lucide="loader" class="spin"></i>';
-            lucide.createIcons();
-
-            try {
-                const response = await fetch('/paste', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: text,
-                        mode: mode,
-                        wpm: selectedWpm
-                    })
-                });
-
-                if (response.ok) {
-                    showToast('Dispatched!');
-                    
-                    if (mode === 'type') {
-                        startCountdown(text, selectedWpm);
-                    } else {
-                        if (!liveSync) remoteText.value = '';
-                    }
-                }
-            } catch (e) {
-                showToast('Error Connecting');
-            } finally {
-                setTimeout(() => {
-                    if (!typingTimer) {
-                        sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
-                        lucide.createIcons();
-                    }
-                }, 800);
-            }
-        });
-
-        function startCountdown(text, wpm) {
-            const overlay = document.getElementById('countdown-overlay');
-            const timerCount = document.getElementById('timer-count');
-            
-            // Estimation logic matching app.py
-            const cpm = wpm * 5;
-            const typingInterval = 60 / cpm;
-            const numLines = text.split('\n').length;
-            // Total seconds = (chars * interval) + (lines * 0.05) + buffer
-            let totalSeconds = (text.length * typingInterval) + (numLines * 0.05);
-            totalSeconds = Math.ceil(totalSeconds * 1.1); // 10% safety buffer
-
-            // UI state: Active typing
-            overlay.style.display = 'flex';
-            sendBtn.disabled = true;
-            remoteText.disabled = true;
-            
-            let remaining = totalSeconds;
-            timerCount.textContent = `${remaining}s`;
-
-            if (typingTimer) clearInterval(typingTimer);
-            
-            typingTimer = setInterval(() => {
-                remaining--;
-                if (remaining <= 0) {
-                    stopCountdown();
-                } else {
-                    timerCount.textContent = `${remaining}s`;
-                }
-            }, 1000);
-        }
-
-        function stopCountdown() {
-            if (typingTimer) {
-                clearInterval(typingTimer);
-                typingTimer = null;
-            }
-            
-            const overlay = document.getElementById('countdown-overlay');
-            overlay.style.display = 'none';
-            sendBtn.disabled = false;
-            remoteText.disabled = false;
-            sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
-            lucide.createIcons();
-            
-            if (!liveSync) remoteText.value = '';
-        }
-
-        // Live Typing
-        remoteText.addEventListener('input', () => {
-            if (liveSync) syncToLaptop();
-        });
-
-        async function syncToLaptop() {
-            try {
-                await fetch('/paste', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: remoteText.value,
-                        mode: 'sync',
-                        wpm: selectedWpm
-                    })
-                });
-            } catch (e) {}
-        }
-
-        // Fetch Laptop Clipboard
-        document.getElementById('fetch-btn').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/get_clipboard');
-                const data = await response.json();
-                if (data.status === 'success') {
-                    remoteText.value = data.text;
-                    showToast('Fetched Clipboard!');
-                }
-            } catch (e) {
-                showToast('Fetch Failed');
-            }
-        });
-
-        // Select Copy (Now Remote Capture from Laptop)
-        document.getElementById('select-copy-btn').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/copy');
-                const data = await response.json();
-                if (data.status === 'success') {
-                    remoteText.value = data.text;
-                    showToast('Captured from Laptop!');
-                    
-                    // Also copy to mobile clipboard for convenience
-                    if (navigator.clipboard && window.isSecureContext) {
-                        navigator.clipboard.writeText(data.text);
-                    }
-                } else {
-                    showToast(data.message || 'Nothing Selected');
-                }
-            } catch (e) {
-                showToast('Capture Failed');
-            }
-        });
-
-        // Stop Pasting
-        document.getElementById('stop-paste-btn').addEventListener('click', async () => {
-            try {
-                await fetch('/stop');
-                showToast('❌ Stopping...');
-                stopCountdown();
-            } catch (e) {}
-        });
-
-        document.getElementById('reset-btn').addEventListener('click', () => {
-            resetSession();
-            showToast('Session Reset');
-        });
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
-        
-        // Auto-enter if already linked (optional)
-        // setTimeout(() => launchBtn.click(), 500); 
     </script>
 </body>
+
 </html>

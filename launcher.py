@@ -23,15 +23,20 @@ def resource_path(relative_path):
 
 def rounded_rect(canvas, x1, y1, x2, y2, r=16, **kw):
     """Draw a smooth rounded rectangle on a Canvas."""
-    pts = [
-        x1 + r, y1,   x2 - r, y1,
-        x2,     y1,   x2,     y1 + r,
-        x2,     y2 - r, x2,   y2,
-        x2 - r, y2,   x1 + r, y2,
-        x1,     y2,   x1,     y2 - r,
-        x1,     y1 + r, x1,   y1,
-    ]
-    return canvas.create_polygon(pts, smooth=True, **kw)
+    pts = []
+    # Top Left
+    for i in range(180, 270, 5):
+        pts.extend([x1 + r + r * math.cos(math.radians(i)), y1 + r + r * math.sin(math.radians(i))])
+    # Top Right
+    for i in range(270, 360, 5):
+        pts.extend([x2 - r + r * math.cos(math.radians(i)), y1 + r + r * math.sin(math.radians(i))])
+    # Bottom Right
+    for i in range(0, 90, 5):
+        pts.extend([x2 - r + r * math.cos(math.radians(i)), y2 - r + r * math.sin(math.radians(i))])
+    # Bottom Left
+    for i in range(90, 180, 5):
+        pts.extend([x1 + r + r * math.cos(math.radians(i)), y2 - r + r * math.sin(math.radians(i))])
+    return canvas.create_polygon(pts, smooth=False, **kw)
 
 
 def blend_hex(c1: str, c2: str, t: float) -> str:
@@ -81,15 +86,15 @@ class GlidePassLauncher:
         self.root.focus_force()
 
         # ── Design tokens ────────────────────────────────────────────────────
-        self.BG     = "#060606"
-        self.BG2    = "#0a0a0a"
-        self.AMBER  = "#f59e0b"
-        self.ORANGE = "#d97757"
-        self.RED    = "#ff3b30"
-        self.GREEN  = "#22c55e"
-        self.WHITE  = "#ffffff"
-        self.DIM    = "#333333"
-        self.BORDER = "#1a1a1a"
+        self.BG     = "#000000" # Pure Black
+        self.BG2    = "#121212" # Blackish grey
+        self.AMBER  = "#48BB78" # Green
+        self.ORANGE = "#48BB78" # Green
+        self.RED    = "#ff453a"
+        self.GREEN  = "#48BB78" # Green
+        self.WHITE  = "#F5F5F5" # Off-White
+        self.DIM    = "#A0AEC0" # Cool grey for muted text
+        self.BORDER = "#121212" # Blackish grey
 
         # Fonts (SF Pro on macOS, Helvetica Neue elsewhere)
         _mac = sys.platform == "darwin"
@@ -106,7 +111,6 @@ class GlidePassLauncher:
         self.bypass_view = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bypass_view.place_forget()
 
         self._build_main()
         self._build_bypass()
@@ -114,6 +118,7 @@ class GlidePassLauncher:
         self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
+        self.show_view("main")
 
     # ── Shared drawing utilities ──────────────────────────────────────────────
 
@@ -134,12 +139,14 @@ class GlidePassLauncher:
         """Draw a pill-shaped label button on a Canvas widget."""
         tw = len(text) * 7 + 30
         cv = tk.Canvas(parent, width=tw, height=28, bg=self.BG, highlightthickness=0)
-        cv.pack(side=side, padx=18)
-        rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline=fg)
+        cv.pack(side=side, padx=18, pady=(24, 0))
+        rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline="")
         cv.create_text(tw // 2, 14, text=text, fill=fg,
-                       font=(self.FU, 9, "bold"))
+                       font=(self.FU, 11, "bold"))
         if cmd:
-            cv.bind("<Button-1>", lambda e: cmd())
+            def handler(e): cmd()
+            cv.bind("<Button-1>", handler)
+            cv.tag_bind("all", "<Button-1>", handler)
             cv.config(cursor="hand2")
         return cv
 
@@ -149,16 +156,15 @@ class GlidePassLauncher:
         v  = self.main_view
         W  = 400
 
-        # Ambient background canvas
+        # Flat background
         bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
         bg_cv.place(x=0, y=0)
-        self._paint_orbs(bg_cv, W, 760)
 
         # ── Titlebar (Native Layout) ─────────────────────────────────────────
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
         
-        self._pill_button(tb, "NEUTRALIZE SITEBLOCK?", self.AMBER, "#120d00",
+        self._pill_button(tb, "Bypass Siteblock →", self.WHITE, self.BG2,
                           cmd=lambda: self.show_view("bypass"))
 
         # ── Status row ───────────────────────────────────────────────────────
@@ -166,21 +172,19 @@ class GlidePassLauncher:
         sr.place(x=24, y=68)
         self._dot_cv = tk.Canvas(sr, width=8, height=8, bg=self.BG, highlightthickness=0)
         self._dot_cv.pack(side="left")
-        self._dot_id = self._dot_cv.create_oval(1, 1, 7, 7, fill="#2e2e2e", outline="")
-        self._status_lbl = tk.Label(sr, text="AWAITING SYNC",
-                                    font=(self.FU, 8, "bold"),
-                                    bg=self.BG, fg="#4a4a4a")
+        self._dot_id = self._dot_cv.create_oval(1, 1, 7, 7, fill=self.DIM, outline="")
+        self._status_lbl = tk.Label(sr, text="Awaiting Sync",
+                                    font=(self.FU, 10, "bold"),
+                                    bg=self.BG, fg=self.DIM)
         self._status_lbl.pack(side="left", padx=(8, 0))
 
         # ── Hero text ────────────────────────────────────────────────────────
-        tk.Label(v, text="Ready to", font=(self.FD, 33, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=24, y=90)
-        tk.Label(v, text="Sync?", font=(self.FD, 33, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=24, y=132)
+        tk.Label(v, text="GlidePass", font=(self.FD, 28, "bold"),
+                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=24, y=100)
         tk.Label(v,
-                 text="Bridge your devices with a\nlocal backend in seconds.",
-                 font=(self.FU, 11), bg=self.BG, fg="#454545",
-                 anchor="w", justify="left").place(x=24, y=182)
+                 text="Bridge your devices locally.",
+                 font=(self.FU, 14), bg=self.BG, fg=self.DIM,
+                 anchor="w", justify="left").place(x=24, y=136)
 
         # ── QR card ──────────────────────────────────────────────────────────
         self._qr_cv = tk.Canvas(v, width=W - 48, height=210,
@@ -207,7 +211,7 @@ class GlidePassLauncher:
             cv.create_text(cw // 2, 20, text=lbl.upper(),
                            font=(self.FU, 8, "bold"), fill=self.DIM)
             tid = cv.create_text(cw // 2, 44, text=default,
-                                 font=(self.FM, 14, "bold"), fill="#5a5a5a")
+                                 font=(self.FM, 14, "bold"), fill=self.DIM)
             self._info_cards[lbl] = (cv, tid)
 
         # ── Action button ────────────────────────────────────────────────────
@@ -217,8 +221,8 @@ class GlidePassLauncher:
         self._draw_main_btn(active=False)
 
         # ── Footer ───────────────────────────────────────────────────────────
-        tk.Label(v, text="Ensure launcher.py is running on your laptop.",
-                 font=(self.FU, 9), bg=self.BG, fg="#1e1e1e").place(
+        tk.Label(v, text="Ensure server is running on your laptop.",
+                 font=(self.FU, 9), bg=self.BG, fg=self.DIM).place(
                  x=0, y=726, relwidth=1, anchor="nw")
 
     # ── Main-view canvas draw helpers ─────────────────────────────────────────
@@ -229,26 +233,15 @@ class GlidePassLauncher:
         W, H = int(c["width"]), int(c["height"])
         rounded_rect(c, 0, 0, W, H, r=16, fill=self.BG2, outline=self.BORDER)
         cx, cy = W // 2, H // 2
-        # Radar circles
-        c.create_oval(cx - 35, cy - 45, cx + 35, cy + 25,
-                      outline="#161616", width=1, dash=(4, 4))
-        c.create_oval(cx - 20, cy - 30, cx + 20, cy + 10,
-                      outline="#1a1a1a", width=1)
-        # Radar target
-        c.create_text(cx, cy - 10, text="⌖", font=(self.FU, 24), fill="#1c1c1c")
-        
-        c.create_text(cx, cy + 38, text="AWAITING PAIRING",
-                      font=(self.FU, 9, "bold"), fill="#2e2e2e")
-        c.create_text(cx, cy + 56, text="Start the server to generate QR",
-                      font=(self.FU, 9), fill="#222222")
+        c.create_text(cx, cy - 10, text="QR Code", font=(self.FU, 16, "bold"), fill=self.DIM)
+        c.create_text(cx, cy + 15, text="Start the server to generate",
+                      font=(self.FU, 12), fill=self.DIM)
 
     def _draw_qr_active(self, img: Image.Image):
         c = self._qr_cv
         c.delete("all")
         W, H = int(c["width"]), int(c["height"])
-        # Outer amber glow ring
-        rounded_rect(c, 0, 0, W, H, r=16, fill="#0c0800", outline=self.AMBER)
-        rounded_rect(c, 2, 2, W - 2, H - 2, r=15, fill=self.BG2, outline="")
+        rounded_rect(c, 0, 0, W, H, r=16, fill=self.BG2, outline=self.BORDER)
         self._qr_photo = ImageTk.PhotoImage(img)
         c.create_image(W // 2, H // 2, image=self._qr_photo)
 
@@ -256,41 +249,30 @@ class GlidePassLauncher:
         c = self._ip_cv
         c.delete("all")
         W = int(c["width"])
-        if active:
-            rounded_rect(c, 0, 2, W, 32, r=15, fill="#0d0900", outline=self.AMBER)
-            c.create_text(W // 2, 17, text=self._ip_text,
-                          font=(self.FM, 10), fill=self.AMBER)
-        else:
-            rounded_rect(c, 0, 2, W, 32, r=15, fill=self.BG2, outline=self.BORDER)
-            c.create_text(W // 2, 17, text=self._ip_text,
-                          font=(self.FM, 10), fill="#2e2e2e")
+        rounded_rect(c, 0, 2, W, 32, r=10, fill=self.BG2, outline=self.BORDER)
+        c.create_text(W // 2, 17, text=self._ip_text,
+                      font=(self.FM, 12), fill=self.WHITE if active else self.DIM)
 
     def _draw_main_btn(self, active: bool):
         c = self._btn_cv
         c.delete("all")
         W = int(c["width"])
         if active:
-            rounded_rect(c, 0, 1, W, 51, r=24, fill="#150505", outline=self.RED)
-            c.create_text(W // 2, 26, text="⏻  STOP SERVER",
-                          fill=self.RED, font=(self.FU, 13, "bold"))
+            rounded_rect(c, 0, 1, W, 51, r=12, fill=self.RED, outline="")
+            c.create_text(W // 2, 26, text="Stop Server",
+                          fill=self.WHITE, font=(self.FU, 16, "bold"))
         else:
-            rounded_rect(c, 0, 1, W, 51, r=24, fill=self.WHITE, outline="")
-            c.create_text(W // 2, 26, text="START SERVER",
-                          fill="#000000", font=(self.FU, 13, "bold"))
+            rounded_rect(c, 0, 1, W, 51, r=12, fill=self.GREEN, outline="")
+            c.create_text(W // 2, 26, text="Start Server",
+                          fill=self.WHITE, font=(self.FU, 16, "bold"))
         c.bind("<Button-1>", lambda e: self.toggle_server())
         c.config(cursor="hand2")
 
     # ── Status-dot pulse animation ────────────────────────────────────────────
 
     def _tick_dot(self):
-        if self._server_on:
-            self._dot_tick = (self._dot_tick + 1) % 20
-            t = 0.45 + 0.55 * math.sin(self._dot_tick / 20 * 2 * math.pi)
-            r = int(18 + 16 * t)
-            g = int(110 + 87 * t)
-            b = int(36 + 58 * t)
-            self._dot_cv.itemconfig(self._dot_id, fill=f"#{r:02x}{g:02x}{b:02x}")
-        self.root.after(80, self._tick_dot)
+        # Animation removed for clean UI
+        pass
 
     # ── BYPASS VIEW ───────────────────────────────────────────────────────────
 
@@ -298,15 +280,14 @@ class GlidePassLauncher:
         v = self.bypass_view
         W = 400
 
-        # Ambient background
+        # Flat background
         bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
         bg_cv.place(x=0, y=0)
-        self._paint_orbs(bg_cv, W, 760)
 
         # ── Titlebar (Native Layout) ─────────────────────────────────────────
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
-        self._pill_button(tb, "← Back", "#666666", "#111111",
+        self._pill_button(tb, "← Back", self.WHITE, self.BG2,
                           cmd=lambda: self.show_view("main"), side="right")
 
         # ── Header: shield icon + title + badge ──────────────────────────────
@@ -316,7 +297,7 @@ class GlidePassLauncher:
         # Shield icon tile
         ic = tk.Canvas(hdr, width=48, height=48, bg=self.BG, highlightthickness=0)
         ic.pack(side="left")
-        rounded_rect(ic, 0, 0, 48, 48, r=12, fill="#190e0a", outline="#2c1a10")
+        rounded_rect(ic, 0, 0, 48, 48, r=12, fill=self.BG2, outline="")
         ic.create_text(24, 27, text="🛡", font=(self.FU, 20))
 
         # Title block
@@ -325,14 +306,8 @@ class GlidePassLauncher:
         tk.Label(ti, text="GlidePad Master",
                  font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE).pack(anchor="w")
         tk.Label(ti, text="Neutralize restrictions in seconds",
-                 font=(self.FU, 10), bg=self.BG, fg="#454545").pack(anchor="w", pady=(2, 0))
+                 font=(self.FU, 10), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(2, 0))
 
-        # ── Tab Switcher ─────────────────────────────────────────────────────
-        tab_frame = tk.Frame(v, bg=self.BG)
-        tab_frame.place(x=18, y=120, width=W - 36, height=44)
-        
-        self._pill_button(tab_frame, "⚡ Flash", self.WHITE, "#0a0a0a", side="left")
-        self._pill_button(tab_frame, "⚙ Manual", "#666666", "#0a0a0a", side="right")
 
         # ── Step cards  2 × 2 grid ───────────────────────────────────────────
         steps = [
@@ -342,7 +317,7 @@ class GlidePassLauncher:
             ("04", "⌨",  "Paste Script",  "Paste script into the\nbookmark URL field"),
         ]
         cw, ch = (W - 44) // 2, 115
-        grid_top = 185
+        grid_top = 135
         for i, (num, icon, title, desc) in enumerate(steps):
             col, row = i % 2, i // 2
             x = 18 + col * (cw + 8)
@@ -352,15 +327,15 @@ class GlidePassLauncher:
             rounded_rect(cv, 0, 0, cw, ch, r=14, fill=self.BG2, outline=self.BORDER)
             # Step number (top-right)
             cv.create_text(cw - 12, 14, text=num,
-                           font=(self.FM, 9, "bold"), fill="#d97757", anchor="e")
+                           font=(self.FM, 9, "bold"), fill=self.DIM, anchor="e")
             # Icon
             cv.create_text(15, 32, text=icon, font=(self.FU, 18), anchor="w")
             # Title
             cv.create_text(15, 60, text=title,
-                           font=(self.FU, 11, "bold"), fill="#e0e0e0", anchor="w")
+                           font=(self.FU, 11, "bold"), fill=self.WHITE, anchor="w")
             # Description (wrapping)
             cv.create_text(15, 76, text=desc,
-                           font=(self.FU, 9), fill="#484848",
+                           font=(self.FU, 9), fill=self.DIM,
                            anchor="nw", width=cw - 22)
 
         # ── CTA banner ───────────────────────────────────────────────────────
@@ -369,25 +344,26 @@ class GlidePassLauncher:
         cta_cv = tk.Canvas(v, width=W - 36, height=cta_h, bg=self.BG, highlightthickness=0)
         cta_cv.place(x=18, y=cta_y)
         rounded_rect(cta_cv, 0, 0, W - 36, cta_h, r=16,
-                     fill="#0e0602", outline="#24120a")
+                     fill=self.BG2, outline=self.BORDER)
         mid = (W - 36) // 2
-        # Mouse icon
         cta_cv.create_text(mid, 30, text="🖱", font=(self.FU, 24))
         cta_cv.create_text(mid, 65, text="Click the Bookmark",
                            font=(self.FD, 16, "bold"), fill=self.WHITE)
         cta_cv.create_text(mid, 88, text="Instantly enable remote injection.",
-                           font=(self.FU, 10), fill="#5a5a5a")
+                           font=(self.FU, 10), fill=self.DIM)
         cta_cv.create_text(mid, 104, text="You only need to do this once per site!",
-                           font=(self.FU, 9), fill="#3a3a3a")
+                           font=(self.FU, 9), fill=self.DIM)
 
         # ── Got It button ────────────────────────────────────────────────────
         got_y  = cta_y + cta_h + 14
         got_cv = tk.Canvas(v, width=W - 36, height=52, bg=self.BG, highlightthickness=0)
         got_cv.place(x=18, y=got_y)
-        rounded_rect(got_cv, 0, 0, W - 36, 52, r=14, fill="#051208", outline=self.GREEN)
-        got_cv.create_text((W - 36) // 2, 26, text="✅  Got it! Close",
-                           font=(self.FU, 12, "bold"), fill=self.GREEN)
-        got_cv.bind("<Button-1>", lambda e: self.show_view("main"))
+        rounded_rect(got_cv, 0, 0, W - 36, 52, r=12, fill=self.GREEN, outline="")
+        got_cv.create_text((W - 36) // 2, 26, text="Got it! Close",
+                           font=(self.FU, 14, "bold"), fill=self.WHITE)
+        def got_handler(e): self.show_view("main")
+        got_cv.bind("<Button-1>", got_handler)
+        got_cv.tag_bind("all", "<Button-1>", got_handler)
         got_cv.config(cursor="hand2")
 
         # Hidden bookmarklet store (never displayed)
@@ -483,11 +459,9 @@ class GlidePassLauncher:
 
     def show_view(self, name: str):
         if name == "main":
-            self.bypass_view.place_forget()
-            self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
+            self.main_view.tkraise()
         else:
-            self.main_view.place_forget()
-            self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
+            self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
 
     # ── Network helpers ───────────────────────────────────────────────────────
@@ -554,7 +528,7 @@ class GlidePassLauncher:
         self._server_on = True
         self._draw_main_btn(active=True)
         self._dot_cv.itemconfig(self._dot_id, fill=self.GREEN)
-        self._status_lbl.config(text="SERVER LIVE", fg=self.GREEN)
+        self._status_lbl.config(text="Server Live", fg=self.GREEN)
 
         cv, tid = self._info_cards["State"]
         cv.itemconfig(tid, text="Live", fill=self.GREEN)
@@ -588,11 +562,11 @@ class GlidePassLauncher:
         self._server_on = False
         self._dot_tick  = 0
         self._draw_main_btn(active=False)
-        self._dot_cv.itemconfig(self._dot_id, fill="#1c1c1c")
-        self._status_lbl.config(text="AWAITING SYNC", fg="#383838")
+        self._dot_cv.itemconfig(self._dot_id, fill=self.DIM)
+        self._status_lbl.config(text="Awaiting Sync", fg=self.DIM)
 
         cv, tid = self._info_cards["State"]
-        cv.itemconfig(tid, text="Off", fill="#484848")
+        cv.itemconfig(tid, text="Off", fill=self.DIM)
 
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
