@@ -430,30 +430,28 @@
             animation: fadeIn 0.3s ease;
         }
 
-        .wpm-options {
-            display: flex;
-            gap: 8px;
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
         }
 
-        .wpm-opt {
-            flex: 1;
-            background: var(--card-bg);
-            border: 1px solid #222;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            color: var(--text-muted);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .wpm-opt.active {
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
             background: var(--accent-color);
-            color: #000;
-            border-color: var(--accent-color);
-            box-shadow: 0 4px 15px var(--accent-glow);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
         }
 
         @keyframes fadeIn {
