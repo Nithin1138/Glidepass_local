@@ -593,8 +593,13 @@
                 return;
             }
             const cpm = selectedWpm * 5;
-            const charsPerSec = cpm / 60;
-            const timeInSecs = (text.length / charsPerSec) + 0.5; // 0.5s initial delay
+            const typingInterval = 60 / cpm;
+            const numLines = (text.match(/\n/g) || []).length;
+            
+            // Expected time
+            const baseTime = text.length * typingInterval;
+            const lineTime = numLines * 0.2; // 0.05s sleep + keypresses overhead ~0.15s
+            const timeInSecs = baseTime + lineTime + 0.5; // 0.5s initial startup
             
             if (timeInSecs < 60) {
                 expectedTimeDisplay.innerText = `Expected Time: ${Math.round(timeInSecs)}s`;
