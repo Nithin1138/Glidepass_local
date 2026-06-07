@@ -39,3 +39,9 @@ starter_log.txt
 build/
 dist/
 *.spec
+
+# Built Apps & Images (to prevent huge git commits)
+*.dmg
+*.zip
+GlidePass.app/
+tmp.dmg

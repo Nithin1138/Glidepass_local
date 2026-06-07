@@ -734,8 +734,8 @@ export default function Home() {
               {
                 title: "macOS Backend",
                 icon: <Monitor size={28} />,
-                label: "Download .dmg",
-                href: "/downloads/GlidePass_macOS.dmg",
+                label: "Copy Install Cmd",
+                installCommand: "curl -sSL http://localhost:3000/install-mac.sh | bash",
                 version: "v1.4.1",
                 size: "42.5 MB",
                 theme: "rose",
@@ -795,6 +795,9 @@ export default function Home() {
                       onClick={() => {
                         if (d.title === "Chrome Extension") {
                           setShowComingSoon(true);
+                        } else if (d.installCommand) {
+                          navigator.clipboard.writeText(d.installCommand);
+                          alert("Install command copied to clipboard! Paste it in your Terminal.");
                         } else if (d.href) {
                           window.location.href = d.href;
                         }
