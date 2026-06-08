@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2, Award, Calendar, BookOpen, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2, Award, Calendar, BookOpen, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity, ExternalLink, CalendarDays, Sparkles, Filter, Code, Info } from "lucide-react";
 import Link from "next/link";
 
 interface Question {
@@ -57,6 +57,7 @@ export default function AdminPage() {
   
   // Selected session for editing questions
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [examTypeFilter, setExamTypeFilter] = useState<string | null>(null);
   
   // New question form states
   const [qTitle, setQTitle] = useState<string>("");
@@ -260,118 +261,161 @@ export default function AdminPage() {
   const activeSession = vitSessions.find((s) => s.id === activeSessionId);
 
   return (
-    <div className="min-h-screen bg-black text-white relative font-sans">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-[#060814] text-neutral-100 relative font-sans antialiased selection:bg-rose-500/30 selection:text-white">
+      {/* Premium Background Ambiance (Cosmic Sunset Glows) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[10%] left-[20%] w-[30%] h-[30%] bg-indigo-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[20%] right-[20%] w-[35%] h-[35%] bg-rose-500/5 blur-[120px] rounded-full" />
+        <div className="absolute top-[5%] left-[10%] w-[50%] h-[50%] bg-indigo-500/5 blur-[160px] rounded-full animate-pulse" style={{ animationDuration: '12s' }} />
+        <div className="absolute bottom-[5%] right-[10%] w-[50%] h-[50%] bg-rose-500/5 blur-[160px] rounded-full animate-pulse" style={{ animationDuration: '18s' }} />
       </div>
 
-      <header className="border-b border-white/[0.06] bg-black/40 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-white/40 hover:text-white transition-colors duration-200">
-              <ArrowLeft size={18} />
+      {/* Premium Carbon Navigation Bar */}
+      <header className="mx-6 mt-6 rounded-3xl border border-[#161d33] bg-[#0b0e1a]/60 shadow-[inset_0_2px_4px_rgba(255,255,255,0.02),0_12px_32px_rgba(0,0,0,0.6)] backdrop-blur-xl sticky top-6 z-40">
+        <div className="max-w-[1600px] mx-auto px-6 h-18 flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <Link 
+              href="/" 
+              className="group flex items-center justify-center w-10 h-10 rounded-2xl border border-[#1d2642] bg-[#05070f]/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)] hover:bg-[#0c0f1d] text-neutral-400 hover:text-white transition-all duration-300"
+            >
+              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
             </Link>
-            <div className="flex items-center gap-2">
-              <span className="font-outfit font-black text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-                GLIDEPASS
-              </span>
-              <span className="text-[9px] uppercase tracking-[0.2em] font-bold px-2 py-0.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
-                Admin Console
-              </span>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 via-fuchsia-600 to-rose-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),0_8px_16px_rgba(244,63,94,0.2)] flex items-center justify-center">
+                <Terminal size={16} className="text-white font-bold" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-outfit font-black text-sm tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-100 to-neutral-400">
+                  GLIDEPASS
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.25em] font-extrabold text-rose-400/90">
+                  Control Deck
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Tab Selection */}
-          <div className="flex border border-white/[0.08] bg-white/[0.02] p-1 rounded-xl">
+          {/* Premium Selector Tabs */}
+          <div className="flex border border-[#161d33] bg-[#04060d]/90 p-1.5 rounded-2xl shadow-inner">
             <button
               onClick={() => setActiveTab("vit")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
-                activeTab === "vit" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10" : "text-white/40 hover:text-white"
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 ${
+                activeTab === "vit" 
+                  ? "bg-gradient-to-tr from-indigo-600 via-fuchsia-600 to-rose-500 text-white shadow-[0_8px_16px_rgba(244,63,94,0.25)]" 
+                  : "text-neutral-400 hover:text-neutral-200 hover:bg-[#0f1228]/50"
               }`}
             >
-              VIT-AP Today's Codes
+              <Code size={14} />
+              <span>VIT-AP Codes</span>
             </button>
             <button
               onClick={() => setActiveTab("ota")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
-                activeTab === "ota" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10" : "text-white/40 hover:text-white"
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 ${
+                activeTab === "ota" 
+                  ? "bg-gradient-to-tr from-indigo-600 via-fuchsia-600 to-rose-500 text-white shadow-[0_8px_16px_rgba(244,63,94,0.25)]" 
+                  : "text-neutral-400 hover:text-neutral-200 hover:bg-[#0f1228]/50"
               }`}
             >
-              OTA Mobile UI
+              <MonitorSmartphone size={14} />
+              <span>OTA Templates</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Status notification */}
+      <main className="max-w-[1600px] mx-auto px-6 py-10">
+        {/* Claymorphic status popup */}
         <AnimatePresence>
           {status.message && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className={`mb-6 px-6 py-3 rounded-xl flex items-center justify-between border ${
+              initial={{ opacity: 0, y: -16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.95 }}
+              className={`mb-8 p-4 rounded-3xl flex items-center justify-between border shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl ${
                 status.type === "success"
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                  : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  : "bg-[#251020] border-rose-900/40 text-rose-300"
               }`}
             >
-              <div className="flex items-center gap-2.5 text-xs font-semibold">
-                {status.type === "success" ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
+              <div className="flex items-center gap-3.5 text-xs font-semibold">
+                <div className={`w-8 h-8 rounded-2xl flex items-center justify-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] ${
+                  status.type === "success" ? "bg-rose-500/25" : "bg-rose-950/50"
+                }`}>
+                  {status.type === "success" ? <CheckCircle size={16} className="text-rose-400" /> : <AlertCircle size={16} className="text-rose-400" />}
+                </div>
                 <span>{status.message}</span>
               </div>
+              <button 
+                onClick={() => setStatus({ type: null, message: "" })}
+                className="w-8 h-8 rounded-xl hover:bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {activeTab === "vit" ? (
-          // ==================== VIT PORTAL MANAGER ====================
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          // ==================== VIT PORTAL MANAGER (3-COLUMN WORKSPACE DECK) ====================
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* Left Col: Sessions Grid & Creator */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* Creator Box */}
-              <div className="border border-white/[0.06] bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xs font-bold tracking-widest text-white/40 uppercase flex items-center gap-2">
-                    <Calendar size={13} className="text-indigo-400" /> Add Exam Session
+            {/* PANEL 1: CONTROL CONSOLE (col-span-3) */}
+            <div className="lg:col-span-3 space-y-6">
+              <div className="border border-[#161d33] bg-[#0b0e1a]/40 rounded-3xl p-6 shadow-[inset_0_2px_4px_rgba(255,255,255,0.02),0_16px_32px_rgba(0,0,0,0.6)] backdrop-blur-md space-y-5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
+                
+                <div className="flex justify-between items-center pb-2">
+                  <h2 className="text-xs font-bold tracking-widest text-neutral-400 uppercase flex items-center gap-2">
+                    <CalendarDays size={14} className="text-rose-400" /> Create Session
                   </h2>
+                  
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => {
                         setShowManageExamTypes(!showManageExamTypes);
                         setShowAddExamType(false);
                       }}
-                      className="text-[10px] bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                      className={`text-[10px] px-2.5 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                        showManageExamTypes 
+                          ? "bg-rose-500/20 border border-rose-500/40 text-rose-300"
+                          : "bg-[#05070f]/80 hover:bg-[#0d1026] border border-[#161d33] text-neutral-300"
+                      }`}
+                      title="Manage Exam Types"
                     >
-                      <Trash2 size={10} /> Manage Types
+                      <Settings size={11} /> Types
                     </button>
                     <button
                       onClick={() => {
                         setShowAddExamType(!showAddExamType);
                         setShowManageExamTypes(false);
                       }}
-                      className="text-[10px] bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                      className={`text-[10px] px-2.5 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                        showAddExamType 
+                          ? "bg-rose-500/20 border border-rose-500/40 text-rose-300"
+                          : "bg-gradient-to-r from-indigo-600 to-rose-500 text-white shadow-md shadow-rose-500/10"
+                      }`}
                     >
-                      <Plus size={10} /> Add Exam Type
+                      <Plus size={11} /> Add Type
                     </button>
                   </div>
                 </div>
                 
-                <div className="space-y-3">
+                {/* Dynamically sliding manage drawers */}
+                <AnimatePresence mode="wait">
                   {showAddExamType && (
-                    <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-2">
-                      <label className="text-[10px] text-white/40 uppercase font-bold tracking-wider block">New Exam Type Name</label>
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-4 bg-[#05070f] border border-rose-500/20 rounded-2xl space-y-3 overflow-hidden"
+                    >
+                      <label className="text-[10px] text-rose-400 uppercase font-bold tracking-wider block">New Exam Type Name</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={newExamTypeName}
-                          placeholder="e.g. Weekly Quiz"
+                          placeholder="e.g. Daily Assessment"
                           onChange={(e) => setNewExamTypeName(e.target.value)}
-                          className="flex-1 text-xs bg-black border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="flex-1 text-xs bg-[#0b0e1a] border border-[#1d2642] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 transition-all font-medium placeholder:text-neutral-600 shadow-inner"
                         />
                         <button
                           onClick={() => {
@@ -383,27 +427,32 @@ export default function AdminPage() {
                               setShowAddExamType(false);
                             }
                           }}
-                          className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold rounded-xl"
+                          className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_4px_8px_rgba(244,63,94,0.2)] active:scale-95 transition-all"
                         >
-                          Add
+                          Create
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
                   {showManageExamTypes && (
-                    <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-2.5">
-                      <label className="text-[10px] text-white/40 uppercase font-bold tracking-wider block">Manage Exam Types</label>
-                      <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-4 bg-[#05070f] border border-[#161d33] rounded-2xl space-y-3 overflow-hidden"
+                    >
+                      <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider block">Configured Types</label>
+                      <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
                         {examTypes.map((type, idx) => (
-                          <div key={idx} className="flex justify-between items-center p-1.5 rounded bg-black/40 border border-white/[0.04] gap-2">
+                          <div key={idx} className="flex justify-between items-center p-2 rounded-xl bg-[#0d1026] border border-[#161d33] gap-2">
                             {editingExamTypeIndex === idx ? (
                               <div className="flex items-center gap-1.5 w-full">
                                 <input
                                   type="text"
                                   value={editingExamTypeName}
                                   onChange={(e) => setEditingExamTypeName(e.target.value)}
-                                  className="flex-1 text-[11px] bg-black border border-white/10 rounded px-2 py-1 text-white focus:outline-none focus:border-indigo-500"
+                                  className="flex-1 text-xs bg-neutral-950 border border-rose-500/30 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-rose-500/20"
                                 />
                                 <button
                                   onClick={() => {
@@ -418,30 +467,31 @@ export default function AdminPage() {
                                       setEditingExamTypeName("");
                                     }
                                   }}
-                                  className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10"
+                                  className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
                                 >
-                                  <Check size={11} />
+                                  <Check size={12} />
                                 </button>
                                 <button
                                   onClick={() => {
                                     setEditingExamTypeIndex(null);
                                     setEditingExamTypeName("");
                                   }}
-                                  className="p-1 rounded text-white/30 hover:bg-white/5"
+                                  className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-850"
                                 >
-                                  <X size={11} />
+                                  <X size={12} />
                                 </button>
                               </div>
                             ) : (
                               <>
-                                <span className="text-xs text-white/80">{type}</span>
+                                <span className="text-xs font-semibold text-neutral-300">{type}</span>
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => {
                                       setEditingExamTypeIndex(idx);
                                       setEditingExamTypeName(type);
                                     }}
-                                    className="p-1 rounded text-white/30 hover:text-indigo-400 hover:bg-indigo-500/10"
+                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-neutral-850 transition-colors"
+                                    title="Edit label"
                                   >
                                     <Edit2 size={11} />
                                   </button>
@@ -455,7 +505,8 @@ export default function AdminPage() {
                                         }
                                       }
                                     }}
-                                    className="p-1 rounded text-white/30 hover:text-rose-400 hover:bg-rose-500/10"
+                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                    title="Delete type"
                                   >
                                     <Trash2 size={11} />
                                   </button>
@@ -465,133 +516,223 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
+                </AnimatePresence>
 
+                <div className="space-y-4 pt-1">
                   <div>
-                    <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Session Title (Optional)</label>
+                    <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Session Title <span className="text-neutral-600 font-normal">(Optional)</span></label>
                     <input
                       type="text"
-                      placeholder="e.g. Session 1, Quiz 2"
+                      placeholder="e.g. Session 1, Afternoon Lab"
                       value={newSessionTitle}
                       onChange={(e) => setNewSessionTitle(e.target.value)}
-                      className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                      className="w-full text-xs bg-[#05070f] border border-[#161d33] rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all placeholder:text-neutral-700 font-medium shadow-inner"
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Date</label>
-                    <input
-                      type="date"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Date</label>
+                      <input
+                        type="date"
+                        value={newDate}
+                        onChange={(e) => setNewDate(e.target.value)}
+                        className="w-full text-xs bg-[#05070f] border border-[#161d33] rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all font-mono font-medium shadow-inner"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Exam Type</label>
+                      <select
+                        value={newExamType}
+                        onChange={(e) => setNewExamType(e.target.value)}
+                        className="w-full text-xs bg-[#05070f] border border-[#161d33] rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all font-medium cursor-pointer shadow-inner"
+                      >
+                        {examTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Exam Type</label>
-                    <select
-                      value={newExamType}
-                      onChange={(e) => setNewExamType(e.target.value)}
-                      className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    >
-                      {examTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
+
                   <button
                     onClick={handleAddSession}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-[0_8px_20px_rgba(244,63,94,0.15)] active:scale-[0.98]"
                   >
                     <Plus size={14} /> Add Exam Session
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Sessions List */}
-              <div className="border border-white/[0.06] bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 space-y-4">
-                <h2 className="text-xs font-bold tracking-widest text-white/40 uppercase">Active Sessions</h2>
+            {/* PANEL 2: DATABASE EXPLORER (col-span-4) */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="border border-[#161d33] bg-[#0b0e1a]/40 rounded-3xl p-6 shadow-[inset_0_2px_4px_rgba(255,255,255,0.02),0_16px_32px_rgba(0,0,0,0.6)] backdrop-blur-md space-y-5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-fuchsia-500 to-rose-500" />
                 
-                {loadingVit ? (
-                  <div className="py-10 text-center text-xs text-white/30">Loading sessions...</div>
-                ) : vitSessions.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-white/30">No sessions added yet.</div>
-                ) : (
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {vitSessions.map((s) => (
-                      <div
-                        key={s.id}
-                        onClick={() => setActiveSessionId(s.id)}
-                        className={`w-full text-left px-4 py-3 rounded-xl flex items-center justify-between transition-all duration-200 border cursor-pointer ${
-                          activeSessionId === s.id
-                            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
-                            : "border-transparent text-white/50 hover:bg-white/[0.04] hover:text-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Award size={16} className={activeSessionId === s.id ? "text-indigo-400" : "text-white/30"} />
-                          <div>
-                            <p className="text-xs font-bold">{s.title || s.examType}</p>
-                            <p className="text-[10px] text-white/30 font-medium">{s.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded font-bold text-white/40 font-mono">
-                            {s.questions.length} Q
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSession(s.id);
-                            }}
-                            className="p-1 rounded text-white/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                {examTypeFilter === null ? (
+                  <>
+                    <h2 className="text-xs font-bold tracking-widest text-neutral-400 uppercase flex items-center gap-2 pb-1">
+                      <Filter size={12} className="text-rose-400" /> Active Exam Types
+                    </h2>
+                    {loadingVit ? (
+                      <div className="py-12 flex flex-col items-center justify-center gap-3">
+                        <div className="w-6 h-6 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                        <span className="text-xs text-neutral-500">Loading exam types...</span>
                       </div>
-                    ))}
-                  </div>
+                    ) : Object.keys(
+                      vitSessions.reduce((acc: Record<string, VitCode[]>, s) => {
+                        (acc[s.examType] = acc[s.examType] || []).push(s);
+                        return acc;
+                      }, {})
+                    ).length === 0 ? (
+                      <div className="py-12 border border-dashed border-[#1d2642] rounded-2xl text-center text-xs text-neutral-500">
+                        No sessions or types configured.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
+                        {Object.entries(
+                          vitSessions.reduce((acc: Record<string, VitCode[]>, s) => {
+                            (acc[s.examType] = acc[s.examType] || []).push(s);
+                            return acc;
+                          }, {})
+                        ).map(([type, sessions]) => {
+                          const dates = sessions.map(s => s.date).sort();
+                          const earliest = dates[0];
+                          const latest = dates[dates.length - 1];
+                          const range = earliest && latest ? `${earliest} → ${latest}` : "";
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => setExamTypeFilter(type)}
+                              className="w-full text-left p-4 rounded-2xl bg-[#05070f]/40 hover:bg-[#0d1026] border border-[#161d33] hover:border-[#1d2642] shadow-[inset_0_1px_2px_rgba(255,255,255,0.01)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.4)] transition-all flex items-center justify-between group"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2.5 h-2.5 rounded bg-rose-500/20 flex items-center justify-center">
+                                    <Award size={10} className="text-rose-400" />
+                                  </div>
+                                  <span className="text-xs font-bold text-neutral-200 group-hover:text-white transition-colors">{type}</span>
+                                </div>
+                                {range && (
+                                  <span className="text-[10px] text-neutral-500 font-mono block pl-4.5">{range}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] bg-rose-500/10 border border-rose-500/25 px-2.5 py-0.5 rounded-lg text-rose-400 font-bold">
+                                  {sessions.length} Session{sessions.length > 1 ? 's' : ''}
+                                </span>
+                                <ChevronRight size={14} className="text-neutral-600 group-hover:text-neutral-400 group-hover:translate-x-0.5 transition-all" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between border-b border-[#161d33] pb-3">
+                      <button
+                        onClick={() => setExamTypeFilter(null)}
+                        className="text-xs font-bold text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5"
+                      >
+                        <ChevronLeft size={14} /> Back to Types
+                      </button>
+                      <span className="text-[10px] font-mono bg-[#160c18] text-rose-300 border border-rose-900/60 px-2.5 py-0.5 rounded-lg font-bold">
+                        {examTypeFilter}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
+                      {vitSessions
+                        .filter(s => s.examType === examTypeFilter)
+                        .map(s => (
+                          <div
+                            key={s.id}
+                            onClick={() => setActiveSessionId(s.id)}
+                            className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between group ${
+                              activeSessionId === s.id
+                                ? "border-rose-500/40 bg-rose-500/10 text-rose-300 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
+                                : "border-[#161d33] bg-[#05070f]/40 hover:bg-[#0d1026]/60 text-neutral-300 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]"
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold block">
+                                {s.title || s.date}
+                              </span>
+                              {s.title && (
+                                <span className="text-[10px] text-neutral-500 font-mono block">{s.date}</span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-mono bg-[#05070f] px-2 py-0.5 rounded-md text-neutral-400 font-bold border border-[#161d33] shadow-inner">
+                                {s.questions.length} Q
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSession(s.id);
+                                }}
+                                className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                title="Delete session"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
 
-            {/* Right Col: Questions Grid & Editor */}
-            <div className="lg:col-span-8 space-y-6">
+            {/* PANEL 3: WORKSPACE EDITOR (col-span-5) */}
+            <div className="lg:col-span-5 space-y-6">
               {activeSession ? (
                 <>
                   {/* Current Session Heading */}
-                  <div className="flex justify-between items-center p-4 border border-white/[0.06] bg-white/[0.01] rounded-2xl">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-400 font-mono">{activeSession.date}</span>
-                      <h2 className="text-base font-bold text-white leading-tight">{activeSession.title || activeSession.examType} Questions</h2>
+                  <div className="flex justify-between items-center p-5 border border-[#161d33] bg-[#0b0e1a]/20 rounded-3xl backdrop-blur-md shadow-md">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-rose-400 font-mono">{activeSession.date}</span>
+                      <h2 className="text-base font-bold text-white leading-tight flex items-center gap-2">
+                        <span>{activeSession.title || activeSession.examType}</span>
+                        <span className="text-xs bg-[#160c18] text-rose-400 px-2 py-0.5 rounded font-normal font-sans border border-rose-900/40">{activeSession.examType}</span>
+                      </h2>
                     </div>
-                    <span className="text-xs text-white/40 font-mono">{activeSession.questions.length} Question(s) Configured</span>
+                    <span className="text-xs bg-rose-500/10 text-rose-300 border border-rose-500/20 px-3.5 py-1.5 rounded-xl font-mono font-bold">
+                      {activeSession.questions.length} Question{activeSession.questions.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
 
                   {/* Add Question Box */}
-                  <div className="border border-white/[0.06] bg-white/[0.02] backdrop-blur-md rounded-2xl p-6 space-y-4">
-                    <h3 className="text-xs font-bold tracking-widest text-indigo-400 uppercase flex items-center gap-2">
+                  <div className="border border-[#161d33] bg-[#0b0e1a]/40 rounded-3xl p-6 shadow-[inset_0_2px_4px_rgba(255,255,255,0.02),0_16px_32px_rgba(0,0,0,0.6)] backdrop-blur-md space-y-5 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-rose-500" />
+                    
+                    <h3 className="text-xs font-bold tracking-widest text-rose-400 uppercase flex items-center gap-2">
                       <Plus size={14} /> Add Question to Session
                     </h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="md:col-span-2">
-                        <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Question Title</label>
+                        <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Question Title</label>
                         <input
                           type="text"
                           value={qTitle}
-                          placeholder="e.g. Reverse a Linked List"
+                          placeholder="e.g. Find First and Last Position of Element"
                           onChange={(e) => setQTitle(e.target.value)}
-                          className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full text-xs bg-[#05070f] border border-[#161d33] rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all font-medium placeholder:text-neutral-700 shadow-inner"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Code Language</label>
+                        <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Code Language</label>
                         <select
                           value={qLang}
                           onChange={(e) => setQLang(e.target.value)}
-                          className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full text-xs bg-[#05070f] border border-[#161d33] rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all font-medium cursor-pointer shadow-inner"
                         >
                           <option value="cpp">C++ (cpp)</option>
                           <option value="python">Python</option>
@@ -603,19 +744,28 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Source Code</label>
-                      <textarea
-                        value={qCode}
-                        placeholder="Paste code snippet here..."
-                        onChange={(e) => setQCode(e.target.value)}
-                        className="w-full h-48 bg-black text-emerald-200/90 border border-white/10 rounded-xl p-4 font-mono text-xs focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-                      />
+                      <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Source Code</label>
+                      <div className="relative border border-[#161d33] bg-[#05070f] rounded-2xl overflow-hidden focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all shadow-inner">
+                        <div className="bg-[#0b0e1a]/60 px-4 py-2 flex items-center justify-between border-b border-[#161d33]">
+                          <span className="text-[10px] font-mono text-neutral-500 uppercase">{qLang} code block</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500/20 flex items-center justify-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                          </span>
+                        </div>
+                        <textarea
+                          value={qCode}
+                          placeholder="Paste code snippet here..."
+                          onChange={(e) => setQCode(e.target.value)}
+                          className="w-full h-56 bg-[#05070f] text-rose-300/90 font-mono text-xs p-4 focus:outline-none resize-none leading-relaxed"
+                          spellCheck={false}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-1">
                       <button
                         onClick={handleAddQuestion}
-                        className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-indigo-600/10"
+                        className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-[0_8px_16px_rgba(244,63,94,0.15)] active:scale-95"
                       >
                         <Plus size={14} /> Add Question
                       </button>
@@ -624,31 +774,40 @@ export default function AdminPage() {
 
                   {/* Configured Questions Grid */}
                   <div className="space-y-4">
-                    <h3 className="text-xs font-bold tracking-widest text-white/40 uppercase">Configured Questions</h3>
+                    <h3 className="text-xs font-bold tracking-widest text-neutral-400 uppercase">Configured Questions</h3>
                     {activeSession.questions.length === 0 ? (
-                      <div className="py-12 border border-dashed border-white/10 rounded-2xl text-center text-xs text-white/30">
-                        No questions added to this session yet. Add one above!
+                      <div className="py-16 border border-dashed border-[#161d33] rounded-3xl text-center text-xs text-neutral-500 flex flex-col items-center gap-3">
+                        <Code size={20} className="text-neutral-755" />
+                        <span>No questions added to this session yet. Add one above!</span>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {activeSession.questions.map((q, idx) => (
                           <div
                             key={q.id}
-                            className="border border-white/[0.06] bg-white/[0.01] rounded-xl overflow-hidden"
+                            className="border border-[#161d33] bg-[#0b0e1a]/20 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm hover:border-[#1d2642] transition-all duration-300"
                           >
-                            <div className="px-4 py-3 bg-white/[0.02] border-b border-white/[0.06] flex justify-between items-center">
-                              <span className="text-xs font-bold text-white/70">Question {idx + 1}: {q.title}</span>
+                            <div className="px-5 py-3.5 bg-[#0b0e1a]/60 border-b border-[#161d33] flex justify-between items-center">
                               <div className="flex items-center gap-3">
-                                <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-white/50">{q.language}</span>
+                                <span className="w-5 h-5 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-bold flex items-center justify-center border border-rose-500/20">
+                                  {idx + 1}
+                                </span>
+                                <span className="text-xs font-bold text-neutral-200">{q.title}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] bg-neutral-950 border border-[#161d33] px-2.5 py-1 rounded-md font-mono font-bold text-rose-300 tracking-wider">
+                                  {q.language}
+                                </span>
                                 <button
                                   onClick={() => handleDeleteQuestion(q.id)}
-                                  className="p-1 rounded text-white/30 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                  className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                  title="Remove question"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={13} />
                                 </button>
                               </div>
                             </div>
-                            <pre className="p-4 bg-black/60 text-[10px] font-mono text-emerald-300/80 overflow-x-auto max-h-40 leading-normal">
+                            <pre className="p-4 bg-neutral-950 text-[10px] font-mono text-rose-300/80 overflow-x-auto max-h-52 leading-relaxed scrollbar-thin scrollbar-thumb-neutral-850">
                               <code>{q.code}</code>
                             </pre>
                           </div>
@@ -658,61 +817,82 @@ export default function AdminPage() {
                   </div>
                 </>
               ) : (
-                <div className="py-20 text-center border border-dashed border-white/10 rounded-2xl text-xs text-white/30">
-                  Select a session from the list or create a new one to manage questions.
+                <div className="py-28 text-center border border-dashed border-[#161d33] rounded-3xl text-xs text-neutral-500 flex flex-col items-center justify-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0b0e1a] flex items-center justify-center border border-[#161d33]">
+                    <Info size={20} className="text-neutral-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-neutral-400">No Session Selected</p>
+                    <p className="text-[11px] text-neutral-600 max-w-xs">Select a session from the browser or create a new one to begin editing questions.</p>
+                  </div>
                 </div>
               )}
             </div>
 
           </div>
         ) : (
-          // ==================== OTA MOBILE UI MANAGER ====================
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="border border-white/[0.06] bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 space-y-4">
-                <h2 className="text-sm font-bold tracking-widest text-white/40 uppercase">Select Template</h2>
+          // ==================== OTA MOBILE UI TEMPLATES (2-COLUMN REDESIGN) ====================
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-3 space-y-6">
+              <div className="border border-[#161d33] bg-[#0b0e1a]/40 rounded-3xl p-6 shadow-[inset_0_2px_4px_rgba(255,255,255,0.02),0_16px_32px_rgba(0,0,0,0.6)] backdrop-blur-md space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-rose-500" />
+                <h2 className="text-xs font-bold tracking-widest text-neutral-400 uppercase flex items-center gap-2 pb-1">
+                  <Layout size={13} className="text-rose-400" /> Select Template
+                </h2>
+                
                 <div className="space-y-2">
                   <button
                     onClick={() => setSelectedFile("center.html")}
-                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 border ${
+                    className={`w-full text-left px-4 py-3.5 rounded-2xl flex items-center gap-3.5 transition-all border ${
                       selectedFile === "center.html"
-                        ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
-                        : "border-transparent text-white/50 hover:bg-white/[0.04] hover:text-white"
+                        ? "border-rose-500/30 bg-rose-500/10 text-rose-300 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
+                        : "border-[#161d33] bg-neutral-950/20 text-neutral-400 hover:bg-[#0d1026]/40 hover:text-neutral-200"
                     }`}
                   >
-                    <MonitorSmartphone size={16} />
-                    <div className="text-xs font-semibold">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      selectedFile === "center.html" ? "bg-rose-500/20" : "bg-neutral-800/80"
+                    }`}>
+                      <MonitorSmartphone size={16} />
+                    </div>
+                    <div className="text-xs">
                       <p className="font-bold">center.html</p>
-                      <p className="text-[10px] text-white/30 font-normal">Command Center UI</p>
+                      <p className="text-[10px] text-neutral-500 font-normal">Command Center Panel</p>
                     </div>
                   </button>
+                  
                   <button
                     onClick={() => setSelectedFile("index.html")}
-                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 border ${
+                    className={`w-full text-left px-4 py-3.5 rounded-2xl flex items-center gap-3.5 transition-all border ${
                       selectedFile === "index.html"
-                        ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
-                        : "border-transparent text-white/50 hover:bg-white/[0.04] hover:text-white"
+                        ? "border-rose-500/30 bg-rose-500/10 text-rose-300 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
+                        : "border-[#161d33] bg-neutral-950/20 text-neutral-400 hover:bg-[#0d1026]/40 hover:text-neutral-200"
                     }`}
                   >
-                    <FileCode size={16} />
-                    <div className="text-xs font-semibold">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      selectedFile === "index.html" ? "bg-rose-500/20" : "bg-neutral-800/80"
+                    }`}>
+                      <FileCode size={16} />
+                    </div>
+                    <div className="text-xs">
                       <p className="font-bold">index.html</p>
-                      <p className="text-[10px] text-white/30 font-normal">Initial Setup Page</p>
+                      <p className="text-[10px] text-neutral-500 font-normal">Initial Setup Landing</p>
                     </div>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-3 border border-white/[0.06] bg-white/[0.01] backdrop-blur-md rounded-2xl overflow-hidden flex flex-col min-h-[600px] relative">
+            <div className="lg:col-span-9 border border-[#161d33] bg-[#0b0e1a]/30 backdrop-blur-md rounded-3xl overflow-hidden flex flex-col min-h-[620px] relative shadow-2xl">
               {/* Editor Toolbar */}
-              <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-4">
+              <div className="px-6 py-4.5 bg-[#0b0e1a]/60 border-b border-[#161d33] flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  <span className="text-xs font-bold font-mono tracking-wide">{selectedFile}</span>
+                  <div className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/25 flex items-center justify-center">
+                    <Globe size={12} className="text-rose-400" />
+                  </div>
+                  <span className="text-xs font-bold font-mono tracking-wide text-neutral-200">{selectedFile}</span>
                   {usingCustom && (
-                    <span className="text-[9px] uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded">
-                      Custom Override Active
+                    <span className="text-[8px] tracking-wider uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-md">
+                      Overridden Active
                     </span>
                   )}
                 </div>
@@ -721,38 +901,36 @@ export default function AdminPage() {
                   <button
                     onClick={handleResetOta}
                     disabled={loadingOta}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/[0.05] disabled:opacity-50 text-xs font-semibold transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#161d33] hover:bg-neutral-800 hover:text-white disabled:opacity-50 text-xs font-semibold transition-all active:scale-[0.98]"
                   >
                     <RotateCcw size={13} />
-                    Reset to GitHub Default
+                    Reset Default
                   </button>
 
                   <button
                     onClick={handleSaveOta}
                     disabled={loadingOta || savingOta}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-xs font-bold transition-all shadow-lg shadow-indigo-600/20"
+                    className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 disabled:opacity-50 text-xs font-bold transition-all text-white shadow-lg shadow-rose-600/10 active:scale-[0.98]"
                   >
                     <Save size={13} />
-                    {savingOta ? "Saving..." : "Save & Live Update"}
+                    {savingOta ? "Deploying..." : "Publish Template"}
                   </button>
                 </div>
               </div>
 
               {/* Editor Textarea */}
-              <div className="flex-1 relative">
+              <div className="flex-1 relative bg-neutral-950 flex flex-col">
                 {loadingOta && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-                      <span className="text-xs text-white/40">Loading template from server...</span>
-                    </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/80 z-10 gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                    <span className="text-xs text-neutral-400">Streaming template contents...</span>
                   </div>
                 )}
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-full min-h-[500px] bg-black text-indigo-200/90 font-mono text-xs p-6 focus:outline-none focus:ring-0 resize-none selection:bg-indigo-500/30 leading-relaxed"
-                  placeholder="<!-- Write your updated HTML template here -->"
+                  className="flex-1 min-h-[500px] bg-neutral-950 text-rose-300/90 font-mono text-xs p-6 focus:outline-none resize-none leading-relaxed selection:bg-rose-500/20"
+                  placeholder="<!-- Custom Template XML/HTML Source Code -->"
                   spellCheck={false}
                 />
               </div>
