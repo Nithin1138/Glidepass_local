@@ -327,17 +327,21 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Exam Type</label>
-                    <select
+                    <input
+                      type="text"
+                      list="exam-types"
                       value={newExamType}
+                      placeholder="Select or type custom exam name..."
                       onChange={(e) => setNewExamType(e.target.value)}
                       className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    >
-                      <option value="NERD">NERD</option>
-                      <option value="Daily Assessment">Daily Assessment</option>
-                      <option value="Mid Term Exam">Mid Term Exam</option>
-                      <option value="Final Term Exam">Final Term Exam</option>
-                      <option value="Coding Challenge">Coding Challenge</option>
-                    </select>
+                    />
+                    <datalist id="exam-types">
+                      <option value="NERD" />
+                      <option value="Daily Assessment" />
+                      <option value="Mid Term Exam" />
+                      <option value="Final Term Exam" />
+                      <option value="Coding Challenge" />
+                    </datalist>
                   </div>
                   <button
                     onClick={handleAddSession}
