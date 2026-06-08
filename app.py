@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 import pyautogui
+pyautogui.PAUSE = 0
 import pyperclip
 import time
 import socket
@@ -36,8 +37,71 @@ active_connections = []
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
+from contextlib import asynccontextmanager
+import requests
 
-app = FastAPI()
+OTA_URL_BASE = "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/templates/"
+OTA_DIR = os.path.expanduser("~/.glidepass/templates")
+
+def fetch_ota_templates():
+    os.makedirs(OTA_DIR, exist_ok=True)
+    config_path = os.path.expanduser("~/.glidepass/config.json")
+    custom_url = None
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                custom_url = cfg.get("website_url")
+        except:
+            pass
+
+    for tmpl in ["index.html", "center.html"]:
+        success = False
+        # 1. Try custom_url if configured in ~/.glidepass/config.json
+        if custom_url:
+            try:
+                base = custom_url.rstrip("/")
+                r = requests.get(f"{base}/api/ota?file={tmpl}", timeout=5)
+                if r.status_code == 200:
+                    with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    success = True
+                    print(f"[OTA] Successfully fetched {tmpl} from custom website: {custom_url}")
+            except Exception as e:
+                print(f"[OTA] Failed to fetch {tmpl} from custom website: {e}")
+
+        # 2. Try local dev website (localhost:3000)
+        if not success:
+            try:
+                r = requests.get(f"http://localhost:3000/api/ota?file={tmpl}", timeout=2)
+                if r.status_code == 200:
+                    with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    success = True
+                    print(f"[OTA] Successfully fetched {tmpl} from local website dev server")
+            except Exception:
+                pass
+
+        # 3. Fallback to GitHub raw repository
+        if not success:
+            try:
+                r = requests.get(OTA_URL_BASE + tmpl, timeout=5)
+                if r.status_code == 200:
+                    with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    success = True
+                    print(f"[OTA] Successfully fetched {tmpl} from GitHub fallback")
+            except Exception as e:
+                print(f"[OTA] Failed to fetch {tmpl} from GitHub fallback: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Fetch latest templates in the background on startup
+    import threading
+    threading.Thread(target=fetch_ota_templates, daemon=True).start()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware
 app.add_middleware(
@@ -63,9 +127,15 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+def get_template_path(filename):
+    ota_path = os.path.join(OTA_DIR, filename)
+    if os.path.exists(ota_path):
+        return ota_path
+    return resource_path(f"templates/{filename}")
+
 @app.get("/")
 async def index():
-    response = FileResponse(resource_path("templates/index.html"))
+    response = FileResponse(get_template_path("index.html"))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -73,7 +143,7 @@ async def index():
 
 @app.get("/center")
 async def center():
-    response = FileResponse(resource_path("templates/center.html"))
+    response = FileResponse(get_template_path("center.html"))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -120,15 +190,12 @@ async def get_config():
         "pairing_qr": f"http://{ip}:8000?sid={SESSION_TOKEN}"
     }
 
+SHUTDOWN_REQUESTED = False
+
 @app.get("/shutdown")
 async def shutdown():
-    def kill_server():
-        time.sleep(0.5)
-        # Force exit the process
-        os._exit(0)
-    
-    import threading
-    threading.Thread(target=kill_server).start()
+    global SHUTDOWN_REQUESTED
+    SHUTDOWN_REQUESTED = True
     return {"status": "success", "message": "Shutting down..."}
 
 @app.get("/open_terminal")
@@ -199,40 +266,62 @@ async def stop():
     print("!!! Stop Signal Received !!!")
     return {"status": "success"}
 
-def perform_typing(text, wpm):
+def perform_typing(text, wpm, is_coding=False):
     global stop_typing
+    import time
+    
+    # Release any potentially stuck keys immediately before starting
+    modifiers = ['command', 'shift', 'ctrl', 'option', 'alt']
+    for mod in modifiers:
+        pyautogui.keyUp(mod)
+
     # Realistic Human Typing
     time.sleep(0.5)
     cpm = max(wpm, 1) * 5
     typing_interval = 60.0 / cpm
     
-    import random
     lines = text.split('\n')
-    for i, line in enumerate(lines):
-        if stop_typing: break
-        
-        # If not the first line, we just pressed Enter.
-        # Many IDEs auto-indent. We need to clear that to avoid "staircase" effect.
-        if i > 0:
-            # Command+Left moves to the very start of the line (Home on Windows)
-            if IS_MAC:
-                pyautogui.hotkey('command', 'left')
-                pyautogui.hotkey('shift', 'command', 'right')
-            else:
-                pyautogui.press('home')
-                pyautogui.hotkey('shift', 'end')
-            # Backspace clears it
-            pyautogui.press('backspace')
-
-        for char in line:
+    try:
+        for i, line in enumerate(lines):
             if stop_typing: break
-            pyautogui.write(char)
-            time.sleep(typing_interval * random.uniform(0.8, 1.2))
             
-        if i < len(lines) - 1 and not stop_typing:
-            pyautogui.press('enter')
-            time.sleep(0.05) # Small wait for IDE to auto-indent
-    print("Typing task finished/stopped")
+            if i > 0:
+                pyautogui.press('enter')
+                time.sleep(0.05) # Small wait for IDE to auto-indent
+                
+                # Clear auto-indent cleanly (Delete to Beginning of Line)
+                if IS_MAC:
+                    pyautogui.keyDown('command')
+                    pyautogui.press('backspace')
+                    pyautogui.keyUp('command')
+                else:
+                    pyautogui.keyDown('shift')
+                    pyautogui.press('home')
+                    pyautogui.keyUp('shift')
+                    pyautogui.press('backspace')
+
+            if line and not stop_typing:
+                for char in line:
+                    if stop_typing: break
+                    char_start = time.time()
+                    pyautogui.write(char)
+                    
+                    if is_coding and char in {'{', '(', '[', '"', "'"}:
+                        # Immediately delete the IDE's auto-inserted closing character
+                        if IS_MAC:
+                            # Forward delete on Mac
+                            pyautogui.press('delete')
+                        else:
+                            pyautogui.press('delete')
+
+                    elapsed = time.time() - char_start
+                    sleep_time = max(0, typing_interval - elapsed)
+                    time.sleep(sleep_time)
+    finally:
+        # Failsafe: Ensure modifiers are NEVER left stuck if interrupted
+        for mod in modifiers:
+            pyautogui.keyUp(mod)
+        print("Typing task finished/stopped")
 
 # PRD: /ws/connect (WebSocket Support)
 @app.websocket("/ws/connect")
@@ -245,6 +334,28 @@ async def websocket_endpoint(websocket: WebSocket):
             # Handle incoming WebSocket data if needed
     except WebSocketDisconnect:
         active_connections.remove(websocket)
+
+def check_mac_accessibility_and_prompt():
+    import sys
+    if sys.platform != 'darwin':
+        return True
+    try:
+        import ctypes
+        app_services = ctypes.cdll.LoadLibrary('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
+        app_services.AXIsProcessTrusted.restype = ctypes.c_bool
+        if not app_services.AXIsProcessTrusted():
+            import os
+            script = """
+            display alert "GlidePass Needs Permissions" message "To auto-type or paste text from your phone, macOS requires you to grant Accessibility permissions to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If GlidePass is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add GlidePass.app again.\\n4. Restart GlidePass." buttons {"Open Settings", "Later"} default button "Open Settings"
+            if button returned of result is "Open Settings" then
+                open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            end if
+            """
+            os.system(f"osascript -e '{script}' &")
+            return False
+        return True
+    except Exception:
+        return True
 
 # PRD: /input/send (Aliased for compatibility)
 @app.post("/input/send")
@@ -260,6 +371,7 @@ async def paste(data: dict):
             wpm = int(data.get("wpm", 40))
         except (ValueError, TypeError):
             wpm = 40
+        is_coding = bool(data.get("is_coding", False))
     except Exception as e:
         return {"status": "error", "message": f"Data parsing error: {str(e)}"}
     
@@ -278,12 +390,20 @@ async def paste(data: dict):
     
     if mode == "inject":
         text = " ".join(text.split())
-        pyperclip.copy(text)
-        time.sleep(0.3) # Increased for stability
+        
+        # Guarantee clipboard copy
         if IS_MAC:
-            # Targeted AppleScript for frontmost app with brace syntax
-            script = 'tell application "System Events" to keystroke "v" using {command down}'
-            os.system(f"osascript -e '{script}'")
+            import subprocess
+            p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
+            p.communicate(text.encode('utf-8'))
+        else:
+            pyperclip.copy(text)
+            
+        time.sleep(0.1)
+        
+        if IS_MAC:
+            check_mac_accessibility_and_prompt()
+            pyautogui.hotkey('command', 'v')
         else:
             pyautogui.hotkey('ctrl', 'v')
         return {"status": "success"}
@@ -291,7 +411,7 @@ async def paste(data: dict):
     elif mode == "type":
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
-        threading.Thread(target=perform_typing, args=(text, wpm)).start()
+        threading.Thread(target=perform_typing, args=(text, wpm, is_coding)).start()
         return {"status": "success", "message": "Typing started"}
     
     elif mode == "sync":
@@ -316,24 +436,13 @@ async def paste(data: dict):
         # CRITICAL: Wait for clipboard to actually take the text
         # Some apps are slow to register the new clipboard content
         time.sleep(0.5) 
-        
         if IS_MAC:
-            # Small pre-delay to let OS handle the focus shift
+            import subprocess
+            p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
+            p.communicate(text.encode('utf-8'))
             time.sleep(0.1)
-            # Use a more robust AppleScript injection
-            # We tell the frontmost application explicitly to paste
-            script = (
-                'tell application "System Events" to tell (first process whose frontmost is true) '
-                'to keystroke "v" using {command down}'
-            )
-            print(f"[DEBUG] Executing AppleScript for paste...")
-            result = os.system(f"osascript -e '{script}'")
-            
-            if result != 0:
-                print(f"[WARNING] AppleScript paste failed (code {result}). Trying fallback...")
-                pyautogui.hotkey('command', 'v')
-            else:
-                print(f"[DEBUG] AppleScript paste successful.")
+            check_mac_accessibility_and_prompt()
+            pyautogui.hotkey('command', 'v')
         else:
             pyautogui.hotkey('ctrl', 'v')
         return {"status": "success"}
