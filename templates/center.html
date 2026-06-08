@@ -559,7 +559,7 @@
                         <textarea id="remote-text" placeholder="Type or paste content here..."></textarea>
                     </div>
                     <div class="status-message" id="sync-status">
-                        <span>⏸️ Live Sync OFF: Dispatch manually with button below.</span>
+                        <span style="display: flex; align-items: center; gap: 6px;"><i data-lucide="pause-circle" size="14"></i> Live Sync OFF: Dispatch manually with button below.</span>
                     </div>
                 </div>
 
@@ -586,6 +586,10 @@
 
                 <!-- Horizontal WPM Selector -->
                 <div class="wpm-selector-row" id="wpm-selector" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <input type="checkbox" id="is-coding-checkbox" style="accent-color: var(--accent-color); width: 16px; height: 16px; cursor: pointer;">
+                        <label for="is-coding-checkbox" style="font-size: 0.8rem; color: #fff; font-weight: 600; cursor: pointer;">Coding? (Handle IDE auto-brackets)</label>
+                    </div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
                         <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em;">TYPING SPEED</span>
                         <span id="wpm-display" style="font-size: 0.8rem; color: var(--accent-color); font-weight: 800;">40 WPM</span>
@@ -663,16 +667,22 @@
         // Live Sync
         liveSyncBtn.addEventListener('click', () => {
             liveSync = !liveSync;
-            liveSyncBtn.classList.toggle('active', liveSync);
             updateSyncStatus();
         });
 
         function updateSyncStatus() {
             if (liveSync) {
-                syncStatusText.innerHTML = `<span>📡 Live Sync ON: Typing live on laptop.</span>`;
+                liveSyncBtn.classList.add('active');
+                if (injectionMode === 'typing') {
+                    syncStatusText.innerHTML = `<span style="display: flex; align-items: center; gap: 6px;"><i data-lucide="radio" size="14"></i> Live Sync ON: Typing live on laptop.</span>`;
+                } else {
+                    syncStatusText.innerHTML = `<span style="display: flex; align-items: center; gap: 6px;"><i data-lucide="radio" size="14"></i> Live Sync ON: Instantly appears on laptop.</span>`;
+                }
             } else {
-                syncStatusText.innerHTML = `<span>⏸️ Live Sync OFF: Dispatch manually.</span>`;
+                liveSyncBtn.classList.remove('active');
+                syncStatusText.innerHTML = `<span style="display: flex; align-items: center; gap: 6px;"><i data-lucide="pause-circle" size="14"></i> Live Sync OFF: Dispatch manually.</span>`;
             }
+            lucide.createIcons();
         }
 
         // Mode Selection
@@ -714,8 +724,13 @@
                 return;
             }
             const cpm = selectedWpm * 5;
-            const charsPerSec = cpm / 60;
-            const timeInSecs = (text.length / charsPerSec) + 0.5; // 0.5s initial delay
+            const typingInterval = 60 / cpm;
+            const numLines = (text.match(/\n/g) || []).length;
+            
+            // Expected time
+            const baseTime = text.length * typingInterval;
+            const lineTime = numLines * 0.2; // 0.05s sleep + keypresses overhead ~0.15s
+            const timeInSecs = baseTime + lineTime + 0.5; // 0.5s initial startup
             
             if (timeInSecs < 60) {
                 expectedTimeDisplay.innerText = `Expected Time: ${Math.round(timeInSecs)}s`;
@@ -754,7 +769,8 @@
                     body: JSON.stringify({
                         text: text,
                         mode: mode,
-                        wpm: selectedWpm
+                        wpm: selectedWpm,
+                        is_coding: document.getElementById('is-coding-checkbox').checked
                     })
                 });
 
@@ -783,13 +799,14 @@
             const overlay = document.getElementById('countdown-overlay');
             const timerCount = document.getElementById('timer-count');
 
-            // Estimation logic matching app.py
+            // Estimation logic matching exact typing timing in app.py
             const cpm = wpm * 5;
             const typingInterval = 60 / cpm;
-            const numLines = text.split('\n').length;
-            // Total seconds = (chars * interval) + (lines * 0.05) + buffer
-            let totalSeconds = (text.length * typingInterval) + (numLines * 0.05);
-            totalSeconds = Math.ceil(totalSeconds * 1.1); // 10% safety buffer
+            const numLines = (text.match(/\n/g) || []).length;
+            
+            // Total seconds = (chars * interval) + (lines * 0.2) + 0.5s startup
+            let totalSeconds = (text.length * typingInterval) + (numLines * 0.2) + 0.5;
+            totalSeconds = Math.ceil(totalSeconds); 
 
             // UI state: Active typing
             overlay.style.display = 'flex';
@@ -840,7 +857,8 @@
                     body: JSON.stringify({
                         text: remoteText.value,
                         mode: 'sync',
-                        wpm: selectedWpm
+                        wpm: selectedWpm,
+                        is_coding: document.getElementById('is-coding-checkbox').checked
                     })
                 });
             } catch (e) { }
