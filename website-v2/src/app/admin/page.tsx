@@ -16,6 +16,7 @@ interface VitCode {
   id: string;
   date: string;
   examType: string;
+  title?: string;
   questions: Question[];
 }
 
@@ -40,6 +41,7 @@ export default function AdminPage() {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   });
   const [newExamType, setNewExamType] = useState<string>("NERD");
+  const [newSessionTitle, setNewSessionTitle] = useState<string>("");
   const [examTypes, setExamTypes] = useState<string[]>([
     "NERD",
     "Daily Assessment",
@@ -188,11 +190,13 @@ export default function AdminPage() {
       id: Date.now().toString(),
       date: newDate,
       examType: newExamType,
+      title: newSessionTitle.trim() || undefined,
       questions: [],
     };
     const updated = [...vitSessions, newSession];
     handleSaveVitDatabase(updated);
     setActiveSessionId(newSession.id);
+    setNewSessionTitle("");
     const today = new Date();
     setNewDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
   };
@@ -465,6 +469,16 @@ export default function AdminPage() {
                   )}
 
                   <div>
+                    <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Session Title (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Session 1, Quiz 2"
+                      value={newSessionTitle}
+                      onChange={(e) => setNewSessionTitle(e.target.value)}
+                      className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+                  <div>
                     <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Date</label>
                     <input
                       type="date"
@@ -517,7 +531,7 @@ export default function AdminPage() {
                         <div className="flex items-center gap-3">
                           <Award size={16} className={activeSessionId === s.id ? "text-indigo-400" : "text-white/30"} />
                           <div>
-                            <p className="text-xs font-bold">{s.examType}</p>
+                            <p className="text-xs font-bold">{s.title || s.examType}</p>
                             <p className="text-[10px] text-white/30 font-medium">{s.date}</p>
                           </div>
                         </div>
@@ -550,7 +564,7 @@ export default function AdminPage() {
                   <div className="flex justify-between items-center p-4 border border-white/[0.06] bg-white/[0.01] rounded-2xl">
                     <div>
                       <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-400 font-mono">{activeSession.date}</span>
-                      <h2 className="text-base font-bold text-white leading-tight">{activeSession.examType} Questions</h2>
+                      <h2 className="text-base font-bold text-white leading-tight">{activeSession.title || activeSession.examType} Questions</h2>
                     </div>
                     <span className="text-xs text-white/40 font-mono">{activeSession.questions.length} Question(s) Configured</span>
                   </div>

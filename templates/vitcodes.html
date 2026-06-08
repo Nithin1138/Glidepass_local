@@ -559,7 +559,7 @@
 
             // Fill meta info
             document.getElementById('detail-exam-type').textContent = session.examType;
-            document.getElementById('detail-heading').textContent = `${session.examType} Questions`;
+            document.getElementById('detail-heading').textContent = `${session.title || session.examType} Questions`;
 
             const qListDiv = document.getElementById('questions-list');
             qListDiv.innerHTML = '';
@@ -655,7 +655,7 @@
                                     <span>${session.examType}</span>
                                 </div>
                             </div>
-                            <h3 class="session-title">${session.examType} Session</h3>
+                            <h3 class="session-title">${session.title || session.examType} Session</h3>
                             <div class="card-footer">
                                 <span>
                                     <i data-lucide="code-2" size="12"></i>

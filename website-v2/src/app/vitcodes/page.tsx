@@ -17,6 +17,7 @@ interface VitCode {
   id: string;
   date: string;
   examType: string;
+  title?: string;
   questions: Question[];
 }
 
@@ -131,7 +132,7 @@ function VitCodesContent() {
                   </div>
 
                   <h3 className="text-lg font-bold font-outfit text-white/80 group-hover:text-white transition-colors duration-300 mb-2">
-                    {session.examType} Session
+                    {session.title || session.examType} Session
                   </h3>
                   
                   <div className="flex items-center justify-between text-xs text-white/40 pt-4 border-t border-white/[0.04]">
