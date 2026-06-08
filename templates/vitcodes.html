@@ -645,29 +645,33 @@
                         return;
                     }
 
-                    data.forEach(session => {
-                        const card = document.createElement('div');
-                        card.className = 'session-card';
-                        card.innerHTML = `
-                            <div class="card-top">
-                                <div class="exam-badge">
-                                    <i data-lucide="award" size="10"></i>
-                                    <span>${session.examType}</span>
-                                </div>
-                            </div>
-                            <h3 class="session-title">${session.title || session.examType} Session</h3>
-                            <div class="card-footer">
-                                <span>
-                                    <i data-lucide="code-2" size="12"></i>
-                                    ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
-                                </span>
-                                <i data-lucide="chevron-right" size="14"></i>
-                            </div>
-                        `;
-                        card.addEventListener('click', () => showDetail(session.id));
-                        grid.appendChild(card);
-                    });
-                    refreshIcons();
+        data.forEach(session => {
+            const card = document.createElement('div');
+            card.className = 'session-card';
+            // Build card inner HTML with conditional title and date display
+            const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
+            const dateHTML = session.title ? `<p class="session-date"><i data-lucide="calendar" size="12"></i> ${session.date}</p>` : '';
+            card.innerHTML = `
+                <div class="card-top">
+                    <div class="exam-badge">
+                        <i data-lucide="award" size="10"></i>
+                        <span>${session.examType}</span>
+                    </div>
+                </div>
+                ${titleHTML}
+                ${dateHTML}
+                <div class="card-footer">
+                    <span>
+                        <i data-lucide="code-2" size="12"></i>
+                        ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
+                    </span>
+                    <i data-lucide="chevron-right" size="14"></i>
+                </div>
+            `;
+            card.addEventListener('click', () => showDetail(session.id));
+            grid.appendChild(card);
+        });
+        refreshIcons();
                 })
                 .catch(err => {
                     grid.innerHTML = `
