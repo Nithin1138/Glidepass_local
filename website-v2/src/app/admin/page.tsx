@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2, Award, Calendar, BookOpen, Edit2, Check } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2, Award, Calendar, BookOpen, Edit2, Check, X } from "lucide-react";
 import Link from "next/link";
 
 interface Question {
@@ -49,6 +49,9 @@ export default function AdminPage() {
   ]);
   const [showAddExamType, setShowAddExamType] = useState<boolean>(false);
   const [newExamTypeName, setNewExamTypeName] = useState<string>("");
+  const [showManageExamTypes, setShowManageExamTypes] = useState<boolean>(false);
+  const [editingExamTypeIndex, setEditingExamTypeIndex] = useState<number | null>(null);
+  const [editingExamTypeName, setEditingExamTypeName] = useState<string>("");
   
   // Selected session for editing questions
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -332,12 +335,26 @@ export default function AdminPage() {
                   <h2 className="text-xs font-bold tracking-widest text-white/40 uppercase flex items-center gap-2">
                     <Calendar size={13} className="text-indigo-400" /> Add Exam Session
                   </h2>
-                  <button
-                    onClick={() => setShowAddExamType(!showAddExamType)}
-                    className="text-[10px] bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
-                  >
-                    <Plus size={10} /> Add Exam Type
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setShowManageExamTypes(!showManageExamTypes);
+                        setShowAddExamType(false);
+                      }}
+                      className="text-[10px] bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                    >
+                      <Trash2 size={10} /> Manage Types
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddExamType(!showAddExamType);
+                        setShowManageExamTypes(false);
+                      }}
+                      className="text-[10px] bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                    >
+                      <Plus size={10} /> Add Exam Type
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="space-y-3">
@@ -366,6 +383,83 @@ export default function AdminPage() {
                         >
                           Add
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showManageExamTypes && (
+                    <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-2.5">
+                      <label className="text-[10px] text-white/40 uppercase font-bold tracking-wider block">Manage Exam Types</label>
+                      <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                        {examTypes.map((type, idx) => (
+                          <div key={idx} className="flex justify-between items-center p-1.5 rounded bg-black/40 border border-white/[0.04] gap-2">
+                            {editingExamTypeIndex === idx ? (
+                              <div className="flex items-center gap-1.5 w-full">
+                                <input
+                                  type="text"
+                                  value={editingExamTypeName}
+                                  onChange={(e) => setEditingExamTypeName(e.target.value)}
+                                  className="flex-1 text-[11px] bg-black border border-white/10 rounded px-2 py-1 text-white focus:outline-none focus:border-indigo-500"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (editingExamTypeName.trim()) {
+                                      const oldVal = type;
+                                      const newVal = editingExamTypeName.trim();
+                                      setExamTypes(prev => prev.map((t, i) => i === idx ? newVal : t));
+                                      if (newExamType === oldVal) {
+                                        setNewExamType(newVal);
+                                      }
+                                      setEditingExamTypeIndex(null);
+                                      setEditingExamTypeName("");
+                                    }
+                                  }}
+                                  className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10"
+                                >
+                                  <Check size={11} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingExamTypeIndex(null);
+                                    setEditingExamTypeName("");
+                                  }}
+                                  className="p-1 rounded text-white/30 hover:bg-white/5"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-xs text-white/80">{type}</span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingExamTypeIndex(idx);
+                                      setEditingExamTypeName(type);
+                                    }}
+                                    className="p-1 rounded text-white/30 hover:text-indigo-400 hover:bg-indigo-500/10"
+                                  >
+                                    <Edit2 size={11} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Remove "${type}" from list?`)) {
+                                        setExamTypes(prev => prev.filter((_, i) => i !== idx));
+                                        if (newExamType === type) {
+                                          const nextTypes = examTypes.filter((_, i) => i !== idx);
+                                          setNewExamType(nextTypes[0] || "");
+                                        }
+                                      }
+                                    }}
+                                    className="p-1 rounded text-white/30 hover:text-rose-400 hover:bg-rose-500/10"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
