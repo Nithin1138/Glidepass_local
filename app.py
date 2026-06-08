@@ -265,7 +265,7 @@ async def copy_from_laptop():
         time.sleep(0.1)
         
         # Trigger system copy
-        pyautogui.hotkey(CMD_KEY, 'c')
+        pyautogui.hotkey(CMD_KEY, 'c', interval=0.05)
         time.sleep(0.4) # Wait a bit longer for clipboard
         
         text = pyperclip.paste()
@@ -338,9 +338,9 @@ def perform_typing(text, wpm, is_coding=False):
                 # Clear auto-indent cleanly if in coding mode
                 if is_coding:
                     if IS_MAC:
-                        pyautogui.hotkey('command', 'backspace')
+                        pyautogui.hotkey('command', 'backspace', interval=0.05)
                     else:
-                        pyautogui.hotkey('shift', 'home')
+                        pyautogui.hotkey('shift', 'home', interval=0.05)
                         pyautogui.press('backspace')
 
             # Process line content (allow empty line to be passed over so we still get newlines)
@@ -453,9 +453,9 @@ async def paste(data: dict):
         
         if IS_MAC:
             check_mac_accessibility_and_prompt()
-            pyautogui.hotkey('command', 'v')
+            pyautogui.hotkey('command', 'v', interval=0.05)
         else:
-            pyautogui.hotkey('ctrl', 'v')
+            pyautogui.hotkey('ctrl', 'v', interval=0.05)
         return {"status": "success"}
 
     elif mode == "type":
@@ -492,9 +492,9 @@ async def paste(data: dict):
             p.communicate(text.encode('utf-8'))
             time.sleep(0.1)
             check_mac_accessibility_and_prompt()
-            pyautogui.hotkey('command', 'v')
+            pyautogui.hotkey('command', 'v', interval=0.05)
         else:
-            pyautogui.hotkey('ctrl', 'v')
+            pyautogui.hotkey('ctrl', 'v', interval=0.05)
         return {"status": "success"}
     
     return {"status": "error", "message": "No text provided"}
