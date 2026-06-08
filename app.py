@@ -149,6 +149,14 @@ async def center():
     response.headers["Expires"] = "0"
     return response
 
+@app.get("/vitcodes")
+async def vitcodes_page():
+    response = FileResponse(get_template_path("vitcodes.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 @app.get("/logo.png")
 async def get_logo():
     # Attempt to serve from bundled resource

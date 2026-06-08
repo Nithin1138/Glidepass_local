@@ -632,9 +632,8 @@
 
         const vitBtn = document.getElementById('vit-btn');
         vitBtn.addEventListener('click', () => {
-            const isFileProtocol = window.location.protocol === 'file:';
-            const baseUrl = isFileProtocol ? 'https://glidepass.vercel.app' : window.location.origin;
-            window.location.href = `${baseUrl}/vitcodes`;
+            const base = window.location.origin;
+            window.location.href = `${base}/vitcodes`;
         });
     </script>
 </body>
