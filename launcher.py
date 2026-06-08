@@ -193,6 +193,11 @@ class GlidePassLauncher:
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
                  anchor="w", justify="left").place(x=24, y=136)
 
+        tk.Label(v,
+                 text="Scan in mobile:",
+                 font=(self.FU, 10, "bold"), bg=self.BG, fg=self.WHITE,
+                 anchor="w").place(x=24, y=192)
+
         # ── QR card ──────────────────────────────────────────────────────────
         self._qr_cv = tk.Canvas(v, width=W - 48, height=210,
                                  bg=self.BG, highlightthickness=0)
