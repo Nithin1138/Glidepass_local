@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const getOtaDir = () => {
-  const dir = path.join(process.cwd(), "data", "ota");
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  return dir;
+const getCustomFilePath = (file: string) => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "ota", file);
 };
 
 export async function GET(request: NextRequest) {
@@ -19,10 +17,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const otaDir = getOtaDir();
-    const customFilePath = path.join(otaDir, file);
+    const customFilePath = getCustomFilePath(file);
 
-    // Try reading custom OTA template
+    // Try reading custom OTA template if it exists
     if (fs.existsSync(customFilePath)) {
       const content = fs.readFileSync(customFilePath, "utf8");
       return new NextResponse(content, {
@@ -58,8 +55,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Content must be a string" }, { status: 400 });
     }
 
-    const otaDir = getOtaDir();
-    const filePath = path.join(otaDir, file);
+    const filePath = getCustomFilePath(file);
+    const parentDir = path.dirname(filePath);
+
+    // Only create directory if it does not exist
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
 
     fs.writeFileSync(filePath, content, "utf8");
 

@@ -3,16 +3,21 @@ import fs from "fs";
 import path from "path";
 
 const getFilePath = () => {
-  const dir = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  return path.join(dir, "vitcodes.json");
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "vitcodes.json");
 };
 
 const readCodes = () => {
   const filePath = getFilePath();
   if (!fs.existsSync(filePath)) {
+    // Check if the default file exists in the parent templates/dev folder or fallback
+    const defaultFilePath = path.join(process.cwd(), "..", "templates", "vitcodes.json");
+    if (fs.existsSync(defaultFilePath)) {
+      try {
+        return JSON.parse(fs.readFileSync(defaultFilePath, "utf8"));
+      } catch (e) {}
+    }
     // Return sample/initial data if empty
     return [
       {
@@ -53,6 +58,10 @@ const readCodes = () => {
 
 const writeCodes = (data: any) => {
   const filePath = getFilePath();
+  const parentDir = path.dirname(filePath);
+  if (!fs.existsSync(parentDir)) {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 };
 
@@ -68,7 +77,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    // Validate request
     if (!Array.isArray(body)) {
       return NextResponse.json({ error: "Data must be an array of VIT codes" }, { status: 400 });
     }
