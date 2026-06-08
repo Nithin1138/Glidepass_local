@@ -603,7 +603,8 @@
 
         const vitBtn = document.getElementById('vit-btn');
         vitBtn.addEventListener('click', () => {
-            window.location.href = '/center';
+            const websiteUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://glidepass-web.vercel.app';
+            window.location.href = websiteUrl + '/vitcodes?origin=' + encodeURIComponent(window.location.origin);
         });
     </script>
 </body>

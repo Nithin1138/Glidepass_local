@@ -926,6 +926,14 @@
             }, 2500);
         }
 
+        // Auto-fill from code query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeParam = urlParams.get('code');
+        if (codeParam) {
+            remoteText.value = codeParam;
+            remoteText.dispatchEvent(new Event('input'));
+        }
+
         // Auto-enter if already linked (optional)
         // setTimeout(() => launchBtn.click(), 500); 
     </script>
