@@ -22,6 +22,17 @@ class ServerManager:
         self.server_instance = None
         self.thread = None
         self.should_be_running = False
+        
+        # Poll for shutdown requests from the GUI (via /shutdown endpoint)
+        import time
+        import app as fastapi_app_module
+        def poll_shutdown():
+            while True:
+                if getattr(fastapi_app_module, "SHUTDOWN_REQUESTED", False):
+                    self.stop()
+                    fastapi_app_module.SHUTDOWN_REQUESTED = False
+                time.sleep(0.5)
+        threading.Thread(target=poll_shutdown, daemon=True).start()
 
     def start(self):
         if self.thread and self.thread.is_alive():
@@ -45,6 +56,7 @@ class ServerManager:
     def stop(self):
         if self.server_instance:
             self.server_instance.should_exit = True
+            self.server_instance.force_exit = True
         self.should_be_running = False
 
 class AppController:
@@ -97,23 +109,43 @@ if __name__ == "__main__":
     if getattr(sys, 'frozen', False):
         import multiprocessing
         multiprocessing.freeze_support()
+def check_mac_accessibility():
+    import sys
+    if sys.platform != 'darwin':
+        return
+    try:
+        import ctypes
+        app_services = ctypes.cdll.LoadLibrary('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
+        app_services.AXIsProcessTrusted.restype = ctypes.c_bool
+        if not app_services.AXIsProcessTrusted():
+            import os
+            script = """
+            display alert "GlidePass Needs Permissions" message "To auto-type text from your phone, macOS requires you to grant Accessibility permissions to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If GlidePass is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add GlidePass.app again.\\n4. Restart GlidePass." buttons {"Open Settings", "Later"} default button "Open Settings"
+            if button returned of result is "Open Settings" then
+                open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            end if
+            """
+            os.system(f"osascript -e '{script}' &")
+    except Exception as e:
+        pass
+
+if __name__ == "__main__":
+    if "--gui" not in sys.argv:
+        # Check accessibility when starting the main menubar app
+        check_mac_accessibility()
+
+    # Freeze support is already handled above
     
     # Aggressive macOS Dock Icon Management
-    if sys.platform == "darwin":
+    if sys.platform == "darwin" and "--gui" not in sys.argv:
         try:
             from AppKit import NSApplication, NSApplicationActivationPolicyProhibited, \
                                NSApplicationActivationPolicyAccessory
             
             # Determine role based on arguments
-            if "--gui" in sys.argv:
-                # Dashboard process: DO NOT touch NSApplication or sharedApplication().
-                # Let Tkinter handle its own initialization. 
-                pass
-            elif any(x in sys.argv for x in ["uvicorn", "app:app", "-m"]):
-                # Backend Worker: Completely hide from UI system
+            if any(x in sys.argv for x in ["uvicorn", "app:app", "-m"]):
                 NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyProhibited)
             else:
-                # Main Anchor (Menubar): Hide from Dock, keep Menubar
                 NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
         except Exception:
             pass
@@ -121,10 +153,8 @@ if __name__ == "__main__":
     # Handle GUI mode vs Anchor mode
     if "--gui" in sys.argv:
         try:
-            root = tk.Tk()
-            gui = GlidePassLauncher(root)
-            root.protocol("WM_DELETE_WINDOW", root.destroy)
-            root.mainloop()
+            from launcher import run_launcher
+            run_launcher()
         except Exception:
             with open("gui_crash.txt", "w") as f:
                 f.write(traceback.format_exc())

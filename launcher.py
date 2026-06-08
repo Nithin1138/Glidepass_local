@@ -52,13 +52,6 @@ def blend_hex(c1: str, c2: str, t: float) -> str:
 
 class GlidePassLauncher:
     def __init__(self, root):
-        # Single-instance lock
-        try:
-            self.lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.lock_socket.bind(("127.0.0.1", 8001))
-        except socket.error:
-            sys.exit(0)
-
         self.root = root
         self.root.title("GlidePass")
         self.root.geometry("400x760")
@@ -84,6 +77,9 @@ class GlidePassLauncher:
 
         self.root.lift()
         self.root.focus_force()
+        
+        self.root.createcommand("::tk::mac::ReopenApplication", self.show_window)
+        self.root.createcommand("::tk::mac::Quit", self.on_quit)
 
         # ── Design tokens ────────────────────────────────────────────────────
         self.BG     = "#000000" # Pure Black
@@ -164,7 +160,7 @@ class GlidePassLauncher:
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
         
-        self._pill_button(tb, "Bypass Siteblock →", self.WHITE, self.BG2,
+        self._pill_button(tb, "Blocked in site?", self.WHITE, self.BG2,
                           cmd=lambda: self.show_view("bypass"))
 
         # ── Status row ───────────────────────────────────────────────────────
@@ -179,8 +175,19 @@ class GlidePassLauncher:
         self._status_lbl.pack(side="left", padx=(8, 0))
 
         # ── Hero text ────────────────────────────────────────────────────────
+        try:
+            self._main_logo_img = Image.open(resource_path("logo.png"))
+            # Original aspect ratio: 596 x 419 (~1.42)
+            # Desired height: 36 -> Width: 51
+            self._main_logo_img = self._main_logo_img.resize((51, 36), Image.Resampling.LANCZOS)
+            self._main_logo_tk = ImageTk.PhotoImage(self._main_logo_img)
+            tk.Label(v, image=self._main_logo_tk, bg=self.BG).place(x=24, y=96)
+            title_x = 84
+        except Exception as e:
+            title_x = 24
+
         tk.Label(v, text="GlidePass", font=(self.FD, 28, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=24, y=100)
+                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=title_x, y=98)
         tk.Label(v,
                  text="Bridge your devices locally.",
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
@@ -311,10 +318,10 @@ class GlidePassLauncher:
 
         # ── Step cards  2 × 2 grid ───────────────────────────────────────────
         steps = [
-            ("01", "🔗", "Open Site",     "Navigate to the\nrestricted page"),
+            ("01", "↬", "Open Site",     "Navigate to the\nrestricted page"),
             ("02", "⌘",  "Show Bar",      "Win: Ctrl+Shift+B\nMac: ⌘+Shift+B"),
-            ("03", "📖", "Bookmark",      "Right-click bar → Add Page,\nname it 'GlidePad'"),
-            ("04", "⌨",  "Paste Script",  "Paste script into the\nbookmark URL field"),
+            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'GlidePad'"),
+            ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
         cw, ch = (W - 44) // 2, 115
         grid_top = 135
@@ -334,9 +341,15 @@ class GlidePassLauncher:
             cv.create_text(15, 60, text=title,
                            font=(self.FU, 11, "bold"), fill=self.WHITE, anchor="w")
             # Description (wrapping)
-            cv.create_text(15, 76, text=desc,
-                           font=(self.FU, 9), fill=self.DIM,
-                           anchor="nw", width=cw - 22)
+            if i == 3:
+                # Highlight "Copied!"
+                cv.create_text(15, 76, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
+                cv.create_text(68, 76, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
+                cv.create_text(15, 92, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
+            else:
+                cv.create_text(15, 76, text=desc,
+                               font=(self.FU, 9), fill=self.DIM,
+                               anchor="nw", width=cw - 22)
 
         # ── CTA banner ───────────────────────────────────────────────────────
         cta_y  = grid_top + 2 * (ch + 8) + 15
@@ -477,16 +490,19 @@ class GlidePassLauncher:
             return "127.0.0.1"
 
     def update_qr_code(self, ip: str):
-        try:
-            url = (f"https://api.qrserver.com/v1/create-qr-code/"
-                   f"?size=180x180&data=http://{ip}:8000")
-            with urllib.request.urlopen(url) as resp:
-                img = Image.open(io.BytesIO(resp.read()))
-                img = ImageOps.expand(img, border=10, fill="white")
-                img = img.resize((186, 186), Image.Resampling.LANCZOS)
-                self._draw_qr_active(img)
-        except Exception:
-            pass
+        def _fetch():
+            try:
+                url = (f"https://api.qrserver.com/v1/create-qr-code/"
+                       f"?size=180x180&data=http://{ip}:8000")
+                with urllib.request.urlopen(url) as resp:
+                    img = Image.open(io.BytesIO(resp.read()))
+                    img = ImageOps.expand(img, border=10, fill="white")
+                    img = img.resize((186, 186), Image.Resampling.LANCZOS)
+                    self.root.after(0, self._draw_qr_active, img)
+            except Exception:
+                pass
+        import threading
+        threading.Thread(target=_fetch, daemon=True).start()
 
     # ── Server control ────────────────────────────────────────────────────────
 
@@ -573,17 +589,24 @@ class GlidePassLauncher:
         self._draw_qr_empty()
 
     def check_process_status(self):
-        if (self.process and
-                self.process not in ("EXTERNAL", "THREADED") and
-                hasattr(self.process, "poll")):
-            if self.process.poll() is not None:
-                self.process = None
-                if "--auto-start" in sys.argv:
-                    self.root.destroy()
-                    return
-                self._ui_reset()
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            is_running = (s.connect_ex(("127.0.0.1", 8000)) == 0)
+            s.close()
+        except Exception:
+            is_running = False
+
+        if is_running and not self._server_on:
+            self.process = "EXTERNAL"
+            self._ui_active()
+        elif not is_running and self._server_on:
+            self._ui_reset()
+            self.process = None
+
         if self.root.winfo_exists():
-            self.root.after(1000, self.check_process_status)
+            self.root.after(2000, self.check_process_status)
 
     def copy_bookmarklet(self, event=None, silent=False):
         code = self.code_text.get("1.0", "end-1c")
@@ -592,15 +615,75 @@ class GlidePassLauncher:
         if not silent:
             messagebox.showinfo("Bypass Copied", "Bookmarklet copied to clipboard!")
 
-    def on_closing(self):
-        # Server is managed by the Anchor/menubar — keep it alive on window close.
+    def show_window(self, *args):
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        if sys.platform == "darwin":
+            try:
+                import subprocess
+                script = 'tell application "System Events" to set frontmost of every process whose name contains "GlidePass" to true'
+                subprocess.run(["osascript", "-e", script], capture_output=True)
+            except Exception:
+                pass
+
+    def on_quit(self, *args):
+        # Handle Command+Q by killing the entire app (parent menubar + self)
+        try:
+            import os, signal
+            os.kill(os.getppid(), signal.SIGTERM)
+        except Exception:
+            pass
         self.root.destroy()
+
+    def on_closing(self):
+        # Just hide the dashboard. The Menubar process manages the backend.
+        self.root.withdraw()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
+def run_launcher():
+    import socket
+    import sys
+    import threading
+
+    # Single-instance lock & IPC MUST happen before tk.Tk()
+    try:
+        lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        lock_socket.bind(("127.0.0.1", 8001))
+        lock_socket.listen(1)
+    except socket.error:
+        # Already running, just wake it up
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(("127.0.0.1", 8001))
+            s.sendall(b"SHOW")
+            s.close()
+        except Exception:
+            pass
+        sys.exit(0)
+
     root = tk.Tk()
     app  = GlidePassLauncher(root)
+    
+    # Listen for reopen or quit requests
+    def listen_for_show():
+        while True:
+            try:
+                conn, _ = lock_socket.accept()
+                data = conn.recv(1024)
+                conn.close()
+                if data == b"QUIT":
+                    root.after(0, app.root.destroy)
+                else:
+                    root.after(0, app.show_window)
+            except Exception:
+                pass
+    threading.Thread(target=listen_for_show, daemon=True).start()
+
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()
+
+if __name__ == "__main__":
+    run_launcher()

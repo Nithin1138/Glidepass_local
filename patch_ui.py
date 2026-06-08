@@ -52,7 +52,7 @@ build_main_new = """        # Flat background
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
         
-        self._pill_button(tb, "Bypass Siteblock →", self.DIM, self.BG,
+        self._pill_button(tb, "Blocked in site?", self.DIM, self.BG,
                           cmd=lambda: self.show_view("bypass"))"""
 
 content = content.replace(build_main_old, build_main_new)
