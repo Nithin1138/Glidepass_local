@@ -175,15 +175,21 @@ async def get_api_vitcodes():
     urls.append("http://localhost:3000/api/vitcodes")
     urls.append("https://glidepass.vercel.app/api/vitcodes")
 
+    async def fetch_one(client, url):
+        try:
+            r = await client.get(url, timeout=2.0)
+            if r.status_code == 200:
+                return r.json()
+        except Exception:
+            pass
+        return None
+
     async with httpx.AsyncClient() as client:
-        for url in urls:
-            try:
-                r = await client.get(url, timeout=5.0)
-                if r.status_code == 200:
-                    return r.json()
-            except Exception as e:
-                print(f"[API Proxy] Failed fetching from {url}: {e}")
-                continue
+        tasks = [fetch_one(client, url) for url in urls]
+        for task in asyncio.as_completed(tasks):
+            res = await task
+            if res is not None:
+                return res
     return []
 
 
