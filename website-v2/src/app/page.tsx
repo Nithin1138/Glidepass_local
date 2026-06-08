@@ -729,7 +729,9 @@ export default function Home() {
                 gradient: "from-amber-500/30 to-transparent",
                 btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
                 borderHover: "group-hover/card:border-amber-500/40",
-                iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10"
+                iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
+                installCommand: undefined,
+                href: undefined
               },
               {
                 title: "macOS Backend",
@@ -742,7 +744,8 @@ export default function Home() {
                 gradient: "from-rose-500/30 to-transparent",
                 btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
                 borderHover: "group-hover/card:border-rose-500/40",
-                iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10"
+                iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
+                href: undefined
               },
               {
                 title: "Windows Backend",
@@ -754,7 +757,9 @@ export default function Home() {
                 gradient: "from-indigo-500/30 to-transparent",
                 btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                 borderHover: "group-hover/card:border-indigo-500/40",
-                iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10"
+                iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
+                installCommand: undefined,
+                href: undefined
               }
             ].map((d, i) => (
               <motion.div
