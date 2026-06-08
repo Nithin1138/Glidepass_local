@@ -338,13 +338,9 @@ def perform_typing(text, wpm, is_coding=False):
                 # Clear auto-indent cleanly if in coding mode
                 if is_coding:
                     if IS_MAC:
-                        pyautogui.keyDown('command')
-                        pyautogui.press('backspace')
-                        pyautogui.keyUp('command')
+                        pyautogui.hotkey('command', 'backspace')
                     else:
-                        pyautogui.keyDown('shift')
-                        pyautogui.press('home')
-                        pyautogui.keyUp('shift')
+                        pyautogui.hotkey('shift', 'home')
                         pyautogui.press('backspace')
 
             # Process line content (allow empty line to be passed over so we still get newlines)
