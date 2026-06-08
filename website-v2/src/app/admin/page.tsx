@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, ExternalLink, Settings, Github } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, ExternalLink, Settings } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -184,7 +184,7 @@ export default function AdminPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
-                  <Github size={12} />
+                  <FileCode size={12} />
                   GitHub Repository
                   <ExternalLink size={10} />
                 </a>
