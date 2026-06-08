@@ -635,43 +635,46 @@
                 })
                 .then(data => {
                     allSessions = data;
+                    // Group sessions by examType
+                    const groups = {};
+                    data.forEach(s => {
+                        if (!groups[s.examType]) groups[s.examType] = [];
+                        groups[s.examType].push(s);
+                    });
+                    // Render exam type cards
                     grid.innerHTML = '';
-                    if (data.length === 0) {
-                        grid.innerHTML = `
-                            <div class="empty-message">
-                                <span style="font-size: 0.85rem;">No exam codes added yet.</span>
+                    Object.entries(groups).forEach(([type, sessions]) => {
+                        const typeCard = document.createElement('div');
+                        typeCard.className = 'session-card';
+                        const count = sessions.length;
+                        const dates = sessions.map(s => s.date);
+                        const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
+                        const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
+                        const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
+                        typeCard.innerHTML = `
+                            <div class="card-top">
+                                <div class="exam-badge">
+                                    <i data-lucide="award" size="10"></i>
+                                    <span>${type}</span>
+                                </div>
+                            </div>
+                            <h3 class="session-title">${type}</h3>
+                            <p class="session-date"><i data-lucide="calendar" size="12"></i> ${daysInfo}</p>
+                            <div class="card-footer">
+                                <span>
+                                    <i data-lucide="code-2" size="12"></i>
+                                    ${count} Session${count > 1 ? 's' : ''}
+                                </span>
+                                <i data-lucide="chevron-right" size="14"></i>
                             </div>
                         `;
-                        return;
-                    }
-
-        data.forEach(session => {
-            const card = document.createElement('div');
-            card.className = 'session-card';
-            // Build card inner HTML with conditional title and date display
-            const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
-            const dateHTML = session.title ? `<p class="session-date"><i data-lucide="calendar" size="12"></i> ${session.date}</p>` : '';
-            card.innerHTML = `
-                <div class="card-top">
-                    <div class="exam-badge">
-                        <i data-lucide="award" size="10"></i>
-                        <span>${session.examType}</span>
-                    </div>
-                </div>
-                ${titleHTML}
-                ${dateHTML}
-                <div class="card-footer">
-                    <span>
-                        <i data-lucide="code-2" size="12"></i>
-                        ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
-                    </span>
-                    <i data-lucide="chevron-right" size="14"></i>
-                </div>
-            `;
-            card.addEventListener('click', () => showDetail(session.id));
-            grid.appendChild(card);
-        });
-        refreshIcons();
+                        typeCard.addEventListener('click', () => {
+                            // Render sessions for this exam type
+                            renderSessions(sessions);
+                        });
+                        grid.appendChild(typeCard);
+                    });
+                    refreshIcons();
                 })
                 .catch(err => {
                     grid.innerHTML = `
@@ -680,6 +683,41 @@
                         </div>
                     `;
                 });
+
+            function renderSessions(sessions) {
+                const grid = document.getElementById('sessions-grid');
+                grid.innerHTML = '';
+                if (sessions.length === 0) {
+                    grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
+                    return;
+                }
+                sessions.forEach(session => {
+                    const card = document.createElement('div');
+                    card.className = 'session-card';
+                    const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
+                    const dateHTML = session.title ? `<p class="session-date"><i data-lucide="calendar" size="12"></i> ${session.date}</p>` : '';
+                    card.innerHTML = `
+                        <div class="card-top">
+                            <div class="exam-badge">
+                                <i data-lucide="award" size="10"></i>
+                                <span>${session.examType}</span>
+                            </div>
+                        </div>
+                        ${titleHTML}
+                        ${dateHTML}
+                        <div class="card-footer">
+                            <span>
+                                <i data-lucide="code-2" size="12"></i>
+                                ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
+                            </span>
+                            <i data-lucide="chevron-right" size="14"></i>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => showDetail(session.id));
+                    grid.appendChild(card);
+                });
+                refreshIcons();
+            }
         }
 
         // Escape HTML helper
