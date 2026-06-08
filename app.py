@@ -62,7 +62,7 @@ def fetch_ota_templates():
             try:
                 base = custom_url.rstrip("/")
                 r = requests.get(f"{base}/api/ota?file={tmpl}", timeout=5)
-                if r.status_code == 200:
+                if r.status_code == 200 and ("<!DOCTYPE" in r.text or "<html" in r.text):
                     with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
                         f.write(r.text)
                     success = True
@@ -74,7 +74,7 @@ def fetch_ota_templates():
         if not success:
             try:
                 r = requests.get(f"http://localhost:3000/api/ota?file={tmpl}", timeout=2)
-                if r.status_code == 200:
+                if r.status_code == 200 and ("<!DOCTYPE" in r.text or "<html" in r.text):
                     with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
                         f.write(r.text)
                     success = True
@@ -86,7 +86,7 @@ def fetch_ota_templates():
         if not success:
             try:
                 r = requests.get(OTA_URL_BASE + tmpl, timeout=5)
-                if r.status_code == 200:
+                if r.status_code == 200 and ("<!DOCTYPE" in r.text or "<html" in r.text):
                     with open(os.path.join(OTA_DIR, tmpl), "w", encoding="utf-8") as f:
                         f.write(r.text)
                     success = True

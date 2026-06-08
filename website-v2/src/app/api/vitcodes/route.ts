@@ -11,8 +11,7 @@ const getFilePath = () => {
 const readCodes = () => {
   const filePath = getFilePath();
   if (!fs.existsSync(filePath)) {
-    // Check if the default file exists in the parent templates/dev folder or fallback
-    const defaultFilePath = path.join(process.cwd(), "..", "templates", "vitcodes.json");
+    const defaultFilePath = path.join(process.cwd(), "public", "templates", "vitcodes.json");
     if (fs.existsSync(defaultFilePath)) {
       try {
         return JSON.parse(fs.readFileSync(defaultFilePath, "utf8"));
