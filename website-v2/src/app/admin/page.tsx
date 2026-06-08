@@ -35,8 +35,20 @@ export default function AdminPage() {
   const [savingVit, setSavingVit] = useState<boolean>(false);
   
   // New session form states
-  const [newDate, setNewDate] = useState<string>("");
+  const [newDate, setNewDate] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  });
   const [newExamType, setNewExamType] = useState<string>("NERD");
+  const [examTypes, setExamTypes] = useState<string[]>([
+    "NERD",
+    "Daily Assessment",
+    "Mid Term Exam",
+    "Final Term Exam",
+    "Coding Challenge"
+  ]);
+  const [showAddExamType, setShowAddExamType] = useState<boolean>(false);
+  const [newExamTypeName, setNewExamTypeName] = useState<string>("");
   
   // Selected session for editing questions
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -79,6 +91,10 @@ export default function AdminPage() {
       setVitSessions(data);
       if (data.length > 0 && !activeSessionId) {
         setActiveSessionId(data[0].id);
+      }
+      if (data && Array.from) {
+        const types = data.map((s: any) => s.examType).filter(Boolean);
+        setExamTypes(prev => Array.from(new Set([...prev, ...types])));
       }
     } catch (err: any) {
       showStatus("error", err.message || "Failed to load VIT codes");
@@ -174,7 +190,8 @@ export default function AdminPage() {
     const updated = [...vitSessions, newSession];
     handleSaveVitDatabase(updated);
     setActiveSessionId(newSession.id);
-    setNewDate("");
+    const today = new Date();
+    setNewDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
   };
 
   // Delete session
@@ -311,11 +328,48 @@ export default function AdminPage() {
             <div className="lg:col-span-4 space-y-6">
               {/* Creator Box */}
               <div className="border border-white/[0.06] bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 space-y-4">
-                <h2 className="text-xs font-bold tracking-widest text-white/40 uppercase flex items-center gap-2">
-                  <Calendar size={13} className="text-indigo-400" /> Add Exam Session
-                </h2>
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xs font-bold tracking-widest text-white/40 uppercase flex items-center gap-2">
+                    <Calendar size={13} className="text-indigo-400" /> Add Exam Session
+                  </h2>
+                  <button
+                    onClick={() => setShowAddExamType(!showAddExamType)}
+                    className="text-[10px] bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                  >
+                    <Plus size={10} /> Add Exam Type
+                  </button>
+                </div>
                 
                 <div className="space-y-3">
+                  {showAddExamType && (
+                    <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-2">
+                      <label className="text-[10px] text-white/40 uppercase font-bold tracking-wider block">New Exam Type Name</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newExamTypeName}
+                          placeholder="e.g. Weekly Quiz"
+                          onChange={(e) => setNewExamTypeName(e.target.value)}
+                          className="flex-1 text-xs bg-black border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                        />
+                        <button
+                          onClick={() => {
+                            if (newExamTypeName.trim()) {
+                              const val = newExamTypeName.trim();
+                              setExamTypes(prev => Array.from(new Set([...prev, val])));
+                              setNewExamType(val);
+                              setNewExamTypeName("");
+                              setShowAddExamType(false);
+                            }
+                          }}
+                          className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold rounded-xl"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Date</label>
                     <input
@@ -327,21 +381,15 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <label className="text-[10px] text-white/30 uppercase font-bold tracking-wider mb-1 block">Exam Type</label>
-                    <input
-                      type="text"
-                      list="exam-types"
+                    <select
                       value={newExamType}
-                      placeholder="Select or type custom exam name..."
                       onChange={(e) => setNewExamType(e.target.value)}
                       className="w-full text-xs bg-black border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
-                    <datalist id="exam-types">
-                      <option value="NERD" />
-                      <option value="Daily Assessment" />
-                      <option value="Mid Term Exam" />
-                      <option value="Final Term Exam" />
-                      <option value="Coding Challenge" />
-                    </datalist>
+                    >
+                      {examTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </div>
                   <button
                     onClick={handleAddSession}
