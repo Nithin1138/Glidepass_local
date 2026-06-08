@@ -324,7 +324,9 @@ def perform_typing(text, wpm, is_coding=False):
     cpm = max(wpm, 1) * 5
     typing_interval = 60.0 / cpm
     
-    lines = text.split('\n')
+    # Normalize all line endings first
+    normalized_text = text.replace('\r\n', '\n').replace('\r', '\n')
+    lines = normalized_text.split('\n')
     try:
         for i, line in enumerate(lines):
             if stop_typing: break
@@ -333,22 +335,30 @@ def perform_typing(text, wpm, is_coding=False):
                 pyautogui.press('enter')
                 time.sleep(0.05) # Small wait for IDE to auto-indent
                 
-                # Clear auto-indent cleanly (Delete to Beginning of Line)
-                if IS_MAC:
-                    pyautogui.keyDown('command')
-                    pyautogui.press('backspace')
-                    pyautogui.keyUp('command')
-                else:
-                    pyautogui.keyDown('shift')
-                    pyautogui.press('home')
-                    pyautogui.keyUp('shift')
-                    pyautogui.press('backspace')
+                # Clear auto-indent cleanly if in coding mode
+                if is_coding:
+                    if IS_MAC:
+                        pyautogui.keyDown('command')
+                        pyautogui.press('backspace')
+                        pyautogui.keyUp('command')
+                    else:
+                        pyautogui.keyDown('shift')
+                        pyautogui.press('home')
+                        pyautogui.keyUp('shift')
+                        pyautogui.press('backspace')
 
-            if line and not stop_typing:
+            # Process line content (allow empty line to be passed over so we still get newlines)
+            if not stop_typing:
                 for char in line:
                     if stop_typing: break
                     char_start = time.time()
-                    pyautogui.write(char)
+                    
+                    if char == ' ':
+                        pyautogui.press('space')
+                    elif char == '\t':
+                        pyautogui.press('tab')
+                    else:
+                        pyautogui.write(char)
                     
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
                         # Immediately delete the IDE's auto-inserted closing character
