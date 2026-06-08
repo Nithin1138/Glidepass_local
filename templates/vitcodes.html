@@ -511,8 +511,6 @@
         <div class="view" id="detail-view">
             <div class="session-info">
                 <div class="session-meta-row">
-                    <span id="detail-date">--</span>
-                    <span>•</span>
                     <span class="accent" id="detail-exam-type">--</span>
                 </div>
                 <h1 class="session-heading" id="detail-heading">Session Questions</h1>
@@ -560,7 +558,6 @@
             if (!session) return;
 
             // Fill meta info
-            document.getElementById('detail-date').textContent = session.date;
             document.getElementById('detail-exam-type').textContent = session.examType;
             document.getElementById('detail-heading').textContent = `${session.examType} Questions`;
 
@@ -656,10 +653,6 @@
                                 <div class="exam-badge">
                                     <i data-lucide="award" size="10"></i>
                                     <span>${session.examType}</span>
-                                </div>
-                                <div class="session-date">
-                                    <i data-lucide="calendar" size="12"></i>
-                                    <span>${session.date}</span>
                                 </div>
                             </div>
                             <h3 class="session-title">${session.examType} Session</h3>
