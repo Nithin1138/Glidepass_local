@@ -584,6 +584,10 @@
                     <span>ENTER COMMAND CENTER</span>
                     <i data-lucide="chevron-right" size="20"></i>
                 </button>
+                <button class="connect-btn-main" id="vit-btn" style="margin-top: 15px; background: rgba(72, 187, 120, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color);">
+                    <span>VIT-AP (Today's code)</span>
+                    <i data-lucide="code" size="20"></i>
+                </button>
             </div>
         </div>
 
@@ -594,6 +598,11 @@
 
         const launchBtn = document.getElementById('launch-btn');
         launchBtn.addEventListener('click', () => {
+            window.location.href = '/center';
+        });
+
+        const vitBtn = document.getElementById('vit-btn');
+        vitBtn.addEventListener('click', () => {
             window.location.href = '/center';
         });
     </script>
