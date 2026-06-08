@@ -157,6 +157,36 @@ async def vitcodes_page():
     response.headers["Expires"] = "0"
     return response
 
+@app.get("/api/vitcodes")
+async def get_api_vitcodes():
+    config_path = os.path.expanduser("~/.glidepass/config.json")
+    custom_url = None
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                custom_url = cfg.get("website_url")
+        except:
+            pass
+
+    urls = []
+    if custom_url:
+        urls.append(custom_url.rstrip("/") + "/api/vitcodes")
+    urls.append("http://localhost:3000/api/vitcodes")
+    urls.append("https://glidepass.vercel.app/api/vitcodes")
+
+    async with httpx.AsyncClient() as client:
+        for url in urls:
+            try:
+                r = await client.get(url, timeout=5.0)
+                if r.status_code == 200:
+                    return r.json()
+            except Exception as e:
+                print(f"[API Proxy] Failed fetching from {url}: {e}")
+                continue
+    return []
+
+
 @app.get("/logo.png")
 async def get_logo():
     # Attempt to serve from bundled resource
