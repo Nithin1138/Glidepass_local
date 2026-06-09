@@ -1,25 +1,46 @@
+"""GlidePass FastAPI backend.
+
+This is the single source of truth for the GlidePass HTTP API.  It runs
+on both macOS and Windows; the only OS-specific code paths are guarded
+by ``IS_MAC`` / ``IS_WINDOWS`` flags coming from ``platform_utils``.
+
+NOTE: ``pyautogui`` is imported *lazily* inside the endpoints that need
+it.  That way the backend can be packaged as a headless "server only"
+build for users who only want to expose the API.
+"""
 from fastapi import FastAPI
-from pydantic import BaseModel
-import httpx, json
+import httpx
+import json
 import uuid
-from datetime import datetime
-from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
-import pyautogui
-pyautogui.PAUSE = 0
 import pyperclip
 import time
 import socket
 import os
+import sys
 import asyncio
 import platform
+import subprocess as _sp
 
-# Detect OS
-IS_MAC = platform.system() == "Darwin"
-CMD_KEY = "command" if IS_MAC else "ctrl"
+# Cross-platform utility layer (single source of truth for OS detection)
+try:
+    from platform_utils import is_mac, is_windows, is_linux, cmd_key, user_data_dir
+except ImportError:  # pragma: no cover - allows direct execution during dev
+    def is_mac():     return sys.platform == "darwin"
+    def is_windows(): return sys.platform.startswith("win")
+    def is_linux():   return sys.platform.startswith("linux")
+    def cmd_key():    return "command" if is_mac() else "ctrl"
+    def user_data_dir(): return os.path.expanduser("~/.glidepass")
+
+# Detect OS (single source of truth)
+IS_MAC     = is_mac()
+IS_WINDOWS = is_windows()
+IS_LINUX   = is_linux()
+CMD_KEY    = cmd_key()
 
 # Simple queue to store the last paste for the browser listener
 pending_paste = {"text": "", "id": 0}
 stop_typing = False
+
 
 def get_local_ip():
     try:
@@ -28,11 +49,12 @@ def get_local_ip():
         ip = s.getsockname()[0]
         s.close()
         return ip
-    except:
+    except Exception:
         return "127.0.0.1"
 
+
 # Session management as per PRD
-SESSION_TOKEN = str(uuid.uuid4())[:8] # Simple temporary token for pairing
+SESSION_TOKEN = str(uuid.uuid4())[:8]  # Simple temporary token for pairing
 active_connections = []
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,24 +62,34 @@ from fastapi import WebSocket, WebSocketDisconnect
 from contextlib import asynccontextmanager
 import requests
 
+OTA_DIR = os.path.join(user_data_dir(), "templates")
 OTA_URL_BASE = "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/templates/"
-OTA_DIR = os.path.expanduser("~/.glidepass/templates")
+
+
+def _config_path():
+    return os.path.join(user_data_dir(), "config.json")
+
+
+def _read_custom_website_url():
+    """Read `website_url` from the user config file, if any."""
+    path = _config_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                return cfg.get("website_url")
+        except Exception:
+            return None
+    return None
+
 
 def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
-    config_path = os.path.expanduser("~/.glidepass/config.json")
-    custom_url = None
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                custom_url = cfg.get("website_url")
-        except:
-            pass
+    custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html"]:
+    for tmpl in ["index.html", "center.html", "vitcodes.html"]:
         success = False
-        # 1. Try custom_url if configured in ~/.glidepass/config.json
+        # 1. Try custom_url if configured in user config
         if custom_url:
             try:
                 base = custom_url.rstrip("/")
@@ -94,12 +126,14 @@ def fetch_ota_templates():
             except Exception as e:
                 print(f"[OTA] Failed to fetch {tmpl} from GitHub fallback: {e}")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Fetch latest templates in the background on startup
     import threading
     threading.Thread(target=fetch_ota_templates, daemon=True).start()
     yield
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -112,14 +146,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print(f"\n--- NEARBY AI RUNNING ---")
-print(f"Local Access: http://localhost:8000")
-print(f"Mobile Access: http://{get_local_ip()}:8000\n")
+print("\n--- GLIDEPASS BACKEND RUNNING ---")
+print(f"Local Access:  http://localhost:8000")
+print(f"Mobile Access: http://{get_local_ip()}:8000")
+print(f"Platform:      {platform.system()}\n")
 
-import sys
 
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+    """Get absolute path to resource, works for dev and for PyInstaller."""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
@@ -127,101 +161,70 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+
 def get_template_path(filename):
     ota_path = os.path.join(OTA_DIR, filename)
     if os.path.exists(ota_path):
         return ota_path
     return resource_path(f"templates/{filename}")
 
+
+# ── Template / static endpoints ────────────────────────────────────────────────
+
 @app.get("/")
 async def index():
-    response = FileResponse(get_template_path("index.html"))
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    response = _cached_file_response("index.html")
     return response
+
 
 @app.get("/center")
 async def center():
-    response = FileResponse(get_template_path("center.html"))
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+    return _cached_file_response("center.html")
+
 
 @app.get("/vitcodes")
 async def vitcodes_page():
-    response = FileResponse(get_template_path("vitcodes.html"))
+    return _cached_file_response("vitcodes.html")
+
+
+def _cached_file_response(filename: str):
+    response = FileResponse(get_template_path(filename))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
-
-@app.get("/api/vitcodes")
-async def get_api_vitcodes():
-    config_path = os.path.expanduser("~/.glidepass/config.json")
-    custom_url = None
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                custom_url = cfg.get("website_url")
-        except:
-            pass
-
-    urls = []
-    if custom_url:
-        urls.append(custom_url.rstrip("/") + "/api/vitcodes")
-    urls.append("http://localhost:3000/api/vitcodes")
-    urls.append("https://glidepass.vercel.app/api/vitcodes")
-
-    async def fetch_one(client, url):
-        try:
-            r = await client.get(url, timeout=2.0)
-            if r.status_code == 200:
-                return r.json()
-        except Exception:
-            pass
-        return None
-
-    async with httpx.AsyncClient() as client:
-        tasks = [fetch_one(client, url) for url in urls]
-        for task in asyncio.as_completed(tasks):
-            res = await task
-            if res is not None:
-                return res
-    return []
 
 
 @app.get("/logo.png")
 async def get_logo():
-    # Attempt to serve from bundled resource
     logo_path = resource_path("logo.png")
     if os.path.exists(logo_path):
         return FileResponse(logo_path)
     return {"status": "error", "message": "Logo not found"}
 
-# PRD: /server/terminate (Secure POST version)
+
+# ── Session / config ─────────────────────────────────────────────────────────
+
 @app.post("/server/terminate")
 async def terminate_server(data: dict):
     token = data.get("session_id")
     if token != SESSION_TOKEN:
         return {"status": "error", "message": "Invalid session token"}
-    
+
     def kill_server():
         time.sleep(0.5)
         os._exit(0)
-    
+
     import threading
     threading.Thread(target=kill_server).start()
     return {"status": "success", "message": "Server terminating..."}
 
-# PRD: /session/create (POST version)
+
 @app.post("/session/create")
 async def create_session():
     return await get_config()
 
-# PRD: /get_config (Aliased for compatibility)
+
 @app.get("/session/create")
 @app.get("/get_config")
 async def get_config():
@@ -231,10 +234,16 @@ async def get_config():
         "local_ip": ip,
         "mobile_url": f"http://{ip}:8000",
         "session_id": SESSION_TOKEN,
-        "pairing_qr": f"http://{ip}:8000?sid={SESSION_TOKEN}"
+        "pairing_qr": f"http://{ip}:8000?sid={SESSION_TOKEN}",
+        "platform": platform.system().lower(),
+        "is_windows": IS_WINDOWS,
     }
 
+
+# ── Lifecycle helpers ────────────────────────────────────────────────────────
+
 SHUTDOWN_REQUESTED = False
+
 
 @app.get("/shutdown")
 async def shutdown():
@@ -242,41 +251,110 @@ async def shutdown():
     SHUTDOWN_REQUESTED = True
     return {"status": "success", "message": "Shutting down..."}
 
+
 @app.get("/open_terminal")
 async def open_terminal():
     try:
         path = os.getcwd()
         if IS_MAC:
-            cmd = f"osascript -e 'tell application \"Terminal\"' -e 'do script \"cd {path}\"' -e 'activate' -e 'end tell'"
+            cmd = (
+                f"osascript -e 'tell application \"Terminal\"' "
+                f"-e 'do script \"cd {path}\"' "
+                f"-e 'activate' -e 'end tell'"
+            )
             os.system(cmd)
+        elif IS_WINDOWS:
+            # ``start`` spawns a new console window without blocking.
+            os.system(f'start "" cmd /K "cd /d {path}"')
         else:
-            # Windows: Open CMD in current path
-            os.system(f'start cmd /K "cd /d {path}"')
+            # Linux – try a few common terminal emulators
+            for term in ("x-terminal-emulator", "gnome-terminal", "konsole", "xterm"):
+                if _sp.call(["which", term], stdout=_sp.DEVNULL, stderr=_sp.DEVNULL) == 0:
+                    os.system(f"{term} --working-directory={path} &")
+                    break
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+# ── Clipboard helpers (cross-platform) ────────────────────────────────────────
+
+def _set_clipboard(text: str):
+    """Cross-platform clipboard write.
+
+    On macOS, ``pbcopy`` is the most reliable path – the Tk-based
+    ``pyperclip`` can fail in sandboxed environments.  On Windows
+    we use the standard ``pyperclip`` (which shells out to the
+    Windows ``clip`` command).
+    """
+    if IS_MAC:
+        p = _sp.Popen(["pbcopy"], stdin=_sp.PIPE)
+        p.communicate(text.encode("utf-8"))
+    else:
+        pyperclip.copy(text)
+
+
+def _check_mac_accessibility_and_prompt():
+    """No-op on non-macOS.  On macOS, prompt the user to grant the
+    Accessibility permission if it is not already granted.
+    """
+    if not IS_MAC:
+        return True
+    try:
+        import ctypes
+        app_services = ctypes.cdll.LoadLibrary(
+            "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices"
+        )
+        app_services.AXIsProcessTrusted.restype = ctypes.c_bool
+        if not app_services.AXIsProcessTrusted():
+            script = (
+                'display alert "GlidePass Needs Permissions" '
+                'message "To auto-type or paste text from your phone, '
+                'macOS requires you to grant Accessibility permissions '
+                'to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n'
+                '2. If GlidePass is listed, remove it first (select it and click the \'-\' button).\\n'
+                '3. Click the \'+\' button and add GlidePass.app again.\\n'
+                '4. Restart GlidePass." '
+                'buttons {"Open Settings", "Later"} default button "Open Settings"\n'
+                'if button returned of result is "Open Settings" then\n'
+                '  open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"\n'
+                'end if'
+            )
+            os.system(f"osascript -e '{script}' &")
+            return False
+        return True
+    except Exception:
+        return True
+
+
+# ── Clipboard / paste endpoints ───────────────────────────────────────────────
 
 @app.get("/copy")
 async def copy_from_laptop():
     global last_synced_text
     try:
+        import pyautogui  # Lazy import – backend may run headless
+        pyautogui.PAUSE = 0
+    except Exception as e:
+        return {"status": "error", "message": f"pyautogui not available: {e}"}
+
+    try:
         # Clear clipboard first to ensure we get NEW content
         pyperclip.copy("")
         time.sleep(0.1)
-        
+
         # Trigger system copy
         pyautogui.hotkey(CMD_KEY, 'c', interval=0.05)
-        time.sleep(0.4) # Wait a bit longer for clipboard
-        
+        time.sleep(0.4)  # Wait a bit longer for clipboard
+
         text = pyperclip.paste()
         if text:
-            # Sync internal state so live typing doesn't get confused
             last_synced_text = text
             return {"status": "success", "text": text}
-        else:
-            return {"status": "error", "message": "Clipboard empty"}
+        return {"status": "error", "message": "Clipboard empty"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
 
 @app.get("/get_clipboard")
 async def get_clipboard():
@@ -286,22 +364,29 @@ async def get_clipboard():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# PRD: /clipboard/get
+
 @app.get("/clipboard/get")
 async def prd_get_clipboard():
     return await get_clipboard()
 
+
 @app.get("/poll_paste")
 async def poll_paste(last_id: int = 0):
-    # Wait up to 30 seconds for a new paste (Long Polling)
+    """Long-polling endpoint used by the mobile UI."""
     for _ in range(60):
         if pending_paste["id"] > last_id:
-            return {"status": "success", "text": pending_paste["text"], "id": pending_paste["id"]}
+            return {
+                "status": "success",
+                "text": pending_paste["text"],
+                "id": pending_paste["id"],
+            }
         await asyncio.sleep(0.5)
     return {"status": "timeout"}
 
+
 # State to track last synced text for live typing
 last_synced_text = ""
+
 
 @app.get("/stop")
 async def stop():
@@ -310,70 +395,101 @@ async def stop():
     print("!!! Stop Signal Received !!!")
     return {"status": "success"}
 
+
+# ── Typing engine ─────────────────────────────────────────────────────────────
+
 def perform_typing(text, wpm, is_coding=False):
     global stop_typing
-    import time
-    
-    # Release any potentially stuck keys immediately before starting
-    modifiers = ['command', 'shift', 'ctrl', 'option', 'alt']
-    for mod in modifiers:
-        pyautogui.keyUp(mod)
 
-    # Realistic Human Typing
-    time.sleep(0.5)
+    try:
+        import pyautogui  # Lazy import – backend may run headless
+        pyautogui.PAUSE = 0
+    except Exception as e:
+        print(f"[typing] pyautogui not available: {e}")
+        return
+
+    # Helper to ALWAYS release modifiers after any key sequence
+    def safe_release():
+        for mod in ('command', 'shift', 'ctrl', 'option', 'alt', 'win'):
+            try:
+                pyautogui.keyUp(mod)
+            except Exception:
+                pass
+
+    # Release any potentially stuck keys immediately before starting
+    safe_release()
+    time.sleep(0.2)
+
     cpm = max(wpm, 1) * 5
     typing_interval = 60.0 / cpm
-    
+
     # Normalize all line endings first
     normalized_text = text.replace('\r\n', '\n').replace('\r', '\n')
     lines = normalized_text.split('\n')
+
+    # On macOS, pyautogui.press('delete') maps to the BACKSPACE key.
+    # We need to do a *forward* delete (delete the char to the right of
+    # the cursor) which on Mac requires ``fn+delete``.  On Windows
+    # ``delete`` already means forward-delete.
+    forward_delete_keys = ('fn', 'delete') if IS_MAC else ('delete',)
+
     try:
         for i, line in enumerate(lines):
-            if stop_typing: break
-            
+            if stop_typing:
+                break
+
             if i > 0:
                 pyautogui.press('enter')
-                time.sleep(0.05) # Small wait for IDE to auto-indent
-                
-                # Clear auto-indent cleanly if in coding mode
+                time.sleep(0.05)  # Give the IDE a moment to auto-indent
+
                 if is_coding:
                     if IS_MAC:
-                        pyautogui.hotkey('command', 'backspace', interval=0.05)
+                        # Move caret to start of line, select to end, delete.
+                        # (We do NOT use cmd+backspace – it's destructive
+                        # in many apps.)
+                        pyautogui.press('home')
+                        time.sleep(0.02)
+                        pyautogui.keyDown('shift')
+                        pyautogui.press('end')
+                        pyautogui.keyUp('shift')
+                        pyautogui.press('delete')
                     else:
+                        # Windows: ``shift+home`` selects to start, then
+                        # backspace deletes the selection.
                         pyautogui.hotkey('shift', 'home', interval=0.05)
                         pyautogui.press('backspace')
+                    safe_release()
 
-            # Process line content (allow empty line to be passed over so we still get newlines)
+            # Process line content
             if not stop_typing:
                 for char in line:
-                    if stop_typing: break
+                    if stop_typing:
+                        break
                     char_start = time.time()
-                    
+
                     if char == ' ':
                         pyautogui.press('space')
                     elif char == '\t':
                         pyautogui.press('tab')
                     else:
                         pyautogui.write(char)
-                    
+
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
-                        # Immediately delete the IDE's auto-inserted closing character
-                        if IS_MAC:
-                            # Forward delete on Mac
-                            pyautogui.press('delete')
-                        else:
-                            pyautogui.press('delete')
+                        # Delete the IDE's auto-inserted closing character
+                        pyautogui.hotkey(*forward_delete_keys, interval=0.05)
+                        safe_release()
 
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
                     time.sleep(sleep_time)
     finally:
         # Failsafe: Ensure modifiers are NEVER left stuck if interrupted
-        for mod in modifiers:
-            pyautogui.keyUp(mod)
+        safe_release()
         print("Typing task finished/stopped")
 
-# PRD: /ws/connect (WebSocket Support)
+
+# ── WebSocket (PRD) ───────────────────────────────────────────────────────────
+
 @app.websocket("/ws/connect")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -385,36 +501,15 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         active_connections.remove(websocket)
 
-def check_mac_accessibility_and_prompt():
-    import sys
-    if sys.platform != 'darwin':
-        return True
-    try:
-        import ctypes
-        app_services = ctypes.cdll.LoadLibrary('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
-        app_services.AXIsProcessTrusted.restype = ctypes.c_bool
-        if not app_services.AXIsProcessTrusted():
-            import os
-            script = """
-            display alert "GlidePass Needs Permissions" message "To auto-type or paste text from your phone, macOS requires you to grant Accessibility permissions to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If GlidePass is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add GlidePass.app again.\\n4. Restart GlidePass." buttons {"Open Settings", "Later"} default button "Open Settings"
-            if button returned of result is "Open Settings" then
-                open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-            end if
-            """
-            os.system(f"osascript -e '{script}' &")
-            return False
-        return True
-    except Exception:
-        return True
 
-# PRD: /input/send (Aliased for compatibility)
+# ── Paste / input endpoints ───────────────────────────────────────────────────
+
 @app.post("/input/send")
 @app.post("/paste")
 async def paste(data: dict):
     global pending_paste, last_synced_text, stop_typing
-    stop_typing = False 
+    stop_typing = False
     try:
-        # PRD uses "content" for the text payload
         text = data.get("content") or data.get("text", "")
         mode = data.get("mode", "flash")
         try:
@@ -424,12 +519,14 @@ async def paste(data: dict):
         is_coding = bool(data.get("is_coding", False))
     except Exception as e:
         return {"status": "error", "message": f"Data parsing error: {str(e)}"}
-    
+
     if text is not None:
         print(f"[PASTE] Triggering {mode} mode | Content: {text[:20]}...")
         if not text:
             if last_synced_text and mode == "sync":
-                pyautogui.press('backspace')
+                pyautogui_module = _safe_pyautogui()
+                if pyautogui_module:
+                    pyautogui_module.press('backspace')
             last_synced_text = ""
             pending_paste["text"] = ""
             pending_paste["id"] += 1
@@ -437,80 +534,108 @@ async def paste(data: dict):
 
         pending_paste["text"] = text
         pending_paste["id"] += 1
-    
+
     if mode == "inject":
         text = " ".join(text.split())
-        
-        # Guarantee clipboard copy
-        if IS_MAC:
-            import subprocess
-            p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
-            p.communicate(text.encode('utf-8'))
-        else:
-            pyperclip.copy(text)
-            
+        # Cross-platform clipboard copy
+        _set_clipboard(text)
         time.sleep(0.1)
-        
+
+        pyautogui_module = _safe_pyautogui()
+        if not pyautogui_module:
+            return {"status": "error", "message": "pyautogui not available"}
+
         if IS_MAC:
-            check_mac_accessibility_and_prompt()
-            pyautogui.hotkey('command', 'v', interval=0.05)
+            _check_mac_accessibility_and_prompt()
+            pyautogui_module.hotkey('command', 'v', interval=0.05)
         else:
-            pyautogui.hotkey('ctrl', 'v', interval=0.05)
+            pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
         return {"status": "success"}
 
     elif mode == "type":
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
-        threading.Thread(target=perform_typing, args=(text, wpm, is_coding)).start()
+        threading.Thread(
+            target=perform_typing, args=(text, wpm, is_coding), daemon=True
+        ).start()
         return {"status": "success", "message": "Typing started"}
-    
+
     elif mode == "sync":
+        pyautogui_module = _safe_pyautogui()
+        if not pyautogui_module:
+            return {"status": "error", "message": "pyautogui not available"}
         # Better diffing for Live Sync
         if text.startswith(last_synced_text):
             new_chars = text[len(last_synced_text):]
             if new_chars:
-                pyautogui.write(new_chars)
+                pyautogui_module.write(new_chars)
         elif last_synced_text.startswith(text):
             backspaces = len(last_synced_text) - len(text)
             for _ in range(backspaces):
-                pyautogui.press('backspace')
-        else:
-            # Total change (paste or middle edit)
-            pass
-        
+                pyautogui_module.press('backspace')
+        # else: total change in the middle – bail out to avoid
+        # massive destructive backspacing.
         last_synced_text = text
         return {"status": "success"}
-        
-    else: # Default: Flash
-        pyperclip.copy(text)
+
+    else:  # Default: Flash
+        pyautogui_module = _safe_pyautogui()
+        if not pyautogui_module:
+            return {"status": "error", "message": "pyautogui not available"}
+
+        _set_clipboard(text)
         # CRITICAL: Wait for clipboard to actually take the text
         # Some apps are slow to register the new clipboard content
-        time.sleep(0.5) 
+        time.sleep(0.5)
         if IS_MAC:
-            import subprocess
-            p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
-            p.communicate(text.encode('utf-8'))
-            time.sleep(0.1)
-            check_mac_accessibility_and_prompt()
-            pyautogui.hotkey('command', 'v', interval=0.05)
+            _check_mac_accessibility_and_prompt()
+            pyautogui_module.hotkey('command', 'v', interval=0.05)
         else:
-            pyautogui.hotkey('ctrl', 'v', interval=0.05)
+            pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
         return {"status": "success"}
-    
+
     return {"status": "error", "message": "No text provided"}
+
+
+def _safe_pyautogui():
+    """Return the imported pyautogui module, or None if not installed.
+
+    Centralised so that every endpoint that needs keystroke / clipboard
+    injection can degrade gracefully when running the headless
+    "server only" Windows build (no GUI libraries).
+    """
+    try:
+        import pyautogui
+        pyautogui.PAUSE = 0
+        return pyautogui
+    except Exception as e:
+        print(f"[glidepass] pyautogui unavailable: {e}")
+        return None
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     if IS_MAC:
         # Quick check for Accessibility permissions
         print("\n--- MAC PERMISSION CHECK ---")
-        check_cmd = 'osascript -e "tell application \"System Events\" to get name of first process whose frontmost is true" > /dev/null 2>&1'
+        check_cmd = (
+            'osascript -e "tell application \\"System Events\\" '
+            'to get name of first process whose frontmost is true" '
+            '> /dev/null 2>&1'
+        )
         if os.system(check_cmd) != 0:
-            print("⚠️ WARNING: Accessibility permissions might be missing.")
+            print("\u26a0\ufe0f  WARNING: Accessibility permissions might be missing.")
             print("To fix: System Settings > Privacy & Security > Accessibility")
             print("Ensure your Terminal/IDE/Python is allowed to control your computer.\n")
         else:
-            print("✅ Accessibility permissions confirmed.\n")
+            print("\u2705 Accessibility permissions confirmed.\n")
+    elif IS_WINDOWS:
+        print("\u27a4 GlidePass is running on Windows.")
+        print("  - Make sure your firewall allows inbound TCP/8000.")
+        print("  - Phone and laptop must be on the same Wi-Fi network.\n")
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+       

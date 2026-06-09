@@ -10,13 +10,19 @@ from PIL import Image, ImageTk, ImageOps
 import urllib.request
 import io
 
+# Cross-platform helpers (lazy import so the launcher works on Windows too)
+try:
+    from platform_utils import is_mac, is_windows, resource_path
+except ImportError:  # pragma: no cover
+    def is_mac():     return sys.platform == "darwin"
+    def is_windows(): return sys.platform.startswith("win")
+    def resource_path(p):
+        try:
+            base = sys._MEIPASS
+        except Exception:
+            base = os.path.abspath(".")
+        return os.path.join(base, p)
 
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
 
 
 # ── Canvas drawing helpers ────────────────────────────────────────────────────

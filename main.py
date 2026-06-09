@@ -109,6 +109,7 @@ if __name__ == "__main__":
     if getattr(sys, 'frozen', False):
         import multiprocessing
         multiprocessing.freeze_support()
+
 def check_mac_accessibility():
     import sys
     if sys.platform != 'darwin':
