@@ -8,7 +8,44 @@ NOTE: ``pyautogui`` is imported *lazily* inside the endpoints that need
 it.  That way the backend can be packaged as a headless "server only"
 build for users who only want to expose the API.
 """
+# ---------------------------------------------------------------------------
+# Windows / PyInstaller "NoneType has no attribute isatty" workaround.
+#
+# When GlidePass is built with ``console=False`` (the standard
+# windowed-GUI mode) the Windows C runtime replaces ``sys.stdout`` and
+# ``sys.stderr`` with ``None``.  A few libraries (notably uvicorn's
+# logger) call ``.isatty()`` on these streams and crash at import time.
+# We replace them with safe dummy streams *before* importing anything
+# that may set up logging.
+# ---------------------------------------------------------------------------
+import io as _io
+import sys as _sys
+
+class _SafeStream(_io.TextIOBase):
+    def __init__(self, name):
+        self._name = name
+    def write(self, s):
+        return len(s) if s else 0
+    def flush(self):
+        pass
+    def isatty(self):
+        return False
+    def readable(self):
+        return False
+    def writable(self):
+        return True
+    def __getattr__(self, _):
+        return None
+
+if _sys.stdout is None:
+    _sys.stdout = _SafeStream("stdout")
+if _sys.stderr is None:
+    _sys.stderr = _SafeStream("stderr")
+if _sys.stdin is None:
+    _sys.stdin = _SafeStream("stdin")
+
 from fastapi import FastAPI
+
 import httpx
 import json
 import uuid

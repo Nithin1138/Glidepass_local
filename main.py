@@ -1,5 +1,6 @@
 import os
 import sys
+import io
 import threading
 import uvicorn
 import tkinter as tk
@@ -9,6 +10,41 @@ from launcher import GlidePassLauncher
 from app import app as fastapi_app
 from menubar_handler import GlidePassMenuApp
 
+# ---------------------------------------------------------------------------
+# Windows / PyInstaller "NoneType has no attribute isatty" workaround.
+#
+# When GlidePass is built with ``console=False`` (the standard
+# windowed-GUI mode) the Windows C runtime replaces ``sys.stdout`` and
+# ``sys.stderr`` with ``None``.  A few libraries (notably uvicorn's
+# logger) call ``.isatty()`` on these streams and crash at import time.
+# We replace them with safe dummy streams *before* importing anything
+# that may set up logging.
+# ---------------------------------------------------------------------------
+def _ensure_safe_stdio():
+    class _SafeStream(io.TextIOBase):
+        def __init__(self, name):
+            self._name = name
+        def write(self, s):
+            return len(s) if s else 0
+        def flush(self):
+            pass
+        def isatty(self):
+            return False
+        def readable(self):
+            return False
+        def writable(self):
+            return True
+        def __getattr__(self, _):
+            return None
+    if sys.stdout is None:
+        sys.stdout = _SafeStream("stdout")
+    if sys.stderr is None:
+        sys.stderr = _SafeStream("stderr")
+    if sys.stdin is None:
+        sys.stdin = _SafeStream("stdin")
+
+_ensure_safe_stdio()
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -16,6 +52,7 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
 
 class ServerManager:
     def __init__(self):

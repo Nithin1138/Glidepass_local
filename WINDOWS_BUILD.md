@@ -366,3 +366,119 @@ Optional polish:
       [Inno Setup](https://jrsoftware.org/isinfo.php) or
       [Advanced Installer](https://www.advancedinstaller.com/).
 - [ ] Host the build on your
+ website / Vercel / GitHub Releases.
+
+---
+
+## 10. Troubleshooting
+
+### 10.1  "`pyautogui` not available" when I send a paste
+
+Either you forgot to install pyautogui in the build VM, or the
+`hiddenimports=['pyautogui']` entry in `GlidePass_win.spec` was
+stripped.  Re-run `pip install pyautogui` in the VM and re-build.
+
+### 10.2  Tray icon does not appear
+
+`pystray` requires a real Windows shell (Explorer.exe).  If you
+launch GlidePass from a non-interactive context (e.g. a service,
+or via `psexec -s`), the tray icon silently fails.  Launch from
+a normal double-click.
+
+### 10.3  `ModuleNotFoundError: No module named 'rumps'` on Windows
+
+If you see this, it means `menubar_handler.py` is being imported
+on Windows but its macOS branch is running.  Make sure you are
+running the **rebuilt** `GlidePass.exe` (from `dist/GlidePass/`) and
+not the source via `python main.py` (which would run the
+**non-bundled** Python that *does* try to import rumps).
+
+### 10.4  Phone can't reach the laptop
+
+* Make sure both devices are on the same Wi-Fi SSID (not "Guest").
+* On the laptop, run `ipconfig` and look for `IPv4 Address`.  The
+  QR code shows that address.
+* On Windows, run `wf.msc` and confirm inbound port 8000 TCP is
+  allowed.
+* Some home routers enable "AP isolation" - disable it in the
+  router's admin panel.
+
+### 10.5  Chrome extension says "Specified native messaging host not found"
+
+1. Verify `register_bridge.py` was run.
+2. Verify the manifest exists at
+   `%APPDATA%/Google/Chrome/NativeMessagingHosts/com.glidepass.launcher.json`.
+3. Open the file - the `path` field must point to
+   `native_host_wrapper.bat` (or whatever your bridge script is).
+4. **Restart Chrome completely** (close all windows, reopen).
+
+### 10.6  The QR code shows `0.0.0.0`
+
+This means `get_local_ip()` failed.  Most common cause: the laptop
+is not connected to a Wi-Fi network.  Connect to Wi-Fi, restart
+GlidePass.
+
+### 10.7  `OSError: [WinError 10048]` (port already in use)
+
+Another process is bound to TCP/8000.  Either find it:
+
+```
+netstat -ano | findstr :8000
+taskkill /F /PID <pid>
+```
+
+...or change GlidePass to a different port by editing the
+`port=8000` constants in `app.py` / `launcher.py` and update the
+Chrome extension accordingly.
+
+### 10.8  Build is enormous (250+ MB)
+
+`pyautogui` pulls in Pillow, pyscreeze, pygetwindow, pymsgbox,
+pyrect, pywin32, mouseinfo - all of which include DLLs.  This is
+normal.  If you want to slim it down, edit `GlidePass_win.spec`
+and add to `excludes=`:
+`['test', 'unittest', 'pydoc', 'doctest', 'matplotlib', 'numpy',
+'pytest', 'PIL.ImageQt']`.  Don't try to remove `pyautogui`
+itself unless you only ship a "headless" backend build.
+
+### 10.9  "OSError: [Errno 22] Invalid argument" on Windows file paths
+
+This is a classic Python-on-Windows issue: the file path has
+surrogate pairs or invalid characters.  Check
+`menubar_handler.py`'s icon path - it should use plain ASCII.
+
+### 10.10  Windows Defender deletes the `.exe`
+
+Defender sometimes flags unsigned PyInstaller binaries.  To
+prevent this:
+
+1. Get a code-signing certificate (~$70/year from
+   [Certum](https://shop.certum.eu/) or
+   [SSL.com](https://www.ssl.com/certificates/code-signing/)).
+2. Sign with `signtool sign /fd SHA256 /a GlidePass.exe`.
+3. The SmartScreen reputation will still be low for a new signer,
+   but Defender will stop auto-deleting the file.
+
+Alternatively, instruct your friend to right-click -> Properties ->
+"Unblock" -> Apply.  This adds a Zone.Identifier that allows the
+download to run.
+
+---
+
+## That's it!
+
+You now have:
+
+* A **cross-platform Python codebase** that runs on macOS *and*
+  Windows from a single source tree.
+* A **build pipeline** that produces a Windows `.exe` (and a
+  signed/unsigned zip ready to send to a friend).
+* A **single helper module** (`platform_utils.py`) that captures
+  every OS-specific code path - so when you add Linux, it's a
+  50-line change in one file.
+
+If you hit a problem not covered here, drop a note in the
+[Glidepass GitHub Issues](https://github.com/Nithin1138/Glidepass_local/issues)
+and we'll add it to this doc.
+
+Happy building!

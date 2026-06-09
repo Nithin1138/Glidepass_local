@@ -61,10 +61,13 @@ a = Analysis(
         "menubar_handler",
         "platform_utils",
     ],
-    hookspath=[],
+    hookspath=["hooks"],
     hooksconfig={},
-    runtime_hooks=[],
+    # CRITICAL: this hook fixes the "NoneType.isatty" crash on Windows
+    # when uvicorn tries to configure its logger on a console-less exe.
+    runtime_hooks=["hooks/rthook_fix_stdio.py"],
     excludes=[
+
         # Strip out macOS-only modules that are accidentally imported
         # transitively.  PyInstaller is usually smart enough but
         # excluding them shaves a few MB off the final binary.
