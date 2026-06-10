@@ -45,6 +45,7 @@ if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 import httpx
 import json
