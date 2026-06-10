@@ -510,6 +510,20 @@ def perform_typing(text, wpm, is_coding=False):
         
         pyautogui.write(char)
 
+    def press_key_native(keycode):
+        if IS_MAC:
+            try:
+                import Quartz
+                event_down = Quartz.CGEventCreateKeyboardEvent(None, keycode, True)
+                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_down)
+                time.sleep(0.001)
+                event_up = Quartz.CGEventCreateKeyboardEvent(None, keycode, False)
+                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_up)
+                return True
+            except Exception as e:
+                print(f"[typing] Native Quartz key press failed: {e}")
+        return False
+
     # Release any potentially stuck keys immediately before starting
     safe_release()
     time.sleep(0.2)
@@ -544,7 +558,8 @@ def perform_typing(text, wpm, is_coding=False):
                     char_start = time.time()
 
                     if char == '\t':
-                        pyautogui.press('tab')
+                        if not press_key_native(48):
+                            pyautogui.press('tab')
                     else:
                         write_char_native(char)
 
@@ -552,11 +567,8 @@ def perform_typing(text, wpm, is_coding=False):
                     safe_release()
 
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
-                        # Delete the IDE's auto-inserted closing character using forward delete.
-                        # If the IDE auto-inserted a closing character, it is to the right of the cursor,
-                        # so 'delete' will remove it. If the editor did not auto-insert (or we are at the end
-                        # of the line), 'delete' does nothing, preserving the opening character.
-                        pyautogui.press('delete')
+                        if not press_key_native(117):
+                            pyautogui.press('delete')
                         time.sleep(0.02)
 
                     elapsed = time.time() - char_start
