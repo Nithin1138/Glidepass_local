@@ -147,10 +147,10 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
 
         @rumps.clicked("About GlidePass")
         def about(self, _):
-            rumps.alert(
-                "GlidePass v1.5.0",
-                "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
-            )
+            import subprocess
+            msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
+            cmd = f'display dialog "{msg}" with title "GlidePass v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     return GlidePassMenuApp()
 
@@ -439,10 +439,10 @@ if is_mac():
 
         @_rumps.clicked("About GlidePass")
         def about(self, _):
-            _rumps.alert(
-                "GlidePass v1.5.0",
-                "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
-            )
+            import subprocess
+            msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
+            cmd = f'display dialog "{msg}" with title "GlidePass v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     GlidePassMenuApp = _GlidePassMenuAppBase  # type: ignore[assignment,misc]
 

@@ -510,21 +510,15 @@ def perform_typing(text, wpm, is_coding=False):
                 pyautogui.press('enter')
                 time.sleep(0.08)  # Give the IDE a moment to auto-indent
 
-                if is_coding:
-                    # Clear any auto-indented whitespace created by pressing Enter
-                    if IS_MAC:
-                        # Command+Shift+Left selects to start of line, then delete
-                        pyautogui.hotkey('shift', 'command', 'left', interval=0.05)
-                    else:
-                        # Shift+Home selects to start of line, then backspace
-                        pyautogui.hotkey('shift', 'home', interval=0.05)
-                    pyautogui.press('backspace')
-                    time.sleep(0.03)
-                    safe_release()
-
             # Process line content
             if not stop_typing:
-                for char in line:
+                line_to_type = line
+                if is_coding:
+                    # Strip leading whitespace so we rely entirely on the IDE's native auto-indentation
+                    # and avoid double-indenting or using modifier keys to clear whitespace.
+                    line_to_type = line.lstrip(' \t')
+
+                for char in line_to_type:
                     if stop_typing:
                         break
                     char_start = time.time()
@@ -538,12 +532,11 @@ def perform_typing(text, wpm, is_coding=False):
 
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
                         # Delete the IDE's auto-inserted closing character.
-                        # Using ctrl+d on macOS avoids using the hardware fn key, preventing stuck keys.
-                        if IS_MAC:
-                            pyautogui.hotkey('ctrl', 'd', interval=0.05)
-                        else:
-                            pyautogui.press('delete')
-                        safe_release()
+                        # By moving the cursor right and pressing backspace, we delete the auto-inserted
+                        # character without using any modifier keys (like Fn or Ctrl) that can get stuck.
+                        pyautogui.press('right')
+                        pyautogui.press('backspace')
+                        time.sleep(0.02)
 
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
