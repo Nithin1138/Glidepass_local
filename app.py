@@ -501,12 +501,6 @@ def perform_typing(text, wpm, is_coding=False):
     normalized_text = text.replace('\r\n', '\n').replace('\r', '\n')
     lines = normalized_text.split('\n')
 
-    # On macOS, pyautogui.press('delete') maps to the BACKSPACE key.
-    # We need to do a *forward* delete (delete the char to the right of
-    # the cursor) which on Mac requires ``fn+delete``.  On Windows
-    # ``delete`` already means forward-delete.
-    forward_delete_keys = ('fn', 'delete') if IS_MAC else ('delete',)
-
     try:
         for i, line in enumerate(lines):
             if stop_typing:
@@ -514,24 +508,18 @@ def perform_typing(text, wpm, is_coding=False):
 
             if i > 0:
                 pyautogui.press('enter')
-                time.sleep(0.05)  # Give the IDE a moment to auto-indent
+                time.sleep(0.08)  # Give the IDE a moment to auto-indent
 
                 if is_coding:
+                    # Clear any auto-indented whitespace created by pressing Enter
                     if IS_MAC:
-                        # Move caret to start of line, select to end, delete.
-                        # (We do NOT use cmd+backspace – it's destructive
-                        # in many apps.)
-                        pyautogui.press('home')
-                        time.sleep(0.02)
-                        pyautogui.keyDown('shift')
-                        pyautogui.press('end')
-                        pyautogui.keyUp('shift')
-                        pyautogui.press('delete')
+                        # Command+Shift+Left selects to start of line, then delete
+                        pyautogui.hotkey('shift', 'command', 'left', interval=0.05)
                     else:
-                        # Windows: ``shift+home`` selects to start, then
-                        # backspace deletes the selection.
+                        # Shift+Home selects to start of line, then backspace
                         pyautogui.hotkey('shift', 'home', interval=0.05)
-                        pyautogui.press('backspace')
+                    pyautogui.press('backspace')
+                    time.sleep(0.03)
                     safe_release()
 
             # Process line content
@@ -549,8 +537,12 @@ def perform_typing(text, wpm, is_coding=False):
                         pyautogui.write(char)
 
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
-                        # Delete the IDE's auto-inserted closing character
-                        pyautogui.hotkey(*forward_delete_keys, interval=0.05)
+                        # Delete the IDE's auto-inserted closing character.
+                        # Using ctrl+d on macOS avoids using the hardware fn key, preventing stuck keys.
+                        if IS_MAC:
+                            pyautogui.hotkey('ctrl', 'd', interval=0.05)
+                        else:
+                            pyautogui.press('delete')
                         safe_release()
 
                     elapsed = time.time() - char_start
