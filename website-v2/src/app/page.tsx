@@ -738,8 +738,8 @@ export default function Home() {
                 icon: <Monitor size={28} />,
                 label: "Copy Install Cmd",
                 installCommand: "curl -sSL https://glidepass.vercel.app/install-mac.sh | bash",
-                version: "v1.4.1",
-                size: "42.5 MB",
+                version: "v1.5.0",
+                size: "94.6 MB",
                 theme: "rose",
                 gradient: "from-rose-500/30 to-transparent",
                 btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
@@ -750,15 +750,15 @@ export default function Home() {
               {
                 title: "Windows Backend",
                 icon: <Monitor size={28} />,
-                label: "Download .exe",
-                version: "v1.4.1",
+                label: "Copy Install Cmd",
+                installCommand: "powershell -c \"irm https://glidepass.vercel.app/install-windows.ps1 | iex\"",
+                version: "v1.5.0",
                 size: "38.2 MB",
                 theme: "indigo",
                 gradient: "from-indigo-500/30 to-transparent",
                 btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                 borderHover: "group-hover/card:border-indigo-500/40",
                 iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
-                installCommand: undefined,
                 href: undefined
               }
             ].map((d, i) => (

@@ -32,7 +32,8 @@ a = Analysis(
         'pystray',
         'PIL',
         'PIL.Image',
-        'menubar_handler'
+        'menubar_handler',
+        'qrcode'
     ],
     hookspath=[],
     hooksconfig={},
