@@ -60,6 +60,8 @@ a = Analysis(
         "native_host",
         "menubar_handler",
         "platform_utils",
+        # QR code generation (local, offline)
+        "qrcode",
     ],
     hookspath=["hooks"],
     hooksconfig={},

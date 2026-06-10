@@ -8,7 +8,52 @@ import math
 import threading
 from PIL import Image, ImageTk, ImageOps
 import urllib.request
+import urllib.parse
 import io
+
+# ---------------------------------------------------------------------------
+# Windows High-DPI awareness.
+#
+# On Windows hosts (including the VM the user is testing in) the system
+# DPI scale is typically 125% / 150% / 200%.  If the process does NOT
+# declare DPI awareness *before* tk.Tk() is created, Tk calculates
+# geometry in physical pixels while the OS window manager scales the
+# window using the system scale factor, so a "400x760" window renders
+# *much* larger than expected (and the contents look blurry).
+#
+# We call ``SetProcessDpiAwarenessContext`` (Win10 1607+) and fall back
+# to the older ``SetProcessDPIAware`` for compatibility.  This MUST run
+# before any Tk window is created.
+# ---------------------------------------------------------------------------
+def _enable_windows_dpi_awareness():
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+        try:
+            # Per-monitor V2 DPI awareness (best, Win10 1703+).
+            ctypes.windll.shcore.SetProcessDpiAwarenessContext(
+                ctypes.c_void_p(-4)  # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+            )
+            return
+        except Exception:
+            pass
+        try:
+            # System DPI awareness (Win8.1+).
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            return
+        except Exception:
+            pass
+        try:
+            # Legacy fallback (Vista+).
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+_enable_windows_dpi_awareness()
 
 # Cross-platform helpers (lazy import so the launcher works on Windows too)
 try:
@@ -54,12 +99,73 @@ def blend_hex(c1: str, c2: str, t: float) -> str:
             f"{int(b1*t + b2*(1-t)):02x}")
 
 
+# ── QR code generation ───────────────────────────────────────────────────────
+
+def _generate_qr_image(data: str, size: int = 200):
+    """Return a PIL.Image QR code for ``data`` at the given pixel size.
+
+    Strategy:
+      1. Try the local ``qrcode`` library (preferred – works offline,
+         so the VM never needs internet access to render the code).
+      2. Fall back to the public ``api.qrserver.com`` service.
+      3. Final fallback: render a simple placeholder image so the
+         layout never breaks even if both paths fail.
+    """
+    # 1. Local library (works in VM, no internet needed)
+    try:
+        import qrcode  # type: ignore
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=8,
+            border=2,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
+        return img
+    except Exception:
+        pass
+
+    # 2. Remote service (requires internet access)
+    try:
+        url = (
+            "https://api.qrserver.com/v1/create-qr-code/"
+            f"?size={size}x{size}&data={urllib.parse.quote(data, safe='')}"
+        )
+        with urllib.request.urlopen(url, timeout=4) as resp:
+            img = Image.open(io.BytesIO(resp.read())).convert("RGB")
+            img = img.resize((size, size), Image.Resampling.LANCZOS)
+            return img
+    except Exception:
+        pass
+
+    # 3. Placeholder fallback (e.g. when the qrcode lib isn't installed
+    # and the user is offline).  A simple hatched grid is rendered so
+    # the user can still see that "something" appeared in the slot.
+    img = Image.new("RGB", (size, size), color="#121212")
+    try:
+        from PIL import ImageDraw
+        d = ImageDraw.Draw(img)
+        d.rectangle((0, 0, size - 1, size - 1), outline="#A0AEC0", width=4)
+        d.text((size // 2 - 60, size // 2 - 8),
+               "QR offline", fill="#A0AEC0")
+    except Exception:
+        pass
+    return img
+
+
 # ── App ───────────────────────────────────────────────────────────────────────
 
 class GlidePassLauncher:
     def __init__(self, root):
         self.root = root
         self.root.title("GlidePass")
+        # The fixed logical size of the dashboard.  With DPI awareness
+        # enabled above, this is the *actual* pixel size of the window
+        # on Windows, so a 400x760 window really is 400x760 in
+        # screen-real-estate terms.
         self.root.geometry("400x760")
         self.root.configure(bg="#060606")
         self.root.resizable(False, False)
@@ -83,7 +189,7 @@ class GlidePassLauncher:
 
         self.root.lift()
         self.root.focus_force()
-        
+
         self.root.createcommand("::tk::mac::ReopenApplication", self.show_window)
         self.root.createcommand("::tk::mac::Quit", self.on_quit)
 
@@ -165,7 +271,7 @@ class GlidePassLauncher:
         # ── Titlebar (Native Layout) ─────────────────────────────────────────
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
-        
+
         self._pill_button(tb, "Blocked in site?", self.WHITE, self.BG2,
                           cmd=lambda: self.show_view("bypass"))
 
@@ -503,13 +609,12 @@ class GlidePassLauncher:
     def update_qr_code(self, ip: str):
         def _fetch():
             try:
-                url = (f"https://api.qrserver.com/v1/create-qr-code/"
-                       f"?size=180x180&data=http://{ip}:8000")
-                with urllib.request.urlopen(url) as resp:
-                    img = Image.open(io.BytesIO(resp.read()))
-                    img = ImageOps.expand(img, border=10, fill="white")
-                    img = img.resize((186, 186), Image.Resampling.LANCZOS)
-                    self.root.after(0, self._draw_qr_active, img)
+                # Build the QR locally (offline-friendly) – the local
+                # ``qrcode`` library is bundled with the Windows build.
+                img = _generate_qr_image(f"http://{ip}:8000", size=200)
+                img = ImageOps.expand(img, border=10, fill="white")
+                img = img.resize((186, 186), Image.Resampling.LANCZOS)
+                self.root.after(0, self._draw_qr_active, img)
             except Exception:
                 pass
         import threading
@@ -677,7 +782,7 @@ def run_launcher():
 
     root = tk.Tk()
     app  = GlidePassLauncher(root)
-    
+
     # Listen for reopen or quit requests
     def listen_for_show():
         while True:

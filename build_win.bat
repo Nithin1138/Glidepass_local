@@ -45,7 +45,8 @@ python -m pip install ^
     Pillow ^
     pyinstaller ^
     requests ^
-    httpx
+    httpx ^
+    qrcode
 if %errorlevel% neq 0 (
     echo   ERROR: pip install failed.  Check your network / proxy.
     pause

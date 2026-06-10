@@ -158,7 +158,19 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
 # ── Windows / Linux implementation (pystray) ─────────────────────────────────
 
 def _make_pystray_app(launcher_callback, start_callback, stop_callback):
-    """Build the pystray-based GlidePassMenuApp for Windows / Linux."""
+    """Build the pystray-based GlidePassMenuApp for Windows / Linux.
+
+    NOTE: ``pystray.MenuItem`` does NOT expose a settable ``text``
+    attribute (it is a read-only property in every pystray backend).
+    Calling ``menu_item.text = "..."`` raises::
+
+        AttributeError: property 'text' of 'MenuItem' object has no setter
+
+    To work around this we pass a *callable* as the first argument of
+    ``MenuItem``; pystray will re-evaluate the callable on every menu
+    render.  We then call ``icon.update_menu()`` from the background
+    refresh loop to force the OS shell to re-render the menu.
+    """
     import pystray
     from pystray import MenuItem as item
     from PIL import Image
@@ -170,6 +182,8 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             self.launcher_callback = launcher_callback
             self.start_callback = start_callback
             self.stop_callback = stop_callback
+            # Live state read by the dynamic text callables below.
+            self._server_alive = False
 
             icon_path = resource_path("menubar_icon.png")
             if os.path.exists(icon_path):
@@ -219,10 +233,20 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
                 except Exception:
                     pass
 
+            # Dynamic text callables.  These re-evaluate on every
+            # render, so the menu always shows the current state.
+            def _status_text(_item=None):
+                if self._server_alive:
+                    return "Server Status: Running \U0001F7E2"
+                return "Server Status: Stopped \U0001F534"
+
+            def _toggle_text(_item=None):
+                return "Stop Server" if self._server_alive else "Start Server"
+
             self._status_item = item(
-                "Server Status: Checking\u2026", None, visible=True, enabled=False
+                _status_text, None, visible=True, enabled=False
             )
-            self._toggle_item = item("Toggle Server", on_toggle)
+            self._toggle_item = item(_toggle_text, on_toggle)
             self._show_item = item("Show Dashboard", on_show)
             self._open_item = item("Open Project Folder", on_open)
             self._about_item = item("About GlidePass", on_about)
@@ -244,13 +268,20 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             self._pystray = pystray
 
         def _refresh_menu(self):
-            """Update the status / toggle labels on the live tray icon."""
-            if _is_server_alive():
-                self._status_item.text = "Server Status: Running \U0001F7E2"
-                self._toggle_item.text = "Stop Server"
-            else:
-                self._status_item.text = "Server Status: Stopped \U0001F534"
-                self._toggle_item.text = "Start Server"
+            """Update the status / toggle labels on the live tray icon.
+
+            ``MenuItem.text`` is read-only in pystray, so we store the
+            current state in ``self._server_alive`` (read by the
+            callables above) and call ``update_menu()`` so the OS shell
+            re-evaluates the callables immediately.
+            """
+            self._server_alive = _is_server_alive()
+            try:
+                self._tray.update_menu()
+            except Exception:
+                # On some backends update_menu may be unavailable; the
+                # next click will still pick up the new text.
+                pass
 
         def run(self):
             import threading
