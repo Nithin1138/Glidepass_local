@@ -265,15 +265,20 @@ class GlidePassLauncher:
 
             # Cross-platform: keep a PhotoImage alive so Tk does not
             # garbage-collect it and revert to the default icon.
-            self._app_icon_png = ImageTk.PhotoImage(
-                Image.open(png_path).resize((128, 128), Image.Resampling.LANCZOS)
-                if os.path.exists(png_path)
-                else Image.new("RGB", (128, 128), "#000000")
-            )
-            try:
-                self.root.iconphoto(True, self._app_icon_png)
-            except Exception:
-                pass
+            # On macOS, we do NOT call root.iconphoto because:
+            # 1. Tkinter's internal macOS implementation overrides the Dock icon and causes it to become a sharp square.
+            # 2. macOS windows do not display title bar icons.
+            # 3. The Dock icon is managed natively by the OS (via Info.plist when frozen) or by AppKit (in development).
+            if not is_mac():
+                self._app_icon_png = ImageTk.PhotoImage(
+                    Image.open(png_path).resize((128, 128), Image.Resampling.LANCZOS)
+                    if os.path.exists(png_path)
+                    else Image.new("RGB", (128, 128), "#000000")
+                )
+                try:
+                    self.root.iconphoto(True, self._app_icon_png)
+                except Exception:
+                    pass
 
             # Windows: ``iconbitmap`` is the only way to set the taskbar
             # icon correctly.  It MUST be a real .ico file – png won't

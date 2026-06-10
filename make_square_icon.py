@@ -13,34 +13,34 @@ def make_icon():
     if bbox:
         logo = logo.crop(bbox)
         
-    # Create a 1024x1024 Comet Black gradient background
+    # Create a 1024x1024 solid black background with rounded corners
     size = (1024, 1024)
-    background = Image.new('RGB', size, (0, 0, 0))
+    background = Image.new('RGBA', size, (0, 0, 0, 0))
+    card = Image.new('RGB', size, (0, 0, 0))
     
-    # Draw vertical gradient (Comet Black: #050505 to #000000)
-    top_color = (5, 5, 5)
-    bottom_color = (0, 0, 0)
+    from PIL import ImageDraw
+    mask_im = Image.new('L', size, 0)
+    draw = ImageDraw.Draw(mask_im)
+    draw.rounded_rectangle([0, 0, size[0], size[1]], radius=225, fill=255)
     
-    for y in range(size[1]):
-        r = int(top_color[0] + (bottom_color[0] - top_color[0]) * (y / size[1]))
-        g = int(top_color[1] + (bottom_color[1] - top_color[1]) * (y / size[1]))
-        b = int(top_color[2] + (bottom_color[2] - top_color[2]) * (y / size[1]))
-        for x in range(size[0]):
-            background.putpixel((x, y), (r, g, b))
+    background.paste(card, (0, 0), mask=mask_im)
 
-    # Calculate scale for extreme enlargement (negative padding to over-scale)
-    padding = -0.30 
-    max_dim = int(1024 * (1 - 2 * padding))
-    
+    # Scale the logo to fit beautifully (90% of size)
+    logo_target_size = int(size[0] * 0.90)
     w, h = logo.size
-    ratio = min(max_dim/w, max_dim/h)
-    new_size = (int(w * ratio), int(h * ratio))
+    aspect = w / h
+    if w > h:
+        new_w = logo_target_size
+        new_h = int(logo_target_size / aspect)
+    else:
+        new_h = logo_target_size
+        new_w = int(logo_target_size * aspect)
     
     # Resize logo with high-quality resampling
-    logo_resized = logo.resize(new_size, Image.Resampling.LANCZOS)
+    logo_resized = logo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     
     # Center the logo on the background
-    offset = ((1024 - new_size[0]) // 2, (1024 - new_size[1]) // 2)
+    offset = ((size[0] - new_w) // 2, (size[1] - new_h) // 2)
     background.paste(logo_resized, offset, logo_resized)
     
     # Save the result

@@ -44,9 +44,24 @@ def create_premium_icon(input_path, output_icns):
         menubar_canvas.save("menubar_icon.png")
         print("✅ Simple & Smooth Menubar Icon generated: menubar_icon.png")
 
-        # --- CREATE APP ICON (BLACK BG) ---
+        # --- CREATE APP ICON (macOS Squircle Background) ---
         canvas_size = 1024
-        canvas = Image.new('RGB', (canvas_size, canvas_size), (0, 0, 0)) 
+        # Create an RGBA canvas to support transparent rounded corners
+        canvas = Image.new('RGBA', (canvas_size, canvas_size), (0, 0, 0, 0)) 
+        
+        # Create solid black card
+        card = Image.new('RGB', (canvas_size, canvas_size), (0, 0, 0))
+        
+        # Create squircle mask for the full canvas (macOS standard corner radius ~225px)
+        from PIL import ImageDraw
+        mask_im = Image.new('L', (canvas_size, canvas_size), 0)
+        draw = ImageDraw.Draw(mask_im)
+        draw.rounded_rectangle([0, 0, canvas_size, canvas_size], radius=225, fill=255)
+        
+        # Apply mask
+        canvas.paste(card, (0, 0), mask=mask_im)
+        
+        # Scale the logo to fit beautifully (90% of canvas size)
         logo_target_size = int(canvas_size * 0.90)
         w_app, h_app = logo.size
         aspect_app = w_app / h_app
