@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# GlidePass DMG Creation Script
-APP_NAME="GlidePass"
+# LANpad DMG Creation Script
+APP_NAME="LANpad"
 APP_BUNDLE="${APP_NAME}.app"
 DMG_NAME="${APP_NAME}_Installer.dmg"
 VOL_NAME="${APP_NAME} Installer"

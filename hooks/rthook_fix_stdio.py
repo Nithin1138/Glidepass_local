@@ -1,7 +1,7 @@
 """PyInstaller runtime hook: ensure ``sys.stdout`` and ``sys.stderr`` are
 never ``None`` on Windows.
 
-When GlidePass is built with ``console=False`` (no console window),
+When LANpad is built with ``console=False`` (no console window),
 Windows replaces Python's ``sys.stdout`` and ``sys.stderr`` with
 ``None``.  A number of libraries – most notably ``uvicorn.logging`` –
 blindly call ``.isatty()`` on these streams, which raises
@@ -12,7 +12,7 @@ This hook installs dummy stream objects (writing to a log file) so
 that the logging machinery always has something to talk to.
 
 The hook is auto-loaded by PyInstaller because it lives in the
-``hooks/`` folder referenced from ``GlidePass_win.spec``'s
+``hooks/`` folder referenced from ``LANpad_win.spec``'s
 ``runtime_hooks=`` list.
 """
 import os
@@ -30,7 +30,7 @@ class _SafeStream:
       ``stream.encoding`` don't crash.
     """
 
-    def __init__(self, name="<glidepass-stdio>"):
+    def __init__(self, name="<lanpad-stdio>"):
         self._name = name
 
     def write(self, msg):

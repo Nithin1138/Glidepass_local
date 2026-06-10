@@ -24,8 +24,8 @@ coverage.xml
 Icon
 
 
-# GlidePass Specific
-GlidePassStarter.app/
+# LANpad Specific
+LANpadStarter.app/
 starter_log.txt
 *.log
 
@@ -43,5 +43,5 @@ dist/
 # Built Apps & Images (to prevent huge git commits)
 *.dmg
 *.zip
-GlidePass.app/
+LANpad.app/
 tmp.dmg

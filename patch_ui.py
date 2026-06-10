@@ -1,7 +1,7 @@
 import os
 import re
 
-file_path = "/Users/nithin/Projects/GlidePass/launcher.py"
+file_path = "/Users/nithin/Projects/LANpad/launcher.py"
 
 with open(file_path, "r") as f:
     content = f.read()

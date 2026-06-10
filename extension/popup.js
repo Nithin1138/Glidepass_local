@@ -160,7 +160,7 @@ const BOOKMARKLET_TEMPLATE = `javascript:(function(){
 })();`;
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("GlidePass: Popup Loaded");
+    console.log("LANpad: Popup Loaded");
     
     if (window.lucide) {
         lucide.createIcons();
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- START BACKEND LOGIC (Protocol Launch) ---
     if (startBackendBtn) {
         startBackendBtn.addEventListener('click', () => {
-            console.log("GlidePass: Start Backend Clicked");
+            console.log("LANpad: Start Backend Clicked");
             
             // Immediate Visual Change
             startBackendBtn.style.background = "#e0e0e0";
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Trigger the protocol on the current active tab instead of a new one
                 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                     if (tabs[0]) {
-                        chrome.tabs.update(tabs[0].id, { url: "glidepass://start" });
+                        chrome.tabs.update(tabs[0].id, { url: "lanpad://start" });
                     }
                 });
                 
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // If server goes online, the checkServerStatus will naturally hide the button anyway.
             } catch (e) {
-                console.error("GlidePass: Launch Error", e);
+                console.error("LANpad: Launch Error", e);
                 showToast("❌ Launch Error");
             }
         });

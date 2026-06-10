@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "GlidePass",
+  "name": "LANpad",
   "version": "1.0",
   "description": "Cross-device clipboard sync and AI assistant.",
   "permissions": [

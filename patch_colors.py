@@ -1,7 +1,7 @@
 import os
 
 # Update launcher.py
-path_launcher = "/Users/nithin/Projects/GlidePass/launcher.py"
+path_launcher = "/Users/nithin/Projects/LANpad/launcher.py"
 with open(path_launcher, "r") as f:
     l_data = f.read()
 
@@ -33,7 +33,7 @@ with open(path_launcher, "w") as f:
 
 
 # Update templates/index.html
-path_html = "/Users/nithin/Projects/GlidePass/templates/index.html"
+path_html = "/Users/nithin/Projects/LANpad/templates/index.html"
 with open(path_html, "r") as f:
     h_data = f.read()
 

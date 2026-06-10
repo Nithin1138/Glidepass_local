@@ -89,7 +89,7 @@ def create_premium_icon(input_path, output_icns):
         card_offset = (canvas_size - card_size) // 2
         canvas.paste(card, (card_offset, card_offset), mask=mask_im)
         
-        iconset_dir = "GlidePass.iconset"
+        iconset_dir = "LANpad.iconset"
         if os.path.exists(iconset_dir):
             subprocess.run(["rm", "-rf", iconset_dir])
         os.makedirs(iconset_dir)
@@ -109,4 +109,4 @@ def create_premium_icon(input_path, output_icns):
         print(f"❌ Error: {e}")
  
 if __name__ == "__main__":
-    create_premium_icon("logo.png", "GlidePass.icns")
+    create_premium_icon("logo.png", "LANpad.icns")

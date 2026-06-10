@@ -1,11 +1,11 @@
-# 🔐 GlidePass: Private Project Blueprint
+# 🔐 LANpad: Private Project Blueprint
 
-This document is for internal reference. It outlines the core architecture, technical challenges, and logic flows of GlidePass.
+This document is for internal reference. It outlines the core architecture, technical challenges, and logic flows of LANpad.
 
 ---
 
 ## 🧠 Core Concept
-The goal of GlidePass is to solve the "Mobile-to-Desktop Text Gap." Instead of using cloud-based notes or messaging apps to transfer snippets, GlidePass uses a local FastAPI server to act as a bridge, allowing a mobile browser to control system-level events (typing/pasting) on a Mac/Windows machine.
+The goal of LANpad is to solve the "Mobile-to-Desktop Text Gap." Instead of using cloud-based notes or messaging apps to transfer snippets, LANpad uses a local FastAPI server to act as a bridge, allowing a mobile browser to control system-level events (typing/pasting) on a Mac/Windows machine.
 
 ## 🏗️ Technical Architecture
 
@@ -18,9 +18,9 @@ The heart of the project is `app.py`.
 - **Network Discovery**: Automatically detects the local IP to generate the mobile access URL and QR code.
 
 ### 2. The Bridge (Custom Protocol Handler)
-To allow the Chrome Extension to "launch" a local Python script (which is usually blocked for security), we implemented a custom macOS protocol: `glidepass://`.
+To allow the Chrome Extension to "launch" a local Python script (which is usually blocked for security), we implemented a custom macOS protocol: `lanpad://`.
 - `create_starter_app.py` creates a tiny macOS `.app` bundle.
-- This bundle is registered with the system to handle `glidepass://` links.
+- This bundle is registered with the system to handle `lanpad://` links.
 - When the extension "opens" that link, macOS launches the starter app, which then boots the Python server.
 
 ### 3. The Typing Engine

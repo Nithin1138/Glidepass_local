@@ -1,4 +1,4 @@
-"""Platform-specific helpers for GlidePass cross-platform support.
+"""Platform-specific helpers for LANpad cross-platform support.
 
 This module is the single source of truth for OS detection and platform-
 specific code paths. Importing it from anywhere guarantees that the Mac
@@ -37,7 +37,7 @@ def resource_path(relative_path: str) -> str:
     """Get absolute path to a bundled resource.
 
     Works for both ``python main.py`` (dev) and the PyInstaller-frozen
-    executable (``GlidePass.exe`` / ``GlidePass.app``).
+    executable (``LANpad.exe`` / ``LANpad.app``).
     """
     try:
         base_path = sys._MEIPASS  # type: ignore[attr-defined]
@@ -47,7 +47,7 @@ def resource_path(relative_path: str) -> str:
 
 
 def user_data_dir() -> str:
-    """Return the per-user directory where GlidePass stores config/logs."""
+    """Return the per-user directory where LANpad stores config/logs."""
     if is_windows():
-        return os.path.join(os.path.expanduser("~"), "AppData", "Local", "GlidePass")
-    return os.path.expanduser("~/.glidepass")
+        return os.path.join(os.path.expanduser("~"), "AppData", "Local", "LANpad")
+    return os.path.expanduser("~/.lanpad")

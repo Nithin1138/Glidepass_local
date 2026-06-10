@@ -10,8 +10,8 @@ def create_ico():
     img = Image.open(img_path)
     # Windows icons usually include multiple sizes
     sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
-    img.save("GlidePass.ico", sizes=sizes)
-    print("✅ GlidePass.ico created!")
+    img.save("LANpad.ico", sizes=sizes)
+    print("✅ LANpad.ico created!")
 
 if __name__ == "__main__":
     create_ico()

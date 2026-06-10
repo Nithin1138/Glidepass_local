@@ -1,6 +1,6 @@
-# 🚀 GlidePass Startup-Grade Landing Page (v2)
+# 🚀 LANpad Startup-Grade Landing Page (v2)
 
-This is the high-fidelity version of the GlidePass landing page, built with the industry-standard tech stack for premium startups.
+This is the high-fidelity version of the LANpad landing page, built with the industry-standard tech stack for premium startups.
 
 ## 🛠 Tech Stack
 - **Framework:** Next.js 15 (App Router)

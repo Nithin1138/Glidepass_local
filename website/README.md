@@ -1,6 +1,6 @@
-# 🌐 GlidePass Landing Page
+# 🌐 LANpad Landing Page
 
-A premium, high-performance landing page for GlidePass, built with Vite and Vanilla JS.
+A premium, high-performance landing page for LANpad, built with Vite and Vanilla JS.
 
 ## 🚀 Quick Start
 

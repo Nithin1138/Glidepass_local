@@ -21,7 +21,7 @@ import subprocess
 # ---------------------------------------------------------------------------
 # Windows / PyInstaller "NoneType has no attribute isatty" workaround.
 #
-# When GlidePass is built with ``console=False`` (the standard
+# When LANpad is built with ``console=False`` (the standard
 # windowed-GUI mode) the Windows C runtime replaces ``sys.stdout`` and
 # ``sys.stderr`` with ``None``.  A few libraries (notably uvicorn's
 # logger) call ``.isatty()`` on these streams and crash at import time.
@@ -153,7 +153,7 @@ def main():
     # initialises NSApplication before tk.Tk() gets a chance to, causing
     # a hard crash (macOSVersion unrecognised selector).
     import uvicorn  # noqa: F401 – imported for side effects in ServerManager
-    from menubar_handler import GlidePassMenuApp
+    from menubar_handler import LANpadMenuApp
 
     # 1. Setup Controller
     controller = AppController()
@@ -162,7 +162,7 @@ def main():
     controller.start_backend()
 
     # 3. Launch Menubar (Main Thread)
-    menu_app = GlidePassMenuApp(
+    menu_app = LANpadMenuApp(
         launcher_callback=controller.toggle_dashboard,
         start_callback=controller.start_backend,
         stop_callback=controller.stop_backend
@@ -171,7 +171,7 @@ def main():
     # 4. Show Dashboard on startup
     controller.toggle_dashboard()
 
-    print("\U0001F680 GlidePass Menubar Active")
+    print("\U0001F680 LANpad Menubar Active")
     menu_app.run()
 
 if __name__ == "__main__":
@@ -190,7 +190,7 @@ def check_mac_accessibility():
         if not app_services.AXIsProcessTrusted():
             import os
             script = """
-            display alert "GlidePass Needs Permissions" message "To auto-type text from your phone, macOS requires you to grant Accessibility permissions to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If GlidePass is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add GlidePass.app again.\\n4. Restart GlidePass." buttons {"Open Settings", "Later"} default button "Open Settings"
+            display alert "LANpad Needs Permissions" message "To auto-type text from your phone, macOS requires you to grant Accessibility permissions to LANpad.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If LANpad is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add LANpad.app again.\\n4. Restart LANpad." buttons {"Open Settings", "Later"} default button "Open Settings"
             if button returned of result is "Open Settings" then
                 open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
             end if
