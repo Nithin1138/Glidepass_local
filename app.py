@@ -484,7 +484,7 @@ def perform_typing(text, wpm, is_coding=False):
 
     # Helper to ALWAYS release modifiers after any key sequence
     def safe_release():
-        for mod in ('command', 'shift', 'ctrl', 'option', 'alt', 'win'):
+        for mod in ('command', 'shift', 'ctrl', 'option', 'alt', 'win', 'fn'):
             try:
                 pyautogui.keyUp(mod)
             except Exception:
