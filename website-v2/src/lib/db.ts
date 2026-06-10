@@ -22,9 +22,13 @@ const getJsonFilePath = () => {
   return path.join(baseDir, "vitcodes.json");
 };
 
+// Use globalThis to persist the db initialization state across Next.js API route hot-reloads
+const globalDb = globalThis as unknown as { isDbInitialized: boolean };
+let isDbInitialized = globalDb.isDbInitialized || false;
+
 // Initialize Postgres tables
 export async function initDb() {
-  if (!pool) return;
+  if (!pool || isDbInitialized) return;
   const client = await pool.connect();
   try {
     await client.query(`
@@ -41,9 +45,21 @@ export async function initDb() {
         session_id TEXT REFERENCES vit_sessions(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         code TEXT NOT NULL,
-        language TEXT NOT NULL
+        language TEXT NOT NULL,
+        comment TEXT
       );
     `);
+    
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_contributors (
+        email TEXT PRIMARY KEY,
+        status TEXT DEFAULT 'active'
+      );
+    `);
+    
+    
+    isDbInitialized = true;
+    globalDb.isDbInitialized = true;
   } catch (error) {
     console.error("Database initialization failed:", error);
   } finally {
@@ -56,6 +72,8 @@ export interface Question {
   title: string;
   code: string;
   language: string;
+  comment?: string;
+  contributorEmail?: string;
 }
 
 export interface VitCode {
@@ -83,6 +101,8 @@ export async function readCodes(): Promise<VitCode[]> {
           title: row.title,
           code: row.code,
           language: row.language,
+          comment: row.comment,
+          contributorEmail: row.contributor_email,
         };
         if (!questionsBySession[row.session_id]) {
           questionsBySession[row.session_id] = [];
@@ -144,8 +164,8 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
 
         for (const q of session.questions) {
           await client.query(
-            "INSERT INTO vit_questions (id, session_id, title, code, language) VALUES ($1, $2, $3, $4, $5)",
-            [q.id, session.id, q.title, q.code, q.language]
+            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            [q.id, session.id, q.title, q.code, q.language, q.comment || null, q.contributorEmail || null]
           );
         }
       }

@@ -1,17 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2,
-  Award, Calendar, BookOpen, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
-  ExternalLink, CalendarDays, Sparkles, Filter, Code, Info, Users, ShieldAlert, BarChart3, Database, Lock,
+  Calendar, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
+  ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare,
-  AlertTriangle, Play, Pause, RefreshCw, Download, Sliders, HardDrive, Cpu, Radio, Shield, ListTodo
+  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck
 } from "lucide-react";
 import Link from "next/link";
 
-// Interfaces
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PALETTE TOKENS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const P = {
+  white: "#FAFAFA",
+  sky: "#C7EEFF",
+  blue: "#0077C0",
+  black: "#050505",
+  error: "#C62828",
+} as const;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INTERFACES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 interface Question {
   id: string;
   title: string;
@@ -46,603 +59,606 @@ interface SecurityLog {
   status: "success" | "failed" | "warning";
 }
 
-export default function PremiumAdminPanel() {
-  // --- Theme Engine ---
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MAIN COMPONENT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export default function GlidePassAdmin() {
+  // ─── Theme Engine ───
   const [theme, setTheme] = useState<"light" | "dark" | "system">("dark");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("lanpad-admin-theme") as "light" | "dark" | "system" | null;
-    if (savedTheme) setTheme(savedTheme);
+    const saved = localStorage.getItem("glidepass-admin-theme") as "light" | "dark" | "system" | null;
+    if (saved) setTheme(saved);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("lanpad-admin-theme", theme);
+    localStorage.setItem("glidepass-admin-theme", theme);
     if (theme === "system") {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
       setResolvedTheme(media.matches ? "dark" : "light");
-      const listener = (e: MediaQueryListEvent) => setResolvedTheme(e.matches ? "dark" : "light");
-      media.addEventListener("change", listener);
-      return () => media.removeEventListener("change", listener);
+      const fn = (e: MediaQueryListEvent) => setResolvedTheme(e.matches ? "dark" : "light");
+      media.addEventListener("change", fn);
+      return () => media.removeEventListener("change", fn);
     } else {
       setResolvedTheme(theme);
     }
   }, [theme]);
 
-  // --- Auth Session ---
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [usernameInput, setUsernameInput] = useState<string>("");
-  const [passwordInput, setPasswordInput] = useState<string>("");
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(true);
-  const [loginAttempts, setLoginAttempts] = useState<number>(0);
-  const [loginHistory, setLoginHistory] = useState<{ time: string; ip: string; device: string; success: boolean }[]>([]);
+  const dk = resolvedTheme === "dark";
+
+  // ─── Auth ───
+  const [isAuth, setIsAuth] = useState(false);
+  const [userIn, setUserIn] = useState("");
+  const [passIn, setPassIn] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginHistory, setLoginHistory] = useState<{ time: string; success: boolean }[]>([]);
+
+  // Load stored password (for change-password feature)
+  const [storedPassword, setStoredPassword] = useState("check");
 
   useEffect(() => {
-    const isLogged = localStorage.getItem("lanpad-admin-logged");
-    if (isLogged === "true") {
-      setIsAuthenticated(true);
-    }
-    // Load local history
-    const hist = localStorage.getItem("lanpad-login-history");
+    const logged = localStorage.getItem("glidepass-admin-logged");
+    if (logged === "true") setIsAuth(true);
+    const hist = localStorage.getItem("glidepass-login-history");
     if (hist) setLoginHistory(JSON.parse(hist));
+    const sp = localStorage.getItem("glidepass-admin-pw");
+    if (sp) setStoredPassword(sp);
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanUser = usernameInput.trim();
-    const isSuccess = cleanUser === "Nithin" && passwordInput === "check";
-
-    const newLog = {
-      time: new Date().toLocaleTimeString() + " " + new Date().toLocaleDateString(),
-      ip: "192.168.1.15",
-      device: navigator.userAgent.includes("Mac") ? "MacBook Pro" : "Windows Desktop",
-      success: isSuccess
-    };
-
-    const updatedHistory = [newLog, ...loginHistory].slice(0, 10);
-    setLoginHistory(updatedHistory);
-    localStorage.setItem("lanpad-login-history", JSON.stringify(updatedHistory));
-
-    if (isSuccess) {
-      setIsAuthenticated(true);
-      if (rememberMe) {
-        localStorage.setItem("lanpad-admin-logged", "true");
-      }
-      showStatus("success", "Access Granted. Welcome back, Admin.");
+    const ok = userIn.trim() === "Nithin" && passIn === storedPassword;
+    const entry = { time: new Date().toLocaleString(), success: ok };
+    const updated = [entry, ...loginHistory].slice(0, 10);
+    setLoginHistory(updated);
+    localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
+    if (ok) {
+      setIsAuth(true);
+      if (remember) localStorage.setItem("glidepass-admin-logged", "true");
+      showToast("success", "Access granted. Welcome back, Nithin.");
     } else {
-      setLoginAttempts(prev => prev + 1);
-      showStatus("error", "Access Denied. Invalid administrative credentials.");
+      setLoginAttempts(p => p + 1);
+      showToast("error", "Invalid credentials. Access denied.");
     }
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem("lanpad-admin-logged");
-    setUsernameInput("");
-    setPasswordInput("");
-    showStatus("success", "Session terminated successfully.");
+    setIsAuth(false);
+    localStorage.removeItem("glidepass-admin-logged");
+    setUserIn("");
+    setPassIn("");
+    showToast("success", "Session terminated.");
   };
 
-  // --- Layout & View Manager ---
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(true);
-  const [currentView, setCurrentView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile"
+  // ─── Layout ───
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [view, setView] = useState<
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
-  // --- Command Palette ---
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
-  const [paletteQuery, setPaletteQuery] = useState<string>("");
-  const paletteInputRef = useRef<HTMLInputElement>(null);
+  // ─── Command Palette ───
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cmdQ, setCmdQ] = useState("");
+  const cmdRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const fn = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setIsCommandPaletteOpen(prev => !prev);
+        setCmdOpen(p => !p);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, []);
 
   useEffect(() => {
-    if (isCommandPaletteOpen && paletteInputRef.current) {
-      paletteInputRef.current.focus();
-    }
-  }, [isCommandPaletteOpen]);
+    if (cmdOpen && cmdRef.current) cmdRef.current.focus();
+  }, [cmdOpen]);
 
-  // --- Notification Center ---
-  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState<boolean>(false);
-  const [notifications, setNotifications] = useState<{ id: string; title: string; desc: string; type: "info" | "warning" | "success"; time: string }[]>([
-    { id: "1", title: "Deployment Successful", desc: "OTA template center.html deployed live on Edge CDN.", type: "success", time: "5m ago" },
-    { id: "2", title: "Suspicious Activity Detected", desc: "Failed admin sign-in attempt from IP 198.51.100.42.", type: "warning", time: "1h ago" },
-    { id: "3", title: "API Rate-Limit Alert", desc: "Host sync spikes exceeded 1,200 req/min limit.", type: "info", time: "3h ago" }
+  // ─── Notifications ───
+  const [notiOpen, setNotiOpen] = useState(false);
+  const [notifications] = useState([
+    { id: "1", title: "Deployment Live", desc: "OTA template center.html deployed on Edge CDN.", type: "success" as const, time: "5m ago" },
+    { id: "2", title: "Suspicious Activity", desc: "Failed admin sign-in from IP 198.51.100.42.", type: "warning" as const, time: "1h ago" },
+    { id: "3", title: "Rate-Limit Alert", desc: "Host sync exceeded 1,200 req/min threshold.", type: "info" as const, time: "3h ago" },
   ]);
 
-  // --- General Notification state ---
-  const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
-  const showStatus = (type: "success" | "error", message: string) => {
-    setStatus({ type, message });
-    setTimeout(() => setStatus({ type: null, message: "" }), 5000);
+  // ─── Toast ───
+  const [toast, setToast] = useState<{ type: "success" | "error" | null; msg: string }>({ type: null, msg: "" });
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast({ type: null, msg: "" }), 4000);
   };
 
-  // --- OTA Tab States ---
+  // ─── OTA ───
   const [selectedFile, setSelectedFile] = useState<"index.html" | "center.html">("center.html");
-  const [content, setContent] = useState<string>("");
-  const [loadingOta, setLoadingOta] = useState<boolean>(true);
-  const [savingOta, setSavingOta] = useState<boolean>(false);
-  const [usingCustom, setUsingCustom] = useState<boolean>(false);
+  const [otaContent, setOtaContent] = useState("");
+  const [loadingOta, setLoadingOta] = useState(true);
+  const [savingOta, setSavingOta] = useState(false);
+  const [usingCustom, setUsingCustom] = useState(false);
 
-  // --- VIT Codes Tab States ---
-  const [vitSessions, setVitSessions] = useState<VitCode[]>([]);
-  const [loadingVit, setLoadingVit] = useState<boolean>(true);
-  const [savingVit, setSavingVit] = useState<boolean>(false);
-
-  // Selected session for editing questions
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [examTypeFilter, setExamTypeFilter] = useState<string | null>(null);
-
-  // New session form states
-  const [newDate, setNewDate] = useState<string>(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  });
-  const [newExamType, setNewExamType] = useState<string>("NERD");
-  const [newSessionTitle, setNewSessionTitle] = useState<string>("");
-  const [examTypes, setExamTypes] = useState<string[]>([
-    "NERD", "Daily Assessment", "Mid Term Exam", "Final Term Exam", "Coding Challenge"
-  ]);
-  const [showAddExamType, setShowAddExamType] = useState<boolean>(false);
-  const [newExamTypeName, setNewExamTypeName] = useState<string>("");
-  const [showManageExamTypes, setShowManageExamTypes] = useState<boolean>(false);
-  const [editingExamTypeIndex, setEditingExamTypeIndex] = useState<number | null>(null);
-  const [editingExamTypeName, setEditingExamTypeName] = useState<string>("");
-
-  // New question form states
-  const [qTitle, setQTitle] = useState<string>("");
-  const [qCode, setQCode] = useState<string>("");
-  const [qLang, setQLang] = useState<string>("cpp");
-
-  // --- Fetch Data functions ---
-  const fetchTemplate = async (fileName: "index.html" | "center.html") => {
+  const fetchTemplate = async (f: "index.html" | "center.html") => {
     setLoadingOta(true);
     try {
-      const res = await fetch(`/api/ota?file=${fileName}`);
-      if (!res.ok) throw new Error(`Failed to fetch ${fileName}`);
-      const data = await res.text();
-      setContent(data);
+      const res = await fetch(`/api/ota?file=${f}`);
+      if (!res.ok) throw new Error(`Failed to fetch ${f}`);
+      setOtaContent(await res.text());
       setUsingCustom(true);
     } catch (err: any) {
-      showStatus("error", err.message || "Failed to load template");
+      showToast("error", err.messky);
     } finally {
       setLoadingOta(false);
     }
   };
 
-  const fetchVitCodes = async () => {
-    setLoadingVit(true);
-    try {
-      const res = await fetch("/api/vitcodes");
-      if (!res.ok) throw new Error("Failed to fetch VIT codes");
-      const data = await res.json();
-      setVitSessions(data);
-      if (data.length > 0 && !activeSessionId) {
-        setActiveSessionId(data[0].id);
-      }
-      if (data && Array.from) {
-        const types = data.map((s: any) => s.examType).filter(Boolean);
-        setExamTypes(prev => Array.from(new Set([...prev, ...types])));
-      }
-    } catch (err: any) {
-      showStatus("error", err.message || "Failed to load VIT codes");
-    } finally {
-      setLoadingVit(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (currentView === "ota") fetchTemplate(selectedFile);
-      if (currentView === "vitcodes" || currentView === "dashboard") fetchVitCodes();
-    }
-  }, [currentView, selectedFile, isAuthenticated]);
-
-  // --- Save OTA template ---
   const handleSaveOta = async () => {
     setSavingOta(true);
     try {
       const res = await fetch("/api/ota", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: selectedFile, content }),
+        body: JSON.stringify({ file: selectedFile, content: otaContent }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save template");
-      showStatus("success", `Successfully updated ${selectedFile} live on mobile site!`);
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      showToast("success", `Published ${selectedFile} successfully.`);
       setUsingCustom(true);
     } catch (err: any) {
-      showStatus("error", err.message || "Failed to save template");
+      showToast("error", err.messky);
     } finally {
       setSavingOta(false);
     }
   };
 
   const handleResetOta = async () => {
-    if (!confirm(`Are you sure you want to reset ${selectedFile} to default repository version?`)) return;
+    if (!confirm(`Reset ${selectedFile} to default?`)) return;
     setLoadingOta(true);
     try {
-      const otaGithubBase = "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/templates/";
-      const res = await fetch(otaGithubBase + selectedFile);
-      if (!res.ok) throw new Error("Failed to fetch default template from GitHub");
-      const defaultContent = await res.text();
-      setContent(defaultContent);
-
-      const saveRes = await fetch("/api/ota", {
+      const base = "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/templates/";
+      const res = await fetch(base + selectedFile);
+      if (!res.ok) throw new Error("Failed to fetch default template");
+      const def = await res.text();
+      setOtaContent(def);
+      const sr = await fetch("/api/ota", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: selectedFile, content: defaultContent }),
+        body: JSON.stringify({ file: selectedFile, content: def }),
       });
-      if (!saveRes.ok) throw new Error("Failed to save reset template");
-      showStatus("success", `Successfully reset ${selectedFile} to repository default.`);
+      if (!sr.ok) throw new Error("Failed to save reset");
+      showToast("success", `Reset ${selectedFile} to default.`);
     } catch (err: any) {
-      showStatus("error", err.message || "Failed to reset template");
+      showToast("error", err.messky);
     } finally {
       setLoadingOta(false);
     }
   };
 
-  // --- Save VIT Codes ---
-  const handleSaveVitDatabase = async (updatedSessions: VitCode[]) => {
+  // ─── VIT Codes ───
+  const [vitSessions, setVitSessions] = useState<VitCode[]>([]);
+  const [loadingVit, setLoadingVit] = useState(true);
+  const [savingVit, setSavingVit] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [vitDetailView, setVitDetailView] = useState(false);
+  const [examTypeFilter, setExamTypeFilter] = useState<string>("all");
+  const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [showManageTypes, setShowManageTypes] = useState(false);
+  const [expandedQId, setExpandedQId] = useState<string | null>(null);
+
+  // New session form
+  const [newDate, setNewDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+  const [newExamType, setNewExamType] = useState("NERD");
+  const [newSessionTitle, setNewSessionTitle] = useState("");
+  const [examTypes, setExamTypes] = useState(["NERD", "Daily Assessment", "Mid Term Exam", "Final Term Exam", "Coding Challenge"]);
+  const [newExamTypeName, setNewExamTypeName] = useState("");
+  const [editingTypeIdx, setEditingTypeIdx] = useState<number | null>(null);
+  const [editingTypeName, setEditingTypeName] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("vit_exam_types");
+    if (saved) {
+      try { setExamTypes(JSON.parse(saved)); } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (examTypes.length > 0) {
+      localStorage.setItem("vit_exam_types", JSON.stringify(examTypes));
+    }
+  }, [examTypes]);
+
+  // Question form
+  const [qTitle, setQTitle] = useState("");
+  const [qCode, setQCode] = useState("");
+  const [qLang, setQLang] = useState("cpp");
+  const [qComment, setQComment] = useState("");
+
+  // ─── Contributors Management ───
+  const [contributors, setContributors] = useState<{ email: string; status: string }[]>([]);
+  const [loadingContributors, setLoadingContributors] = useState(false);
+  const [selectedContributor, setSelectedContributor] = useState<string | null>(null);
+  const [expandedContribQId, setExpandedContribQId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuth && view === "contributors") {
+      setLoadingContributors(true);
+      fetch("/api/admin/contributors")
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) setContributors(d);
+        })
+        .finally(() => setLoadingContributors(false));
+    }
+  }, [isAuth, view]);
+
+  const toggleContributorStatus = async (email: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "blocked" : "active";
+    setContributors(prev => prev.map(c => c.email === email ? { ...c, status: newStatus } : c));
+    try {
+      const res = await fetch("/api/admin/contributors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, status: newStatus })
+      });
+      if (!res.ok) throw new Error("Failed to update");
+    } catch (e) {
+      showToast("error", "Failed to update status");
+      // revert
+      setContributors(prev => prev.map(c => c.email === email ? { ...c, status: currentStatus } : c));
+    }
+  };
+
+  const fetchVitCodes = async () => {
+    setLoadingVit(true);
+    try {
+      const res = await fetch("/api/vitcodes", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch VIT codes");
+      const data = await res.json();
+      setVitSessions(data);
+      if (data.length > 0 && !activeSessionId) setActiveSessionId(data[0].id);
+      if (data && Array.from) {
+        const types = data.map((s: any) => s.examType).filter(Boolean);
+        setExamTypes(prev => Array.from(new Set([...prev, ...types])));
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    } finally {
+      setLoadingVit(false);
+    }
+  };
+
+  const saveVitDB = async (updated: VitCode[]) => {
+    setVitSessions(updated); // Optimistic UI update
     setSavingVit(true);
     try {
       const res = await fetch("/api/vitcodes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedSessions),
+        body: JSON.stringify(updated),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save VIT codes");
-      setVitSessions(updatedSessions);
-      showStatus("success", "Successfully updated VIT codes database!");
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      // Optional: showToast("success", "VIT codes updated.");
     } catch (err: any) {
-      showStatus("error", err.message || "Failed to save VIT codes database");
+      showToast("error", err.message);
+      fetchVit(); // revert on failure
     } finally {
       setSavingVit(false);
     }
   };
 
-  // Add new session
   const handleAddSession = () => {
-    if (!newDate) {
-      alert("Please select a date");
-      return;
-    }
-    const newSession: VitCode = {
-      id: Date.now().toString(),
-      date: newDate,
-      examType: newExamType,
-      title: newSessionTitle.trim() || undefined,
-      questions: [],
-    };
-    const updated = [...vitSessions, newSession];
-    handleSaveVitDatabase(updated);
-    setActiveSessionId(newSession.id);
+    if (!newDate) return alert("Select a date");
+    const s: VitCode = { id: Date.now().toString(), date: newDate, examType: newExamType, title: newSessionTitle.trim() || undefined, questions: [] };
+    const updated = [...vitSessions, s];
+    saveVitDB(updated);
+    setActiveSessionId(s.id);
     setNewSessionTitle("");
-    const today = new Date();
-    setNewDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
-  };
-
-  const handleDeleteSession = (id: string) => {
-    if (!confirm("Are you sure you want to delete this session?")) return;
-    const updated = vitSessions.filter((s) => s.id !== id);
-    handleSaveVitDatabase(updated);
-    if (activeSessionId === id) {
-      setActiveSessionId(updated.length > 0 ? updated[0].id : null);
-    }
+    setShowNewSessionModal(false);
   };
 
   const handleAddQuestion = () => {
     if (!activeSessionId) return;
-    if (!qTitle || !qCode) {
-      alert("Please enter both question title and code");
-      return;
-    }
-    const updated = vitSessions.map((s) => {
+    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
+    const updated = vitSessions.map(s => {
       if (s.id === activeSessionId) {
         return {
           ...s,
-          questions: [
-            ...s.questions,
-            {
-              id: Date.now().toString(),
-              title: qTitle,
-              code: qCode,
-              language: qLang,
-            },
-          ],
+          questions: [...s.questions, { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment }]
         };
       }
       return s;
     });
-    handleSaveVitDatabase(updated);
+    saveVitDB(updated);
     setQTitle("");
     setQCode("");
+    setQComment("");
+  };
+
+  const handleDeleteSession = (id: string) => {
+    if (!confirm("Delete this session?")) return;
+    const updated = vitSessions.filter(s => s.id !== id);
+    saveVitDB(updated);
+    if (activeSessionId === id) {
+      setActiveSessionId(updated.length > 0 ? updated[0].id : null);
+      setVitDetailView(false);
+    }
   };
 
   const handleDeleteQuestion = (qId: string) => {
     if (!confirm("Delete this question?")) return;
-    const updated = vitSessions.map((s) => {
+    const updated = vitSessions.map(s => {
       if (s.id === activeSessionId) {
-        return {
-          ...s,
-          questions: s.questions.filter((q) => q.id !== qId),
-        };
+        return { ...s, questions: s.questions.filter(q => q.id !== qId) };
       }
       return s;
     });
-    handleSaveVitDatabase(updated);
+    saveVitDB(updated);
   };
 
-  const activeSession = vitSessions.find((s) => s.id === activeSessionId);
+  const activeSession = vitSessions.find(s => s.id === activeSessionId);
+  const totalQ = vitSessions.reduce((a, s) => a + (s.questions?.length || 0), 0);
 
-  // Compute Stats for sidebar
-  const totalSessionsCount = vitSessions.length;
-  const totalQuestionsCount = vitSessions.reduce((acc, s) => acc + (s.questions ? s.questions.length : 0), 0);
+  const filteredSessions = useMemo(() => {
+    if (examTypeFilter === "all") return vitSessions;
+    return vitSessions.filter(s => s.examType === examTypeFilter);
+  }, [vitSessions, examTypeFilter]);
 
+  const groupedSessions = useMemo(() => {
+    const groups: Record<string, VitCode[]> = {};
+    filteredSessions.forEach(s => {
+      if (!groups[s.examType]) groups[s.examType] = [];
+      groups[s.examType].push(s);
+    });
+    return groups;
+  }, [filteredSessions]);
 
-  // --- Users Module Data & States ---
+  // ─── Data Fetching ───
+  useEffect(() => {
+    if (isAuth) {
+      if (view === "ota") fetchTemplate(selectedFile);
+      if (view === "vitcodes" || view === "dashboard") fetchVitCodes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, selectedFile, isAuth]);
+
+  // ─── Users ───
   const [users, setUsers] = useState<UserRecord[]>([
-    { id: "1", name: "Nithin Kumar", email: "nithin@lanpad.app", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago" },
+    { id: "1", name: "Nithin Kumar", email: "nithin@glidepass.app", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago" },
     { id: "2", name: "Sarah Connor", email: "sarah@resist.org", role: "Developer", status: "active", verified: true, activity: "Active 4h ago" },
     { id: "3", name: "Alex Mercer", email: "mercer@gentek.com", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago" },
-    { id: "4", name: "David Lightman", email: "wopr@falken.mil", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago" }
+    { id: "4", name: "David Lightman", email: "wopr@falken.mil", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago" },
   ]);
-  const [userSearch, setUserSearch] = useState<string>("");
-  const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
 
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
-      const matchSearch = u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase());
-      const matchRole = userRoleFilter === "all" || u.role === userRoleFilter;
-      return matchSearch && matchRole;
+      const ms = u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase());
+      const mr = userRoleFilter === "all" || u.role === userRoleFilter;
+      return ms && mr;
     });
   }, [users, userSearch, userRoleFilter]);
 
-  const toggleVerifyUser = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, verified: !u.verified } : u));
-    showStatus("success", "User verification status toggled.");
-  };
+  const toggleVerify = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, verified: !u.verified } : u)); showToast("success", "Verification toggled."); };
+  const toggleBan = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u)); showToast("success", "User status updated."); };
 
-  const toggleBanUser = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u));
-    showStatus("success", "User status updated.");
-  };
-
-  const exportUsersCSV = () => {
-    const headers = ["ID", "Name", "Email", "Role", "Status", "Verified"];
+  const exportCSV = () => {
+    const hdr = ["ID", "Name", "Email", "Role", "Status", "Verified"];
     const rows = users.map(u => [u.id, u.name, u.email, u.role, u.status, u.verified]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "lanpad_users_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showStatus("success", "CSV file generated and downloaded.");
+    const csv = "data:text/csv;charset=utf-8," + [hdr.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.href = encodeURI(csv);
+    a.download = "glidepass_users.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast("success", "CSV exported.");
   };
 
-  // --- Role Access Matrix State ---
-  const [rbacMatrix, setRbacMatrix] = useState<Record<string, Record<string, boolean>>>({
+  // ─── RBAC ───
+  const [rbac, setRbac] = useState<Record<string, Record<string, boolean>>>({
     "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
-    "Developer": { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
-    "Auditor": { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
-    "Contributor": { users: false, rbac: false, analytics: false, content: true, system: false, security: false, settings: false }
+    Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
+    Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
+    Contributor: { users: false, rbac: false, analytics: false, content: true, system: false, security: false, settings: false },
   });
 
-  const toggleRbacPermission = (role: string, module: string) => {
-    setRbacMatrix(prev => ({
-      ...prev,
-      [role]: {
-        ...prev[role],
-        [module]: !prev[role][module]
-      }
-    }));
-    showStatus("success", "Role access level updated.");
+  const toggleRbac = (role: string, mod: string) => {
+    setRbac(p => ({ ...p, [role]: { ...p[role], [mod]: !p[role][mod] } }));
+    showToast("success", "Permission updated.");
   };
 
-  // --- Security Audit Log Data ---
-  const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([
+  // ─── Security Logs ───
+  const [secLogs] = useState<SecurityLog[]>([
     { id: "101", timestamp: "23:02:15", event: "Admin Session Terminated", user: "Nithin", ip: "192.168.1.15", status: "success" },
-    { id: "102", timestamp: "22:58:40", event: "Failed Authentication Attempt", user: "Admin", ip: "198.51.100.42", status: "failed" },
-    { id: "103", timestamp: "22:45:12", event: "VIT database edited", user: "Nithin", ip: "10.251.103.162", status: "warning" },
-    { id: "104", timestamp: "22:30:05", event: "SSL Handshake verified", user: "System", ip: "127.0.0.1", status: "success" }
+    { id: "102", timestamp: "22:58:40", event: "Failed Auth Attempt", user: "Unknown", ip: "198.51.100.42", status: "failed" },
+    { id: "103", timestamp: "22:45:12", event: "VIT Database Modified", user: "Nithin", ip: "10.251.103.162", status: "warning" },
+    { id: "104", timestamp: "22:30:05", event: "SSL Handshake Verified", user: "System", ip: "127.0.0.1", status: "success" },
   ]);
 
-  // --- Admin Profile Management state ---
-  const [adminName, setAdminName] = useState<string>("Nithin");
-  const [adminAvatar, setAdminAvatar] = useState<string>("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80");
-  const [currentPassword, setCurrentPassword] = useState<string>("");
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [isPassVisible, setIsPassVisible] = useState<boolean>(false);
+  // ─── Profile ───
+  const [adminName, setAdminName] = useState("Nithin");
+  const [adminAvatar, setAdminAvatar] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80");
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = (e: React.FormEvent) => { e.preventDefault(); showToast("success", "Profile updated."); };
+
+  const handleChangePw = (e: React.FormEvent) => {
     e.preventDefault();
-    showStatus("success", "Profile settings saved.");
+    if (!curPw || !newPw || !confirmPw) return showToast("error", "Fill all fields.");
+    if (curPw !== storedPassword) return showToast("error", "Current password incorrect.");
+    if (newPw !== confirmPw) return showToast("error", "Passwords don't match.");
+    setStoredPassword(newPw);
+    localStorage.setItem("glidepass-admin-pw", newPw);
+    showToast("success", "Password updated.");
+    setCurPw(""); setNewPw(""); setConfirmPw("");
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showStatus("error", "Fill in all credentials fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showStatus("error", "New passwords do not match.");
-      return;
-    }
-    showStatus("success", "Administrative password updated successfully.");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  };
+  const pwStrength = useMemo(() => {
+    if (!newPw) return 0;
+    let s = 0;
+    if (newPw.length >= 6) s++;
+    if (/[A-Z]/.test(newPw)) s++;
+    if (/[0-9]/.test(newPw)) s++;
+    if (/[^A-Za-z0-9]/.test(newPw)) s++;
+    return s;
+  }, [newPw]);
 
-  const passwordStrength = useMemo(() => {
-    if (!newPassword) return 0;
-    let score = 0;
-    if (newPassword.length >= 6) score += 1;
-    if (/[A-Z]/.test(newPassword)) score += 1;
-    if (/[0-9]/.test(newPassword)) score += 1;
-    if (/[^A-Za-z0-9]/.test(newPassword)) score += 1;
-    return score;
-  }, [newPassword]);
-
-  // --- Command Palette Filtered Actions ---
-  const commandPaletteActions = useMemo(() => {
+  // ─── Command Palette Actions ───
+  const cmdActions = useMemo(() => {
     const list = [
-      { name: "Go to Dashboard", action: () => { setCurrentView("dashboard"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to User Management", action: () => { setCurrentView("users"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to RBAC Access Policies", action: () => { setCurrentView("rbac"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to Analytics Analytics Center", action: () => { setCurrentView("analytics"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to VIT-AP Codes Manager", action: () => { setCurrentView("vitcodes"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to OTA Live Templates", action: () => { setCurrentView("ota"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to System Health Monitoring", action: () => { setCurrentView("system"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to Security Logs", action: () => { setCurrentView("security"); setIsCommandPaletteOpen(false); } },
-      { name: "Go to Settings Center", action: () => { setCurrentView("settings"); setIsCommandPaletteOpen(false); } },
-      { name: "Toggle Theme Mode: Light", action: () => { setTheme("light"); setIsCommandPaletteOpen(false); } },
-      { name: "Toggle Theme Mode: Dark", action: () => { setTheme("dark"); setIsCommandPaletteOpen(false); } },
-      { name: "Admin Sign Out", action: () => { handleLogout(); setIsCommandPaletteOpen(false); } }
+      { name: "Go to Dashboard", action: () => { setView("dashboard"); setCmdOpen(false); } },
+      { name: "Go to User Directory", action: () => { setView("users"); setCmdOpen(false); } },
+      { name: "Go to Roles & Policies", action: () => { setView("rbac"); setCmdOpen(false); } },
+      { name: "Go to Analytics", action: () => { setView("analytics"); setCmdOpen(false); } },
+      { name: "Go to VIT-AP Codes", action: () => { setView("vitcodes"); setCmdOpen(false); } },
+      { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
+      { name: "Go to Diagnostics", action: () => { setView("system"); setCmdOpen(false); } },
+      { name: "Go to Audit Trail", action: () => { setView("security"); setCmdOpen(false); } },
+      { name: "Go to Settings", action: () => { setView("settings"); setCmdOpen(false); } },
+      { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
+      { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
+      { name: "Sign Out", action: () => { handleLogout(); setCmdOpen(false); } },
     ];
-    return list.filter(item => item.name.toLowerCase().includes(paletteQuery.toLowerCase()));
-  }, [paletteQuery]);
+    return list.filter(i => i.name.toLowerCase().includes(cmdQ.toLowerCase()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cmdQ]);
 
-  // Render CSS variables depending on theme selection
-  const isDark = resolvedTheme === "dark";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // STYLE HELPERS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const bg = dk ? `bg-[#050505]` : `bg-[#F0F4F8]`; // slightly off-white bg makes glass pop more in light mode
+  const cardBg = dk 
+    ? "bg-gradient-to-br from-white/[0.08] to-white/[0.01] backdrop-blur-[40px] shadow-2xl shadow-black/80" 
+    : "bg-gradient-to-br from-white/90 to-white/40 backdrop-blur-[40px] shadow-xl shadow-[#0077C0]/5";
+  const cardBorder = dk 
+    ? "border-t border-l border-white/[0.12] border-b-white/[0.02] border-r-white/[0.02]" 
+    : "border border-white border-b-[#050505]/5 border-r-[#050505]/5";
+  const panelBg = dk 
+    ? "bg-[#050505]/50 backdrop-blur-[60px]" 
+    : "bg-white/60 backdrop-blur-[60px]";
+  const txt1 = dk ? `text-[#FAFAFA]` : `text-[#050505]`;
+  const txt2 = dk ? `text-[#C7EEFF]` : "text-[#0077C0]";
+  const txt3 = dk ? "text-white/50" : "text-[#050505]/40";
+  const inputBg = dk 
+    ? "bg-black/40 border-t border-l border-white/10 border-b-transparent border-r-transparent shadow-inner text-[#FAFAFA] placeholder-white/30 focus:bg-white/[0.05]" 
+    : "bg-white/60 border-t border-l border-white border-b-[#050505]/10 border-r-[#050505]/10 shadow-sm text-[#050505] placeholder-[#050505]/30 focus:bg-white";
+  const accentBtn = `bg-[#0077C0] hover:bg-[#005f99] text-white shadow-lg shadow-[#0077C0]/30 border-t border-white/20`;
+  const gradientLine = "bg-gradient-to-r from-[#0077C0] via-[#C7EEFF] to-transparent";
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // RENDER
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   return (
-    <div className={`min-h-screen relative font-sans antialiased overflow-x-hidden transition-colors duration-500 ${
-      isDark ? "bg-[#020205] text-[#ececf1] selection:bg-indigo-500/30 selection:text-white" : "bg-[#f5f6fa] text-[#1c1c1f] selection:bg-blue-500/20 selection:text-black"
-    }`}>
-      {/* Background Liquid blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className={`absolute top-[5%] left-[10%] w-[600px] h-[600px] blur-[150px] rounded-full animate-liquid-1 transition-colors duration-1000 ${
-          isDark ? "bg-indigo-500/5 via-fuchsia-500/3 to-transparent" : "bg-blue-500/10 via-fuchsia-500/5 to-transparent"
-        }`} />
-        <div className={`absolute bottom-[10%] right-[10%] w-[500px] h-[500px] blur-[140px] rounded-full animate-liquid-2 transition-colors duration-1000 ${
-          isDark ? "bg-[#007aff]/3 via-amber-500/2 to-transparent" : "bg-[#007aff]/5 via-amber-500/3 to-transparent"
-        }`} />
+    <div
+      className="min-h-screen relative font-sans antialiased overflow-x-hidden transition-colors duration-500"
+      style={{ background: dk ? P.black : P.white, color: dk ? P.white : P.black }}
+    >
+      {/* Ambient background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div
+          className="absolute top-[5%] left-[10%] w-[600px] h-[600px] rounded-full animate-pulse"
+          style={{ background: dk ? "rgba(0,119,192,0.06)" : "rgba(0,119,192,0.08)", filter: "blur(150px)" }}
+        />
+        <div
+          className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] rounded-full"
+          style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(199,238,255,0.1)", filter: "blur(140px)" }}
+        />
       </div>
 
       <AnimatePresence mode="wait">
-        {!isAuthenticated ? (
-          // ==================== ADMINISTRATIVE LOCK GATE ====================
+        {!isAuth ? (
+          /* ═══════════════════ LOGIN GATE ═══════════════════ */
           <motion.div
-            key="lockscreen"
+            key="login"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="min-h-screen flex items-center justify-center p-6"
           >
-            <div className={`w-full max-w-[450px] rounded-[36px] border backdrop-blur-3xl shadow-2xl p-10 relative overflow-hidden transition-all duration-300 ${
-              isDark ? "bg-[#07070c]/60 border-white/[0.06] shadow-black" : "bg-white/70 border-black/[0.05] shadow-slate-200"
-            }`}>
-              {/* Upper Light Line */}
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-              
+            <div
+              className="w-full max-w-[440px] rounded-[36px] border backdrop-blur-3xl shadow-2xl p-10 relative overflow-hidden"
+              style={{
+                background: dk ? "rgba(5,5,5,0.60)" : "rgba(255,255,255,0.70)",
+                borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+              }}
+            >
+              {/* Top accent line */}
+              <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+
               <div className="flex flex-col items-center text-center space-y-6">
-                <div className="w-16 h-16 rounded-[22px] bg-gradient-to-tr from-blue-500 via-sky-400 to-teal-500 flex items-center justify-center shadow-lg relative">
+                <div className="w-16 h-16 rounded-[22px] flex items-center justify-center shadow-lg relative" style={{ background: P.blue }}>
                   <Lock className="text-white" size={24} />
                   {loginAttempts > 2 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#007aff] text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center animate-bounce" style={{ background: P.error }}>
                       {loginAttempts}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <h1 className="text-xl font-bold font-outfit tracking-wider">
-                    LANPAD ADMINISTRATIVE GATE
-                  </h1>
-                  <p className={`text-xs ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
-                    Administrative authorization token required for entry
-                  </p>
+                  <h1 className="text-xl font-bold font-[family-name:var(--font-outfit)] tracking-wider">GLIDEPASS ADMIN</h1>
+                  <p className={txt3} style={{ fontSize: 12 }}>Administrative credentials required</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="w-full space-y-4 text-left">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">Admin Username</label>
+                    <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Username</label>
                     <div className="relative">
-                      <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+                      <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
                       <input
-                        type="text"
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder="Nithin"
-                        className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 transition-all ${
-                          isDark ? "bg-black/40 border border-white/[0.08] text-white focus:ring-indigo-500/30" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
-                        }`}
-                        required
+                        type="text" value={userIn} onChange={e => setUserIn(e.target.value)} placeholder="Nithin" required
+                        className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">Access Key</label>
+                    <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Access Key</label>
                     <div className="relative">
-                      <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+                      <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
                       <input
-                        type={showPassword ? "text" : "password"}
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="••••"
-                        className={`w-full text-xs rounded-xl pl-10 pr-11 py-3.5 focus:outline-none focus:ring-2 transition-all ${
-                          isDark ? "bg-black/40 border border-white/[0.08] text-white focus:ring-indigo-500/30" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
-                        }`}
-                        required
+                        type={showPass ? "text" : "password"} value={passIn} onChange={e => setPassIn(e.target.value)} placeholder="••••" required
+                        className={`w-full text-xs rounded-xl pl-10 pr-11 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
-                      >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                        {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className={`rounded-md w-3.5 h-3.5 focus:ring-0 ${isDark ? "bg-black/40 border-white/[0.08]" : "bg-slate-100 border-black/[0.06]"}`}
-                      />
-                      <span className="text-[11px] text-neutral-400">Remember session</span>
-                    </label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="rounded w-3.5 h-3.5" style={{ accentColor: P.blue }} />
+                    <span className="text-[11px]" style={{ color: dk ? `${P.sky}90` : `${P.black}80` }}>Remember session</span>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 active:scale-98 transition-all duration-300"
+                    className="w-full py-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                    style={{ background: P.blue }}
                   >
-                    <Unlock size={14} /> Validate Credentials
+                    <Unlock size={14} /> Authenticate
                   </button>
                 </form>
 
                 {loginHistory.length > 0 && (
-                  <div className="w-full pt-4 border-t border-white/[0.04] text-left">
-                    <span className="text-[9px] uppercase font-bold text-neutral-500 block mb-2">Failed Login Attempts Tracker</span>
-                    <div className="space-y-1 max-h-[80px] overflow-y-auto pr-1 text-[10px] scrollbar-thin">
-                      {loginHistory.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-neutral-400">
-                          <span className="font-mono">{item.time}</span>
-                          <span className={item.success ? "text-emerald-400" : "text-blue-400"}>
-                            {item.success ? "Success" : "Failed"}
-                          </span>
+                  <div className="w-full pt-4 text-left" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)"}` }}>
+                    <span className="text-[9px] uppercase font-bold block mb-2" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Recent Attempts</span>
+                    <div className="space-y-1 max-h-[70px] overflow-y-auto pr-1 text-[10px]">
+                      {loginHistory.slice(0, 3).map((h, i) => (
+                        <div key={i} className="flex justify-between" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                          <span className="font-mono">{h.time}</span>
+                          <span style={{ color: h.success ? P.blue : P.error }}>{h.success ? "Success" : "Failed"}</span>
                         </div>
                       ))}
                     </div>
@@ -652,417 +668,243 @@ export default function PremiumAdminPanel() {
             </div>
           </motion.div>
         ) : (
-          // ==================== PREMIUM SYSTEM CONSOLE LAYOUT ====================
-          <motion.div
-            key="dashboard-app"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex min-h-screen relative"
-          >
-            {/* Sidebar Navigation */}
-            <aside className={`border-r shrink-0 flex flex-col justify-between transition-all duration-500 backdrop-blur-3xl sticky top-0 h-screen z-30 ${
-              isSidebarExpanded ? "w-64" : "w-20"
-            } ${
-              isDark ? "bg-[#07070c]/80 border-white/[0.05]" : "bg-white/80 border-black/[0.05]"
-            }`}>
+          /* ═══════════════════ MAIN ADMIN LAYOUT ═══════════════════ */
+          <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex min-h-screen relative">
+
+            {/* ─── Sidebar ─── */}
+            <aside
+              className={`border-r shrink-0 flex flex-col justify-between transition-all duration-500 backdrop-blur-3xl sticky top-0 h-screen z-30 ${sidebarOpen ? "w-64" : "w-20"}`}
+              style={{
+                background: dk ? "rgba(5,5,5,0.85)" : "rgba(255,255,255,0.85)",
+                borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+              }}
+            >
               <div className="flex flex-col">
-                {/* Logo & Expand Toggle */}
-                <div className="h-20 px-6 flex items-center justify-between border-b border-white/[0.03]">
-                  {isSidebarExpanded ? (
+                {/* Logo */}
+                <div className="h-20 px-6 flex items-center justify-between" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
+                  {sidebarOpen ? (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-rose-500 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: P.blue }}>
                         <Terminal size={14} className="text-white" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-outfit font-black text-xs tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-100 to-neutral-400">
-                          LANPAD
-                        </span>
-                        <span className="text-[8px] uppercase tracking-wider font-extrabold text-blue-400">
-                          Control v1.4
-                        </span>
+                        <span className="font-[family-name:var(--font-outfit)] font-black text-xs tracking-wider">GLIDEPASS</span>
+                        <span className="text-[8px] uppercase tracking-wider font-extrabold" style={{ color: P.blue }}>Control v1.0</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-rose-500 flex items-center justify-center mx-auto">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center mx-auto" style={{ background: P.blue }}>
                       <Terminal size={14} className="text-white" />
                     </div>
                   )}
-
-                  <button
-                    onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                    className={`p-1.5 rounded-lg hover:bg-white/[0.05] text-neutral-400 hover:text-white transition-colors ${
-                      !isSidebarExpanded && "hidden"
-                    }`}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
+                  {sidebarOpen && (
+                    <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg transition-colors hover:opacity-70" style={{ color: dk ? P.sky : P.black }}>
+                      <ChevronLeft size={16} />
+                    </button>
+                  )}
                 </div>
 
-                {/* Search Shortcut */}
-                {isSidebarExpanded && (
+                {/* Search */}
+                {sidebarOpen && (
                   <div className="px-6 py-4">
-                    <button
-                      onClick={() => setIsCommandPaletteOpen(true)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs text-neutral-500 hover:text-neutral-300 transition-colors ${
-                        isDark ? "bg-black/30 border-white/[0.05]" : "bg-slate-100 border-black/[0.05]"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Search size={12} /> Search...
-                      </span>
-                      <kbd className="font-mono text-[9px] bg-white/[0.05] border border-white/[0.05] px-1.5 py-0.5 rounded-md">
-                        ⌘K
-                      </kbd>
+                    <button onClick={() => setCmdOpen(true)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs transition-colors`}
+                      style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                      <span className="flex items-center gap-2"><Search size={12} /> Search...</span>
+                      <kbd className="font-mono text-[9px] px-1.5 py-0.5 rounded-md" style={{ background: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)" }}>⌘K</kbd>
                     </button>
                   </div>
                 )}
 
-                {/* Navigation Groups */}
+                {/* Nav */}
                 <nav className="px-4 py-6 space-y-6">
-                  {/* Category 1: Overview */}
-                  <div className="space-y-1">
-                    {isSidebarExpanded && (
-                      <span className="text-[9px] uppercase font-bold text-neutral-500 px-3 block mb-2">Overview</span>
-                    )}
-                    <button
-                      onClick={() => setCurrentView("dashboard")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "dashboard"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <Layout size={14} />
-                      {isSidebarExpanded && <span>Dashboard</span>}
-                    </button>
-                    <button
-                      onClick={() => setCurrentView("analytics")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "analytics"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <BarChart3 size={14} />
-                      {isSidebarExpanded && <span>Analytics Center</span>}
-                    </button>
-                  </div>
-
-                  {/* Category 2: Management */}
-                  <div className="space-y-1">
-                    {isSidebarExpanded && (
-                      <span className="text-[9px] uppercase font-bold text-neutral-500 px-3 block mb-2">Management</span>
-                    )}
-                    <button
-                      onClick={() => setCurrentView("users")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "users"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <Users size={14} />
-                      {isSidebarExpanded && <span>User Directory</span>}
-                    </button>
-                    <button
-                      onClick={() => setCurrentView("rbac")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "rbac"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <ShieldCheck size={14} />
-                      {isSidebarExpanded && <span>Roles & Policies</span>}
-                    </button>
-                    <button
-                      onClick={() => setCurrentView("vitcodes")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "vitcodes"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <Code size={14} />
-                      {isSidebarExpanded && <span>VIT-AP Codes</span>}
-                    </button>
-                  </div>
-
-                  {/* Category 3: System Core */}
-                  <div className="space-y-1">
-                    {isSidebarExpanded && (
-                      <span className="text-[9px] uppercase font-bold text-neutral-500 px-3 block mb-2">Operations</span>
-                    )}
-                    <button
-                      onClick={() => setCurrentView("ota")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "ota"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <MonitorSmartphone size={14} />
-                      {isSidebarExpanded && <span>OTA Templates</span>}
-                    </button>
-                    <button
-                      onClick={() => setCurrentView("system")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "system"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <Cpu size={14} />
-                      {isSidebarExpanded && <span>Diagnostics</span>}
-                    </button>
-                    <button
-                      onClick={() => setCurrentView("security")}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        currentView === "security"
-                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
-                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
-                      }`}
-                    >
-                      <Shield size={14} />
-                      {isSidebarExpanded && <span>Audit Trail</span>}
-                    </button>
-                  </div>
+                  {[
+                    { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
+                    { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
+                  ].map(group => (
+                    <div key={group.label} className="space-y-1">
+                      {sidebarOpen && <span className="text-[9px] uppercase font-bold px-3 block mb-2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{group.label}</span>}
+                      {group.items.map(item => {
+                        const active = view === item.key;
+                        return (
+                          <button key={item.key} onClick={() => { setView(item.key as any); setVitDetailView(false); }}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${active ? "text-white shadow-lg" : "hover:opacity-80"}`}
+                            style={{
+                              background: active ? P.blue : "transparent",
+                              color: active ? "white" : dk ? `${P.sky}CC` : `${P.black}AA`,
+                              boxShadow: active ? `0 8px 16px rgba(0,119,192,0.2)` : "none",
+                            }}>
+                            <item.icon size={14} />
+                            {sidebarOpen && <span>{item.name}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </nav>
               </div>
 
-              {/* User profile footer */}
-              <div className="p-4 border-t border-white/[0.03] space-y-2">
-                <button
-                  onClick={() => setCurrentView("profile")}
-                  className={`w-full flex items-center gap-3 p-2 rounded-xl text-left hover:bg-white/[0.03] transition-colors`}
-                >
-                  <img
-                    src={adminAvatar}
-                    alt="Admin Avatar"
-                    className="w-8 h-8 rounded-full object-cover border border-white/[0.1] shadow-md shrink-0"
-                  />
-                  {isSidebarExpanded && (
+              {/* Profile footer */}
+              <div className="p-4 space-y-2" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
+                <button onClick={() => setView("profile")} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
+                  <img src={adminAvatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border shadow-md shrink-0" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
+                  {sidebarOpen && (
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold truncate text-white">{adminName}</span>
-                      <span className="text-[9px] text-neutral-500 truncate">Administrator</span>
+                      <span className="text-xs font-bold truncate">{adminName}</span>
+                      <span className="text-[9px] truncate" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Administrator</span>
                     </div>
                   )}
                 </button>
-
-                <button
-                  onClick={handleLogout}
-                  className={`w-full flex items-center gap-3 p-2 rounded-xl text-xs font-bold text-blue-400 hover:bg-blue-500/10 transition-all`}
-                >
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 p-2 rounded-xl text-xs font-bold transition-all hover:opacity-80" style={{ color: P.blue }}>
                   <LogOut size={14} />
-                  {isSidebarExpanded && <span>Sign Out</span>}
+                  {sidebarOpen && <span>Sign Out</span>}
                 </button>
               </div>
             </aside>
 
-            {/* Main view content body */}
+            {/* ─── Main Content ─── */}
             <div className="flex-1 flex flex-col min-w-0">
-              {/* Top Navigation bar */}
-              <header className={`h-20 border-b flex items-center justify-between px-8 backdrop-blur-3xl sticky top-0 z-20 ${
-                isDark ? "bg-[#020205]/80 border-white/[0.05]" : "bg-white/80 border-black/[0.05]"
-              }`}>
-                {/* Left controls: menu toggle & breadcrumbs */}
+              {/* Top Header */}
+              <header
+                className="h-20 border-b flex items-center justify-between px-8 backdrop-blur-3xl sticky top-0 z-20"
+                style={{
+                  background: dk ? "rgba(5,5,5,0.80)" : "rgba(255,255,255,0.80)",
+                  borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)",
+                }}
+              >
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                    className={`p-2 rounded-xl hover:bg-white/[0.03] text-neutral-400 hover:text-white transition-colors ${
-                      isSidebarExpanded && "hidden"
-                    }`}
-                  >
-                    <Menu size={16} />
-                  </button>
+                  {!sidebarOpen && (
+                    <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:opacity-70 transition-colors" style={{ color: dk ? P.sky : P.black }}>
+                      <Menu size={16} />
+                    </button>
+                  )}
                   <div className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-neutral-500">deck</span>
-                    <ChevronRight size={10} className="text-neutral-600" />
-                    <span className="text-blue-400 font-bold uppercase">{currentView}</span>
+                    <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>admin</span>
+                    <ChevronRight size={10} style={{ color: dk ? `${P.sky}40` : `${P.black}30` }} />
+                    <span className="font-bold uppercase" style={{ color: P.blue }}>{view}</span>
                   </div>
                 </div>
 
-                {/* Right controls: search, theme, settings */}
                 <div className="flex items-center gap-4">
-                  {/* Workspace selector */}
-                  <select
-                    value={workspace}
-                    onChange={(e) => setWorkspace(e.target.value as "production" | "staging")}
-                    className={`text-[10px] uppercase font-bold tracking-widest px-3 py-2 rounded-xl border focus:outline-none focus:ring-0 ${
-                      isDark ? "bg-black/40 border-white/[0.06] text-white" : "bg-white border-black/[0.06] text-black"
-                    }`}
-                  >
-                    <option value="production">Prod Network</option>
-                    <option value="staging">Staging Env</option>
+                  <select value={workspace} onChange={e => setWorkspace(e.target.value as any)}
+                    className={`text-[10px] uppercase font-bold tracking-widest px-3 py-2 rounded-xl border focus:outline-none ${inputBg}`}>
+                    <option value="production">Production</option>
+                    <option value="staging">Staging</option>
                   </select>
 
-                  {/* Bell trigger */}
-                  <button
-                    onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
-                    className="p-2.5 rounded-xl hover:bg-white/[0.03] text-neutral-400 hover:text-white relative transition-colors"
-                  >
+                  <button onClick={() => setNotiOpen(!notiOpen)} className="p-2.5 rounded-xl hover:opacity-70 relative transition-colors" style={{ color: dk ? P.sky : P.black }}>
                     <Bell size={15} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#007aff]" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: P.blue }} />
                   </button>
 
-                  {/* Theme switcher */}
-                  <div className={`flex border p-0.5 rounded-xl ${
-                    isDark ? "border-white/[0.05] bg-black/40" : "border-black/[0.05] bg-slate-100"
-                  }`}>
-                    <button
-                      onClick={() => setTheme("light")}
-                      className={`p-1.5 rounded-lg transition-colors ${theme === "light" ? "bg-white text-black shadow-sm" : "text-neutral-500"}`}
-                      title="Light Mode"
-                    >
-                      <Sun size={12} />
-                    </button>
-                    <button
-                      onClick={() => setTheme("dark")}
-                      className={`p-1.5 rounded-lg transition-colors ${theme === "dark" ? "bg-white/[0.08] text-white shadow-sm" : "text-neutral-500"}`}
-                      title="Dark Mode"
-                    >
-                      <Moon size={12} />
-                    </button>
-                    <button
-                      onClick={() => setTheme("system")}
-                      className={`p-1.5 rounded-lg transition-colors ${theme === "system" ? "bg-white/[0.08] text-white shadow-sm" : "text-neutral-500"}`}
-                      title="System Preference"
-                    >
-                      <Monitor size={12} />
-                    </button>
+                  <div className="flex border p-0.5 rounded-xl" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)" }}>
+                    {([["light", Sun], ["dark", Moon], ["system", Monitor]] as const).map(([t, Icon]) => (
+                      <button key={t} onClick={() => setTheme(t)} title={t}
+                        className={`p-1.5 rounded-lg transition-colors`}
+                        style={{
+                          background: theme === t ? (dk ? "rgba(199,238,255,0.1)" : "white") : "transparent",
+                          color: theme === t ? (dk ? P.white : P.black) : (dk ? `${P.sky}60` : `${P.black}40`),
+                        }}>
+                        <Icon size={12} />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </header>
 
-              {/* Dynamic View panels */}
+              {/* Content Area */}
               <div className="flex-1 p-8 max-w-[1600px] w-full mx-auto space-y-8">
                 <AnimatePresence mode="wait">
-                  {currentView === "dashboard" && (
-                    // ==================== VIEW: EXECUTIVE DASHBOARD ====================
-                    <motion.div
-                      key="dashboard"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="space-y-8"
-                    >
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-1">
-                          <h2 className="text-2xl font-black font-outfit tracking-wide">
-                            EXECUTIVE OVERVIEW
-                          </h2>
-                          <p className={`text-xs ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
-                            Enterprise health status, sync latency metrics, and real-time logs
-                          </p>
-                        </div>
+
+                  {/* ═══ DASHBOARD ═══ */}
+                  {view === "dashboard" && (
+                    <motion.div key="dash" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      <div>
+                        <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide">Executive Overview</h2>
+                        <p className="text-xs mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System health, sync metrics, and real-time activity</p>
                       </div>
 
-                      {/* KPI Summary Cards Grid */}
+                      {/* KPI Cards */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                          { title: "Host Nodes Sync", val: "99.8%", status: "success", label: "Active Connections" },
-                          { title: "Total Database Qs", val: totalQuestionsCount.toString(), status: "info", label: "VIT exam items cached" },
-                          { title: "Average Latency", val: "38ms", status: "success", label: "Outbound WebSockets" },
-                          { title: "Active Sessions", val: totalSessionsCount.toString(), status: "warning", label: "Active local instances" }
-                        ].map((card, idx) => (
-                          <div
-                            key={idx}
-                            className={`p-6 rounded-[24px] border backdrop-blur-3xl shadow-lg relative overflow-hidden transition-all duration-300 ${
-                              isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                            }`}
-                          >
+                          { title: "Host Sync", val: "99.8%", label: "Active connections", live: true },
+                          { title: "Total Questions", val: String(totalQ), label: "VIT exam items cached", live: false },
+                          { title: "Avg Latency", val: "38ms", label: "Outbound WebSockets", live: true },
+                          { title: "Sessions", val: String(vitSessions.length), label: "Active instances", live: false },
+                        ].map((c, i) => (
+                          <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                             <div className="flex justify-between items-start mb-3">
-                              <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-450">{card.title}</span>
-                              <span className={`w-2 h-2 rounded-full ${
-                                card.status === "success" ? "bg-emerald-500 animate-pulse" : card.status === "warning" ? "bg-amber-500" : "bg-indigo-500"
-                              }`} />
+                              <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
+                              {c.live && <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: P.blue }} />}
                             </div>
-                            <h3 className="text-3xl font-outfit font-black text-white">{card.val}</h3>
-                            <span className="text-[10px] text-neutral-500 mt-1.5 block">{card.label}</span>
+                            <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black">{c.val}</h3>
+                            <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
                           </div>
                         ))}
                       </div>
 
-                      {/* Analytics Charts & Security Audit */}
+                      {/* Chart + Events */}
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Interactive SVG User Activity Chart */}
-                        <div className={`lg:col-span-8 p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[350px] ${
-                          isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                        }`}>
-                          <div className="flex justify-between items-center pb-4 border-b border-white/[0.03] mb-6">
-                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase">Interactive User Engagement</h3>
-                            <div className="flex items-center gap-1.5 text-[10px] bg-black/45 p-1 rounded-xl border border-white/[0.04] font-mono">
-                              <span className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 font-bold rounded-lg">Daily</span>
-                              <span className="px-2.5 py-1.5 text-neutral-500 hover:text-neutral-350 cursor-pointer">Weekly</span>
-                              <span className="px-2.5 py-1.5 text-neutral-500 hover:text-neutral-350 cursor-pointer">Monthly</span>
+                        <div className="lg:col-span-8 p-6 rounded-[28px] border relative overflow-hidden min-h-[350px]"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-center pb-4 mb-6" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>User Engagement</h3>
+                            <div className="flex items-center gap-1.5 text-[10px] p-1 rounded-xl border font-mono" style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)" }}>
+                              <span className="px-2.5 py-1.5 font-bold rounded-lg" style={{ background: `${P.blue}15`, color: P.blue }}>Daily</span>
+                              <span className="px-2.5 py-1.5 cursor-pointer" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Weekly</span>
+                              <span className="px-2.5 py-1.5 cursor-pointer" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Monthly</span>
                             </div>
                           </div>
-
-                          {/* SVG simulated line graph */}
-                          <div className="flex-1 w-full h-44 relative">
+                          <div className="w-full h-44 relative">
                             <svg className="w-full h-full" viewBox="0 0 500 150">
                               <defs>
-                                <linearGradient id="gradient-line" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" stopColor="#6366f1" />
-                                  <stop offset="50%" stopColor="#ec4899" />
-                                  <stop offset="100%" stopColor="#f43f5e" />
+                                <linearGradient id="gl" x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor={P.blue} />
+                                  <stop offset="50%" stopColor={P.sky} />
+                                  <stop offset="100%" stopColor={P.blue} />
                                 </linearGradient>
-                                <linearGradient id="gradient-fill" x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor="#ec4899" stopOpacity="0.2" />
-                                  <stop offset="100%" stopColor="#ec4899" stopOpacity="0" />
+                                <linearGradient id="gf" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor={P.blue} stopOpacity="0.2" />
+                                  <stop offset="100%" stopColor={P.blue} stopOpacity="0" />
                                 </linearGradient>
                               </defs>
-                              {/* Grid lines */}
-                              <line x1="0" y1="30" x2="500" y2="30" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
-                              <line x1="0" y1="75" x2="500" y2="75" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
-                              <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
-                              
-                              {/* Filled path */}
-                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20 L 500 150 L 0 150 Z" fill="url(#gradient-fill)" />
-                              {/* Stroke line */}
-                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20" fill="none" stroke="url(#gradient-line)" strokeWidth="3.5" strokeLinecap="round" />
+                              <line x1="0" y1="30" x2="500" y2="30" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                              <line x1="0" y1="75" x2="500" y2="75" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                              <line x1="0" y1="120" x2="500" y2="120" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20 L 500 150 L 0 150 Z" fill="url(#gf)" />
+                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20" fill="none" stroke="url(#gl)" strokeWidth="3.5" strokeLinecap="round" />
                             </svg>
                           </div>
-
-                          <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono mt-4 pt-3 border-t border-white/[0.03]">
-                            <span>00:00 (Idle)</span>
-                            <span>12:00 (Peak Sync)</span>
-                            <span>23:59 (Current)</span>
+                          <div className="flex justify-between items-center text-[10px] font-mono mt-4 pt-3" style={{ color: dk ? `${P.sky}60` : `${P.black}40`, borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                            <span>00:00</span><span>12:00 (Peak)</span><span>23:59</span>
                           </div>
                         </div>
 
-                        {/* Recent Actions / Security Events */}
-                        <div className={`lg:col-span-4 p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[350px] ${
-                          isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                        }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
-                          <div className="flex justify-between items-center pb-4 border-b border-white/[0.03] mb-4">
-                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase">Recent System Events</h3>
-                            <button
-                              onClick={fetchVitCodes}
-                              className="p-1 rounded-lg text-neutral-500 hover:text-white transition-colors"
-                            >
-                              <RefreshCw size={12} className="animate-spin-slow" />
+                        <div className="lg:col-span-4 p-6 rounded-[28px] border relative overflow-hidden min-h-[350px] flex flex-col"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-center pb-4 mb-4" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System Events</h3>
+                            <button onClick={fetchVitCodes} className="p-1 rounded-lg hover:opacity-70 transition-colors" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                              <RefreshCw size={12} />
                             </button>
                           </div>
-
-                          <div className="flex-1 space-y-4 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
-                            {securityLogs.slice(0, 4).map((log) => (
+                          <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+                            {secLogs.slice(0, 4).map(log => (
                               <div key={log.id} className="flex justify-between items-start gap-4 text-xs">
                                 <div className="space-y-0.5">
-                                  <span className="font-bold text-neutral-200 block leading-tight">{log.event}</span>
-                                  <span className="text-[10px] text-neutral-500 font-mono block">{log.timestamp} • IP: {log.ip}</span>
+                                  <span className="font-bold block leading-tight">{log.event}</span>
+                                  <span className="text-[10px] font-mono block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{log.timestamp} • {log.ip}</span>
                                 </div>
-                                <span className={`text-[9px] px-2 py-0.5 font-bold rounded-lg font-mono tracking-wider uppercase shrink-0 ${
-                                  log.status === "success"
-                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
-                                    : log.status === "failed"
-                                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/25"
-                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/25"
-                                }`}>
-                                  {log.status}
-                                </span>
+                                <span className="text-[9px] px-2 py-0.5 font-bold rounded-lg font-mono tracking-wider uppercase shrink-0 border"
+                                  style={{
+                                    background: log.status === "success" ? `${P.blue}15` : log.status === "failed" ? `${P.error}15` : `${P.sky}20`,
+                                    color: log.status === "success" ? P.blue : log.status === "failed" ? P.error : dk ? P.sky : P.black,
+                                    borderColor: log.status === "success" ? `${P.blue}30` : log.status === "failed" ? `${P.error}30` : `${P.sky}30`,
+                                  }}>{log.status}</span>
                               </div>
                             ))}
                           </div>
@@ -1071,55 +913,30 @@ export default function PremiumAdminPanel() {
                     </motion.div>
                   )}
 
-                  {currentView === "users" && (
-                    // ==================== VIEW: USER DIRECTORY ====================
-                    <motion.div
-                      key="users"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="space-y-6"
-                    >
+                  {/* ═══ USERS ═══ */}
+                  {view === "users" && (
+                    <motion.div key="users" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-1">
-                          <h2 className="text-xl font-black font-outfit tracking-wide uppercase">User Directory</h2>
-                          <p className="text-xs text-neutral-500">Edit database roles, suspend credentials, or audit signatures</p>
+                        <div>
+                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">User Directory</h2>
+                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage roles, verify, and moderate accounts</p>
                         </div>
-                        <button
-                          onClick={exportUsersCSV}
-                          className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs shadow-md"
-                        >
-                          <Download size={13} /> Export Users CSV
+                        <button onClick={exportCSV} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                          <Download size={13} /> Export CSV
                         </button>
                       </div>
 
-                      {/* Filters */}
-                      <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4 ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
+                      <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className="relative w-full md:w-80">
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                          <input
-                            type="text"
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                            placeholder="Search by name or email..."
-                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-1 ${
-                              isDark ? "bg-black/40 border border-white/[0.06] text-white focus:ring-indigo-500/30" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
-                            }`}
-                          />
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                          <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search name or email..."
+                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
                         </div>
-
                         <div className="flex items-center gap-3">
-                          <span className="text-[10px] uppercase font-bold text-neutral-500">Filter Role:</span>
-                          <select
-                            value={userRoleFilter}
-                            onChange={(e) => setUserRoleFilter(e.target.value)}
-                            className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${
-                              isDark ? "bg-black/40 border-white/[0.06] text-white" : "bg-white border-black/[0.06] text-black"
-                            }`}
-                          >
-                            <option value="all">All Roles</option>
+                          <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Role:</span>
+                          <select value={userRoleFilter} onChange={e => setUserRoleFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                            <option value="all">All</option>
                             <option value="Super Admin">Super Admin</option>
                             <option value="Developer">Developer</option>
                             <option value="Auditor">Auditor</option>
@@ -1128,57 +945,35 @@ export default function PremiumAdminPanel() {
                         </div>
                       </div>
 
-                      {/* Tables */}
-                      <div className={`rounded-2xl border overflow-hidden ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className={`border-b text-[10px] uppercase font-extrabold tracking-widest text-neutral-450 ${
-                              isDark ? "bg-[#0c0c14]/40 border-white/[0.04]" : "bg-slate-100 border-black/[0.04]"
-                            }`}>
-                              <th className="p-4 pl-6">Verified</th>
-                              <th className="p-4">Name</th>
-                              <th className="p-4">Email</th>
-                              <th className="p-4">Role</th>
-                              <th className="p-4">Activity</th>
-                              <th className="p-4 pr-6 text-right">Actions</th>
+                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                              {["Verified", "Name", "Email", "Role", "Activity", "Actions"].map(h => (
+                                <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Verified" ? "pl-6" : ""}`}
+                                  style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                              ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/[0.03]">
-                            {filteredUsers.map(user => (
-                              <tr key={user.id} className="text-xs hover:bg-white/[0.01] transition-colors">
+                          <tbody>
+                            {filteredUsers.map(u => (
+                              <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                 <td className="p-4 pl-6">
-                                  <button
-                                    onClick={() => toggleVerifyUser(user.id)}
-                                    className={`p-1.5 rounded-lg border ${
-                                      user.verified
-                                        ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                                        : "bg-neutral-900 border-white/[0.05] text-neutral-600"
-                                    }`}
-                                    title="Toggle verification"
-                                  >
+                                  <button onClick={() => toggleVerify(u.id)} className="p-1.5 rounded-lg border"
+                                    style={{ background: u.verified ? `${P.blue}15` : "transparent", borderColor: u.verified ? `${P.blue}30` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: u.verified ? P.blue : dk ? `${P.sky}40` : `${P.black}30` }}>
                                     <CheckSquare size={13} />
                                   </button>
                                 </td>
-                                <td className="p-4 font-bold text-white">{user.name}</td>
-                                <td className="p-4 text-neutral-400">{user.email}</td>
+                                <td className="p-4 font-bold">{u.name}</td>
+                                <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
                                 <td className="p-4">
-                                  <span className="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2.5 py-0.5 rounded-md font-mono">
-                                    {user.role}
-                                  </span>
+                                  <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{u.role}</span>
                                 </td>
-                                <td className="p-4 text-neutral-500 font-mono text-[10px]">{user.activity}</td>
-                                <td className="p-4 pr-6 text-right space-x-2">
-                                  <button
-                                    onClick={() => toggleBanUser(user.id)}
-                                    className={`px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all ${
-                                      user.status === "suspended"
-                                        ? "bg-blue-500/20 border border-blue-500/30 text-blue-400"
-                                        : "bg-white/[0.02] border border-white/[0.05] text-neutral-400 hover:text-white"
-                                    }`}
-                                  >
-                                    {user.status === "suspended" ? "Unsuspend" : "Suspend"}
+                                <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.activity}</td>
+                                <td className="p-4 pr-6 text-right">
+                                  <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                    style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
+                                    {u.status === "suspended" ? "Unsuspend" : "Suspend"}
                                   </button>
                                 </td>
                               </tr>
@@ -1189,49 +984,32 @@ export default function PremiumAdminPanel() {
                     </motion.div>
                   )}
 
-                  {currentView === "rbac" && (
-                    // ==================== VIEW: ROLES & Access CONTROL MATRIX ====================
-                    <motion.div
-                      key="rbac"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="space-y-6"
-                    >
-                      <div className="space-y-1">
-                        <h2 className="text-xl font-black font-outfit tracking-wide uppercase">Roles & Policy Matrix</h2>
-                        <p className="text-xs text-neutral-500">Configure Role-Based Access Controls (RBAC) across system layers</p>
+                  {/* ═══ RBAC ═══ */}
+                  {view === "rbac" && (
+                    <motion.div key="rbac" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div>
+                        <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Roles & Policy Matrix</h2>
+                        <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Configure role-based access controls across system modules</p>
                       </div>
-
-                      <div className={`rounded-2xl border overflow-hidden ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className={`border-b text-[10px] uppercase font-extrabold tracking-widest text-neutral-450 ${
-                              isDark ? "bg-[#0c0c14]/40 border-white/[0.04]" : "bg-slate-100 border-black/[0.04]"
-                            }`}>
-                              <th className="p-5 pl-6">Role Target</th>
-                              {["users", "rbac", "analytics", "content", "system", "security", "settings"].map(mod => (
-                                <th key={mod} className="p-5 text-center">{mod}</th>
+                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                              <th className="p-5 pl-6 text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Role</th>
+                              {["users", "rbac", "analytics", "content", "system", "security", "settings"].map(m => (
+                                <th key={m} className="p-5 text-center text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{m}</th>
                               ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/[0.03]">
-                            {Object.entries(rbacMatrix).map(([role, permissions]) => (
-                              <tr key={role} className="text-xs hover:bg-white/[0.01] transition-colors">
-                                <td className="p-5 pl-6 font-bold text-white">{role}</td>
-                                {Object.entries(permissions).map(([moduleName, hasPermission]) => (
-                                  <td key={moduleName} className="p-5 text-center">
-                                    <button
-                                      onClick={() => toggleRbacPermission(role, moduleName)}
-                                      className={`w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all ${
-                                        hasPermission
-                                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                          : "bg-blue-500/10 border-blue-500/30 text-blue-500"
-                                      }`}
-                                    >
-                                      {hasPermission ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
+                          <tbody>
+                            {Object.entries(rbac).map(([role, perms]) => (
+                              <tr key={role} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                <td className="p-5 pl-6 font-bold">{role}</td>
+                                {Object.entries(perms).map(([mod, has]) => (
+                                  <td key={mod} className="p-5 text-center">
+                                    <button onClick={() => toggleRbac(role, mod)} className="w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all"
+                                      style={{ background: has ? `${P.blue}15` : `${P.error}10`, borderColor: has ? `${P.blue}30` : `${P.error}20`, color: has ? P.blue : P.error }}>
+                                      {has ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
                                     </button>
                                   </td>
                                 ))}
@@ -1243,343 +1021,400 @@ export default function PremiumAdminPanel() {
                     </motion.div>
                   )}
 
-                  {currentView === "analytics" && (
-                    // ==================== VIEW: ANALYTICS CENTER ====================
-                    <motion.div
-                      key="analytics"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                    >
-                      {/* Funnel Graph */}
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-teal-500 to-transparent" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase mb-6">User Acquisition Funnel</h3>
-                        
+                  {/* ═══ ANALYTICS ═══ */}
+                  {view === "analytics" && (
+                    <motion.div key="analytics" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-6" style={{ color: P.blue }}>User Acquisition Funnel</h3>
                         <div className="space-y-4">
                           {[
-                            { step: "Discovery Scan", val: "100%", width: "w-full", color: "from-indigo-600 to-indigo-500" },
-                            { step: "Active WebSockets", val: "84%", width: "w-[84%]", color: "from-sky-600 to-sky-500" },
-                            { step: "Intelligent Injection", val: "62%", width: "w-[62%]", color: "from-rose-600 to-rose-500" },
-                            { step: "Local Cache Session", val: "48%", width: "w-[48%]", color: "from-amber-600 to-amber-500" }
-                          ].map((step, idx) => (
-                            <div key={idx} className="space-y-1">
+                            { step: "Discovery Scan", val: "100%", w: "100%" },
+                            { step: "Active WebSockets", val: "84%", w: "84%" },
+                            { step: "Intelligent Injection", val: "62%", w: "62%" },
+                            { step: "Local Cache Session", val: "48%", w: "48%" },
+                          ].map((s, i) => (
+                            <div key={i} className="space-y-1">
                               <div className="flex justify-between text-xs font-semibold">
-                                <span className="text-neutral-300">{step.step}</span>
-                                <span className="font-mono text-neutral-400">{step.val}</span>
+                                <span>{s.step}</span>
+                                <span className="font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{s.val}</span>
                               </div>
-                              <div className="h-4 bg-black/40 rounded-xl overflow-hidden border border-white/[0.04]">
-                                <div className={`h-full bg-gradient-to-r ${step.color} rounded-xl ${step.width}`} />
+                              <div className="h-4 rounded-xl overflow-hidden border" style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                <div className="h-full rounded-xl transition-all" style={{ width: s.w, background: `linear-gradient(90deg, ${P.blue}, ${P.sky})` }} />
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {/* Cohort retention */}
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase mb-6">Device Retention Cohorts</h3>
-                        
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-6" style={{ color: P.blue }}>Device Retention Cohorts</h3>
                         <div className="grid grid-cols-5 gap-2 text-center text-[10px] font-mono">
-                          <div className="font-sans font-bold text-left pl-2 text-neutral-400">Cohort</div>
-                          <div>Day 1</div>
-                          <div>Day 3</div>
-                          <div>Day 7</div>
-                          <div>Day 30</div>
-                          
-                          {["June 01", "June 03", "June 07"].map((cohort, idx) => (
-                            <>
-                              <div key={idx} className="text-left font-sans font-semibold pl-2 py-2 text-neutral-200 border-t border-white/[0.02]">{cohort}</div>
-                              <div className="bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/10 py-2">92%</div>
-                              <div className="bg-emerald-500/15 text-emerald-400 rounded border border-emerald-500/10 py-2">78%</div>
-                              <div className="bg-indigo-500/15 text-blue-400 rounded border border-indigo-500/10 py-2">64%</div>
-                              <div className="bg-blue-500/10 text-blue-500 rounded border border-rose-500/10 py-2">45%</div>
-                            </>
+                          <div className="font-sans font-bold text-left pl-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Cohort</div>
+                          <div>Day 1</div><div>Day 3</div><div>Day 7</div><div>Day 30</div>
+                          {["June 01", "June 03", "June 07"].map((c, i) => (
+                            <React.Fragment key={i}>
+                              <div className="text-left font-sans font-semibold pl-2 py-2" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>{c}</div>
+                              {[92, 78, 64, 45].map((v, j) => (
+                                <div key={j} className="rounded border py-2" style={{ background: `${P.blue}${Math.max(10, 25 - j * 5).toString(16)}`, color: P.blue, borderColor: `${P.blue}15` }}>{v}%</div>
+                              ))}
+                            </React.Fragment>
                           ))}
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {currentView === "vitcodes" && (
-                    // ==================== VIEW: VIT-AP CODES MANAGER ====================
-                    <motion.div
-                      key="vitcodes"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-                    >
-                      {/* Sub-Panel 1: Add Session Form */}
-                      <div className="lg:col-span-3 space-y-6">
-                        <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl space-y-5 relative overflow-hidden ${
-                          isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                        }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-                          
-                          <div className="flex justify-between items-center pb-2 border-b border-white/[0.04]">
-                            <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2">
-                              <CalendarDays size={14} className="text-blue-400" /> Create Session
-                            </h2>
-                            
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => {
-                                  setShowManageExamTypes(!showManageExamTypes);
-                                  setShowAddExamType(false);
-                                }}
-                                className={`text-[9px] px-2.5 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
-                                  showManageExamTypes 
-                                    ? "bg-blue-500/10 border border-blue-500/20 text-blue-300"
-                                    : "bg-white/[0.02] border border-white/[0.05] text-neutral-300"
-                                }`}
-                              >
-                                <Settings size={10} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Session Title</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Lab Assessment 1"
-                                value={newSessionTitle}
-                                onChange={(e) => setNewSessionTitle(e.target.value)}
-                                className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none focus:ring-1 transition-all ${
-                                  isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-blue-500/50 focus:ring-blue-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
-                                }`}
-                              />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
+                  {/* ═══ VIT-AP CODES — MASTER-DETAIL ═══ */}
+                  {view === "vitcodes" && (
+                    <motion.div key="vit" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <AnimatePresence mode="wait">
+                        {!vitDetailView ? (
+                          <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
+                            {/* Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                               <div>
-                                <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Date</label>
-                                <input
-                                  type="date"
-                                  value={newDate}
-                                  onChange={(e) => setNewDate(e.target.value)}
-                                  className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none ${
-                                    isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                                  }`}
-                                />
+                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">VIT-AP Code Sessions</h2>
+                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam sessions and code questions</p>
                               </div>
-                              <div>
-                                <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Exam Type</label>
-                                <select
-                                  value={newExamType}
-                                  onChange={(e) => setNewExamType(e.target.value)}
-                                  className={`w-full text-xs rounded-xl px-3 py-3 focus:outline-none cursor-pointer ${
-                                    isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                                  }`}
-                                >
-                                  {examTypes.map((type) => (
-                                    <option key={type} value={type}>{type}</option>
-                                  ))}
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                                  <option value="all">All Types</option>
+                                  {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={handleAddSession}
-                              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                            >
-                              <Plus size={14} /> Add Session
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sub-Panel 2: Active Sessions Directory */}
-                      <div className="lg:col-span-4 space-y-6">
-                        <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl relative overflow-hidden min-h-[400px] ${
-                          isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                        }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-                          
-                          <div className="flex justify-between items-center pb-3 border-b border-white/[0.04] mb-4">
-                            <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2">
-                              <Filter size={12} className="text-blue-400" /> Exam Sessions
-                            </h2>
-                          </div>
-
-                          <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin">
-                            {vitSessions.map(s => (
-                              <div
-                                key={s.id}
-                                onClick={() => setActiveSessionId(s.id)}
-                                className={`p-4 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between group ${
-                                  activeSessionId === s.id
-                                    ? "border-blue-500/30 bg-blue-500/10 text-blue-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-                                    : "border-white/[0.04] bg-black/20 hover:bg-white/[0.03] text-neutral-300"
-                                }`}
-                              >
-                                <div className="space-y-1">
-                                  <span className="text-xs font-bold block">{s.title || s.date}</span>
-                                  <span className="text-[9px] text-neutral-500 font-mono block">{s.date} • {s.examType}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-[10px] font-mono bg-black/40 px-2.5 py-0.5 rounded-md text-neutral-400 font-bold border border-white/[0.05]">
-                                    {s.questions.length} Qs
-                                  </span>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}
-                                    className="p-1.5 rounded-lg text-neutral-550 hover:text-blue-400 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sub-Panel 3: Question Editor */}
-                      <div className="lg:col-span-5 space-y-6">
-                        {activeSession ? (
-                          <>
-                            <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl relative overflow-hidden space-y-5 ${
-                              isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                            }`}>
-                              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 via-sky-500 to-blue-500" />
-                              <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase flex items-center gap-2">
-                                <Plus size={14} /> Add Code Question
-                              </h3>
-
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="md:col-span-2">
-                                  <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Question Title</label>
-                                  <input
-                                    type="text"
-                                    value={qTitle}
-                                    placeholder="e.g. Matrix Transpose"
-                                    onChange={(e) => setQTitle(e.target.value)}
-                                    className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none focus:ring-1 transition-all ${
-                                      isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-blue-500/50 focus:ring-blue-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
-                                    }`}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-1.5 block">Code Language</label>
-                                  <select
-                                    value={qLang}
-                                    onChange={(e) => setQLang(e.target.value)}
-                                    className={`w-full text-xs rounded-xl px-3 py-3 focus:outline-none cursor-pointer ${
-                                      isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                                    }`}
-                                  >
-                                    <option value="cpp">C++ (cpp)</option>
-                                    <option value="python">Python</option>
-                                    <option value="java">Java</option>
-                                    <option value="javascript">JavaScript</option>
-                                  </select>
-                                </div>
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider block">Source Code</label>
-                                <textarea
-                                  value={qCode}
-                                  placeholder="Paste source code block here..."
-                                  onChange={(e) => setQCode(e.target.value)}
-                                  className={`w-full h-40 text-xs font-mono rounded-xl p-4 focus:outline-none resize-none ${
-                                    isDark ? "bg-black/40 border border-white/[0.06] text-blue-300" : "bg-slate-100 border border-black/[0.06] text-blue-800"
-                                  }`}
-                                />
-                              </div>
-
-                              <div className="flex justify-end">
-                                <button
-                                  onClick={handleAddQuestion}
-                                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-95"
-                                >
-                                  <Plus size={13} /> Add Question
+                                <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80"
+                                  style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}>
+                                  <Settings size={14} />
+                                </button>
+                                <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                                  style={{ background: P.blue }}>
+                                  <Plus size={13} /> New Session
                                 </button>
                               </div>
                             </div>
 
-                            {/* Questions list */}
-                            <div className="space-y-4">
-                              {activeSession.questions.map((q, idx) => (
-                                <div key={q.id} className={`border rounded-2xl overflow-hidden shadow-sm ${
-                                  isDark ? "bg-[#07070c]/30 border-white/[0.04]" : "bg-white border-black/[0.04]"
-                                }`}>
-                                  <div className="px-4 py-3 bg-[#0c0c14]/40 border-b border-white/[0.03] flex justify-between items-center">
-                                    <span className="text-xs font-bold text-white">{idx+1}. {q.title}</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[9px] font-mono text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{q.language}</span>
-                                      <button
-                                        onClick={() => handleDeleteQuestion(q.id)}
-                                        className="p-1 rounded text-neutral-500 hover:text-blue-500"
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
+                            {/* Session Cards Grid */}
+                            {loadingVit ? (
+                              <div className="flex items-center justify-center py-20">
+                                <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                              </div>
+                            ) : filteredSessions.length === 0 ? (
+                              <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+                                <p className="text-xs">No sessions yet. Create your first one.</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-8">
+                                {Object.entries(groupedSessions).map(([type, sessions]) => {
+                                  const today = new Date();
+                                  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                                  
+                                  // Sort descending so newest is first, BUT pin today's date to the very front
+                                  const sorted = [...sessions].sort((a, b) => {
+                                    if (a.date === todayStr && b.date !== todayStr) return -1;
+                                    if (b.date === todayStr && a.date !== todayStr) return 1;
+                                    const dateCmp = b.date.localeCompare(a.date);
+                                    if (dateCmp !== 0) return dateCmp;
+                                    return b.id.localeCompare(a.id); // Tie-breaker for multiple sessions on same day
+                                  });
+                                  const maxDate = sorted[0].date;
+                                  const minDate = sorted[sorted.length - 1].date;
+                                  
+                                  const formatDate = (d: string) => {
+                                    const p = d.split("-");
+                                    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+                                  };
+                                  
+                                  const dateRange = minDate === maxDate ? formatDate(minDate) : `${formatDate(minDate)} to ${formatDate(maxDate)}`;
+
+                                  return (
+                                    <div key={type} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                      <div className="mb-4">
+                                        <h2 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>{type}</h2>
+                                        <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Available: {dateRange} • {sessions.length} Session{sessions.length !== 1 && 's'}</p>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {sorted.map(s => (
+                                          <div key={s.id}
+                                            onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
+                                            className="p-5 rounded-[24px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
+                                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                            <div className="flex items-center gap-2 mb-3">
+                                              <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
+                                              <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                                            </div>
+                                            <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
+                                              <button onClick={e => { e.stopPropagation(); handleDeleteSession(s.id); }}
+                                                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:opacity-80"
+                                                style={{ color: P.error }}>
+                                                <Trash2 size={12} />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </motion.div>
+                        ) : (
+                          /* Session Detail View */
+                          <motion.div key="vit-detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
+                            <button onClick={() => setVitDetailView(false)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
+                              <ArrowLeft size={14} /> Back to Sessions
+                            </button>
+
+                            {activeSession && (
+                              <>
+                                {/* Session Header */}
+                                <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                                  style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <h2 className="text-lg font-black font-[family-name:var(--font-outfit)]">{activeSession.title || activeSession.date}</h2>
+                                    <span className="text-[9px] px-2.5 py-0.5 rounded-md font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{activeSession.examType}</span>
+                                    <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
+                                    <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes Contributed</span>
+                                  </div>
+                                </div>
+
+                                {/* Add Question Form */}
+                                <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
+                                  style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                                  <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: P.blue }}>
+                                    <Plus size={14} /> Add Code Question
+                                  </h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="md:col-span-2">
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
+                                      <input type="text" value={qTitle} onChange={e => setQTitle(e.target.value)} placeholder="e.g. Matrix Transpose"
+                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
+                                      <select value={qLang} onChange={e => setQLang(e.target.value)} className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}>
+                                        <option value="cpp">C++ (cpp)</option>
+                                        <option value="python">Python</option>
+                                        <option value="java">Java</option>
+                                        <option value="javascript">JavaScript</option>
+                                      </select>
                                     </div>
                                   </div>
-                                  <pre className="p-4 bg-black/40 text-[10px] font-mono text-neutral-400 overflow-x-auto max-h-40">
-                                    <code>{q.code}</code>
-                                  </pre>
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
+                                    <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
+                                      className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
+                                    <textarea value={qCode} onChange={e => setQCode(e.target.value)} placeholder="Paste source code..."
+                                      className="w-full h-40 text-xs font-[family-name:var(--font-mono)] rounded-xl p-4 border focus:outline-none resize-none"
+                                      style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <button onClick={handleAddQuestion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-[0.98] transition-all"
+                                      style={{ background: P.blue }}><Plus size={13} /> Add Question</button>
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="py-20 text-center border border-dashed border-white/[0.05] rounded-[28px] text-xs text-neutral-600">
-                            Select a session from the list to manage question templates.
-                          </div>
+
+                                {/* Questions List */}
+                                <div className="space-y-3">
+                                  {activeSession.questions.length === 0 ? (
+                                    <div className="py-16 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                      <Code size={28} className="mx-auto mb-3 opacity-30" />
+                                      <p className="text-xs">No questions yet. Add your first question above.</p>
+                                    </div>
+                                  ) : activeSession.questions.map((q, idx) => (
+                                    <div key={q.id} className="rounded-2xl border overflow-hidden transition-all"
+                                      style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                      <div onClick={() => setExpandedQId(expandedQId === q.id ? null : q.id)}
+                                        className="w-full px-5 py-4 flex justify-between items-center text-left hover:opacity-90 transition-colors cursor-pointer">
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-xs font-bold">{idx + 1}. {q.title}</span>
+                                          {q.comment && <span className="text-[10px] font-mono" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</span>}
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                                          <span className="text-[9px] font-mono px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
+                                          <button onClick={e => { e.stopPropagation(); handleDeleteQuestion(q.id); }} className="p-1 rounded hover:opacity-70" style={{ color: P.error }}><Trash2 size={12} /></button>
+                                          <ChevronRight size={14} className={`transition-transform ${expandedQId === q.id ? "rotate-90" : ""}`} style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                                        </div>
+                                      </div>
+                                      <AnimatePresence>
+                                        {expandedQId === q.id && (
+                                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                            <pre className="p-4 text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-52" style={{ background: "#151b22", color: "#8ecfff" }}>
+                                              <code>{q.code}</code>
+                                            </pre>
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </motion.div>
                         )}
-                      </div>
+                      </AnimatePresence>
                     </motion.div>
                   )}
 
-                  {currentView === "ota" && (
-                    // ==================== VIEW: OTA TEMPLATES REDESIGN ====================
-                    <motion.div
-                      key="ota"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-                    >
-                      {/* Left Panel: Select Template */}
-                      <div className="lg:col-span-3 space-y-6">
-                        <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl space-y-4 relative overflow-hidden ${
-                          isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                        }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-                          <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2 pb-2 border-b border-white/[0.04]">
-                            <Layout size={13} className="text-blue-400" /> Choose File
-                          </h2>
+                  {/* ═══ CONTRIBUTORS ═══ */}
+                  {view === "contributors" && (
+                    <motion.div key="contributors" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Contributor Management</h2>
+                          <p className="text-xs text-white/60">Monitor code submissions and control access</p>
+                        </div>
+                      </div>
+
+                      {loadingContributors ? (
+                        <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} /></div>
+                      ) : !selectedContributor ? (
+                        <div className="grid grid-cols-1 gap-4">
+                          {contributors.map(c => {
+                            const name = c.email.split(".")[0];
+                            const codes = vitSessions.flatMap(s => s.questions).filter(q => q.contributorEmail === c.email);
+                            
+                            return (
+                              <div key={c.email} onClick={() => setSelectedContributor(c.email)} className="p-5 rounded-[24px] border cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase text-lg" style={{ background: `${P.blue}15`, color: P.blue }}>
+                                    {name[0]}
+                                  </div>
+                                  <div>
+                                    <h3 className="text-sm font-bold uppercase">{name}</h3>
+                                    <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-6 w-full md:w-auto">
+                                  <div className="text-left md:text-right flex-1 md:flex-none">
+                                    <p className="text-xs font-bold" style={{ color: P.blue }}>{codes.length} Codes</p>
+                                    <p className="text-[10px] font-mono uppercase" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>Contributed</p>
+                                  </div>
+                                  <button onClick={(e) => { e.stopPropagation(); toggleContributorStatus(c.email, c.status); }} className="px-4 py-2 rounded-lg text-xs font-bold transition-all border" style={{ background: c.status === "active" ? `${P.error}15` : `${P.blue}15`, color: c.status === "active" ? P.error : P.blue, borderColor: c.status === "active" ? `${P.error}30` : `${P.blue}30` }}>
+                                    {c.status === "active" ? "Block Access" : "Activate Access"}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          <button onClick={() => setSelectedContributor(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}><ChevronLeft size={14} /> Back to Contributors</button>
                           
+                          {(() => {
+                            const c = contributors.find(x => x.email === selectedContributor);
+                            if (!c) return null;
+                            const name = c.email.split(".")[0];
+                            const codes = vitSessions.flatMap(s => s.questions.map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType }))).filter(q => q.contributorEmail === c.email);
+                            const types = Array.from(new Set(codes.map(q => q.sessionType)));
+                            
+                            // Group by date
+                            const byDate = codes.reduce((acc, q) => {
+                              if (!acc[q.sessionDate]) acc[q.sessionDate] = [];
+                              acc[q.sessionDate].push(q);
+                              return acc;
+                            }, {} as Record<string, typeof codes>);
+                            
+                            return (
+                              <div className="space-y-6">
+                                <div className="p-6 rounded-[28px] border relative overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                      <h2 className="text-xl font-black uppercase mb-1">{name}</h2>
+                                      <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      {types.map(t => (
+                                        <span key={t} className="text-[9px] px-2.5 py-1 rounded border font-bold uppercase" style={{ background: `${P.sky}10`, color: dk ? P.sky : P.black, borderColor: `${P.sky}20` }}>{t}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                  {Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, qs]) => (
+                                    <div key={date} className="space-y-3">
+                                      <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: P.blue }}>{date}</h3>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {qs.map((q, idx) => {
+                                          const tsStr = q.id.replace("q_", "");
+                                          const ts = parseInt(tsStr);
+                                          const timeStr = !isNaN(ts) ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                                          return (
+                                            <div key={q.id} className="p-5 rounded-[24px] border relative cursor-pointer hover:shadow-lg transition-all" style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }} onClick={() => setExpandedContribQId(expandedContribQId === q.id ? null : q.id)}>
+                                              <div className="flex justify-between items-start mb-3">
+                                                <div className="flex items-center gap-3">
+                                                  <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
+                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
+                                                </div>
+                                                {timeStr && <span className="text-[10px] font-mono opacity-60 mt-1">{timeStr}</span>}
+                                              </div>
+                                              <h4 className="text-sm font-bold mb-2">{q.title}</h4>
+                                              {q.comment && <p className="text-xs italic mb-2" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</p>}
+                                              <AnimatePresence>
+                                                {expandedContribQId === q.id && (
+                                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4">
+                                                    <pre className="p-4 rounded-xl text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-52 border" style={{ background: "#151b22", color: "#8ecfff", borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                                                      <code>{q.code}</code>
+                                                    </pre>
+                                                  </motion.div>
+                                                )}
+                                              </AnimatePresence>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* ═══ OTA TEMPLATES ═══ */}
+                  {view === "ota" && (
+                    <motion.div key="ota" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                      <div className="lg:col-span-3 space-y-6">
+                        <div className="rounded-[28px] border p-6 relative overflow-hidden space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h2 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2 pb-2" style={{ color: P.blue, borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                            <Layout size={13} /> Choose File
+                          </h2>
                           <div className="space-y-2">
-                            {["center.html", "index.html"].map(file => (
-                              <button
-                                key={file}
-                                onClick={() => setSelectedFile(file as any)}
-                                className={`w-full text-left p-4 rounded-2xl flex items-center gap-3.5 transition-all border ${
-                                  selectedFile === file
-                                    ? "border-blue-500/30 bg-blue-50/10 text-blue-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-                                    : "border-white/[0.04] bg-black/25 text-neutral-400 hover:bg-white/[0.02]"
-                                }`}
-                              >
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                  selectedFile === file ? "bg-blue-500/15" : "bg-white/[0.04]"
-                                }`}>
+                            {(["center.html", "index.html"] as const).map(file => (
+                              <button key={file} onClick={() => setSelectedFile(file)}
+                                className="w-full text-left p-4 rounded-2xl flex items-center gap-3.5 transition-all border"
+                                style={{
+                                  borderColor: selectedFile === file ? `${P.blue}30` : dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)",
+                                  background: selectedFile === file ? `${P.blue}10` : dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.4)",
+                                  color: selectedFile === file ? P.blue : dk ? `${P.sky}CC` : `${P.black}AA`,
+                                }}>
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: selectedFile === file ? `${P.blue}15` : dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                                   {file === "center.html" ? <MonitorSmartphone size={16} /> : <FileCode size={16} />}
                                 </div>
                                 <div className="text-xs">
                                   <p className="font-bold">{file}</p>
-                                  <p className="text-[10px] text-neutral-500 font-normal">
-                                    {file === "center.html" ? "Mobile Command Center" : "Mobile Landing Page"}
-                                  </p>
+                                  <p className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{file === "center.html" ? "Mobile Command Center" : "Mobile Landing Page"}</p>
                                 </div>
                               </button>
                             ))}
@@ -1587,183 +1422,131 @@ export default function PremiumAdminPanel() {
                         </div>
                       </div>
 
-                      {/* Right Panel: Source Code Editor */}
-                      <div className="lg:col-span-9 border border-white/[0.05] bg-[#07070c]/30 backdrop-blur-3xl rounded-[28px] overflow-hidden flex flex-col min-h-[580px] relative shadow-2xl">
-                        <div className="px-6 py-4 bg-[#0c0c14]/80 border-b border-white/[0.04] flex flex-wrap items-center justify-between gap-4">
+                      <div className="lg:col-span-9 rounded-[28px] border overflow-hidden flex flex-col min-h-[580px] relative shadow-2xl"
+                        style={{ background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.6)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
                           <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center">
-                              <Globe size={12} className="text-blue-400" />
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${P.blue}15`, border: `1px solid ${P.blue}30` }}>
+                              <Globe size={12} style={{ color: P.blue }} />
                             </div>
-                            <span className="text-xs font-bold font-mono tracking-wide text-neutral-250">{selectedFile}</span>
+                            <span className="text-xs font-bold font-[family-name:var(--font-mono)]">{selectedFile}</span>
                             {usingCustom && (
-                              <span className="text-[8px] tracking-wider uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-md animate-pulse">
-                                Overridden Active
-                              </span>
+                              <span className="text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md animate-pulse" style={{ background: `${P.sky}15`, color: P.sky, border: `1px solid ${P.sky}25` }}>Custom</span>
                             )}
                           </div>
-
                           <div className="flex items-center gap-3">
-                            <button
-                              onClick={handleResetOta}
-                              disabled={loadingOta}
-                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:text-white disabled:opacity-50 text-xs font-semibold transition-all active:scale-[0.98]"
-                            >
+                            <button onClick={handleResetOta} disabled={loadingOta}
+                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all active:scale-[0.98] disabled:opacity-50"
+                              style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? P.sky : P.black }}>
                               <RotateCcw size={13} /> Reset
                             </button>
-                            <button
-                              onClick={handleSaveOta}
-                              disabled={loadingOta || savingOta}
-                              className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 disabled:opacity-50 text-xs font-bold transition-all text-white shadow-md active:scale-[0.98]"
-                            >
-                              <Save size={13} /> {savingOta ? "Deploying..." : "Publish Template"}
+                            <button onClick={handleSaveOta} disabled={loadingOta || savingOta}
+                              className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-[0.98] disabled:opacity-50 transition-all"
+                              style={{ background: P.blue }}>
+                              <Save size={13} /> {savingOta ? "Publishing..." : "Publish"}
                             </button>
                           </div>
                         </div>
-
-                        <div className="flex-1 relative bg-black/45 flex flex-col min-h-[450px]">
+                        <div className="flex-1 relative flex flex-col" style={{ background: "#151b22" }}>
                           {loadingOta && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 gap-3">
-                              <div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-                              <span className="text-xs text-neutral-450 font-mono">Syncing code block...</span>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-3" style={{ background: "rgba(21,27,34,0.9)" }}>
+                              <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                              <span className="text-xs font-mono" style={{ color: `${P.sky}60` }}>Loading template...</span>
                             </div>
                           )}
-                          <div className="absolute top-0 bottom-0 left-0 w-12 bg-[#09090f]/30 border-r border-white/[0.02] flex flex-col items-center py-6 text-[10px] font-mono text-neutral-600 select-none leading-relaxed">
-                            {Array.from({ length: 22 }).map((_, i) => (
-                              <span key={i} className="h-5">{i + 1}</span>
-                            ))}
+                          <div className="absolute top-0 bottom-0 left-0 w-12 border-r flex flex-col items-center py-6 text-[10px] font-mono select-none leading-relaxed"
+                            style={{ background: "rgba(5,5,5,0.2)", borderColor: "rgba(199,238,255,0.04)", color: `${P.sky}30` }}>
+                            {Array.from({ length: 22 }).map((_, i) => <span key={i} className="h-5">{i + 1}</span>)}
                           </div>
-                          <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 bg-transparent text-blue-300/80 font-mono text-xs pl-16 pr-6 py-6 focus:outline-none resize-none leading-relaxed selection:bg-blue-500/20"
-                            placeholder="<!-- Custom Template Source Code -->"
-                            spellCheck={false}
-                          />
+                          <textarea value={otaContent} onChange={e => setOtaContent(e.target.value)}
+                            className="flex-1 bg-transparent font-[family-name:var(--font-mono)] text-xs pl-16 pr-6 py-6 focus:outline-none resize-none leading-relaxed"
+                            style={{ color: "#8ecfff" }}
+                            placeholder="<!-- Custom Template Source -->" spellCheck={false} />
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {currentView === "system" && (
-                    // ==================== VIEW: DIAGNOSTICS & SYSTEM MONITORING ====================
-                    <motion.div
-                      key="system"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 md:grid-cols-3 gap-6"
-                    >
-                      {/* Cpu Gauge */}
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <Cpu size={12} className="text-blue-400" /> Host CPU Usage
-                        </h3>
-                        <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                          <div className="relative w-32 h-32 flex items-center justify-center">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="8" />
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradient-line)" strokeWidth="8" strokeDasharray="251.2" strokeDashoffset="188.4" strokeLinecap="round" />
-                            </svg>
-                            <span className="absolute text-2xl font-black font-outfit text-white">25%</span>
+                  {/* ═══ DIAGNOSTICS ═══ */}
+                  {view === "system" && (
+                    <motion.div key="sys" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {[
+                        { title: "Host CPU Usky", icon: Cpu, pct: 25, label: "Thread pooling idle" },
+                        { title: "System RAM", icon: HardDrive, pct: 50, label: "1.2 GB cached resident" },
+                      ].map((g, i) => (
+                        <div key={i} className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            <g.icon size={12} style={{ color: P.blue }} /> {g.title}
+                          </h3>
+                          <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                            <div className="relative w-32 h-32 flex items-center justify-center">
+                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke={dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)"} strokeWidth="8" />
+                                <circle cx="50" cy="50" r="40" fill="none" stroke={P.blue} strokeWidth="8"
+                                  strokeDasharray="251.2" strokeDashoffset={251.2 * (1 - g.pct / 100)} strokeLinecap="round" />
+                              </svg>
+                              <span className="absolute text-2xl font-black font-[family-name:var(--font-outfit)]">{g.pct}%</span>
+                            </div>
+                            <span className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{g.label}</span>
                           </div>
-                          <span className="text-xs text-neutral-500 font-mono">Platform thread pooling idle</span>
                         </div>
-                      </div>
+                      ))}
 
-                      {/* Memory Gauge */}
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <HardDrive size={12} className="text-blue-500" /> System RAM Usage
-                        </h3>
-                        <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                          <div className="relative w-32 h-32 flex items-center justify-center">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="8" />
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradient-line)" strokeWidth="8" strokeDasharray="251.2" strokeDashoffset="125.6" strokeLinecap="round" />
-                            </svg>
-                            <span className="absolute text-2xl font-black font-outfit text-white">50%</span>
-                          </div>
-                          <span className="text-xs text-neutral-500 font-mono">1.2 GB cached memory resident</span>
-                        </div>
-                      </div>
-
-                      {/* Database Status card */}
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <Database size={12} className="text-blue-400" /> Database Status
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                          <Database size={12} style={{ color: P.blue }} /> Database Status
                         </h3>
                         <div className="space-y-4 py-4 text-xs font-mono">
-                          <div className="flex justify-between border-b border-white/[0.02] pb-2">
-                            <span className="text-neutral-400">Connection Engine</span>
-                            <span className="text-emerald-400">PostgreSQL Live</span>
-                          </div>
-                          <div className="flex justify-between border-b border-white/[0.02] pb-2">
-                            <span className="text-neutral-400">Session Buffer Pool</span>
-                            <span className="text-white">Active</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-neutral-400">Total Transactions</span>
-                            <span className="text-blue-400">2,450 commits</span>
-                          </div>
+                          {[
+                            { k: "Connection Engine", v: "PostgreSQL Live", c: P.blue },
+                            { k: "Session Buffer Pool", v: "Active", c: dk ? P.white : P.black },
+                            { k: "Total Transactions", v: "2,450 commits", c: P.blue },
+                          ].map((r, i) => (
+                            <div key={i} className="flex justify-between pb-2" style={{ borderBottom: i < 2 ? `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` : "none" }}>
+                              <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.k}</span>
+                              <span style={{ color: r.c }}>{r.v}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {currentView === "security" && (
-                    // ==================== VIEW: SECURITY CENTRE ====================
-                    <motion.div
-                      key="security"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="space-y-6"
-                    >
-                      <div className="space-y-1">
-                        <h2 className="text-xl font-black font-outfit tracking-wide uppercase">Audit History</h2>
-                        <p className="text-xs text-neutral-500">View failed system logins and session access metrics</p>
+                  {/* ═══ SECURITY AUDIT ═══ */}
+                  {view === "security" && (
+                    <motion.div key="sec" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div>
+                        <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Audit History</h2>
+                        <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System login events and security metrics</p>
                       </div>
-
-                      <div className={`rounded-2xl border overflow-hidden ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className={`border-b text-[10px] uppercase font-extrabold tracking-widest text-neutral-450 ${
-                              isDark ? "bg-[#0c0c14]/40 border-white/[0.04]" : "bg-slate-100 border-black/[0.04]"
-                            }`}>
-                              <th className="p-4 pl-6">ID</th>
-                              <th className="p-4">Time</th>
-                              <th className="p-4">Administrative Event</th>
-                              <th className="p-4">Target User</th>
-                              <th className="p-4">Host Node IP</th>
-                              <th className="p-4 pr-6 text-right">Severity</th>
+                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                              {["ID", "Time", "Event", "User", "IP", "Severity"].map(h => (
+                                <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Severity" ? "text-right pr-6" : h === "ID" ? "pl-6" : ""}`}
+                                  style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                              ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/[0.03]">
-                            {securityLogs.map(log => (
-                              <tr key={log.id} className="text-xs hover:bg-white/[0.01] transition-colors">
-                                <td className="p-4 pl-6 font-mono text-neutral-500">{log.id}</td>
-                                <td className="p-4 font-mono text-neutral-450">{log.timestamp}</td>
-                                <td className="p-4 font-bold text-white">{log.event}</td>
-                                <td className="p-4 text-neutral-400">{log.user}</td>
-                                <td className="p-4 text-neutral-500 font-mono">{log.ip}</td>
+                          <tbody>
+                            {secLogs.map(l => (
+                              <tr key={l.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.id}</td>
+                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{l.timestamp}</td>
+                                <td className="p-4 font-bold">{l.event}</td>
+                                <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{l.user}</td>
+                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.ip}</td>
                                 <td className="p-4 pr-6 text-right">
-                                  <span className={`text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md border ${
-                                    log.status === "failed"
-                                      ? "bg-blue-500/15 border-blue-500/20 text-blue-400"
-                                      : log.status === "warning"
-                                      ? "bg-amber-500/15 border-amber-500/20 text-amber-400"
-                                      : "bg-emerald-500/15 border-emerald-500/20 text-emerald-400"
-                                  }`}>
-                                    {log.status === "failed" ? "Critical" : log.status === "warning" ? "Warning" : "Info"}
-                                  </span>
+                                  <span className="text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md border"
+                                    style={{
+                                      background: l.status === "failed" ? `${P.error}15` : l.status === "warning" ? `${P.sky}15` : `${P.blue}15`,
+                                      color: l.status === "failed" ? P.error : l.status === "warning" ? (dk ? P.sky : P.black) : P.blue,
+                                      borderColor: l.status === "failed" ? `${P.error}25` : l.status === "warning" ? `${P.sky}25` : `${P.blue}25`,
+                                    }}>{l.status === "failed" ? "Critical" : l.status === "warning" ? "Warning" : "Info"}</span>
                                 </td>
                               </tr>
                             ))}
@@ -1773,300 +1556,297 @@ export default function PremiumAdminPanel() {
                     </motion.div>
                   )}
 
-                  {currentView === "settings" && (
-                    // ==================== VIEW: SYSTEM SETTINGS ====================
-                    <motion.div
-                      key="settings"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                    >
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase">General System Preferences</h3>
-                        
-                        <div className="space-y-4">
-                          <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-xs font-semibold text-neutral-300">Verbose System Debug Logs</span>
-                            <input type="checkbox" defaultChecked className="rounded-md w-4 h-4" />
-                          </label>
-                          <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-xs font-semibold text-neutral-300">Automatic Backup Schedule</span>
-                            <input type="checkbox" defaultChecked className="rounded-md w-4 h-4" />
-                          </label>
-                          <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-xs font-semibold text-neutral-300">Multi-Node API Proxying</span>
-                            <input type="checkbox" className="rounded-md w-4 h-4" />
-                          </label>
+                  {/* ═══ SETTINGS ═══ */}
+                  {view === "settings" && (
+                    <motion.div key="set" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {[
+                        { title: "General Preferences", items: [
+                          { label: "Verbose Debug Logs", checked: true },
+                          { label: "Automatic Backup Schedule", checked: true },
+                          { label: "Multi-Node API Proxying", checked: false },
+                        ]},
+                      ].map((section, si) => (
+                        <div key={si} className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>{section.title}</h3>
+                          <div className="space-y-4">
+                            {section.items.map((item, ii) => (
+                              <label key={ii} className="flex items-center justify-between cursor-pointer">
+                                <span className="text-xs font-semibold">{item.label}</span>
+                                <input type="checkbox" defaultChecked={item.checked} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-
-                      <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-500 uppercase">Branding & Endpoint Configuration</h3>
-                        
+                      ))}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Branding & Endpoint</h3>
                         <div className="space-y-4">
                           <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-neutral-450 block">Console Brand Label</span>
-                            <input type="text" defaultValue="LANpad Control" className={`w-full text-xs rounded-xl px-3.5 py-2.5 focus:outline-none ${
-                              isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                            }`} />
+                            <span className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Console Brand Label</span>
+                            <input type="text" defaultValue="GlidePass Control" className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-neutral-450 block">Local IP Proxy Binding</span>
-                            <input type="text" defaultValue="0.0.0.0:8000" className={`w-full text-xs rounded-xl px-3.5 py-2.5 focus:outline-none ${
-                              isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                            }`} />
+                            <span className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Local IP Proxy</span>
+                            <input type="text" defaultValue="0.0.0.0:8000" className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
                           </div>
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {currentView === "profile" && (
-                    // ==================== VIEW: PROFILE & PASSWORD MANAGEMENT ====================
-                    <motion.div
-                      key="profile"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                    >
-                      {/* Edit Profile */}
-                      <form onSubmit={handleUpdateProfile} className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase">Profile Settings</h3>
-                        
+                  {/* ═══ PROFILE & PASSWORD ═══ */}
+                  {view === "profile" && (
+                    <motion.div key="prof" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <form onSubmit={handleUpdateProfile} className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Profile Settings</h3>
                         <div className="flex items-center gap-5">
-                          <img
-                            src={adminAvatar}
-                            alt="Avatar"
-                            className="w-16 h-16 rounded-full object-cover border border-white/[0.1] shadow-lg"
-                          />
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Avatar image URL</span>
-                            <input
-                              type="text"
-                              value={adminAvatar}
-                              onChange={(e) => setAdminAvatar(e.target.value)}
-                              className={`text-xs rounded-xl px-3 py-2 w-60 focus:outline-none ${
-                                isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                              }`}
-                            />
+                          <img src={adminAvatar} alt="Avatar" className="w-16 h-16 rounded-full object-cover border shadow-lg" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
+                          <div className="space-y-1.5 flex-1">
+                            <span className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Avatar URL</span>
+                            <input type="text" value={adminAvatar} onChange={e => setAdminAvatar(e.target.value)}
+                              className={`text-xs rounded-xl px-3 py-2 w-full border focus:outline-none ${inputBg}`} />
                           </div>
                         </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider block">Admin Fullname</label>
-                            <input
-                              type="text"
-                              value={adminName}
-                              onChange={(e) => setAdminName(e.target.value)}
-                              className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none ${
-                                isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                              }`}
-                            />
-                          </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] uppercase font-bold tracking-wider block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Admin Name</label>
+                          <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)}
+                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
                         </div>
-
                         <div className="flex justify-end">
-                          <button
-                            type="submit"
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 text-white text-xs font-bold shadow-md"
-                          >
-                            Update Profile
-                          </button>
+                          <button type="submit" className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-[0.98] transition-all" style={{ background: P.blue }}>Update Profile</button>
                         </div>
                       </form>
 
-                      {/* Change Password */}
-                      <form onSubmit={handleChangePassword} className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
-                        isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
-                      }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-500 uppercase">Update Access Key</h3>
-                        
+                      <form onSubmit={handleChangePw} className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Change Password</h3>
                         <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider block">Current Password</label>
-                            <input
-                              type="password"
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none ${
-                                isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                              }`}
-                            />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider block">New Password</label>
-                            <input
-                              type="password"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none ${
-                                isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                              }`}
-                            />
-                            {newPassword && (
-                              <div className="flex gap-1 items-center pt-1.5">
-                                <span className="text-[9px] uppercase font-bold text-neutral-500">Strength:</span>
-                                <div className="flex gap-1 flex-1 max-w-[100px]">
-                                  {Array.from({ length: 4 }).map((_, i) => (
-                                    <div
-                                      key={i}
-                                      className={`h-1 flex-1 rounded-sm transition-all duration-350 ${
-                                        i < passwordStrength
-                                          ? passwordStrength < 3
-                                            ? "bg-amber-500"
-                                            : "bg-emerald-500"
-                                          : "bg-white/[0.06]"
-                                      }`}
-                                    />
-                                  ))}
+                          {[
+                            { label: "Current Password", val: curPw, set: setCurPw },
+                            { label: "New Password", val: newPw, set: setNewPw },
+                            { label: "Confirm Password", val: confirmPw, set: setConfirmPw },
+                          ].map((f, i) => (
+                            <div key={i} className="space-y-1.5">
+                              <label className="text-[9px] uppercase font-bold tracking-wider block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{f.label}</label>
+                              <input type="password" value={f.val} onChange={e => f.set(e.target.value)}
+                                className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                              {f.label === "New Password" && newPw && (
+                                <div className="flex gap-1 items-center pt-1.5">
+                                  <span className="text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Strength:</span>
+                                  <div className="flex gap-1 flex-1 max-w-[100px]">
+                                    {Array.from({ length: 4 }).map((_, j) => (
+                                      <div key={j} className="h-1 flex-1 rounded-sm transition-all" style={{ background: j < pwStrength ? (pwStrength < 3 ? P.sky : P.blue) : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.06)" }} />
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider block">Confirm Password</label>
-                            <input
-                              type="password"
-                              value={confirmPassword}
-                              onChange={(e) => setConfirmPassword(e.target.value)}
-                              className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none ${
-                                isDark ? "bg-black/40 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                              }`}
-                            />
-                          </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
-
                         <div className="flex justify-end">
-                          <button
-                            type="submit"
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 text-white text-xs font-bold shadow-md"
-                          >
-                            Update Password
-                          </button>
+                          <button type="submit" className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-[0.98] transition-all" style={{ background: P.blue }}>Update Password</button>
                         </div>
                       </form>
                     </motion.div>
                   )}
+
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* Notification slide-over drawer */}
+            {/* ─── Notification Drawer ─── */}
             <AnimatePresence>
-              {isNotificationCenterOpen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/60 z-50 flex justify-end backdrop-blur-sm"
-                  onClick={() => setIsNotificationCenterOpen(false)}
-                >
-                  <motion.div
-                    initial={{ x: 300 }}
-                    animate={{ x: 0 }}
-                    exit={{ x: 300 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    className={`w-80 h-full p-6 border-l flex flex-col justify-between backdrop-blur-3xl ${
-                      isDark ? "bg-[#07070c]/90 border-white/[0.06] text-white" : "bg-white border-black/[0.06] text-black"
-                    }`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center pb-3 border-b border-white/[0.04]">
-                        <h3 className="text-xs font-extrabold uppercase tracking-widest text-neutral-450">Alert Logs</h3>
-                        <button
-                          onClick={() => setIsNotificationCenterOpen(false)}
-                          className="p-1.5 rounded-lg hover:bg-white/[0.05] text-neutral-400"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        {notifications.map(note => (
-                          <div key={note.id} className="p-3 bg-white/[0.01] border border-white/[0.03] rounded-xl text-xs space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-neutral-250">{note.title}</span>
-                              <span className="text-[8px] text-neutral-500">{note.time}</span>
-                            </div>
-                            <p className="text-[10px] text-neutral-400 leading-normal">{note.desc}</p>
+              {notiOpen && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex justify-end" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+                  onClick={() => setNotiOpen(false)}>
+                  <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    className="w-80 h-full p-6 border-l flex flex-col backdrop-blur-3xl"
+                    style={{ background: dk ? "rgba(5,5,5,0.92)" : "rgba(255,255,255,0.92)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center pb-3 mb-6" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Notifications</h3>
+                      <button onClick={() => setNotiOpen(false)} className="p-1.5 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {notifications.map(n => (
+                        <div key={n.id} className="p-3 rounded-xl border text-xs space-y-1"
+                          style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.5)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold">{n.title}</span>
+                            <span className="text-[8px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{n.time}</span>
                           </div>
-                        ))}
-                      </div>
+                          <p className="text-[10px] leading-normal" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{n.desc}</p>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Command Palette Command Modal */}
+            {/* ─── Command Palette ─── */}
             <AnimatePresence>
-              {isCommandPaletteOpen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-24 px-4 backdrop-blur-sm"
-                  onClick={() => setIsCommandPaletteOpen(false)}
-                >
-                  <motion.div
-                    initial={{ scale: 0.95, y: -20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.95, y: -20 }}
-                    className={`w-full max-w-[550px] rounded-3xl border shadow-2xl p-4 overflow-hidden relative ${
-                      isDark ? "bg-[#07070c]/95 border-white/[0.08]" : "bg-white border-black/[0.08]"
-                    }`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
+              {cmdOpen && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4"
+                  style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+                  onClick={() => setCmdOpen(false)}>
+                  <motion.div initial={{ scale: 0.95, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: -20 }}
+                    className="w-full max-w-[550px] rounded-3xl border shadow-2xl p-4 overflow-hidden"
+                    style={{ background: dk ? "rgba(5,5,5,0.95)" : "rgba(255,255,255,0.95)", borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                    onClick={e => e.stopPropagation()}>
                     <div className="relative mb-3">
-                      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
-                      <input
-                        ref={paletteInputRef}
-                        type="text"
-                        placeholder="Search dashboard view, toggle theme, logout..."
-                        value={paletteQuery}
-                        onChange={(e) => setPaletteQuery(e.target.value)}
-                        className={`w-full text-xs rounded-2xl pl-10 pr-4 py-3 focus:outline-none ${
-                          isDark ? "bg-black/60 border border-white/[0.06] text-white" : "bg-slate-100 border border-black/[0.06] text-black"
-                        }`}
-                      />
+                      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                      <input ref={cmdRef} type="text" placeholder="Search views, toggle theme, sign out..."
+                        value={cmdQ} onChange={e => setCmdQ(e.target.value)}
+                        className={`w-full text-xs rounded-2xl pl-10 pr-4 py-3 border focus:outline-none ${inputBg}`} />
                     </div>
-
-                    <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1 text-xs scrollbar-thin">
-                      {commandPaletteActions.map((item, idx) => (
-                        <button
-                          key={idx}
-                          onClick={item.action}
-                          className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-white/[0.03] text-neutral-350 hover:text-white transition-colors"
-                        >
+                    <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1 text-xs">
+                      {cmdActions.map((item, i) => (
+                        <button key={i} onClick={item.action}
+                          className="w-full text-left px-3.5 py-2.5 rounded-xl hover:opacity-80 transition-colors"
+                          style={{ color: dk ? `${P.sky}CC` : `${P.black}AA` }}>
                           {item.name}
                         </button>
                       ))}
-                      {commandPaletteActions.length === 0 && (
-                        <div className="py-8 text-center text-neutral-500 text-xs">No matching system commands found.</div>
+                      {cmdActions.length === 0 && (
+                        <div className="py-8 text-center text-xs" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>No matching commands.</div>
                       )}
                     </div>
                   </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* ─── New Session Modal ─── */}
+            <AnimatePresence>
+              {showNewSessionModal && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center px-4"
+                  style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+                  onClick={() => setShowNewSessionModal(false)}>
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                    className="w-full max-w-[450px] rounded-[28px] border p-6 space-y-5 relative overflow-hidden"
+                    style={{ background: dk ? "rgba(5,5,5,0.95)" : "rgba(255,255,255,0.95)", borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>New Session</h3>
+                      <button onClick={() => setShowNewSessionModal(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><X size={14} /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Session Title</label>
+                        <input type="text" value={newSessionTitle} onChange={e => setNewSessionTitle(e.target.value)} placeholder="e.g. Lab Assessment 1"
+                          className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Date</label>
+                          <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                        </div>
+                        <div>
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Exam Type</label>
+                          <select value={newExamType} onChange={e => setNewExamType(e.target.value)}
+                            className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}>
+                            {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <button onClick={handleAddSession} className="w-full py-3.5 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
+                        style={{ background: P.blue }}><Plus size={14} /> Create Session</button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ─── Manage Exam Types Modal ─── */}
+            <AnimatePresence>
+              {showManageTypes && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center px-4"
+                  style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+                  onClick={() => setShowManageTypes(false)}>
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                    className="w-full max-w-[400px] rounded-[28px] border p-6 space-y-5 relative overflow-hidden"
+                    style={{ background: dk ? "rgba(5,5,5,0.95)" : "rgba(255,255,255,0.95)", borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Manage Exam Types</h3>
+                      <button onClick={() => setShowManageTypes(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><X size={14} /></button>
+                    </div>
+
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                      {examTypes.map((t, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-xl border"
+                          style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.5)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                          {editingTypeIdx === i ? (
+                            <input type="text" value={editingTypeName} onChange={e => setEditingTypeName(e.target.value)} className={`text-xs rounded-lg px-2 py-1 border focus:outline-none flex-1 mr-2 ${inputBg}`} autoFocus />
+                          ) : (
+                            <span className="text-xs font-semibold">{t}</span>
+                          )}
+                          <div className="flex items-center gap-1">
+                            {editingTypeIdx === i ? (
+                              <>
+                                <button onClick={() => { const u = [...examTypes]; u[i] = editingTypeName; setExamTypes(u); setEditingTypeIdx(null); }} className="p-1 rounded" style={{ color: P.blue }}><Check size={12} /></button>
+                                <button onClick={() => setEditingTypeIdx(null)} className="p-1 rounded" style={{ color: P.error }}><X size={12} /></button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => { setEditingTypeIdx(i); setEditingTypeName(t); }} className="p-1 rounded hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><Edit2 size={12} /></button>
+                                <button onClick={() => setExamTypes(examTypes.filter((_, j) => j !== i))} className="p-1 rounded hover:opacity-70" style={{ color: P.error }}><Trash2 size={12} /></button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input type="text" value={newExamTypeName} onChange={e => setNewExamTypeName(e.target.value)} placeholder="New type..."
+                        className={`flex-1 text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`} />
+                      <button onClick={() => { const added = newExamTypeName.trim(); if (added) { setExamTypes(prev => Array.from(new Set([...prev, added]))); setNewExamType(added); setNewExamTypeName(""); } }}
+                        className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                        <Plus size={13} />
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Toast ─── */}
+      <AnimatePresence>
+        {toast.type && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-2xl"
+            style={{
+              background: dk ? "rgba(5,5,5,0.92)" : "rgba(255,255,255,0.92)",
+              borderColor: toast.type === "success" ? `${P.blue}30` : `${P.error}30`,
+            }}>
+            {toast.type === "success" ? <CheckCircle size={16} style={{ color: P.blue }} /> : <AlertCircle size={16} style={{ color: P.error }} />}
+            <span className="text-xs font-semibold">{toast.msg}</span>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
 }
+

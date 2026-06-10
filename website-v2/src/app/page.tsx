@@ -97,7 +97,10 @@ const Navbar = () => {
         </div>
 
         {/* Right: CTA */}
-        <div className="shrink-0 relative z-10">
+        <div className="shrink-0 relative z-10 flex items-center gap-3 md:gap-4">
+          <Link href="/contributors" className="relative group text-white/50 hover:text-white px-2 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-300">
+            Contribute
+          </Link>
           <Link href="#setup" className="relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block">
             <span className="relative z-10 group-hover:text-white transition-colors duration-500">How to Use</span>
             <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />

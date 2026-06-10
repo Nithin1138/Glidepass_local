@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 const getCustomFilePath = (file: string) => {
   const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
   const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
