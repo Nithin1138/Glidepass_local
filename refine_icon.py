@@ -44,40 +44,10 @@ def create_premium_icon(input_path, output_icns):
         menubar_canvas.save("menubar_icon.png")
         print("✅ Simple & Smooth Menubar Icon generated: menubar_icon.png")
 
-        # --- CREATE APP ICON (macOS Squircle Background) ---
+        # --- CREATE APP ICON (BLACK BG) ---
         canvas_size = 1024
-        # 1024x1024 transparent canvas (for shadow margins)
-        canvas = Image.new('RGBA', (canvas_size, canvas_size), (0, 0, 0, 0)) 
-        
-        # Create 824x824 card with gradient background
-        card_size = 824
-        card_grad = Image.new('RGB', (card_size, card_size))
-        
-        # Complete black background
-        top_color = (0, 0, 0)
-        bottom_color = (0, 0, 0)
-        for y in range(card_size):
-            factor = y / card_size
-            r = int(top_color[0] + (bottom_color[0] - top_color[0]) * factor)
-            g = int(top_color[1] + (bottom_color[1] - top_color[1]) * factor)
-            b = int(top_color[2] + (bottom_color[2] - top_color[2]) * factor)
-            for x in range(card_size):
-                card_grad.putpixel((x, y), (r, g, b))
-                
-        # Create squircle mask (Apple macOS standard: 185px corner radius for 824px card)
-        mask_im = Image.new('L', (card_size, card_size), 0)
-        draw = ImageDraw.Draw(mask_im)
-        draw.rounded_rectangle([0, 0, card_size, card_size], radius=185, fill=255)
-        
-        # Apply mask to gradient card
-        card = Image.new('RGBA', (card_size, card_size), (0, 0, 0, 0))
-        card.paste(card_grad, (0, 0), mask=mask_im)
-        
-        # Paste card centered on the 1024x1024 transparent canvas
-        canvas.paste(card, (100, 100), card)
-        
-        # Scale the logo to fit beautifully (approx 512px, ~50% of canvas size)
-        logo_target_size = 512
+        canvas = Image.new('RGB', (canvas_size, canvas_size), (0, 0, 0)) 
+        logo_target_size = int(canvas_size * 0.90)
         w_app, h_app = logo.size
         aspect_app = w_app / h_app
         if w_app > h_app:
@@ -88,7 +58,7 @@ def create_premium_icon(input_path, output_icns):
             new_w_app = int(logo_target_size * aspect_app)
         logo_resized = logo.resize((new_w_app, new_h_app), Image.Resampling.LANCZOS)
         
-        # Center the logo on the card
+        # Center the logo on the canvas
         offset_app = ((canvas_size - new_w_app) // 2, (canvas_size - new_h_app) // 2)
         canvas.paste(logo_resized, offset_app, logo_resized)
         
