@@ -4,29 +4,41 @@ def make_icon():
     # Load the logo
     logo = Image.open('logo.png')
     
-    # Trim whitespace from the logo (bbox finds non-zero regions)
-    # Convert to RGBA to ensure alpha channel is used for bounding box
+    # Trim black background/whitespace from the logo by finding colored content
     if logo.mode != 'RGBA':
         logo = logo.convert('RGBA')
+    
+    # Custom colored crop to ignore the solid black background in logo.png
+    w, h = logo.size
+    pix = logo.load()
+    min_x, min_y, max_x, max_y = w, h, 0, 0
+    found = False
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = pix[x, y]
+            if (r > 15 or g > 15 or b > 15) and a > 15:
+                if x < min_x: min_x = x
+                if y < min_y: min_y = y
+                if x > max_x: max_x = x
+                if y > max_y: max_y = y
+                found = True
+    if found:
+        logo = logo.crop((min_x, min_y, max_x + 1, max_y + 1))
         
-    bbox = logo.getbbox()
-    if bbox:
-        logo = logo.crop(bbox)
-        
-    # Create a 1024x1024 solid black background with rounded corners
-    size = (1024, 1024)
-    background = Image.new('RGBA', size, (0, 0, 0, 0))
-    card = Image.new('RGB', size, (0, 0, 0))
+    # Create a standard macOS app icon layout:
+    # 824x824 squircle card centered on a 1024x1024 transparent canvas (100px margins)
+    canvas_size = 1024
+    card_size = 824
+    background = Image.new('RGBA', (canvas_size, canvas_size), (0, 0, 0, 0))
+    card = Image.new('RGB', (card_size, card_size), (0, 0, 0))
     
     from PIL import ImageDraw
-    mask_im = Image.new('L', size, 0)
+    mask_im = Image.new('L', (card_size, card_size), 0)
     draw = ImageDraw.Draw(mask_im)
-    draw.rounded_rectangle([0, 0, size[0], size[1]], radius=225, fill=255)
+    draw.rounded_rectangle([0, 0, card_size, card_size], radius=180, fill=255)
     
-    background.paste(card, (0, 0), mask=mask_im)
-
-    # Scale the logo to fit beautifully (90% of size)
-    logo_target_size = int(size[0] * 0.90)
+    # Scale the logo to fit 100% of the card size
+    logo_target_size = card_size
     w, h = logo.size
     aspect = w / h
     if w > h:
@@ -39,13 +51,17 @@ def make_icon():
     # Resize logo with high-quality resampling
     logo_resized = logo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     
-    # Center the logo on the background
-    offset = ((size[0] - new_w) // 2, (size[1] - new_h) // 2)
-    background.paste(logo_resized, offset, logo_resized)
+    # Center the logo on the card
+    offset_logo = ((card_size - new_w) // 2, (card_size - new_h) // 2)
+    card.paste(logo_resized, offset_logo, logo_resized)
+    
+    # Paste the card onto the transparent canvas (centered)
+    card_offset = (canvas_size - card_size) // 2
+    background.paste(card, (card_offset, card_offset), mask=mask_im)
     
     # Save the result
     background.save('logo_final_square.png')
-    print(f"✅ Created logo_final_square.png (Trimming: {bbox is not None})")
+    print(f"✅ Created logo_final_square.png (Trimming: {found})")
 
 if __name__ == "__main__":
     make_icon()
