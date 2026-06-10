@@ -284,16 +284,18 @@ class GlidePassLauncher:
                 except Exception:
                     pass
 
-            # macOS: also set the Dock icon (Tk only changes the title
-            # bar otherwise).  Use the .icns if available, fall back
-            # to the png via NSImage.
+            # macOS: only set the Dock icon in development mode.
+            # In a bundled app (frozen), the OS handles the dock icon automatically from Info.plist.
+            # Overwriting it dynamically causes macOS to draw a flat image wrapper (often with white margins).
             if is_mac():
                 try:
-                    from AppKit import NSApplication, NSImage
-                    src_path = icns_path if os.path.exists(icns_path) else png_path
-                    if os.path.exists(src_path):
-                        img = NSImage.alloc().initWithContentsOfFile_(src_path)
-                        NSApplication.sharedApplication().setApplicationIconImage_(img)
+                    import sys
+                    if not getattr(sys, 'frozen', False):
+                        from AppKit import NSApplication, NSImage
+                        src_path = icns_path if os.path.exists(icns_path) else png_path
+                        if os.path.exists(src_path):
+                            img = NSImage.alloc().initWithContentsOfFile_(src_path)
+                            NSApplication.sharedApplication().setApplicationIconImage_(img)
                 except Exception:
                     pass
         except Exception as e:
