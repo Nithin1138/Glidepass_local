@@ -490,6 +490,26 @@ def perform_typing(text, wpm, is_coding=False):
             except Exception:
                 pass
 
+    def write_char_native(char):
+        if IS_MAC:
+            try:
+                import Quartz
+                # Create key down with Unicode string
+                event_down = Quartz.CGEventCreateKeyboardEvent(None, 0, True)
+                Quartz.CGEventKeyboardSetUnicodeString(event_down, len(char), char)
+                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_down)
+                time.sleep(0.001)
+                
+                # Create key up with Unicode string
+                event_up = Quartz.CGEventCreateKeyboardEvent(None, 0, False)
+                Quartz.CGEventKeyboardSetUnicodeString(event_up, len(char), char)
+                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_up)
+                return
+            except Exception as e:
+                print(f"[typing] Native Quartz write failed: {e}")
+        
+        pyautogui.write(char)
+
     # Release any potentially stuck keys immediately before starting
     safe_release()
     time.sleep(0.2)
@@ -523,12 +543,10 @@ def perform_typing(text, wpm, is_coding=False):
                         break
                     char_start = time.time()
 
-                    if char == ' ':
-                        pyautogui.press('space')
-                    elif char == '\t':
+                    if char == '\t':
                         pyautogui.press('tab')
                     else:
-                        pyautogui.write(char)
+                        write_char_native(char)
 
                     # Release modifiers immediately after typing each character to prevent keys from getting stuck
                     safe_release()
