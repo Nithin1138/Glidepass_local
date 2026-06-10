@@ -530,6 +530,9 @@ def perform_typing(text, wpm, is_coding=False):
                     else:
                         pyautogui.write(char)
 
+                    # Release modifiers immediately after typing each character to prevent keys from getting stuck
+                    safe_release()
+
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
                         # Delete the IDE's auto-inserted closing character.
                         # By moving the cursor right and pressing backspace, we delete the auto-inserted
