@@ -489,6 +489,15 @@ def perform_typing(text, wpm, is_coding=False):
                 pyautogui.keyUp(mod)
             except Exception:
                 pass
+        if IS_MAC:
+            try:
+                import Quartz
+                modifier_keycodes = [55, 54, 56, 60, 59, 58, 61, 63]
+                for kc in modifier_keycodes:
+                    event_up = Quartz.CGEventCreateKeyboardEvent(None, kc, False)
+                    Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
+            except Exception:
+                pass
 
     def write_char_native(char):
         if IS_MAC:
@@ -497,13 +506,13 @@ def perform_typing(text, wpm, is_coding=False):
                 # Create key down with Unicode string
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, 0, True)
                 Quartz.CGEventKeyboardSetUnicodeString(event_down, len(char), char)
-                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_down)
+                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_down)
                 time.sleep(0.001)
                 
                 # Create key up with Unicode string
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, 0, False)
                 Quartz.CGEventKeyboardSetUnicodeString(event_up, len(char), char)
-                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_up)
+                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
                 return
             except Exception as e:
                 print(f"[typing] Native Quartz write failed: {e}")
@@ -515,10 +524,10 @@ def perform_typing(text, wpm, is_coding=False):
             try:
                 import Quartz
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, keycode, True)
-                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_down)
+                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_down)
                 time.sleep(0.001)
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, keycode, False)
-                Quartz.CGEventPost(Quartz.kCGHIDEventTap, event_up)
+                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
                 return True
             except Exception as e:
                 print(f"[typing] Native Quartz key press failed: {e}")
