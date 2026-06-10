@@ -552,11 +552,11 @@ def perform_typing(text, wpm, is_coding=False):
                     safe_release()
 
                     if is_coding and char in {'{', '(', '[', '"', "'"}:
-                        # Delete the IDE's auto-inserted closing character.
-                        # By moving the cursor right and pressing backspace, we delete the auto-inserted
-                        # character without using any modifier keys (like Fn or Ctrl) that can get stuck.
-                        pyautogui.press('right')
-                        pyautogui.press('backspace')
+                        # Delete the IDE's auto-inserted closing character using forward delete.
+                        # If the IDE auto-inserted a closing character, it is to the right of the cursor,
+                        # so 'delete' will remove it. If the editor did not auto-insert (or we are at the end
+                        # of the line), 'delete' does nothing, preserving the opening character.
+                        pyautogui.press('delete')
                         time.sleep(0.02)
 
                     elapsed = time.time() - char_start
