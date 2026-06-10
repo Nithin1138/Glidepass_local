@@ -5,11 +5,11 @@ let liveSync = false;
 let sessionId = null;
 
 const BOOKMARKLET_TEMPLATE = `javascript:(function(){
-  if(window.__glidepad_active) {
+  if(window.__lanpad_active) {
     showN("ALREADY ACTIVE", "#f59e0b");
     return;
   }
-  window.__glidepad_active=true;
+  window.__lanpad_active=true;
   window.__gp_abort=false;
   
   const op=Event.prototype.preventDefault;

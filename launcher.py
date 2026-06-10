@@ -495,7 +495,7 @@ class LANpadLauncher:
         # Title block
         ti = tk.Frame(hdr, bg=self.BG)
         ti.pack(side="left", padx=12)
-        tk.Label(ti, text="GlidePad Master",
+        tk.Label(ti, text="LANpad Master",
                  font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE).pack(anchor="w")
         tk.Label(ti, text="Neutralize restrictions in seconds",
                  font=(self.FU, 10), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(2, 0))
@@ -505,7 +505,7 @@ class LANpadLauncher:
         steps = [
             ("01", "↬", "Open Site",     "Navigate to the\nrestricted page"),
             ("02", "⌘",  "Show Bar",      "Win: Ctrl+Shift+B\nMac: ⌘+Shift+B"),
-            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'GlidePad'"),
+            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'LANpad'"),
             ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
         cw, ch = (W - 44) // 2, 115
@@ -567,9 +567,9 @@ class LANpadLauncher:
         # Hidden bookmarklet store (never displayed)
         self.code_text = tk.Text(v)
         bookmarklet = (
-            "javascript:(function()%7B      if(window.__glidepad_active) %7B"
+            "javascript:(function()%7B      if(window.__lanpad_active) %7B"
             "showN(\"ALREADY ACTIVE\", \"%23f59e0b\");        return;      %7D"
-            "window.__glidepad_active=true;      window.__gp_abort=false;"
+            "window.__lanpad_active=true;      window.__gp_abort=false;"
             "const op=Event.prototype.preventDefault;"
             "Event.prototype.preventDefault=function()%7B"
             "if(%5B\"copy\",\"paste\",\"cut\",\"beforeinput\",\"selectstart\"%5D.includes(this.type))return;"
