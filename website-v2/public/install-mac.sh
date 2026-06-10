@@ -12,16 +12,27 @@ mkdir -p /tmp/LANpad_Mount
 hdiutil attach /tmp/LANpad_macOS.dmg -mountpoint /tmp/LANpad_Mount -nobrowse -quiet
 
 echo "📦 Copying LANpad.app to Applications folder..."
-cp -R /tmp/LANpad_Mount/LANpad.app /Applications/
+if cp -R /tmp/LANpad_Mount/LANpad.app /Applications/ 2>/dev/null; then
+    echo "⏏ Unmounting DMG..."
+    hdiutil detach /tmp/LANpad_Mount -quiet
 
-echo "⏏ Unmounting DMG..."
-hdiutil detach /tmp/LANpad_Mount -quiet
+    echo "🔓 Removing Apple security restrictions..."
+    xattr -cr /Applications/LANpad.app 2>/dev/null
 
-echo "🔓 Removing Apple security restrictions..."
-xattr -cr /Applications/LANpad.app
+    echo "🧹 Cleaning up..."
+    rm -f /tmp/LANpad_macOS.dmg
+    rm -rf /tmp/LANpad_Mount
 
-echo "🧹 Cleaning up..."
-rm -f /tmp/LANpad_macOS.dmg
-rm -rf /tmp/LANpad_Mount
+    echo "✅ Installed successfully! You can now launch LANpad from your Applications folder."
+else
+    echo "⏏ Unmounting DMG..."
+    hdiutil detach /tmp/LANpad_Mount -quiet
 
-echo "✅ Installed successfully! You can now launch LANpad from your Applications folder."
+    echo "🧹 Cleaning up..."
+    rm -f /tmp/LANpad_macOS.dmg
+    rm -rf /tmp/LANpad_Mount
+
+    echo "❌ Installation failed: LANpad.app was not found in the installer package."
+    exit 1
+fi
+
