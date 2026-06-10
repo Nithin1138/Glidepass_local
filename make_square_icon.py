@@ -2,7 +2,7 @@ from PIL import Image, ImageOps
 
 def make_icon():
     # Load the logo
-    logo = Image.open('website-v2/public/logo.png')
+    logo = Image.open('logo.png')
     
     # Trim whitespace from the logo (bbox finds non-zero regions)
     # Convert to RGBA to ensure alpha channel is used for bounding box
