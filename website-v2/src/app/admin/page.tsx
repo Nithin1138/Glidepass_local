@@ -524,15 +524,15 @@ export default function PremiumAdminPanel() {
 
   return (
     <div className={`min-h-screen relative font-sans antialiased overflow-x-hidden transition-colors duration-500 ${
-      isDark ? "bg-[#020205] text-[#ececf1] selection:bg-indigo-500/30 selection:text-white" : "bg-[#f5f6fa] text-[#1c1c1f] selection:bg-indigo-500/20 selection:text-black"
+      isDark ? "bg-[#020205] text-[#ececf1] selection:bg-indigo-500/30 selection:text-white" : "bg-[#f5f6fa] text-[#1c1c1f] selection:bg-blue-500/20 selection:text-black"
     }`}>
       {/* Background Liquid blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className={`absolute top-[5%] left-[10%] w-[600px] h-[600px] blur-[150px] rounded-full animate-liquid-1 transition-colors duration-1000 ${
-          isDark ? "bg-indigo-500/5 via-fuchsia-500/3 to-transparent" : "bg-indigo-500/10 via-fuchsia-500/5 to-transparent"
+          isDark ? "bg-indigo-500/5 via-fuchsia-500/3 to-transparent" : "bg-blue-500/10 via-fuchsia-500/5 to-transparent"
         }`} />
         <div className={`absolute bottom-[10%] right-[10%] w-[500px] h-[500px] blur-[140px] rounded-full animate-liquid-2 transition-colors duration-1000 ${
-          isDark ? "bg-rose-500/3 via-amber-500/2 to-transparent" : "bg-rose-500/5 via-amber-500/3 to-transparent"
+          isDark ? "bg-[#007aff]/3 via-amber-500/2 to-transparent" : "bg-[#007aff]/5 via-amber-500/3 to-transparent"
         }`} />
       </div>
 
@@ -550,13 +550,13 @@ export default function PremiumAdminPanel() {
               isDark ? "bg-[#07070c]/60 border-white/[0.06] shadow-black" : "bg-white/70 border-black/[0.05] shadow-slate-200"
             }`}>
               {/* Upper Light Line */}
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
               
               <div className="flex flex-col items-center text-center space-y-6">
-                <div className="w-16 h-16 rounded-[22px] bg-gradient-to-tr from-indigo-500 via-fuchsia-500 to-rose-500 flex items-center justify-center shadow-lg relative">
+                <div className="w-16 h-16 rounded-[22px] bg-gradient-to-tr from-blue-500 via-sky-400 to-teal-500 flex items-center justify-center shadow-lg relative">
                   <Lock className="text-white" size={24} />
                   {loginAttempts > 2 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#007aff] text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
                       {loginAttempts}
                     </span>
                   )}
@@ -627,7 +627,7 @@ export default function PremiumAdminPanel() {
 
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 active:scale-98 transition-all duration-300"
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 active:scale-98 transition-all duration-300"
                   >
                     <Unlock size={14} /> Validate Credentials
                   </button>
@@ -640,7 +640,7 @@ export default function PremiumAdminPanel() {
                       {loginHistory.slice(0, 3).map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center text-neutral-400">
                           <span className="font-mono">{item.time}</span>
-                          <span className={item.success ? "text-emerald-400" : "text-rose-400"}>
+                          <span className={item.success ? "text-emerald-400" : "text-blue-400"}>
                             {item.success ? "Success" : "Failed"}
                           </span>
                         </div>
@@ -678,7 +678,7 @@ export default function PremiumAdminPanel() {
                         <span className="font-outfit font-black text-xs tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-100 to-neutral-400">
                           LANPAD
                         </span>
-                        <span className="text-[8px] uppercase tracking-wider font-extrabold text-indigo-400">
+                        <span className="text-[8px] uppercase tracking-wider font-extrabold text-blue-400">
                           Control v1.4
                         </span>
                       </div>
@@ -729,7 +729,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("dashboard")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "dashboard"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -740,7 +740,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("analytics")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "analytics"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -758,7 +758,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("users")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "users"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -769,7 +769,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("rbac")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "rbac"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -780,7 +780,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("vitcodes")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "vitcodes"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -798,7 +798,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("ota")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "ota"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -809,7 +809,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("system")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "system"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -820,7 +820,7 @@ export default function PremiumAdminPanel() {
                       onClick={() => setCurrentView("security")}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         currentView === "security"
-                          ? "bg-gradient-to-tr from-indigo-600/90 to-rose-500/90 text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]"
+                          ? "bg-gradient-to-tr from-blue-600/90 to-teal-500/90 text-white shadow-[0_8px_16px_rgba(0,122,255,0.15)]"
                           : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
@@ -852,7 +852,7 @@ export default function PremiumAdminPanel() {
 
                 <button
                   onClick={handleLogout}
-                  className={`w-full flex items-center gap-3 p-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition-all`}
+                  className={`w-full flex items-center gap-3 p-2 rounded-xl text-xs font-bold text-blue-400 hover:bg-blue-500/10 transition-all`}
                 >
                   <LogOut size={14} />
                   {isSidebarExpanded && <span>Sign Out</span>}
@@ -879,7 +879,7 @@ export default function PremiumAdminPanel() {
                   <div className="flex items-center gap-2 text-xs font-mono">
                     <span className="text-neutral-500">deck</span>
                     <ChevronRight size={10} className="text-neutral-600" />
-                    <span className="text-indigo-400 font-bold uppercase">{currentView}</span>
+                    <span className="text-blue-400 font-bold uppercase">{currentView}</span>
                   </div>
                 </div>
 
@@ -903,7 +903,7 @@ export default function PremiumAdminPanel() {
                     className="p-2.5 rounded-xl hover:bg-white/[0.03] text-neutral-400 hover:text-white relative transition-colors"
                   >
                     <Bell size={15} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#007aff]" />
                   </button>
 
                   {/* Theme switcher */}
@@ -993,7 +993,7 @@ export default function PremiumAdminPanel() {
                           <div className="flex justify-between items-center pb-4 border-b border-white/[0.03] mb-6">
                             <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase">Interactive User Engagement</h3>
                             <div className="flex items-center gap-1.5 text-[10px] bg-black/45 p-1 rounded-xl border border-white/[0.04] font-mono">
-                              <span className="px-2.5 py-1.5 bg-rose-500/10 text-rose-400 font-bold rounded-lg">Daily</span>
+                              <span className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 font-bold rounded-lg">Daily</span>
                               <span className="px-2.5 py-1.5 text-neutral-500 hover:text-neutral-350 cursor-pointer">Weekly</span>
                               <span className="px-2.5 py-1.5 text-neutral-500 hover:text-neutral-350 cursor-pointer">Monthly</span>
                             </div>
@@ -1036,7 +1036,7 @@ export default function PremiumAdminPanel() {
                         <div className={`lg:col-span-4 p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[350px] ${
                           isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                         }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-rose-500 to-indigo-500/20" />
+                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
                           <div className="flex justify-between items-center pb-4 border-b border-white/[0.03] mb-4">
                             <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase">Recent System Events</h3>
                             <button
@@ -1058,7 +1058,7 @@ export default function PremiumAdminPanel() {
                                   log.status === "success"
                                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
                                     : log.status === "failed"
-                                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/25"
+                                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/25"
                                     : "bg-amber-500/10 text-amber-400 border border-amber-500/25"
                                 }`}>
                                   {log.status}
@@ -1087,7 +1087,7 @@ export default function PremiumAdminPanel() {
                         </div>
                         <button
                           onClick={exportUsersCSV}
-                          className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs shadow-md"
+                          className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white font-bold text-xs shadow-md"
                         >
                           <Download size={13} /> Export Users CSV
                         </button>
@@ -1164,7 +1164,7 @@ export default function PremiumAdminPanel() {
                                 <td className="p-4 font-bold text-white">{user.name}</td>
                                 <td className="p-4 text-neutral-400">{user.email}</td>
                                 <td className="p-4">
-                                  <span className="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2.5 py-0.5 rounded-md font-mono">
+                                  <span className="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2.5 py-0.5 rounded-md font-mono">
                                     {user.role}
                                   </span>
                                 </td>
@@ -1174,7 +1174,7 @@ export default function PremiumAdminPanel() {
                                     onClick={() => toggleBanUser(user.id)}
                                     className={`px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all ${
                                       user.status === "suspended"
-                                        ? "bg-rose-500/20 border border-rose-500/30 text-rose-400"
+                                        ? "bg-blue-500/20 border border-blue-500/30 text-blue-400"
                                         : "bg-white/[0.02] border border-white/[0.05] text-neutral-400 hover:text-white"
                                     }`}
                                   >
@@ -1228,7 +1228,7 @@ export default function PremiumAdminPanel() {
                                       className={`w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all ${
                                         hasPermission
                                           ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                          : "bg-rose-500/10 border-rose-500/30 text-rose-450"
+                                          : "bg-blue-500/10 border-blue-500/30 text-blue-500"
                                       }`}
                                     >
                                       {hasPermission ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
@@ -1256,13 +1256,13 @@ export default function PremiumAdminPanel() {
                       <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-rose-500 to-transparent" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-indigo-400 uppercase mb-6">User Acquisition Funnel</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-teal-500 to-transparent" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase mb-6">User Acquisition Funnel</h3>
                         
                         <div className="space-y-4">
                           {[
                             { step: "Discovery Scan", val: "100%", width: "w-full", color: "from-indigo-600 to-indigo-500" },
-                            { step: "Active WebSockets", val: "84%", width: "w-[84%]", color: "from-fuchsia-600 to-fuchsia-500" },
+                            { step: "Active WebSockets", val: "84%", width: "w-[84%]", color: "from-sky-600 to-sky-500" },
                             { step: "Intelligent Injection", val: "62%", width: "w-[62%]", color: "from-rose-600 to-rose-500" },
                             { step: "Local Cache Session", val: "48%", width: "w-[48%]", color: "from-amber-600 to-amber-500" }
                           ].map((step, idx) => (
@@ -1283,8 +1283,8 @@ export default function PremiumAdminPanel() {
                       <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden flex flex-col justify-between ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-rose-500 to-indigo-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-rose-400 uppercase mb-6">Device Retention Cohorts</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase mb-6">Device Retention Cohorts</h3>
                         
                         <div className="grid grid-cols-5 gap-2 text-center text-[10px] font-mono">
                           <div className="font-sans font-bold text-left pl-2 text-neutral-400">Cohort</div>
@@ -1298,8 +1298,8 @@ export default function PremiumAdminPanel() {
                               <div key={idx} className="text-left font-sans font-semibold pl-2 py-2 text-neutral-200 border-t border-white/[0.02]">{cohort}</div>
                               <div className="bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/10 py-2">92%</div>
                               <div className="bg-emerald-500/15 text-emerald-400 rounded border border-emerald-500/10 py-2">78%</div>
-                              <div className="bg-indigo-500/15 text-indigo-400 rounded border border-indigo-500/10 py-2">64%</div>
-                              <div className="bg-rose-500/10 text-rose-450 rounded border border-rose-500/10 py-2">45%</div>
+                              <div className="bg-indigo-500/15 text-blue-400 rounded border border-indigo-500/10 py-2">64%</div>
+                              <div className="bg-blue-500/10 text-blue-500 rounded border border-rose-500/10 py-2">45%</div>
                             </>
                           ))}
                         </div>
@@ -1321,11 +1321,11 @@ export default function PremiumAdminPanel() {
                         <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl space-y-5 relative overflow-hidden ${
                           isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                         }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
+                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
                           
                           <div className="flex justify-between items-center pb-2 border-b border-white/[0.04]">
                             <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2">
-                              <CalendarDays size={14} className="text-rose-400" /> Create Session
+                              <CalendarDays size={14} className="text-blue-400" /> Create Session
                             </h2>
                             
                             <div className="flex items-center gap-1.5">
@@ -1336,7 +1336,7 @@ export default function PremiumAdminPanel() {
                                 }}
                                 className={`text-[9px] px-2.5 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
                                   showManageExamTypes 
-                                    ? "bg-rose-500/10 border border-rose-500/20 text-rose-300"
+                                    ? "bg-blue-500/10 border border-blue-500/20 text-blue-300"
                                     : "bg-white/[0.02] border border-white/[0.05] text-neutral-300"
                                 }`}
                               >
@@ -1354,7 +1354,7 @@ export default function PremiumAdminPanel() {
                                 value={newSessionTitle}
                                 onChange={(e) => setNewSessionTitle(e.target.value)}
                                 className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none focus:ring-1 transition-all ${
-                                  isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-rose-500/50 focus:ring-rose-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
+                                  isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-blue-500/50 focus:ring-blue-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
                                 }`}
                               />
                             </div>
@@ -1389,7 +1389,7 @@ export default function PremiumAdminPanel() {
 
                             <button
                               onClick={handleAddSession}
-                              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-450 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                             >
                               <Plus size={14} /> Add Session
                             </button>
@@ -1402,11 +1402,11 @@ export default function PremiumAdminPanel() {
                         <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl relative overflow-hidden min-h-[400px] ${
                           isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                         }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
+                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
                           
                           <div className="flex justify-between items-center pb-3 border-b border-white/[0.04] mb-4">
                             <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2">
-                              <Filter size={12} className="text-rose-400" /> Exam Sessions
+                              <Filter size={12} className="text-blue-400" /> Exam Sessions
                             </h2>
                           </div>
 
@@ -1417,7 +1417,7 @@ export default function PremiumAdminPanel() {
                                 onClick={() => setActiveSessionId(s.id)}
                                 className={`p-4 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between group ${
                                   activeSessionId === s.id
-                                    ? "border-rose-500/30 bg-rose-500/10 text-rose-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                                    ? "border-blue-500/30 bg-blue-500/10 text-blue-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
                                     : "border-white/[0.04] bg-black/20 hover:bg-white/[0.03] text-neutral-300"
                                 }`}
                               >
@@ -1431,7 +1431,7 @@ export default function PremiumAdminPanel() {
                                   </span>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}
-                                    className="p-1.5 rounded-lg text-neutral-550 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                    className="p-1.5 rounded-lg text-neutral-550 hover:text-blue-400 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
                                   >
                                     <Trash2 size={12} />
                                   </button>
@@ -1449,8 +1449,8 @@ export default function PremiumAdminPanel() {
                             <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl relative overflow-hidden space-y-5 ${
                               isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                             }`}>
-                              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500" />
-                              <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-rose-400 uppercase flex items-center gap-2">
+                              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 via-sky-500 to-blue-500" />
+                              <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase flex items-center gap-2">
                                 <Plus size={14} /> Add Code Question
                               </h3>
 
@@ -1463,7 +1463,7 @@ export default function PremiumAdminPanel() {
                                     placeholder="e.g. Matrix Transpose"
                                     onChange={(e) => setQTitle(e.target.value)}
                                     className={`w-full text-xs rounded-xl px-3.5 py-3 focus:outline-none focus:ring-1 transition-all ${
-                                      isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-rose-500/50 focus:ring-rose-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
+                                      isDark ? "bg-black/40 border border-white/[0.06] text-white focus:border-blue-500/50 focus:ring-blue-500/20" : "bg-slate-100 border border-black/[0.06] text-black focus:ring-indigo-500/20"
                                     }`}
                                   />
                                 </div>
@@ -1491,7 +1491,7 @@ export default function PremiumAdminPanel() {
                                   placeholder="Paste source code block here..."
                                   onChange={(e) => setQCode(e.target.value)}
                                   className={`w-full h-40 text-xs font-mono rounded-xl p-4 focus:outline-none resize-none ${
-                                    isDark ? "bg-black/40 border border-white/[0.06] text-rose-350" : "bg-slate-100 border border-black/[0.06] text-rose-800"
+                                    isDark ? "bg-black/40 border border-white/[0.06] text-blue-300" : "bg-slate-100 border border-black/[0.06] text-blue-800"
                                   }`}
                                 />
                               </div>
@@ -1499,7 +1499,7 @@ export default function PremiumAdminPanel() {
                               <div className="flex justify-end">
                                 <button
                                   onClick={handleAddQuestion}
-                                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-95"
+                                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-95"
                                 >
                                   <Plus size={13} /> Add Question
                                 </button>
@@ -1515,10 +1515,10 @@ export default function PremiumAdminPanel() {
                                   <div className="px-4 py-3 bg-[#0c0c14]/40 border-b border-white/[0.03] flex justify-between items-center">
                                     <span className="text-xs font-bold text-white">{idx+1}. {q.title}</span>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-[9px] font-mono text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{q.language}</span>
+                                      <span className="text-[9px] font-mono text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{q.language}</span>
                                       <button
                                         onClick={() => handleDeleteQuestion(q.id)}
-                                        className="p-1 rounded text-neutral-500 hover:text-rose-450"
+                                        className="p-1 rounded text-neutral-500 hover:text-blue-500"
                                       >
                                         <Trash2 size={12} />
                                       </button>
@@ -1554,9 +1554,9 @@ export default function PremiumAdminPanel() {
                         <div className={`border rounded-[28px] p-6 shadow-lg backdrop-blur-3xl space-y-4 relative overflow-hidden ${
                           isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                         }`}>
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
+                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
                           <h2 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-300 uppercase flex items-center gap-2 pb-2 border-b border-white/[0.04]">
-                            <Layout size={13} className="text-rose-400" /> Choose File
+                            <Layout size={13} className="text-blue-400" /> Choose File
                           </h2>
                           
                           <div className="space-y-2">
@@ -1566,12 +1566,12 @@ export default function PremiumAdminPanel() {
                                 onClick={() => setSelectedFile(file as any)}
                                 className={`w-full text-left p-4 rounded-2xl flex items-center gap-3.5 transition-all border ${
                                   selectedFile === file
-                                    ? "border-rose-500/30 bg-rose-50/10 text-rose-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                                    ? "border-blue-500/30 bg-blue-50/10 text-blue-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
                                     : "border-white/[0.04] bg-black/25 text-neutral-400 hover:bg-white/[0.02]"
                                 }`}
                               >
                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                  selectedFile === file ? "bg-rose-500/15" : "bg-white/[0.04]"
+                                  selectedFile === file ? "bg-blue-500/15" : "bg-white/[0.04]"
                                 }`}>
                                   {file === "center.html" ? <MonitorSmartphone size={16} /> : <FileCode size={16} />}
                                 </div>
@@ -1591,8 +1591,8 @@ export default function PremiumAdminPanel() {
                       <div className="lg:col-span-9 border border-white/[0.05] bg-[#07070c]/30 backdrop-blur-3xl rounded-[28px] overflow-hidden flex flex-col min-h-[580px] relative shadow-2xl">
                         <div className="px-6 py-4 bg-[#0c0c14]/80 border-b border-white/[0.04] flex flex-wrap items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center">
-                              <Globe size={12} className="text-indigo-400" />
+                            <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center">
+                              <Globe size={12} className="text-blue-400" />
                             </div>
                             <span className="text-xs font-bold font-mono tracking-wide text-neutral-250">{selectedFile}</span>
                             {usingCustom && (
@@ -1613,7 +1613,7 @@ export default function PremiumAdminPanel() {
                             <button
                               onClick={handleSaveOta}
                               disabled={loadingOta || savingOta}
-                              className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 disabled:opacity-50 text-xs font-bold transition-all text-white shadow-md active:scale-[0.98]"
+                              className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 hover:from-indigo-500 hover:via-fuchsia-500 hover:to-rose-400 disabled:opacity-50 text-xs font-bold transition-all text-white shadow-md active:scale-[0.98]"
                             >
                               <Save size={13} /> {savingOta ? "Deploying..." : "Publish Template"}
                             </button>
@@ -1635,7 +1635,7 @@ export default function PremiumAdminPanel() {
                           <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 bg-transparent text-rose-350/80 font-mono text-xs pl-16 pr-6 py-6 focus:outline-none resize-none leading-relaxed selection:bg-rose-500/20"
+                            className="flex-1 bg-transparent text-blue-300/80 font-mono text-xs pl-16 pr-6 py-6 focus:outline-none resize-none leading-relaxed selection:bg-blue-500/20"
                             placeholder="<!-- Custom Template Source Code -->"
                             spellCheck={false}
                           />
@@ -1658,7 +1658,7 @@ export default function PremiumAdminPanel() {
                         isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                       }`}>
                         <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <Cpu size={12} className="text-indigo-400" /> Host CPU Usage
+                          <Cpu size={12} className="text-blue-400" /> Host CPU Usage
                         </h3>
                         <div className="flex flex-col items-center justify-center py-6 space-y-4">
                           <div className="relative w-32 h-32 flex items-center justify-center">
@@ -1677,7 +1677,7 @@ export default function PremiumAdminPanel() {
                         isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                       }`}>
                         <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <HardDrive size={12} className="text-rose-450" /> System RAM Usage
+                          <HardDrive size={12} className="text-blue-500" /> System RAM Usage
                         </h3>
                         <div className="flex flex-col items-center justify-center py-6 space-y-4">
                           <div className="relative w-32 h-32 flex items-center justify-center">
@@ -1696,7 +1696,7 @@ export default function PremiumAdminPanel() {
                         isDark ? "bg-[#07070c]/50 border-white/[0.05] shadow-black" : "bg-white border-black/[0.05]"
                       }`}>
                         <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
-                          <Database size={12} className="text-rose-400" /> Database Status
+                          <Database size={12} className="text-blue-400" /> Database Status
                         </h3>
                         <div className="space-y-4 py-4 text-xs font-mono">
                           <div className="flex justify-between border-b border-white/[0.02] pb-2">
@@ -1709,7 +1709,7 @@ export default function PremiumAdminPanel() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-neutral-400">Total Transactions</span>
-                            <span className="text-indigo-400">2,450 commits</span>
+                            <span className="text-blue-400">2,450 commits</span>
                           </div>
                         </div>
                       </div>
@@ -1757,7 +1757,7 @@ export default function PremiumAdminPanel() {
                                 <td className="p-4 pr-6 text-right">
                                   <span className={`text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md border ${
                                     log.status === "failed"
-                                      ? "bg-rose-500/15 border-rose-500/20 text-rose-400"
+                                      ? "bg-blue-500/15 border-blue-500/20 text-blue-400"
                                       : log.status === "warning"
                                       ? "bg-amber-500/15 border-amber-500/20 text-amber-400"
                                       : "bg-emerald-500/15 border-emerald-500/20 text-emerald-400"
@@ -1785,8 +1785,8 @@ export default function PremiumAdminPanel() {
                       <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-indigo-400 uppercase">General System Preferences</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase">General System Preferences</h3>
                         
                         <div className="space-y-4">
                           <label className="flex items-center justify-between cursor-pointer">
@@ -1807,8 +1807,8 @@ export default function PremiumAdminPanel() {
                       <div className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-rose-500 to-indigo-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-rose-450 uppercase">Branding & Endpoint Configuration</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-500 uppercase">Branding & Endpoint Configuration</h3>
                         
                         <div className="space-y-4">
                           <div className="space-y-1">
@@ -1841,8 +1841,8 @@ export default function PremiumAdminPanel() {
                       <form onSubmit={handleUpdateProfile} className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-indigo-400 uppercase">Profile Settings</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-blue-500 via-sky-400 to-teal-500" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-400 uppercase">Profile Settings</h3>
                         
                         <div className="flex items-center gap-5">
                           <img
@@ -1880,7 +1880,7 @@ export default function PremiumAdminPanel() {
                         <div className="flex justify-end">
                           <button
                             type="submit"
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 text-white text-xs font-bold shadow-md"
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 text-white text-xs font-bold shadow-md"
                           >
                             Update Profile
                           </button>
@@ -1891,8 +1891,8 @@ export default function PremiumAdminPanel() {
                       <form onSubmit={handleChangePassword} className={`p-6 rounded-[28px] border backdrop-blur-3xl shadow-lg relative overflow-hidden space-y-6 ${
                         isDark ? "bg-[#07070c]/50 border-white/[0.05]" : "bg-white border-black/[0.05]"
                       }`}>
-                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-rose-500 to-indigo-500/20" />
-                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-rose-450 uppercase">Update Access Key</h3>
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-teal-500 to-blue-500/20" />
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] text-blue-500 uppercase">Update Access Key</h3>
                         
                         <div className="space-y-4">
                           <div className="space-y-1.5">
@@ -1954,7 +1954,7 @@ export default function PremiumAdminPanel() {
                         <div className="flex justify-end">
                           <button
                             type="submit"
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-500 text-white text-xs font-bold shadow-md"
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 text-white text-xs font-bold shadow-md"
                           >
                             Update Password
                           </button>
