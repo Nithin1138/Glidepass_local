@@ -11,7 +11,8 @@ a = Analysis(
         ('logo.png', '.'),
         ('logo_final_square.png', '.'),
         ('menubar_icon.png', '.'),
-        ('GlidePass.ico', '.')
+        ('GlidePass.ico', '.'),
+        ('GlidePass.icns', '.')
     ],
     hiddenimports=[
         'uvicorn.logging',

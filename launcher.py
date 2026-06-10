@@ -259,7 +259,7 @@ class GlidePassLauncher:
         shows the right icon at all DPI levels.
         """
         try:
-            png_path = resource_path("logo.png")
+            png_path = resource_path("logo_final_square.png") if os.path.exists(resource_path("logo_final_square.png")) else resource_path("logo.png")
             ico_path = resource_path("GlidePass.ico")
             icns_path = resource_path("GlidePass.icns")
 

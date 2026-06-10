@@ -53,9 +53,9 @@ def create_premium_icon(input_path, output_icns):
         card_size = 824
         card_grad = Image.new('RGB', (card_size, card_size))
         
-        # Sunset Orchid theme gradient: dark violet/indigo to deep slate black
-        top_color = (25, 15, 40)      # Dark violet
-        bottom_color = (6, 8, 20)      # Deep slate black
+        # Complete black background
+        top_color = (0, 0, 0)
+        bottom_color = (0, 0, 0)
         for y in range(card_size):
             factor = y / card_size
             r = int(top_color[0] + (bottom_color[0] - top_color[0]) * factor)
@@ -76,8 +76,8 @@ def create_premium_icon(input_path, output_icns):
         # Paste card centered on the 1024x1024 transparent canvas
         canvas.paste(card, (100, 100), card)
         
-        # Scale the logo to fit beautifully (approx 480px, ~47% of canvas size)
-        logo_target_size = 480
+        # Scale the logo to fit beautifully (approx 512px, ~50% of canvas size)
+        logo_target_size = 512
         w_app, h_app = logo.size
         aspect_app = w_app / h_app
         if w_app > h_app:
@@ -110,6 +110,6 @@ def create_premium_icon(input_path, output_icns):
         
     except Exception as e:
         print(f"❌ Error: {e}")
-
+ 
 if __name__ == "__main__":
     create_premium_icon("logo.png", "GlidePass.icns")
