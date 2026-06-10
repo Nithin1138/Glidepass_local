@@ -741,13 +741,24 @@
                 expectedTimeDisplay.innerText = "Expected Time: 0s";
                 return;
             }
+            const isCoding = document.getElementById('is-coding-checkbox').checked;
+            let typedLength = 0;
+            if (isCoding) {
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    typedLength += line.trimStart().length;
+                }
+            } else {
+                typedLength = text.length;
+            }
+
             const cpm = selectedWpm * 5;
             const typingInterval = 60 / cpm;
             const numLines = (text.match(/\n/g) || []).length;
             
             // Expected time
-            const baseTime = text.length * typingInterval;
-            const lineTime = numLines * 0.2; // 0.05s sleep + keypresses overhead ~0.15s
+            const baseTime = typedLength * typingInterval;
+            const lineTime = numLines * 0.1; // Line transition overhead (press enter, wait 0.08s)
             const timeInSecs = baseTime + lineTime + 0.5; // 0.5s initial startup
             
             if (timeInSecs < 60) {
@@ -816,21 +827,32 @@
         function startCountdown(text, wpm) {
             const overlay = document.getElementById('countdown-overlay');
             const timerCount = document.getElementById('timer-count');
+            const isCoding = document.getElementById('is-coding-checkbox').checked;
 
             // Estimation logic matching exact typing timing in app.py
+            let typedLength = 0;
+            if (isCoding) {
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    typedLength += line.trimStart().length;
+                }
+            } else {
+                typedLength = text.length;
+            }
+
             const cpm = wpm * 5;
             const typingInterval = 60 / cpm;
             const numLines = (text.match(/\n/g) || []).length;
             
-            // Total seconds = (chars * interval) + (lines * 0.2) + 0.5s startup
-            let totalSeconds = (text.length * typingInterval) + (numLines * 0.2) + 0.5;
+            // Total seconds = (chars * interval) + (lines * 0.1) + 0.5s startup
+            let totalSeconds = (typedLength * typingInterval) + (numLines * 0.1) + 0.5;
             totalSeconds = Math.ceil(totalSeconds); 
 
             // UI state: Active typing
             overlay.style.display = 'flex';
             sendBtn.disabled = true;
             remoteText.disabled = true;
-
+            
             let remaining = totalSeconds;
             timerCount.textContent = `${remaining}s`;
 
