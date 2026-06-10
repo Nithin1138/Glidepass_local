@@ -2,13 +2,21 @@ import os
 import sys
 import io
 import threading
-import uvicorn
-import tkinter as tk
 import traceback
 import subprocess
-from launcher import GlidePassLauncher
-from app import app as fastapi_app
-from menubar_handler import GlidePassMenuApp
+
+# ---------------------------------------------------------------------------
+# Heavy imports (tkinter, rumps/menubar_handler, uvicorn, launcher) are
+# loaded LAZILY below, inside the appropriate code path:
+#
+#   --gui mode  : imports tkinter + launcher  (NO rumps / menubar_handler)
+#   menubar mode: imports rumps + menubar_handler + uvicorn  (NO tkinter)
+#
+# Mixing the two in the same process crashes Tkinter on macOS with:
+#   NSInvalidArgumentException: [NSApplication macOSVersion] unrecognized selector
+# because rumps' import of NSApplication conflicts with Tkinter's own
+# NSApplication setup inside tk.Tk().
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Windows / PyInstaller "NoneType has no attribute isatty" workaround.
@@ -76,6 +84,7 @@ class ServerManager:
             return
         
         from app import app as fastapi_app
+        import uvicorn
         config = uvicorn.Config(app=fastapi_app, host="0.0.0.0", port=8000, log_level="error")
         self.server_instance = uvicorn.Server(config)
         
@@ -138,6 +147,14 @@ class AppController:
                 f.write(f"Launch error: {str(e)}\n")
 
 def main():
+    # Import menubar/server deps ONLY in the non-gui (menubar) process.
+    # Importing rumps here (rather than at module level) is essential:
+    # it must NOT be imported when running with --gui because rumps
+    # initialises NSApplication before tk.Tk() gets a chance to, causing
+    # a hard crash (macOSVersion unrecognised selector).
+    import uvicorn  # noqa: F401 – imported for side effects in ServerManager
+    from menubar_handler import GlidePassMenuApp
+
     # 1. Setup Controller
     controller = AppController()
 
@@ -150,11 +167,11 @@ def main():
         start_callback=controller.start_backend,
         stop_callback=controller.stop_backend
     )
-    
+
     # 4. Show Dashboard on startup
     controller.toggle_dashboard()
-    
-    print("🚀 GlidePass Menubar Active")
+
+    print("\U0001F680 GlidePass Menubar Active")
     menu_app.run()
 
 if __name__ == "__main__":

@@ -959,11 +959,13 @@ def run_launcher():
             pass
         sys.exit(0)
 
+    root = tk.Tk()
+    app  = GlidePassLauncher(root)
+
     # ── Suppress Dock icon: run as an accessory process on macOS ──────────────
-    # The parent menubar process (main.py, rumps) already has no Dock icon.
-    # We ALSO hide this GUI subprocess from the Dock so users cannot
-    # accidentally click it, and macOS will never send it a
-    # "reopen application" event that would steal focus from other apps.
+    # MUST be called AFTER tk.Tk() — calling NSApplication.sharedApplication()
+    # before Tk initializes crashes Tkinter with NSInvalidArgumentException in
+    # TkSetMacColor (macOSVersion unrecognized selector).
     if sys.platform == "darwin":
         try:
             from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
@@ -972,9 +974,6 @@ def run_launcher():
             )
         except Exception:
             pass
-
-    root = tk.Tk()
-    app  = GlidePassLauncher(root)
 
     # Listen for reopen or quit requests
     def listen_for_show():
