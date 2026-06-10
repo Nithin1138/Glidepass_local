@@ -5,6 +5,7 @@ import signal
 import socket
 import sys
 import math
+import re
 import threading
 from PIL import Image, ImageTk, ImageOps
 import urllib.request
@@ -171,6 +172,10 @@ class GlidePassLauncher:
         self.root.resizable(False, False)
         self.process = None
 
+        # Set proper app icon (title bar + Dock) so the window no
+        # longer shows the default Tkinter feather.
+        self._set_app_icon()
+
         # macOS native titlebar transparency
         if sys.platform == "darwin":
             try:
@@ -242,6 +247,58 @@ class GlidePassLauncher:
             canvas.create_oval(w - 55 - r, h - 160 - r,
                                w - 55 + r, h - 160 + r, fill=c, outline="")
 
+
+    # ── App icon (title bar + Dock) ──────────────────────────────────────
+    def _set_app_icon(self):
+        """Apply the GlidePass logo as the window + Dock icon.
+
+        On macOS we also set the NSApplication's ``applicationIconImage``
+        so the Dock shows the proper icon (Tk on macOS only changes
+        the title bar, not the Dock).  On Windows we call
+        ``iconbitmap`` which uses the embedded ``.ico`` so the taskbar
+        shows the right icon at all DPI levels.
+        """
+        try:
+            png_path = resource_path("logo.png")
+            ico_path = resource_path("GlidePass.ico")
+            icns_path = resource_path("GlidePass.icns")
+
+            # Cross-platform: keep a PhotoImage alive so Tk does not
+            # garbage-collect it and revert to the default icon.
+            self._app_icon_png = ImageTk.PhotoImage(
+                Image.open(png_path).resize((128, 128), Image.Resampling.LANCZOS)
+                if os.path.exists(png_path)
+                else Image.new("RGB", (128, 128), "#000000")
+            )
+            try:
+                self.root.iconphoto(True, self._app_icon_png)
+            except Exception:
+                pass
+
+            # Windows: ``iconbitmap`` is the only way to set the taskbar
+            # icon correctly.  It MUST be a real .ico file – png won't
+            # work on Windows.
+            if is_windows() and os.path.exists(ico_path):
+                try:
+                    self.root.iconbitmap(default=ico_path)
+                except Exception:
+                    pass
+
+            # macOS: also set the Dock icon (Tk only changes the title
+            # bar otherwise).  Use the .icns if available, fall back
+            # to the png via NSImage.
+            if is_mac():
+                try:
+                    from AppKit import NSApplication, NSImage
+                    src_path = icns_path if os.path.exists(icns_path) else png_path
+                    if os.path.exists(src_path):
+                        img = NSImage.alloc().initWithContentsOfFile_(src_path)
+                        NSApplication.sharedApplication().setApplicationIconImage_(img)
+                except Exception:
+                    pass
+        except Exception as e:
+            # Never let an icon failure crash the app.
+            print(f"[glidepass] icon setup: {e}")
 
     def _pill_button(self, parent, text, fg, fill, cmd=None, side="right"):
         """Draw a pill-shaped label button on a Canvas widget."""
@@ -596,15 +653,98 @@ class GlidePassLauncher:
 
     # ── Network helpers ───────────────────────────────────────────────────────
 
+    # Common "virtual / loopback" prefixes that are useless for a
+    # mobile phone on the user's Wi-Fi.  Detected and deprioritised
+    # by ``get_local_ip()``.
+    _VIRTUAL_PREFIXES = (
+        "127.",          # loopback
+        "169.254.",      # link-local (often VirtualBox host-only)
+        "192.168.56.",   # VirtualBox host-only
+        "192.168.64.",   # Parallels / VMware NAT
+        "192.168.65.",
+        "192.168.1.",    # sometimes used by VM nets too
+    )
+
+    def _all_ipv4_addresses(self):
+        """Enumerate every non-loopback IPv4 bound to this machine."""
+        import subprocess
+        addrs = []
+        try:
+            if is_mac() or is_windows():
+                if is_windows():
+                    cmd = ["ipconfig"]
+                else:
+                    cmd = ["ifconfig"]
+                out = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=2
+                ).stdout
+                for m in re.finditer(
+                    r"(?:inet|IPv4)[^0-9]*((?:\d+\.){3}\d+)", out
+                ):
+                    ip = m.group(1)
+                    if not ip.startswith("127."):
+                        addrs.append(ip)
+            else:
+                # Linux / other Unix – use the ``ip`` command if present
+                try:
+                    out = subprocess.run(
+                        ["ip", "-4", "-o", "addr", "show"],
+                        capture_output=True, text=True, timeout=2,
+                    ).stdout
+                    for m in re.finditer(
+                        r"inet\s+((?:\d+\.){3}\d+)", out
+                    ):
+                        ip = m.group(1)
+                        if not ip.startswith("127."):
+                            addrs.append(ip)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return addrs
+
     def get_local_ip(self) -> str:
+        """Return the best LAN IPv4 for the user's phone to connect to.
+
+        Preference order:
+          1. The address the OS routing table picks for an outbound
+             UDP packet (8.8.8.8) – this is what the original code did
+             and it works on most home networks.
+          2. Any Wi-Fi / Ethernet address NOT starting with a virtual
+             prefix (so a VM's NAT address is skipped).
+          3. Fallback to whatever ``socket.gethostbyname`` returns.
+        """
+        # 1. Outbound-route trick (skips VM-only interfaces in most cases)
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
             s.close()
-            return ip
+            if ip and not ip.startswith("127."):
+                return ip
+        except Exception:
+            pass
+
+        # 2. Walk every interface and prefer a "real" LAN address
+        for ip in self._all_ipv4_addresses():
+            if not any(ip.startswith(p) for p in self._VIRTUAL_PREFIXES):
+                return ip
+
+        # 3. Last-resort: hostname lookup
+        try:
+            return socket.gethostbyname(socket.gethostname())
         except Exception:
             return "127.0.0.1"
+
+    def get_all_ips(self):
+        """Public helper – returns every usable LAN IP we found."""
+        ips = []
+        seen = set()
+        for ip in [self.get_local_ip()] + self._all_ipv4_addresses():
+            if ip and ip not in seen and not ip.startswith("127."):
+                seen.add(ip)
+                ips.append(ip)
+        return ips
 
     def update_qr_code(self, ip: str):
         def _fetch():
@@ -666,9 +806,33 @@ class GlidePassLauncher:
         cv.itemconfig(tid, text="Live", fill=self.GREEN)
 
         ip = self.get_local_ip()
+        # If we detected more than one LAN IP, show the primary one
+        # in the pill but log all candidates so the user can debug
+        # from the terminal / console.
+        all_ips = self.get_all_ips()
+        if len(all_ips) > 1:
+            print(f"[glidepass] Detected LAN IPs: {all_ips}")
+            print(f"[glidepass] Using primary: {ip}")
         self._ip_text = f"http://{ip}:8000"
         self._draw_ip(True)
         self.root.after(200, lambda: self.update_qr_code(ip))
+        # If the user has multiple network interfaces, draw a small
+        # hint under the URL pill so they know which one to use.
+        if len(all_ips) > 1:
+            try:
+                from tkinter import font as _font
+                # The hint replaces the footer for a moment so the
+                # user can see all candidates without scrolling.
+                hint = ("Other LAN IPs: " +
+                        "  ".join(all_ips[1:3]) +
+                        ("  …" if len(all_ips) > 3 else ""))
+                # We piggy-back on the existing "Protocol" info card
+                # value slot – cheap and avoids more layout work.
+                pcard, ptid = self._info_cards.get("Protocol", (None, None))
+                if ptid is not None:
+                    pcard.itemconfig(ptid, text=hint, fill=self.ORANGE)
+            except Exception:
+                pass
 
     def stop_server(self):
         if self.process == "EXTERNAL":
