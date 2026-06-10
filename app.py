@@ -225,6 +225,42 @@ async def vitcodes_page():
     return _cached_file_response("vitcodes.html")
 
 
+@app.get("/api/vitcodes")
+async def get_api_vitcodes():
+    config_path = os.path.expanduser("~/.glidepass/config.json")
+    custom_url = None
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                custom_url = cfg.get("website_url")
+        except:
+            pass
+
+    urls = []
+    if custom_url:
+        urls.append(custom_url.rstrip("/") + "/api/vitcodes")
+    urls.append("http://localhost:3000/api/vitcodes")
+    urls.append("https://glidepass.vercel.app/api/vitcodes")
+
+    async def fetch_one(client, url):
+        try:
+            r = await client.get(url, timeout=2.0)
+            if r.status_code == 200:
+                return r.json()
+        except Exception:
+            pass
+        return None
+
+    async with httpx.AsyncClient() as client:
+        tasks = [fetch_one(client, url) for url in urls]
+        for task in asyncio.as_completed(tasks):
+            res = await task
+            if res is not None:
+                return res
+    return []
+
+
 def _cached_file_response(filename: str):
     response = FileResponse(get_template_path(filename))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
