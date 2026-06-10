@@ -482,60 +482,62 @@ def perform_typing(text, wpm, is_coding=False):
         print(f"[typing] pyautogui not available: {e}")
         return
 
-    # Helper to ALWAYS release modifiers after any key sequence
+    # Helper to release any stuck modifier keys at the END of a typing session.
+    # IMPORTANT: This must ONLY be called once, at the very end.
+    # Calling it per-character posts Quartz modifier-key-up events system-wide,
+    # which corrupts the keyboard state of other apps (e.g. releases Cmd while
+    # the user holds it in Chrome, causing phantom Cmd+Tab / Cmd+W events).
     def safe_release():
-        for mod in ('command', 'shift', 'ctrl', 'option', 'alt', 'win', 'fn'):
+        for mod in ('command', 'shift', 'ctrl', 'option', 'alt'):
             try:
                 pyautogui.keyUp(mod)
             except Exception:
                 pass
-        if IS_MAC:
-            try:
-                import Quartz
-                modifier_keycodes = [55, 54, 56, 60, 59, 58, 61, 63]
-                for kc in modifier_keycodes:
-                    event_up = Quartz.CGEventCreateKeyboardEvent(None, kc, False)
-                    Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
-            except Exception:
-                pass
 
     def write_char_native(char):
+        """Type a single Unicode character.
+
+        Uses Quartz CGEventCreateKeyboardEvent with kCGHIDEventTap (NOT
+        kCGSessionEventTap) so the event targets only the foreground app
+        and does not bleed into the global session event stream.
+        """
         if IS_MAC:
             try:
                 import Quartz
-                # Create key down with Unicode string
+                # kCGHIDEventTap = 0 — targets the current foreground app only.
+                # kCGSessionEventTap = 1 — injects into the global session
+                # (affects ALL running apps) and must NOT be used here.
+                tap = Quartz.kCGHIDEventTap
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, 0, True)
                 Quartz.CGEventKeyboardSetUnicodeString(event_down, len(char), char)
-                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_down)
+                Quartz.CGEventPost(tap, event_down)
                 time.sleep(0.001)
-                
-                # Create key up with Unicode string
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, 0, False)
                 Quartz.CGEventKeyboardSetUnicodeString(event_up, len(char), char)
-                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
+                Quartz.CGEventPost(tap, event_up)
                 return
             except Exception as e:
                 print(f"[typing] Native Quartz write failed: {e}")
-        
         pyautogui.write(char)
 
     def press_key_native(keycode):
         if IS_MAC:
             try:
                 import Quartz
+                tap = Quartz.kCGHIDEventTap  # target foreground app only
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, keycode, True)
-                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_down)
+                Quartz.CGEventPost(tap, event_down)
                 time.sleep(0.001)
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, keycode, False)
-                Quartz.CGEventPost(Quartz.kCGSessionEventTap, event_up)
+                Quartz.CGEventPost(tap, event_up)
                 return True
             except Exception as e:
                 print(f"[typing] Native Quartz key press failed: {e}")
         return False
 
-    # Release any potentially stuck keys immediately before starting
+    # Release any potentially stuck keys once before starting
     safe_release()
-    time.sleep(0.2)
+    time.sleep(0.1)
 
     cpm = max(wpm, 1) * 5
     typing_interval = 60.0 / cpm
@@ -557,8 +559,8 @@ def perform_typing(text, wpm, is_coding=False):
             if not stop_typing:
                 line_to_type = line
                 if is_coding:
-                    # Strip leading whitespace so we rely entirely on the IDE's native auto-indentation
-                    # and avoid double-indenting or using modifier keys to clear whitespace.
+                    # Strip leading whitespace so we rely on the IDE's
+                    # native auto-indentation instead of literal spaces/tabs.
                     line_to_type = line.lstrip(' \t')
 
                 for char in line_to_type:
@@ -572,19 +574,21 @@ def perform_typing(text, wpm, is_coding=False):
                     else:
                         write_char_native(char)
 
-                    # Release modifiers immediately after typing each character to prevent keys from getting stuck
-                    safe_release()
+                    # NOTE: Do NOT call safe_release() here per character.
+                    # Posting Quartz modifier-key-up events inside the loop
+                    # was releasing modifiers held by the user in OTHER apps
+                    # (e.g. releasing Cmd while user holds Cmd+Tab in Chrome).
 
-                    if is_coding and char in {'{', '(', '[', '"', "'"}:
-                        if not press_key_native(117):
-                            pyautogui.press('delete')
-                        time.sleep(0.02)
+                    # NOTE: The previous 'is_coding bracket delete' hack that
+                    # pressed the Forward Delete key (keycode 117) after [({ has
+                    # been removed. It sent a global delete event that interfered
+                    # with whatever the user was doing in the foreground app.
 
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
                     time.sleep(sleep_time)
     finally:
-        # Failsafe: Ensure modifiers are NEVER left stuck if interrupted
+        # Failsafe: release modifiers ONCE at the very end only
         safe_release()
         print("Typing task finished/stopped")
 

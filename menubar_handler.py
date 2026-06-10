@@ -77,16 +77,11 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
 
-        # NOTE: handle_activation_ was removed — NSApplicationDidBecomeActiveNotification
-        # fires for ANY app activation (e.g. bracket input in an IDE) causing random
-        # Dock clicks. applicationShouldHandleReopen_hasVisibleWindows_ below handles
-        # real Dock icon clicks correctly without false positives.
-
-        def applicationShouldHandleReopen_hasVisibleWindows_(
-            self, application, has_visible_windows
-        ):
-            self.launcher_callback()
-            return True
+        # NOTE: Both handle_activation_ (NSApplicationDidBecomeActiveNotification)
+        # and applicationShouldHandleReopen_hasVisibleWindows_ have been removed.
+        # This rumps process runs as NSApplicationActivationPolicyAccessory (no Dock
+        # icon), so neither notification fires from real user interaction.
+        # The ONLY way to show the dashboard is the "Show Dashboard" menu item below.
 
         @rumps.clicked("Show Dashboard")
         def show_dashboard(self, _):
@@ -361,19 +356,11 @@ if is_mac():
                 "Quit GlidePass",
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
-            # NOTE: We intentionally do NOT subscribe to
-            # NSApplicationDidBecomeActiveNotification here.  That notification
-            # fires for every app-activation event (including spurious ones
-            # triggered by typing brackets/parens in an IDE), which caused the
-            # dashboard to pop open and random Dock items to be clicked.
-            # applicationShouldHandleReopen_hasVisibleWindows_ (below) is the
-            # correct and sole handler for real Dock icon clicks.
-
-        def applicationShouldHandleReopen_hasVisibleWindows_(
-            self, application, has_visible_windows
-        ):
-            self.launcher_callback()
-            return True
+            # NOTE: No automatic notification observers or reopen handlers.
+            # This rumps process runs as NSApplicationActivationPolicyAccessory
+            # (no Dock icon). All automatic window-showing callbacks have been
+            # removed to prevent focus theft when typing in other apps.
+            # The dashboard is shown ONLY via the "Show Dashboard" menu item.
 
         @_rumps.clicked("Show Dashboard")
         def show_dashboard(self, _):

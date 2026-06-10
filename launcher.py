@@ -176,11 +176,13 @@ class GlidePassLauncher:
         # longer shows the default Tkinter feather.
         self._set_app_icon()
 
-        # macOS native titlebar transparency
+        # macOS: apply native titlebar styling ONLY (no activation/focus stealing)
         if sys.platform == "darwin":
             try:
                 from AppKit import NSApp, NSWindowStyleMaskFullSizeContentView
-                NSApp.activateIgnoringOtherApps_(True)
+                # Do NOT call activateIgnoringOtherApps_ here — it would
+                # forcibly steal keyboard focus away from whatever the user
+                # is currently typing in (e.g. Chrome, Xcode, an IDE).
                 self.root.update_idletasks()
                 for win in NSApp.windows():
                     if win.title() == "GlidePass":
@@ -193,7 +195,9 @@ class GlidePassLauncher:
                 print(f"Native styling: {e}")
 
         self.root.lift()
-        self.root.focus_force()
+        # Do NOT call focus_force() here — it steals keyboard focus from
+        # other apps (e.g. a browser-based code editor) every time the
+        # launcher window opens.
 
         self.root.createcommand("::tk::mac::ReopenApplication", self.show_window)
         self.root.createcommand("::tk::mac::Quit", self.on_quit)
@@ -903,14 +907,18 @@ class GlidePassLauncher:
             messagebox.showinfo("Bypass Copied", "Bookmarklet copied to clipboard!")
 
     def show_window(self, *args):
+        """Bring the dashboard to front without stealing focus from other apps
+        unless GlidePass is truly meant to be the frontmost app."""
         self.root.deiconify()
         self.root.lift()
-        self.root.focus_force()
+        # Only grab focus if GlidePass was explicitly invoked by the user
+        # (menu bar click, IPC SHOW message). Do NOT use focus_force() or
+        # activateIgnoringOtherApps_ as they steal keyboard input from
+        # whatever the user is currently typing in.
         if sys.platform == "darwin":
             try:
-                import subprocess
-                script = 'tell application "System Events" to set frontmost of every process whose name contains "GlidePass" to true'
-                subprocess.run(["osascript", "-e", script], capture_output=True)
+                from AppKit import NSApp
+                NSApp.activateIgnoringOtherApps_(True)
             except Exception:
                 pass
 
@@ -950,6 +958,20 @@ def run_launcher():
         except Exception:
             pass
         sys.exit(0)
+
+    # ── Suppress Dock icon: run as an accessory process on macOS ──────────────
+    # The parent menubar process (main.py, rumps) already has no Dock icon.
+    # We ALSO hide this GUI subprocess from the Dock so users cannot
+    # accidentally click it, and macOS will never send it a
+    # "reopen application" event that would steal focus from other apps.
+    if sys.platform == "darwin":
+        try:
+            from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+            NSApplication.sharedApplication().setActivationPolicy_(
+                NSApplicationActivationPolicyAccessory
+            )
+        except Exception:
+            pass
 
     root = tk.Tk()
     app  = GlidePassLauncher(root)
