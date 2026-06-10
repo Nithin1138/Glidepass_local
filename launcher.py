@@ -159,10 +159,10 @@ def _generate_qr_image(data: str, size: int = 200):
 
 # ── App ───────────────────────────────────────────────────────────────────────
 
-class GlidePassLauncher:
+class LANpadLauncher:
     def __init__(self, root):
         self.root = root
-        self.root.title("GlidePass")
+        self.root.title("LANpad")
         # The fixed logical size of the dashboard.  With DPI awareness
         # enabled above, this is the *actual* pixel size of the window
         # on Windows, so a 400x760 window really is 400x760 in
@@ -185,7 +185,7 @@ class GlidePassLauncher:
                 # is currently typing in (e.g. Chrome, Xcode, an IDE).
                 self.root.update_idletasks()
                 for win in NSApp.windows():
-                    if win.title() == "GlidePass":
+                    if win.title() == "LANpad":
                         win.setTitlebarAppearsTransparent_(True)
                         win.setTitleVisibility_(1)
                         win.setStyleMask_(
@@ -254,7 +254,7 @@ class GlidePassLauncher:
 
     # ── App icon (title bar + Dock) ──────────────────────────────────────
     def _set_app_icon(self):
-        """Apply the GlidePass logo as the window + Dock icon.
+        """Apply the LANpad logo as the window + Dock icon.
 
         On macOS we also set the NSApplication's ``applicationIconImage``
         so the Dock shows the proper icon (Tk on macOS only changes
@@ -264,8 +264,8 @@ class GlidePassLauncher:
         """
         try:
             png_path = resource_path("logo_final_square.png") if os.path.exists(resource_path("logo_final_square.png")) else resource_path("logo.png")
-            ico_path = resource_path("GlidePass.ico")
-            icns_path = resource_path("GlidePass.icns")
+            ico_path = resource_path("LANpad.ico")
+            icns_path = resource_path("LANpad.icns")
 
             # Cross-platform: keep a PhotoImage alive so Tk does not
             # garbage-collect it and revert to the default icon.
@@ -309,7 +309,7 @@ class GlidePassLauncher:
                     pass
         except Exception as e:
             # Never let an icon failure crash the app.
-            print(f"[glidepass] icon setup: {e}")
+            print(f"[lanpad] icon setup: {e}")
 
     def _pill_button(self, parent, text, fg, fill, cmd=None, side="right"):
         """Draw a pill-shaped label button on a Canvas widget."""
@@ -366,7 +366,7 @@ class GlidePassLauncher:
         except Exception as e:
             title_x = 24
 
-        tk.Label(v, text="GlidePass", font=(self.FD, 28, "bold"),
+        tk.Label(v, text="LANpad", font=(self.FD, 28, "bold"),
                  bg=self.BG, fg=self.WHITE, anchor="w").place(x=title_x, y=98)
         tk.Label(v,
                  text="Bridge your devices locally.",
@@ -495,7 +495,7 @@ class GlidePassLauncher:
         # Title block
         ti = tk.Frame(hdr, bg=self.BG)
         ti.pack(side="left", padx=12)
-        tk.Label(ti, text="GlidePad Master",
+        tk.Label(ti, text="LANpad Master",
                  font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE).pack(anchor="w")
         tk.Label(ti, text="Neutralize restrictions in seconds",
                  font=(self.FU, 10), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(2, 0))
@@ -505,7 +505,7 @@ class GlidePassLauncher:
         steps = [
             ("01", "↬", "Open Site",     "Navigate to the\nrestricted page"),
             ("02", "⌘",  "Show Bar",      "Win: Ctrl+Shift+B\nMac: ⌘+Shift+B"),
-            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'GlidePad'"),
+            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'LANpad'"),
             ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
         cw, ch = (W - 44) // 2, 115
@@ -822,8 +822,8 @@ class GlidePassLauncher:
         # from the terminal / console.
         all_ips = self.get_all_ips()
         if len(all_ips) > 1:
-            print(f"[glidepass] Detected LAN IPs: {all_ips}")
-            print(f"[glidepass] Using primary: {ip}")
+            print(f"[lanpad] Detected LAN IPs: {all_ips}")
+            print(f"[lanpad] Using primary: {ip}")
         self._ip_text = f"http://{ip}:8000"
         self._draw_ip(True)
         self.root.after(200, lambda: self.update_qr_code(ip))
@@ -908,10 +908,10 @@ class GlidePassLauncher:
 
     def show_window(self, *args):
         """Bring the dashboard to front without stealing focus from other apps
-        unless GlidePass is truly meant to be the frontmost app."""
+        unless LANpad is truly meant to be the frontmost app."""
         self.root.deiconify()
         self.root.lift()
-        # Only grab focus if GlidePass was explicitly invoked by the user
+        # Only grab focus if LANpad was explicitly invoked by the user
         # (menu bar click, IPC SHOW message). Do NOT use focus_force() or
         # activateIgnoringOtherApps_ as they steal keyboard input from
         # whatever the user is currently typing in.
@@ -960,7 +960,7 @@ def run_launcher():
         sys.exit(0)
 
     root = tk.Tk()
-    app  = GlidePassLauncher(root)
+    app  = LANpadLauncher(root)
 
     # ── Suppress Dock icon: run as an accessory process on macOS ──────────────
     # MUST be called AFTER tk.Tk() — calling NSApplication.sharedApplication()

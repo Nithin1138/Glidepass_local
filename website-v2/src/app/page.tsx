@@ -81,11 +81,11 @@ const Navbar = () => {
           <div className="w-9 h-9 md:w-10 md:h-10 bg-black rounded-[10px] border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl group/logo transition-transform duration-500 hover:scale-110">
             <img
               src="/logo.png"
-              alt="GlidePass Icon"
+              alt="LANpad Icon"
               className="w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 invert hue-rotate-180 brightness-110 contrast-125"
             />
           </div>
-          <span className="mt-1 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">GLIDEPASS</span>
+          <span className="mt-1 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">LANPAD</span>
         </div>
 
         {/* Center: Navigation Links */}
@@ -266,7 +266,7 @@ const Visualization = () => {
                 {/* Screen UI */}
                 <div className="mt-28 px-6 text-center">
                   <div className="mb-10">
-                    <p className="text-[10px] text-indigo-400 font-black tracking-[0.2em] uppercase mb-1">GlidePass</p>
+                    <p className="text-[10px] text-indigo-400 font-black tracking-[0.2em] uppercase mb-1">LANpad</p>
                     <p className="text-[8px] text-white/20 font-medium">Secure Tunnel Active</p>
                   </div>
 
@@ -304,7 +304,7 @@ const Visualization = () => {
                     <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-lg" />
                   </div>
                   <div className="flex-1 text-center">
-                    <span className="text-[9px] font-mono text-white/20 tracking-widest uppercase">glidepass — local_node</span>
+                    <span className="text-[9px] font-mono text-white/20 tracking-widest uppercase">lanpad — local_node</span>
                   </div>
                 </div>
 
@@ -547,7 +547,7 @@ const SetupGuide = () => {
     {
       step: "02",
       title: "Pin Extension",
-      desc: "Open Chrome, click the GlidePass icon, and grab your session link.",
+      desc: "Open Chrome, click the LANpad icon, and grab your session link.",
       icon: <Globe size={20} />
     },
     {
@@ -737,7 +737,7 @@ export default function Home() {
                 title: "macOS Backend",
                 icon: <Monitor size={28} />,
                 label: "Copy Install Cmd",
-                installCommand: "curl -sSL https://glidepass.vercel.app/install-mac.sh | bash",
+                installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
                 version: "v1.5.0",
                 size: "94.6 MB",
                 theme: "rose",
@@ -751,7 +751,7 @@ export default function Home() {
                 title: "Windows Backend",
                 icon: <Monitor size={28} />,
                 label: "Copy Install Cmd",
-                installCommand: "powershell -c \"irm https://glidepass.vercel.app/install-windows.ps1 | iex\"",
+                installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                 version: "v1.5.0",
                 size: "38.2 MB",
                 theme: "indigo",
@@ -849,11 +849,11 @@ export default function Home() {
                 <div className="w-12 h-12 bg-black rounded-[12px] border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl">
                   <img
                     src="/logo.png"
-                    alt="GlidePass Icon"
+                    alt="LANpad Icon"
                     className="w-[120%] h-[120%] object-contain scale-125 invert hue-rotate-180 brightness-110 contrast-125"
                   />
                 </div>
-                <span className="mt-1">GLIDEPASS</span>
+                <span className="mt-1">LANPAD</span>
               </div>
               <p className="text-sm text-white/30 font-medium font-inter max-w-xs leading-relaxed mb-8">
                 Building the intelligent layer between your phone and your machine. Zero-lag, local-first synchronization for power users.
@@ -916,7 +916,7 @@ export default function Home() {
               </div>
               <span className="text-[10px] font-mono text-white/10 uppercase tracking-widest">v1.4.2-stable</span>
             </div>
-            <p className="text-[10px] text-white/10 font-mono tracking-widest">© 2026 GLIDEPASS. ALL RIGHTS RESERVED.</p>
+            <p className="text-[10px] text-white/10 font-mono tracking-widest">© 2026 LANPAD. ALL RIGHTS RESERVED.</p>
           </div>
         </div>
       </footer>

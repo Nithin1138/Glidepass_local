@@ -44,4 +44,6 @@ dist/
 *.dmg
 *.zip
 GlidePass.app/
+LANpad.app/
+LANpadStarter.app/
 tmp.dmg

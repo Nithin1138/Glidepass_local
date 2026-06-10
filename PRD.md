@@ -1,4 +1,4 @@
-# 📝 Product Requirements Document (PRD): GlidePass
+# 📝 Product Requirements Document (PRD): LANpad
 
 **Status:** Final / Engineering Ready  
 **Author:** Nithin  
@@ -7,7 +7,7 @@
 ---
 
 ## 1. Product Vision
-GlidePass turns a smartphone into a low-latency **intelligent input companion** for laptops and desktops, enabling instant local text transfer, human-like typing simulation, and real-time synchronization without relying on cloud services.
+LANpad turns a smartphone into a low-latency **intelligent input companion** for laptops and desktops, enabling instant local text transfer, human-like typing simulation, and real-time synchronization without relying on cloud services.
 
 ## 2. Problem Statement
 Users frequently need to move text (links, credentials, code snippets, or notes) from their mobile devices to their laptops. Existing solutions (cloud notes, messaging themselves) are slow, require internet access, and are often blocked by corporate firewalls or restricted environments where clipboard pasting is disabled.
@@ -31,7 +31,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 *   **Mobile Browser UI**: Cross-platform WebSocket-enabled controller.
 
 ### Request Flow:
-1.  **Launch**: User starts GlidePass server on Laptop.
+1.  **Launch**: User starts LANpad server on Laptop.
 2.  **Discovery**: Backend generates session token + QR code based on local IP.
 3.  **Pairing**: Mobile scans QR and establishes WebSocket/HTTP connection.
 4.  **Submission**: User submits text from mobile controller.
@@ -42,7 +42,7 @@ Users frequently need to move text (links, credentials, code snippets, or notes)
 
 ### FR-01: Local Backend Server
 *   The system must run a FastAPI server locally on the host machine.
-*   The server must be startable via a custom macOS protocol (`glidepass://`) from a browser extension.
+*   The server must be startable via a custom macOS protocol (`lanpad://`) from a browser extension.
 
 ### FR-02: Input Modes
 *   **Flash**: Immediate high-speed text transfer using clipboard injection. Automatically falls back to **Type Mode** if pasting is restricted.
@@ -118,7 +118,7 @@ graph TD
 
 ## 11. Competitive Advantage
 
-| Feature | GlidePass | KDE Connect | Pushbullet | Phone Link |
+| Feature | LANpad | KDE Connect | Pushbullet | Phone Link |
 | :--- | :---: | :---: | :---: | :---: |
 | **Internet Needed** | **No** | No | Yes | Partial |
 | **Human-like Typing Support**| **Yes** | No | No | No |

@@ -1,13 +1,13 @@
-# 🚀 GlidePass — Business Model Overview
+# 🚀 LANpad — Business Model Overview
 
 > **Tagline:** *Your phone, your laptop's new best friend.*
 > **One-liner:** A privacy-first, local-only productivity bridge that turns your smartphone into a low-latency input companion for your computer.
 
 ---
 
-## 📌 1. What is GlidePass?
+## 📌 1. What is LANpad?
 
-GlidePass is a cross-device productivity utility that bridges the **Mobile-to-Desktop Text Gap**. It allows users to instantly transfer text, simulate realistic human-like typing, and live-sync input from a phone to a Mac or Windows machine — **all without cloud servers, internet access, or third-party accounts.**
+LANpad is a cross-device productivity utility that bridges the **Mobile-to-Desktop Text Gap**. It allows users to instantly transfer text, simulate realistic human-like typing, and live-sync input from a phone to a Mac or Windows machine — **all without cloud servers, internet access, or third-party accounts.**
 
 **Core product loop:**
 
@@ -40,7 +40,7 @@ Modern professionals, developers, and students constantly move text between devi
 
 ## 💡 3. The Solution
 
-GlidePass provides four input modes from a single phone-based controller:
+LANpad provides four input modes from a single phone-based controller:
 
 | Mode | Description | Use Case |
 |---|---|---|
@@ -105,13 +105,13 @@ GlidePass provides four input modes from a single phone-based controller:
 
 ## 💰 6. Revenue Model
 
-GlidePass follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enterprise** upsell path.
+LANpad follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enterprise** upsell path.
 
 ### 6.1 Pricing Tiers
 
 | Tier | Price | Includes | Target |
 |---|---|---|---|
-| **🆓 Free** | $0 | Flash Paste, Type Mode, local server, 1 device pair | Curious users, students, trial |
+| **# Free** | $0 | Flash Paste, Type Mode, local server, 1 device pair | Curious users, students, trial |
 | **⚡ Pro** | **$4.99/mo or $39/yr** | Live Sync, Nuclear Unblocker, IDE-aware Inject, multi-host support (up to 3), priority support | Developers, power users, privacy pros |
 | **🏢 Teams** | **$12/user/mo (min 5 seats)** | Everything in Pro + admin console, audit logs, SSO, shared session templates | Startups, agencies, dev teams |
 | **🏛 Enterprise** | **Custom (starts ~$50/seat/yr)** | Everything in Teams + on-prem deployment, air-gapped install, custom WPM profiles, SLA, dedicated CSM, security review packet | Banks, gov, defense, regulated industries |
@@ -120,7 +120,7 @@ GlidePass follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enter
 
 1. **One-time "Pro Lifetime" license** — $99 (drives early cash + reduces churn in months 6–12)
 2. **Marketplace for "Input Templates"** — vetted prompt packs for common paste scenarios (e.g., "Email Signature," "Bug Report Template," "PR Description") — 70/30 revenue split with creators
-3. **White-label / OEM licensing** — ship GlidePass as the clipboard bridge inside other productivity suites
+3. **White-label / OEM licensing** — ship LANpad as the clipboard bridge inside other productivity suites
 4. **Affiliate / Hardware partnerships** — co-marketing with ergonomic keyboards, phone stands, KVM vendors
 5. **Premium support & custom integrations** — paid onboarding for enterprises
 
@@ -147,7 +147,7 @@ GlidePass follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enter
 - Free tier as the primary acquisition funnel
 
 ### Phase 2 — Creator & Influencer (Months 3–12)
-- Sponsor productivity YouTubers (Ali Abdaal, Thomas Frank,dev tool creators)
+- Sponsor productivity YouTubers (Ali Abdaal, Thomas Frank, dev tool creators)
 - TikTok/Reels "this app replaced 4 tools" content series
 - Affiliate program: 30% recurring for first 12 months
 
@@ -168,14 +168,14 @@ GlidePass follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enter
 
 | Competitor | Internet Required | Human-like Typing | Local Only | Account Required | Free Tier |
 |---|:---:|:---:|:---:|:---:|:---:|
-| **GlidePass** | ❌ No | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes |
+| **LANpad** | ❌ No | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes |
 | KDE Connect | ❌ No | ❌ No | ✅ Yes | ❌ No | ✅ Yes |
 | Pushbullet | ✅ Yes | ❌ No | ❌ No | ✅ Yes | ⚠️ Limited |
 | Microsoft Phone Link | ⚠️ Partial | ❌ No | ❌ No | ✅ Yes | ✅ Yes (with OS) |
 | Apple Universal Clipboard | ❌ No | ❌ No | ✅ Yes | ❌ No | ✅ Yes (Apple-only) |
 | Join / Shifty | ✅ Yes | ❌ No | ❌ No | ✅ Yes | ⚠️ Limited |
 
-**GlidePass's Moat:**
+**LANpad's Moat:**
 1. **First-mover in "human-like typing from phone"** — a niche competitors ignore because it's technically hard (Quartz events, SendInput, IDE awareness)
 2. **Network-effect-resistant** — local-only means competitors can't win on "more users" — must win on engineering quality
 3. **Strong developer brand** — open-sourcing the typing engine builds trust with the highest-value ICP
@@ -188,7 +188,7 @@ GlidePass follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enter
 |---|---|---|
 | OS vendors (Apple, Microsoft) restrict synthetic input events | High | Diversify to **voice + OCR + vision-based input** as fallback modes |
 | Browser vendors deprecate WebSocket / custom protocols | Medium | Maintain native mobile apps as backup channel |
-| Users perceive "local-only" as a feature *and* a limitation | Medium | Optional **GlidePass Cloud Bridge** (E2EE) for cross-network use — premium-only |
+| Users perceive "local-only" as a feature *and* a limitation | Medium | Optional **LANpad Cloud Bridge** (E2EE) for cross-network use — premium-only |
 | Large incumbents (Apple, Microsoft) copy the feature | High | Speed + open-source community + cross-platform parity |
 | Misuse for credential stuffing / bypassing proctoring | Medium | Clear acceptable-use policy, enterprise rate-limits, log-based abuse detection |
 | Mac/Windows distribution friction (Gatekeeper, SmartScreen) | Medium | Notarization + code signing + detailed install docs |
@@ -246,7 +246,7 @@ Privacy is **not a feature — it is the entire brand.**
 
 ## 🤝 13. Funding & Capital Strategy
 
-GlidePass is **capital-efficient by design** (local-first, digital delivery, no cloud infra costs at scale). This is an asset for fundraising because it implies low burn and a path to default-alive.
+LANpad is **capital-efficient by design** (local-first, digital delivery, no cloud infra costs at scale). This is an asset for fundraising because it implies low burn and a path to default-alive.
 
 | Stage | Timing | Raise | Use of Funds |
 |---|---|---|---|
@@ -284,8 +284,8 @@ GlidePass is **capital-efficient by design** (local-first, digital delivery, no 
 
 ## ✅ TL;DR — The Business in One Paragraph
 
-GlidePass is a **local-first, privacy-respecting productivity utility** that turns a phone into a low-latency input companion for laptops. It solves the "Mobile-to-Desktop Text Gap" for developers, students, privacy pros, and enterprise users in restricted environments. The product is **freemium**, with a $4.99/mo **Pro** tier, a $12/seat **Teams** tier, and a custom **Enterprise** tier — supported by a 5% free-to-paid conversion target. With a **target ARR of $700K–$900K by end of Year 1** and a clear path to $4M+ in Year 2, GlidePass is a **capital-efficient, defensible, developer-loved** business built on a privacy moat that cloud-first competitors cannot easily replicate.
+LANpad is a **local-first, privacy-respecting productivity utility** that turns a phone into a low-latency input companion for laptops. It solves the "Mobile-to-Desktop Text Gap" for developers, students, privacy pros, and enterprise users in restricted environments. The product is **freemium**, with a $4.99/mo **Pro** tier, a $12/seat **Teams** tier, and a custom **Enterprise** tier — supported by a 5% free-to-paid conversion target. With a **target ARR of $700K–$900K by end of Year 1** and a clear path to $4M+ in Year 2, LANpad is a **capital-efficient, defensible, developer-loved** business built on a privacy moat that cloud-first competitors cannot easily replicate.
 
 ---
 
-*© Nithin. GlidePass™ is a trademark of the project owner. This document is confidential and intended for internal and investor use.*
+*© Nithin. LANpad™ is a trademark of the project owner. This document is confidential and intended for internal and investor use.*

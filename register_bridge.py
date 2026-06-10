@@ -1,4 +1,4 @@
-"""Register the GlidePass native messaging host with every Chromium-based
+"""Register the LANpad native messaging host with every Chromium-based
 browser installed on the current machine.
 
 This script works on both macOS and Windows.  It writes a small JSON
@@ -24,7 +24,7 @@ import sys
 # TODO: replace this with your real extension ID the first time you
 # install the unpacked extension on a new machine.
 EXTENSION_ID = "balleijkjhnmflldlhgclonmnndoeiji"
-HOST_NAME    = "com.glidepass.launcher"
+HOST_NAME    = "com.lanpad.launcher"
 
 
 # ── Per-OS paths ─────────────────────────────────────────────────────────────
@@ -72,9 +72,9 @@ def _linux_paths():
 # ── Bridge writer (per-OS) ───────────────────────────────────────────────────
 
 def _write_mac_bridge(extension_id: str) -> str:
-    """Generate a tiny ``glidepass_bridge.sh`` and return its absolute path."""
+    """Generate a tiny ``lanpad_bridge.sh`` and return its absolute path."""
     project = os.path.dirname(os.path.abspath(__file__))
-    bridge  = os.path.join(project, "glidepass_bridge.sh")
+    bridge  = os.path.join(project, "lanpad_bridge.sh")
 
     python_path = (
         subprocess.check_output(["which", "python3"]).decode().strip()
@@ -125,7 +125,7 @@ def _write_windows_bridge(extension_id: str) -> str:
 def _build_manifest(extension_id: str, bridge_path: str) -> dict:
     return {
         "name": HOST_NAME,
-        "description": "GlidePass Backend Launcher",
+        "description": "LANpad Backend Launcher",
         "path": bridge_path,
         "type": "stdio",
         "allowed_origins": [
@@ -161,7 +161,7 @@ def _register(extension_id: str) -> int:
             print(f"❌ Failed for {p}: {e}")
 
     # ── Windows-only: also register under HKCU\Software\Google\Chrome
-    #   \NativeMessagingHosts\com.glidepass.launcher so Chrome picks it up
+    #   \NativeMessagingHosts\com.lanpad.launcher so Chrome picks it up
     #   even if the file-based lookup is misconfigured.
     if sys.platform.startswith("win"):
         try:
