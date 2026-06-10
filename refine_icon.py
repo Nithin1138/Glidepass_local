@@ -69,8 +69,8 @@ def create_premium_icon(input_path, output_icns):
         draw = ImageDraw.Draw(mask_im)
         draw.rounded_rectangle([0, 0, card_size, card_size], radius=180, fill=255)
         
-        # Scale the logo to fit 100% of the card size
-        logo_target_size = card_size
+        # Scale the logo to fit 95% of the card size
+        logo_target_size = int(card_size * 0.95)
         w_app, h_app = logo.size
         aspect_app = w_app / h_app
         if w_app > h_app:
