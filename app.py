@@ -575,15 +575,16 @@ def perform_typing(text, wpm, is_coding=False):
                     else:
                         write_char_native(char)
 
-                    # NOTE: Do NOT call safe_release() here per character.
-                    # Posting Quartz modifier-key-up events inside the loop
-                    # was releasing modifiers held by the user in OTHER apps
-                    # (e.g. releasing Cmd while user holds Cmd+Tab in Chrome).
-
-                    # NOTE: The previous 'is_coding bracket delete' hack that
-                    # pressed the Forward Delete key (keycode 117) after [({ has
-                    # been removed. It sent a global delete event that interfered
-                    # with whatever the user was doing in the foreground app.
+                    # Coding mode: IDEs auto-insert a closing bracket after {, (, [
+                    # leaving cursor between the pair  {|}  but the source text we're
+                    # typing already contains the matching close bracket, so delete
+                    # the IDE's extra one with Forward Delete (keycode 117).
+                    # press_key_native() uses kCGHIDEventTap → foreground app only.
+                    if is_coding and char in {'{', '(', '['}:
+                        time.sleep(0.03)
+                        if not press_key_native(117):
+                            pyautogui.press('delete')
+                        time.sleep(0.02)
 
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
