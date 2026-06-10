@@ -18,7 +18,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LANpad | Intelligent Input Orchestration",
+  title: "GlidePass | Intelligent Input Orchestration",
   description: "Turn your phone into a low-latency input companion. High-fidelity text transfer, realistic typing simulation, and local-only security.",
 };
 

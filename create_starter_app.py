@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-APP_NAME = "LANpadStarter"
+APP_NAME = "GlidePassStarter"
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Get the absolute path to the current python3
 PYTHON_PATH = subprocess.check_output(["which", "python3"]).decode().strip()
@@ -26,11 +26,11 @@ def create_app():
         subprocess.run(["cp", os.path.join(PROJECT_DIR, "logo.icns"), os.path.join(resources_dir, "AppIcon.icns")])
     
     # 3. Create the executable script with FULL ABSOLUTE PATHS
-    executable_path = os.path.join(macos_dir, "LANpadStarter")
+    executable_path = os.path.join(macos_dir, "GlidePassStarter")
     with open(executable_path, "w") as f:
         f.write("#!/bin/bash\n")
         # Log attempts for debugging
-        f.write(f"echo 'Launching LANpad from {PROJECT_DIR}' > \"{PROJECT_DIR}/starter_log.txt\"\n")
+        f.write(f"echo 'Launching GlidePass from {PROJECT_DIR}' > \"{PROJECT_DIR}/starter_log.txt\"\n")
         f.write(f"cd \"{PROJECT_DIR}\"\n")
         # Launch the Launcher GUI with auto-start flag
         f.write(f"\"{PYTHON_PATH}\" \"{PROJECT_DIR}/launcher.py\" --auto-start &\n")
@@ -46,11 +46,11 @@ def create_app():
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>LANpadStarter</string>
+    <string>GlidePassStarter</string>
     <key>CFBundleIdentifier</key>
-    <string>com.lanpad.starter</string>
+    <string>com.glidepass.starter</string>
     <key>CFBundleName</key>
-    <string>LANpadStarter</string>
+    <string>GlidePassStarter</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSUIElement</key>
@@ -66,10 +66,10 @@ def create_app():
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>LANpad Protocol</string>
+            <string>GlidePass Protocol</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>lanpad</string>
+                <string>glidepass</string>
             </array>
         </dict>
     </array>
@@ -83,7 +83,7 @@ def create_app():
     subprocess.run([ls_register, "-f", app_path])
     
     print(f"✅ Rebuilt {APP_NAME}.app with absolute path: {PYTHON_PATH}")
-    print(f"✅ Registered protocol lanpad:// successfully.")
+    print(f"✅ Registered protocol glidepass:// successfully.")
 
 if __name__ == "__main__":
     create_app()

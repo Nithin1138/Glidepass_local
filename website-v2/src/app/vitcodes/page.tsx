@@ -64,7 +64,7 @@ function VitCodesContent() {
             </Link>
             <div className="flex items-center gap-2">
               <span className="font-outfit font-black text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-                LANPAD
+                GLIDEPASS
               </span>
               <span className="text-[9px] uppercase tracking-[0.2em] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
                 VIT-AP Portal

@@ -1,6 +1,6 @@
-"""LANpad FastAPI backend.
+"""GlidePass FastAPI backend.
 
-This is the single source of truth for the LANpad HTTP API.  It runs
+This is the single source of truth for the GlidePass HTTP API.  It runs
 on both macOS and Windows; the only OS-specific code paths are guarded
 by ``IS_MAC`` / ``IS_WINDOWS`` flags coming from ``platform_utils``.
 
@@ -11,7 +11,7 @@ build for users who only want to expose the API.
 # ---------------------------------------------------------------------------
 # Windows / PyInstaller "NoneType has no attribute isatty" workaround.
 #
-# When LANpad is built with ``console=False`` (the standard
+# When GlidePass is built with ``console=False`` (the standard
 # windowed-GUI mode) the Windows C runtime replaces ``sys.stdout`` and
 # ``sys.stderr`` with ``None``.  A few libraries (notably uvicorn's
 # logger) call ``.isatty()`` on these streams and crash at import time.
@@ -67,7 +67,7 @@ except ImportError:  # pragma: no cover - allows direct execution during dev
     def is_windows(): return sys.platform.startswith("win")
     def is_linux():   return sys.platform.startswith("linux")
     def cmd_key():    return "command" if is_mac() else "ctrl"
-    def user_data_dir(): return os.path.expanduser("~/.lanpad")
+    def user_data_dir(): return os.path.expanduser("~/.glidepass")
 
 # Detect OS (single source of truth)
 IS_MAC     = is_mac()
@@ -184,7 +184,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("\n--- LANPAD BACKEND RUNNING ---")
+print("\n--- GLIDEPASS BACKEND RUNNING ---")
 print(f"Local Access:  http://localhost:8000")
 print(f"Mobile Access: http://{get_local_ip()}:8000")
 print(f"Platform:      {platform.system()}\n")
@@ -227,7 +227,7 @@ async def vitcodes_page():
 
 @app.get("/api/vitcodes")
 async def get_api_vitcodes():
-    config_path = os.path.expanduser("~/.lanpad/config.json")
+    config_path = os.path.expanduser("~/.glidepass/config.json")
     custom_url = None
     if os.path.exists(config_path):
         try:
@@ -241,7 +241,7 @@ async def get_api_vitcodes():
     if custom_url:
         urls.append(custom_url.rstrip("/") + "/api/vitcodes")
     urls.append("http://localhost:3000/api/vitcodes")
-    urls.append("https://lanpad.vercel.app/api/vitcodes")
+    urls.append("https://glidepass.vercel.app/api/vitcodes")
 
     async def fetch_one(client, url):
         try:
@@ -382,13 +382,13 @@ def _check_mac_accessibility_and_prompt():
         app_services.AXIsProcessTrusted.restype = ctypes.c_bool
         if not app_services.AXIsProcessTrusted():
             script = (
-                'display alert "LANpad Needs Permissions" '
+                'display alert "GlidePass Needs Permissions" '
                 'message "To auto-type or paste text from your phone, '
                 'macOS requires you to grant Accessibility permissions '
-                'to LANpad.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n'
-                '2. If LANpad is listed, remove it first (select it and click the \'-\' button).\\n'
-                '3. Click the \'+\' button and add LANpad.app again.\\n'
-                '4. Restart LANpad." '
+                'to GlidePass.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n'
+                '2. If GlidePass is listed, remove it first (select it and click the \'-\' button).\\n'
+                '3. Click the \'+\' button and add GlidePass.app again.\\n'
+                '4. Restart GlidePass." '
                 'buttons {"Open Settings", "Later"} default button "Open Settings"\n'
                 'if button returned of result is "Open Settings" then\n'
                 '  open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"\n'
@@ -716,7 +716,7 @@ def _safe_pyautogui():
         pyautogui.PAUSE = 0
         return pyautogui
     except Exception as e:
-        print(f"[lanpad] pyautogui unavailable: {e}")
+        print(f"[glidepass] pyautogui unavailable: {e}")
         return None
 
 
@@ -740,7 +740,7 @@ if __name__ == "__main__":
         else:
             print("\u2705 Accessibility permissions confirmed.\n")
     elif IS_WINDOWS:
-        print("\u27a4 LANpad is running on Windows.")
+        print("\u27a4 GlidePass is running on Windows.")
         print("  - Make sure your firewall allows inbound TCP/8000.")
         print("  - Phone and laptop must be on the same Wi-Fi network.\n")
 

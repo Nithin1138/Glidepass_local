@@ -285,7 +285,7 @@ export default function AdminPage() {
               </div>
               <div className="flex flex-col">
                 <span className="font-outfit font-black text-sm tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-100 to-neutral-400">
-                  LANPAD
+                  GLIDEPASS
                 </span>
                 <span className="text-[9px] uppercase tracking-[0.25em] font-extrabold text-rose-400/90">
                   Control Deck

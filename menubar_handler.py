@@ -1,9 +1,9 @@
-"""Cross-platform menubar / system-tray handler for LANpad.
+"""Cross-platform menubar / system-tray handler for GlidePass.
 
 On macOS we use the ``rumps`` library (which wraps Cocoa/NSStatusItem).
 On Windows we fall back to ``pystray`` (which wraps the Win32
 notification area).  The two backends expose the **same** public
-``LANpadMenuApp`` class so the rest of the codebase can be
+``GlidePassMenuApp`` class so the rest of the codebase can be
 platform-agnostic.
 
 Importing this module is safe on both platforms – the macOS-only
@@ -46,16 +46,16 @@ def _is_server_alive(host: str = "127.0.0.1", port: int = 8000) -> bool:
 # ── macOS implementation (rumps) ──────────────────────────────────────────────
 
 def _make_macos_app(launcher_callback, start_callback, stop_callback):
-    """Build the rumps-based LANpadMenuApp for macOS.
+    """Build the rumps-based GlidePassMenuApp for macOS.
 
     The class is built lazily so that ``import rumps`` is **never
     executed on a Windows machine**.
     """
     import rumps
 
-    class LANpadMenuApp(rumps.App):
+    class GlidePassMenuApp(rumps.App):
         def __init__(self):
-            super().__init__("LANpad", quit_button=None)
+            super().__init__("GlidePass", quit_button=None)
             self.launcher_callback = launcher_callback
             self.start_callback = start_callback
             self.stop_callback = stop_callback
@@ -71,9 +71,9 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 None,
                 "Show Dashboard",
                 None,
-                "About LANpad",
+                "About GlidePass",
                 None,
-                "Quit LANpad",
+                "Quit GlidePass",
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
 
@@ -93,7 +93,7 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 if self.stop_callback:
                     self.stop_callback()
                     rumps.notification(
-                        "LANpad",
+                        "GlidePass",
                         "Backend Stopped",
                         "Sync services have been paused.",
                     )
@@ -101,7 +101,7 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 if self.start_callback:
                     self.start_callback()
                     rumps.notification(
-                        "LANpad",
+                        "GlidePass",
                         "Backend Started",
                         "Your laptop is now ready to sync.",
                     )
@@ -115,7 +115,7 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 self.menu["Server Status: Unknown"].title = "Server Status: Stopped \U0001F534"
                 self.menu["Toggle Server"].title = "Start Server"
 
-        @rumps.clicked("Quit LANpad")
+        @rumps.clicked("Quit GlidePass")
         def custom_quit(self, _):
             if self.stop_callback:
                 self.stop_callback()
@@ -129,20 +129,20 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 pass
             rumps.quit_application()
 
-        @rumps.clicked("About LANpad")
+        @rumps.clicked("About GlidePass")
         def about(self, _):
             import subprocess
             msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
-            cmd = f'display dialog "{msg}" with title "LANpad v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            cmd = f'display dialog "{msg}" with title "GlidePass v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
-    return LANpadMenuApp()
+    return GlidePassMenuApp()
 
 
 # ── Windows / Linux implementation (pystray) ─────────────────────────────────
 
 def _make_pystray_app(launcher_callback, start_callback, stop_callback):
-    """Build the pystray-based LANpadMenuApp for Windows / Linux.
+    """Build the pystray-based GlidePassMenuApp for Windows / Linux.
 
     NOTE: ``pystray.MenuItem`` does NOT expose a settable ``text``
     attribute (it is a read-only property in every pystray backend).
@@ -159,7 +159,7 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
     from pystray import MenuItem as item
     from PIL import Image
 
-    class LANpadMenuApp:
+    class GlidePassMenuApp:
         POLL_INTERVAL_SECONDS = 2
 
         def __init__(self):
@@ -193,11 +193,11 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
                 try:
                     from tkinter import messagebox
                     messagebox.showinfo(
-                        "LANpad v1.5.0",
+                        "GlidePass v1.5.0",
                         "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
                     )
                 except Exception:
-                    print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
+                    print("GlidePass v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
 
             def on_quit(icon, item):
                 if self.stop_callback:
@@ -233,8 +233,8 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             self._toggle_item = item(_toggle_text, on_toggle)
             self._show_item = item("Show Dashboard", on_show)
             self._open_item = item("Open Project Folder", on_open)
-            self._about_item = item("About LANpad", on_about)
-            self._quit_item = item("Quit LANpad", on_quit)
+            self._about_item = item("About GlidePass", on_about)
+            self._quit_item = item("Quit GlidePass", on_quit)
 
             menu = pystray.Menu(
                 self._status_item,
@@ -248,7 +248,7 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
                 self._quit_item,
             )
 
-            self._tray = pystray.Icon("LANpad", image, "LANpad", menu)
+            self._tray = pystray.Icon("GlidePass", image, "GlidePass", menu)
             self._pystray = pystray
 
         def _refresh_menu(self):
@@ -299,11 +299,11 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             try:
                 from tkinter import messagebox
                 messagebox.showinfo(
-                    "LANpad v1.5.0",
+                    "GlidePass v1.5.0",
                     "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
                 )
             except Exception:
-                print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
+                print("GlidePass v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
 
         def custom_quit(self, *args):
             if self.stop_callback:
@@ -313,7 +313,7 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             except Exception:
                 pass
 
-    return LANpadMenuApp()
+    return GlidePassMenuApp()
 
 
 # ── Public factory (used by main.py) ─────────────────────────────────────────
@@ -328,7 +328,7 @@ def start_menubar(launcher_callback, start_callback=None, stop_callback=None):
 
 
 # ── Public class alias (used by main.py: ``from menubar_handler import
-#     LANpadMenuApp``) ───────────────────────────────────────────────────────
+#     GlidePassMenuApp``) ───────────────────────────────────────────────────────
 
 if is_mac():
     # macOS – re-export the rumps-based class
@@ -338,9 +338,9 @@ if is_mac():
 
     # Build a *real* class with the right base.  We do this once at
     # import-time on a Mac.
-    class _LANpadMenuAppBase(_rumps.App):
+    class _GlidePassMenuAppBase(_rumps.App):
         def __init__(self, launcher_callback, start_callback=None, stop_callback=None):
-            super().__init__("LANpad", quit_button=None)
+            super().__init__("GlidePass", quit_button=None)
             self.launcher_callback = launcher_callback
             self.start_callback = start_callback
             self.stop_callback = stop_callback
@@ -352,8 +352,8 @@ if is_mac():
                 self.title = "\U0001F6F0\ufe0f"
             self.menu = [
                 "Server Status: Unknown", "Toggle Server", None,
-                "Show Dashboard", None, "About LANpad", None,
-                "Quit LANpad",
+                "Show Dashboard", None, "About GlidePass", None,
+                "Quit GlidePass",
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
             # NOTE: No automatic notification observers or reopen handlers.
@@ -372,14 +372,14 @@ if is_mac():
                 if self.stop_callback:
                     self.stop_callback()
                     _rumps.notification(
-                        "LANpad", "Backend Stopped",
+                        "GlidePass", "Backend Stopped",
                         "Sync services have been paused.",
                     )
             else:
                 if self.start_callback:
                     self.start_callback()
                     _rumps.notification(
-                        "LANpad", "Backend Started",
+                        "GlidePass", "Backend Started",
                         "Your laptop is now ready to sync.",
                     )
 
@@ -392,7 +392,7 @@ if is_mac():
                 self.menu["Server Status: Unknown"].title = "Server Status: Stopped \U0001F534"
                 self.menu["Toggle Server"].title = "Start Server"
 
-        @_rumps.clicked("Quit LANpad")
+        @_rumps.clicked("Quit GlidePass")
         def custom_quit(self, _):
             if self.stop_callback:
                 self.stop_callback()
@@ -406,18 +406,18 @@ if is_mac():
                 pass
             _rumps.quit_application()
 
-        @_rumps.clicked("About LANpad")
+        @_rumps.clicked("About GlidePass")
         def about(self, _):
             import subprocess
             msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
-            cmd = f'display dialog "{msg}" with title "LANpad v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            cmd = f'display dialog "{msg}" with title "GlidePass v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
-    LANpadMenuApp = _LANpadMenuAppBase  # type: ignore[assignment,misc]
+    GlidePassMenuApp = _GlidePassMenuAppBase  # type: ignore[assignment,misc]
 
 else:
     # Windows / Linux – re-export the pystray-based class
-    class LANpadMenuApp:  # noqa: F811 – intentional redefinition
+    class GlidePassMenuApp:  # noqa: F811 – intentional redefinition
         def __init__(self, launcher_callback, start_callback=None, stop_callback=None):
             self._inner = _make_pystray_app(launcher_callback, start_callback, stop_callback)
             self.launcher_callback = launcher_callback
