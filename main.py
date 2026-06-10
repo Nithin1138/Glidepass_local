@@ -107,17 +107,32 @@ class AppController:
         self.server_manager.stop()
 
     def toggle_dashboard(self):
-        """Creates or shows the Tkinter Dashboard in a separate process."""
+        """Show the Tkinter Dashboard: wake the existing instance via IPC
+        or spawn a new one if none is running.
+
+        We MUST NOT call subprocess.Popen unconditionally here – doing so
+        creates a new dashboard process every time the handler fires
+        (e.g. on every macOS app-activation event), which leads to dozens
+        of stacked windows and random Dock interactions.
+        """
+        # 1. Try to wake an already-running dashboard via the IPC socket.
+        import socket as _socket
+        try:
+            s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+            s.settimeout(0.3)
+            s.connect(("127.0.0.1", 8001))
+            s.sendall(b"SHOW")
+            s.close()
+            return  # existing instance woken up – done
+        except Exception:
+            pass  # no listener – fall through to spawn a new one
+
+        # 2. No running dashboard found – launch a fresh one.
         try:
             if getattr(sys, 'frozen', False):
                 subprocess.Popen([sys.executable, "--gui"])
             else:
                 subprocess.Popen([sys.executable, sys.argv[0], "--gui"])
-            
-            # Use AppleScript to bring it to front if it's already running
-            if sys.platform == "darwin":
-                script = 'tell application "System Events" to set frontmost of every process whose name contains "GlidePass" to true'
-                subprocess.run(["osascript", "-e", script], capture_output=True)
         except Exception as e:
             with open("gui_launch_error.txt", "a") as f:
                 f.write(f"Launch error: {str(e)}\n")

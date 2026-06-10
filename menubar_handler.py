@@ -52,11 +52,6 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
     executed on a Windows machine**.
     """
     import rumps
-    import objc
-    from AppKit import (
-        NSNotificationCenter,
-        NSApplicationDidBecomeActiveNotification,
-    )
 
     class GlidePassMenuApp(rumps.App):
         def __init__(self):
@@ -81,17 +76,11 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
                 "Quit GlidePass",
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
-            nc = NSNotificationCenter.defaultCenter()
-            nc.addObserver_selector_name_object_(
-                self,
-                objc.selector(self.handle_activation_, signature=b"v@:@"),
-                NSApplicationDidBecomeActiveNotification,
-                None,
-            )
 
-        def handle_activation_(self, notification):
-            """Dock-icon click handler."""
-            self.launcher_callback()
+        # NOTE: handle_activation_ was removed — NSApplicationDidBecomeActiveNotification
+        # fires for ANY app activation (e.g. bracket input in an IDE) causing random
+        # Dock clicks. applicationShouldHandleReopen_hasVisibleWindows_ below handles
+        # real Dock icon clicks correctly without false positives.
 
         def applicationShouldHandleReopen_hasVisibleWindows_(
             self, application, has_visible_windows
@@ -351,11 +340,6 @@ if is_mac():
     _AppClass = _make_macos_app  # this is a *function*, not the class
     # We re-create the class eagerly so the import works as expected.
     import rumps as _rumps
-    import objc as _objc
-    from AppKit import (
-        NSNotificationCenter as _NC,
-        NSApplicationDidBecomeActiveNotification as _ADB,
-    )
 
     # Build a *real* class with the right base.  We do this once at
     # import-time on a Mac.
@@ -377,15 +361,13 @@ if is_mac():
                 "Quit GlidePass",
             ]
             self.menu["Server Status: Unknown"].set_callback(None)
-            nc = _NC.defaultCenter()
-            nc.addObserver_selector_name_object_(
-                self,
-                _objc.selector(self.handle_activation_, signature=b"v@:@"),
-                _ADB, None,
-            )
-
-        def handle_activation_(self, notification):
-            self.launcher_callback()
+            # NOTE: We intentionally do NOT subscribe to
+            # NSApplicationDidBecomeActiveNotification here.  That notification
+            # fires for every app-activation event (including spurious ones
+            # triggered by typing brackets/parens in an IDE), which caused the
+            # dashboard to pop open and random Dock items to be clicked.
+            # applicationShouldHandleReopen_hasVisibleWindows_ (below) is the
+            # correct and sole handler for real Dock icon clicks.
 
         def applicationShouldHandleReopen_hasVisibleWindows_(
             self, application, has_visible_windows
