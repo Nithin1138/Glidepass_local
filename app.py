@@ -477,6 +477,7 @@ def perform_typing(text, wpm, is_coding=False):
 
     try:
         import pyautogui  # Lazy import – backend may run headless
+        pyautogui.FAILSAFE = False  # Prevent FailSafeException when mouse hits screen corner
         pyautogui.PAUSE = 0
     except Exception as e:
         print(f"[typing] pyautogui not available: {e}")
@@ -711,6 +712,7 @@ def _safe_pyautogui():
     """
     try:
         import pyautogui
+        pyautogui.FAILSAFE = False  # Never let a corner-mouse-move crash an endpoint
         pyautogui.PAUSE = 0
         return pyautogui
     except Exception as e:
