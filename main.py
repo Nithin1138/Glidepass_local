@@ -216,8 +216,7 @@ if __name__ == "__main__":
             if any(x in sys.argv for x in ["uvicorn", "app:app", "-m"]):
                 NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyProhibited)
             else:
-                from AppKit import NSApplicationActivationPolicyRegular
-                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyRegular)
+                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
         except Exception:
             pass
 
