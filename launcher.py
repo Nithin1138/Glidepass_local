@@ -932,7 +932,7 @@ class LANpadLauncher:
         self.root.destroy()
 
     def on_closing(self):
-        # The user requested that the app hide and run in the background.
+        # The user requested that clicking the cross ('X') should hide the dashboard and let the app run in the background.
         self.root.withdraw()
 
 
