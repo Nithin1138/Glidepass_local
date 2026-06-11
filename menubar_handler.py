@@ -132,8 +132,8 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
         @rumps.clicked("About LANpad")
         def about(self, _):
             import subprocess
-            msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
-            cmd = f'display dialog "{msg}" with title "LANpad v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            msg = "LANpad — The Ultimate Cross-Device Clipboard\\n\\nExperience seamless, secure, and lightning-fast syncing across all your devices.\\n\\nCrafted with passion by Veera Nithin."
+            cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     return LANpadMenuApp()
@@ -193,8 +193,8 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
                 try:
                     from tkinter import messagebox
                     messagebox.showinfo(
-                        "LANpad v1.5.0",
-                        "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
+                        "About LANpad v1.5.0",
+                        "LANpad — The Ultimate Cross-Device Clipboard\n\nExperience seamless, secure, and lightning-fast syncing across all your devices.\n\nCrafted with passion by Veera Nithin.",
                     )
                 except Exception:
                     print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
@@ -299,8 +299,8 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             try:
                 from tkinter import messagebox
                 messagebox.showinfo(
-                    "LANpad v1.5.0",
-                    "Fast, Private, Cross-Device Sync.\nCreated by Nithin.",
+                    "About LANpad v1.5.0",
+                    "LANpad — The Ultimate Cross-Device Clipboard\n\nExperience seamless, secure, and lightning-fast syncing across all your devices.\n\nCrafted with passion by Veera Nithin.",
                 )
             except Exception:
                 print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
