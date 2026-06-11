@@ -78,6 +78,7 @@ CMD_KEY    = cmd_key()
 # Simple queue to store the last paste for the browser listener
 pending_paste = {"text": "", "id": 0}
 stop_typing = False
+is_currently_typing = False
 
 
 def get_local_ip():
@@ -170,6 +171,22 @@ async def lifespan(app: FastAPI):
     # Fetch latest templates in the background on startup
     import threading
     threading.Thread(target=fetch_ota_templates, daemon=True).start()
+    
+    # Start global keyboard listener to stop pasting via ESC key
+    try:
+        from pynput import keyboard
+        def on_press(key):
+            global stop_typing
+            if key == keyboard.Key.esc:
+                if not stop_typing:
+                    stop_typing = True
+                    print("\n!!! Paste Stopped via Laptop Keyboard (ESC) !!!")
+        listener = keyboard.Listener(on_press=on_press)
+        app.state.keyboard_listener = listener
+        listener.start()
+    except Exception as e:
+        print(f"[keyboard] Failed to start ESC listener: {e}")
+
     yield
 
 
@@ -469,11 +486,17 @@ async def stop():
     print("!!! Stop Signal Received !!!")
     return {"status": "success"}
 
+@app.get("/typing_status")
+async def typing_status():
+    global is_currently_typing
+    return {"is_typing": is_currently_typing}
+
 
 # ── Typing engine ─────────────────────────────────────────────────────────────
 
 def perform_typing(text, wpm, is_coding=False):
-    global stop_typing
+    global stop_typing, is_currently_typing
+    is_currently_typing = True
 
     try:
         import pyautogui  # Lazy import – backend may run headless
@@ -481,6 +504,7 @@ def perform_typing(text, wpm, is_coding=False):
         pyautogui.PAUSE = 0
     except Exception as e:
         print(f"[typing] pyautogui not available: {e}")
+        is_currently_typing = False
         return
 
     # Helper to release any stuck modifier keys at the END of a typing session.
@@ -629,6 +653,8 @@ def perform_typing(text, wpm, is_coding=False):
 
     finally:
         # Failsafe: release modifiers ONCE at the very end only
+        global is_currently_typing
+        is_currently_typing = False
         safe_release()
         print("Typing task finished/stopped")
 

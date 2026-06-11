@@ -140,6 +140,7 @@ const Navbar = () => {
               <Link href="#features" onClick={() => setIsOpen(false)}>Features</Link>
               <Link href="#downloads" onClick={() => setIsOpen(false)}>Downloads</Link>
               <Link href="#setup" onClick={() => setIsOpen(false)}>How to Use</Link>
+              <Link href="/contributors" className="text-amber-500" onClick={() => setIsOpen(false)}>Contribute</Link>
             </div>
           </motion.div>
         )}
@@ -151,7 +152,7 @@ const Navbar = () => {
 const Hero = () => {
   const { dk } = useTheme();
   return (
-    <section className="relative pt-20 pb-12 sm:pt-40 sm:pb-24 px-6 overflow-hidden">
+    <section className="relative pt-20 pb-12 sm:pt-40 sm:pb-24 px-4 sm:px-6 overflow-hidden">
       <div className="max-w-6xl mx-auto text-center relative z-10">
 
         {/* Social Proof Badge */}
@@ -236,16 +237,16 @@ const Hero = () => {
         </motion.p>
 
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0"
         >
-          <Link href="#setup" className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden shadow-2xl">
+          <Link href="#setup" className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden shadow-2xl w-full sm:w-auto">
             <div className={`absolute inset-0 transition-transform group-hover:scale-110 duration-500 ${dk ? "bg-white" : "bg-black"}`} />
-            <span className={`relative flex items-center gap-2 text-sm ${dk ? "text-black" : "text-white"}`}>
+            <span className={`relative flex items-center justify-center gap-2 text-sm ${dk ? "text-black" : "text-white"}`}>
               Setup Guide
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </span>
           </Link>
-          <Link href="#downloads" className={`px-8 py-4 rounded-xl font-bold text-sm border ${dk ? "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20" : "border-black/10 bg-black/[0.02] hover:bg-black/[0.05] hover:border-black/20"} transition-all duration-300 ${dk ? "text-white" : "text-black"}`}>
+          <Link href="#downloads" className={`px-8 py-4 rounded-xl font-bold text-sm border ${dk ? "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20" : "border-black/10 bg-black/[0.02] hover:bg-black/[0.05] hover:border-black/20"} transition-all duration-300 w-full sm:w-auto ${dk ? "text-white" : "text-black"}`}>
             Download Assets
           </Link>
         </motion.div>
@@ -281,11 +282,11 @@ const Visualization = () => {
   return (
     <section id="visualization" ref={sectionRef} className="py-24 px-6 relative">
       <div className="max-w-7xl mx-auto">
-        <div className={`relative bg-white/[0.01] border border-white/[0.05] rounded-[64px] pt-20 pb-12 md:pt-40 md:pb-24 px-12 md:px-24 overflow-hidden group`}>
-          <div className="grid lg:grid-cols-2 gap-16 items-center relative z-10">
+        <div className={`relative bg-white/[0.01] border border-white/[0.05] rounded-[32px] md:rounded-[64px] pt-12 pb-8 md:pt-40 md:pb-24 px-4 sm:px-12 md:px-24 overflow-hidden group`}>
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
 
             {/* Phone Side (iPhone 16 Pro Style) */}
-            <div className="flex justify-center" style={{ perspective: "1200px" }}>
+            <div className="flex justify-center origin-center scale-[0.85] sm:scale-100" style={{ perspective: "1200px" }}>
               <motion.div
                 style={{ transformStyle: "preserve-3d", rotateY: phoneRotate }}
                 className={`w-[220px] h-[440px] bg-[#050505] border-[10px] border-[#1a1a1a] rounded-[48px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9),0_0_20px_rgba(163,106,82,0.1)] relative`}
@@ -330,10 +331,10 @@ const Visualization = () => {
             </div>
 
             {/* Laptop Side (MacBook Style) */}
-            <div className="flex justify-center" style={{ perspective: "1200px" }}>
+            <div className="flex justify-center origin-center scale-[0.9] sm:scale-100 mt-[-40px] lg:mt-0" style={{ perspective: "1200px" }}>
               <motion.div
                 style={{ transformStyle: "preserve-3d", rotateY: laptopRotate }}
-                className={`w-full max-w-lg aspect-[1.6/1] bg-[#050505] border-[12px] border-[#1a1a1a] rounded-[24px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] relative overflow-hidden`}
+                className={`w-full max-w-lg aspect-[1.6/1] bg-[#050505] border-[8px] md:border-[12px] border-[#1a1a1a] rounded-[16px] md:rounded-[24px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] relative overflow-hidden`}
               >
                 {/* Aluminum Screen Reflection */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
@@ -508,7 +509,7 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-16 px-8 relative overflow-hidden">
+    <section id="features" className="py-16 px-4 sm:px-8 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-10">
           <div>
@@ -518,7 +519,7 @@ const Features = () => {
           <div className={`h-[1px] flex-1 bg-gradient-to-r from-blue-500/10 to-transparent hidden md:block mb-4 ml-12`} />
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <motion.div
               key={i}
@@ -605,7 +606,7 @@ const SetupGuide = () => {
   const activeSteps = method === "device" ? deviceSteps : extensionSteps;
 
   return (
-    <div className="max-w-7xl mx-auto px-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8">
       <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
         <div>
           <h3 className="text-4xl font-black font-outfit tracking-tighter uppercase mb-2">Setup Guide</h3>
@@ -647,7 +648,7 @@ const SetupGuide = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="grid md:grid-cols-3 gap-16"
+              className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16"
             >
               {deviceSteps.map((s, i) => (
                 <div key={i} className="relative">
@@ -757,14 +758,14 @@ export default function Home() {
         <Features />
 
         {/* Downloads */}
-        <section id="downloads" className="py-40 px-8 relative overflow-hidden">
+        <section id="downloads" className="py-40 px-4 sm:px-8 relative overflow-hidden">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-24">
               <h2 className={`text-4xl md:text-6xl font-outfit font-black tracking-tighter mb-4 ${dk ? "text-white" : "text-black"}`}>Ready to Sync?</h2>
               <p className={`${dk ? "text-white" : "text-black"}/30 max-w-lg mx-auto font-medium text-base font-inter`}>Download the backend for your OS and install the extension to start your local sync tunnel.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
                   title: "Chrome Extension",
@@ -887,8 +888,8 @@ export default function Home() {
 
         {/* Footer */}
         <footer className={`pt-32 pb-16 border-t border-white/[0.03] bg-white/[0.01] relative overflow-hidden`}>
-          <div className="max-w-7xl mx-auto px-8 relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-24">
 
               {/* Brand Column */}
               <div className="col-span-2">

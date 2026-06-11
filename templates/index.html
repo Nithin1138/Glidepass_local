@@ -6,18 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LANpad Mobile Command</title>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #000000;
-            --card-bg: #121212;
-            --border-color: #121212;
-            --text-main: #F5F5F5;
-            --text-muted: #A0AEC0;
-            --accent-color: #48BB78;
-            --accent-glow: rgba(72, 187, 120, 0.3);
-            --red-status: #ff4d4d;
-            --green-status: #48BB78;
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: rgba(250, 250, 250, 0.4);
+            --accent-color: #0077C0;
+            --accent-glow: rgba(0, 119, 192, 0.3);
+            --red-status: #C62828;
+            --green-status: #C7EEFF;
             --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
         }
 
         * {
@@ -82,9 +84,9 @@
             height: 200%;
             top: -50%;
             left: -50%;
-            background: radial-gradient(circle at 50% 50%, rgba(72, 187, 120, 0.15) 0%, transparent 35%),
-                radial-gradient(circle at 30% 70%, rgba(43, 108, 176, 0.12) 0%, transparent 35%),
-                radial-gradient(circle at 70% 30%, rgba(128, 90, 213, 0.08) 0%, transparent 35%);
+            background: radial-gradient(circle at 50% 50%, rgba(0, 119, 192, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 30% 70%, rgba(199, 238, 255, 0.1) 0%, transparent 35%),
+                radial-gradient(circle at 70% 30%, rgba(0, 119, 192, 0.08) 0%, transparent 35%);
             filter: blur(40px);
             animation: nebula-drift 30s infinite alternate linear;
             pointer-events: none;
@@ -219,16 +221,20 @@
         }
 
         .logo-text {
-            font-size: 1rem;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
             font-weight: 900;
             letter-spacing: 0.3em;
-            color: var(--accent-color);
+            color: var(--text-main);
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
         }
 
         .hero-section h1 {
-            font-size: 2rem;
+            font-family: var(--font-display);
+            font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 8px;
+            letter-spacing: -0.05em;
         }
 
         .hero-section p {
@@ -239,20 +245,28 @@
 
         .connect-btn-main {
             width: 100%;
-            background: var(--accent-color);
-            color: rgba(0, 0, 0, 0.9);
+            background: linear-gradient(135deg, var(--accent-color) 0%, #009BF5 100%);
+            color: #ffffff;
             border: none;
             padding: 18px;
             border-radius: 16px;
+            font-family: var(--font-display);
             font-weight: 800;
             font-size: 1rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
             margin-top: 20px;
-            box-shadow: 0 10px 30px var(--accent-glow);
+            box-shadow: 0 10px 30px var(--accent-glow), inset 0 2px 4px rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .connect-btn-main:active {
+            transform: scale(0.96);
         }
 
         /* Command Center View */
@@ -296,16 +310,27 @@
         .header-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
             padding: 12px 16px;
             border-radius: 14px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             flex: 1;
             color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 700;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .header-btn:active {
+            transform: scale(0.95);
         }
 
         .header-btn.active {
@@ -332,8 +357,16 @@
             height: 180px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 15px;
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            transition: border-color 0.3s ease;
+        }
+        
+        .textarea-wrapper:focus-within {
+            border-color: rgba(199, 238, 255, 0.3);
         }
 
         #countdown-overlay {
@@ -413,10 +446,17 @@
         .mode-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
             border-radius: 16px;
             padding: 16px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .mode-card:active {
+            transform: scale(0.95);
         }
 
         .mode-card.active,
@@ -495,19 +535,27 @@
         }
 
         .primary-action {
-            background: var(--accent-color);
-            color: rgba(0, 0, 0, 0.9);
+            background: linear-gradient(135deg, var(--accent-color), var(--green-status));
+            color: #050505;
             border: none;
             padding: 20px;
             border-radius: 18px;
+            font-family: var(--font-display);
             font-weight: 800;
             font-size: 1rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            box-shadow: 0 4px 20px var(--accent-glow);
+            box-shadow: 0 4px 20px var(--accent-glow), inset 0 2px 4px rgba(255,255,255,0.4);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .primary-action:active {
+            transform: scale(0.96);
         }
 
         .footer-actions {
@@ -519,6 +567,8 @@
         .footer-actions button {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
             color: var(--text-main);
             padding: 14px;
             border-radius: 14px;
@@ -529,6 +579,12 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-actions button:active {
+            transform: scale(0.95);
         }
 
         .toast {
@@ -557,7 +613,7 @@
         }
 
         .toast.success {
-            background: #4691d7;
+            background: var(--accent-color);
             /* Blue for success */
         }
 
