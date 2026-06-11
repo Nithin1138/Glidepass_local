@@ -564,29 +564,10 @@ def perform_typing(text, wpm, is_coding=False):
                     # native auto-indentation instead of literal spaces/tabs.
                     line_to_type = line.lstrip(' \t')
 
-                i = 0
-                while i < len(line_to_type):
+                for char in line_to_type:
                     if stop_typing:
                         break
                     char_start = time.time()
-
-                    char = line_to_type[i]
-                    # If this is an opening bracket and the next char is the matching closing bracket,
-                    # skip sending the closing bracket because IDE auto‑completion will insert it.
-                    brackets = {"(": ")", "[": "]", "{": "}"}
-                    if char in brackets and i + 1 < len(line_to_type) and line_to_type[i + 1] == brackets[char]:
-                        # Type the opening bracket only
-                        if char == '\t':
-                            if not press_key_native(48):
-                                pyautogui.press('tab')
-                        else:
-                            write_char_native(char)
-                        # Skip the auto‑generated closing bracket
-                        i += 2
-                        elapsed = time.time() - char_start
-                        sleep_time = max(0, typing_interval - elapsed)
-                        time.sleep(sleep_time)
-                        continue
 
                     if char == '\t':
                         if not press_key_native(48):
@@ -594,20 +575,36 @@ def perform_typing(text, wpm, is_coding=False):
                     else:
                         write_char_native(char)
 
-                    # NOTE: Do NOT call safe_release() here per character.
-                    # Posting Quartz modifier-key-up events inside the loop
-                    # was releasing modifiers held by the user in OTHER apps
-                    # (e.g. releasing Cmd while user holds Cmd+Tab in Chrome).
-
-                    # NOTE: The previous 'is_coding bracket delete' hack that
-                    # pressed the Forward Delete key (keycode 117) after [({ has
-                    # been removed. It sent a global delete event that interfered
-                    # with whatever the user was doing in the foreground app.
-
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
                     time.sleep(sleep_time)
-                    i += 1
+
+        # Trigger cleanup if coding mode is active
+        if is_coding and not stop_typing:
+            extra_braces = text.count('{')
+            if extra_braces > 0:
+                print(f"[typing] Typing finished. Cleaning up {extra_braces} extra brackets below cursor...")
+                time.sleep(0.4)
+                try:
+                    # Save old clipboard
+                    old_clipboard = pyperclip.paste()
+                except Exception:
+                    old_clipboard = ""
+
+                try:
+                    if IS_MAC:
+                        pyautogui.hotkey('shift', 'command', 'down', interval=0.05)
+                    else:
+                        pyautogui.hotkey('shift', 'ctrl', 'end', interval=0.05)
+                    
+                    time.sleep(0.15)
+                    
+                    # The user explicitly requested to simply press backspace 
+                    # to delete the selected extra brackets.
+                    pyautogui.press('backspace')
+                    time.sleep(0.1)
+                except Exception as ex:
+                    print(f"[typing] Cleanup failed: {ex}")
     finally:
         # Failsafe: release modifiers ONCE at the very end only
         safe_release()

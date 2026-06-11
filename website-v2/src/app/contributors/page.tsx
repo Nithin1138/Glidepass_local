@@ -173,7 +173,7 @@ function ContributorsDashboard() {
       if (s.id === activeSessionId) {
         return {
           ...s,
-          questions: [...s.questions, { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment, contributorEmail: session?.user?.email || undefined }]
+          questions: [...s.questions, { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment }]
         };
       }
       return s;
