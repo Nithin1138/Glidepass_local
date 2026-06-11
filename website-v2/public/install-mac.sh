@@ -5,7 +5,7 @@ echo "🚀 Installing LANpad for macOS..."
 DOWNLOAD_URL="https://lanpad.vercel.app/downloads/LANpad_macOS.dmg"
 
 echo "📥 Downloading LANpad DMG..."
-curl -sSL -o /tmp/LANpad_macOS.dmg "$DOWNLOAD_URL"
+curl -L -# -o /tmp/LANpad_macOS.dmg "$DOWNLOAD_URL"
 
 echo "💿 Mounting DMG..."
 mkdir -p /tmp/LANpad_Mount
