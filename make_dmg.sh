@@ -60,4 +60,11 @@ hdiutil convert "$TMP_DMG" -format UDZO -o "$DMG_NAME"
 rm "$TMP_DMG"
 
 echo "✅ DMG Created: ${DMG_NAME}"
+
+# 10. Copy to website downloads for distribution
+echo "🌐 Copying to website downloads..."
+mkdir -p website-v2/public/downloads
+cp "${DMG_NAME}" "website-v2/public/downloads/LANpad_macOS.dmg"
+echo "✅ Ready for website deployment at website-v2/public/downloads/LANpad_macOS.dmg"
+
 echo "👉 You can now share this file with your friend!"

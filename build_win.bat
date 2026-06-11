@@ -117,6 +117,13 @@ if exist dist\LANpad\LANpad.exe (
     echo     - Run   python create_starter_app_windows.py   again
     echo       if you move the app to a new folder.
     echo.
+    echo ============================================================
+    echo   Zipping app for website distribution...
+    echo ============================================================
+    if not exist website-v2\public\downloads mkdir website-v2\public\downloads
+    powershell -Command "Compress-Archive -Path dist\LANpad\* -DestinationPath website-v2\public\downloads\LANpad_Windows.zip -Force"
+    echo   ✅ Created website-v2\public\downloads\LANpad_Windows.zip
+    echo.
 ) else (
     echo.
     echo   BUILD FAILED - dist\LANpad\LANpad.exe not found.
