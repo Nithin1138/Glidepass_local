@@ -932,8 +932,8 @@ class LANpadLauncher:
         self.root.destroy()
 
     def on_closing(self):
-        # The user requested that clicking the cross ('X') should close the app completely.
-        self.on_quit()
+        # The user requested that the app hide and run in the background.
+        self.root.withdraw()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
