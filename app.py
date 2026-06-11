@@ -653,7 +653,6 @@ def perform_typing(text, wpm, is_coding=False):
 
     finally:
         # Failsafe: release modifiers ONCE at the very end only
-        global is_currently_typing
         is_currently_typing = False
         safe_release()
         print("Typing task finished/stopped")
