@@ -30,6 +30,8 @@ interface Question {
   title: string;
   code: string;
   language: string;
+  comment?: string;
+  contributorEmail?: string;
 }
 
 interface VitCode {
