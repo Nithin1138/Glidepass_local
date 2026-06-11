@@ -27,6 +27,7 @@ interface Question {
   code: string;
   language: string;
   comment?: string;
+  contributorEmail?: string;
 }
 
 interface VitCode {
@@ -177,7 +178,7 @@ function ContributorsDashboard() {
       code: qCode, 
       language: qLang, 
       comment: qComment,
-      contributorEmail: sessionData?.user?.email || "unknown" 
+      contributorEmail: session?.user?.email || "unknown" 
     };
     
     // Optimistic Update
