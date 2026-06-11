@@ -30,6 +30,8 @@ function SessionCodesContent({ params }: PageProps) {
   const searchParams = useSearchParams();
   const origin = searchParams.get("origin") || "";
 
+  const [theme, setTheme] = useState("dark");
+  const dk = theme === "dark";
   const [session, setSession] = useState<VitCode | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,22 +67,28 @@ function SessionCodesContent({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white relative font-sans overflow-hidden">
+    <div className={`min-h-screen ${dk ? "bg-black" : "bg-white"} ${dk ? "text-white" : "text-black"} relative font-sans overflow-hidden`}>
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[20%] right-[10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[120px] rounded-full" />
+        <div className={`absolute bottom-[20%] right-[10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full`} />
       </div>
 
-      <header className="border-b border-white/[0.04] bg-black/40 backdrop-blur-xl sticky top-0 z-40">
+      <header className={`border-b border-white/[0.04] ${dk ? "bg-black" : "bg-white"}/40 backdrop-blur-xl sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href={`/vitcodes${origin ? `?origin=${encodeURIComponent(origin)}` : ""}`}
-              className="text-white/40 hover:text-white transition-colors duration-200"
+              className={`${dk ? "text-white" : "text-black"}/40 hover:${dk ? "text-white" : "text-black"} transition-colors duration-200`}
             >
               <ArrowLeft size={18} />
             </Link>
+            <button 
+              onClick={() => setTheme(dk ? "light" : "dark")} 
+              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${dk ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-black/5 border-black/10 text-black hover:bg-black/10'}`}
+            >
+              <span className="text-[10px] font-bold">TGL</span>
+            </button>
             <div className="flex items-center gap-2">
               <span className="font-outfit font-black text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
                 LANPAD
@@ -97,24 +105,24 @@ function SessionCodesContent({ params }: PageProps) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-            <span className="text-xs text-white/40">Loading session questions...</span>
+            <span className={`text-xs ${dk ? "text-white" : "text-black"}/40`}>Loading session questions...</span>
           </div>
         ) : error || !session ? (
-          <div className="text-center py-20 border border-white/[0.06] bg-white/[0.01] rounded-3xl max-w-lg mx-auto">
-            <p className="text-rose-400 text-sm">{error || "Session not found."}</p>
-            <Link href="/vitcodes" className="inline-block mt-4 text-xs text-indigo-400 hover:underline">
+          <div className={`text-center py-20 border border-white/[0.06] bg-white/[0.01] rounded-3xl max-w-lg mx-auto`}>
+            <p className={`text-sky-400 text-sm`}>{error || "Session not found."}</p>
+            <Link href="/vitcodes" className={`inline-block mt-4 text-xs text-blue-400 hover:underline`}>
               Back to Overview
             </Link>
           </div>
         ) : (
           <div className="space-y-8">
             <div>
-              <div className="flex items-center gap-2 text-xs text-white/40 mb-2 font-mono">
+              <div className={`flex items-center gap-2 text-xs ${dk ? "text-white" : "text-black"}/40 mb-2 font-mono`}>
                 <span>{session.date}</span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold">{session.examType}</span>
               </div>
-              <h1 className="text-3xl font-outfit font-black tracking-tight text-white">
+              <h1 className={`text-3xl font-outfit font-black tracking-tight ${dk ? "text-white" : "text-black"}`}>
                 {session.examType} Questions
               </h1>
             </div>
@@ -126,15 +134,15 @@ function SessionCodesContent({ params }: PageProps) {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1, duration: 0.5 }}
-                  className="border border-white/[0.06] bg-white/[0.01] backdrop-blur-md rounded-2xl overflow-hidden"
+                  className={`border border-white/[0.06] bg-white/[0.01] backdrop-blur-md rounded-2xl overflow-hidden`}
                 >
                   {/* Card Header */}
-                  <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
+                  <div className={`px-6 py-4 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between`}>
                     <div className="flex items-center gap-2">
                       <Terminal size={14} className="text-emerald-400" />
-                      <span className="text-xs font-bold text-white/70 font-mono">Question {idx + 1}: {q.title}</span>
+                      <span className={`text-xs font-bold ${dk ? "text-white" : "text-black"}/70 font-mono`}>Question {idx + 1}: {q.title}</span>
                     </div>
-                    <span className="text-[9px] uppercase tracking-wider bg-white/10 text-white/60 font-mono font-bold px-2 py-0.5 rounded border border-white/5">
+                    <span className={`text-[9px] uppercase tracking-wider bg-white/10 ${dk ? "text-white" : "text-black"}/60 font-mono font-bold px-2 py-0.5 rounded border ${dk ? "border-white/5" : "border-black/5"}`}>
                       {q.language}
                     </span>
                   </div>
@@ -142,11 +150,11 @@ function SessionCodesContent({ params }: PageProps) {
                   {/* Title & Body */}
                   <div className="p-6 space-y-4">
                     {/* Code Editor Preview */}
-                    <div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-black">
+                    <div className={`relative rounded-xl overflow-hidden border border-white/[0.06] ${dk ? "bg-black" : "bg-white"}`}>
                       <div className="absolute top-3 right-3 z-10 flex gap-2">
                         <button
                           onClick={() => handleCopy(q.code, q.id)}
-                          className="p-1.5 rounded-lg border border-white/10 bg-black/60 hover:bg-white/[0.05] text-white/50 hover:text-white transition-colors"
+                          className={`p-1.5 rounded-lg border ${dk ? "border-white/10" : "border-black/10"} ${dk ? "bg-black" : "bg-white"}/60 hover:bg-white/[0.05] ${dk ? "text-white" : "text-black"}/50 hover:${dk ? "text-white" : "text-black"} transition-colors`}
                           title="Copy Code"
                         >
                           {copiedId === q.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -179,9 +187,10 @@ function SessionCodesContent({ params }: PageProps) {
 }
 
 export default function SessionCodesPage({ params }: PageProps) {
+
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className={`min-h-screen bg-black text-white flex items-center justify-center`}>
         <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
       </div>
     }>

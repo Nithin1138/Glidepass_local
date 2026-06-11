@@ -135,6 +135,13 @@ export default function GlidePassAdmin() {
 
   // ─── Layout ───
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  }, []);
+
   const [view, setView] = useState<
     "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors"
   >("dashboard");
@@ -403,8 +410,12 @@ export default function GlidePassAdmin() {
     saveVitDB(updated);
   };
 
-  const activeSession = vitSessions.find(s => s.id === activeSessionId);
-  const totalQ = vitSessions.reduce((a, s) => a + (s.questions?.length || 0), 0);
+  const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId), [vitSessions, activeSessionId]);
+  const totalQ = useMemo(() => vitSessions.reduce((a, s) => a + (s.questions?.length || 0), 0), [vitSessions]);
+
+  const contributorCodes = useMemo(() => {
+    return vitSessions.flatMap(s => (s.questions || []).map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType })));
+  }, [vitSessions]);
 
   const filteredSessions = useMemo(() => {
     if (examTypeFilter === "all") return vitSessions;
@@ -587,7 +598,7 @@ export default function GlidePassAdmin() {
             className="min-h-screen flex items-center justify-center p-6"
           >
             <div
-              className="w-full max-w-[440px] rounded-[36px] border backdrop-blur-3xl shadow-2xl p-10 relative overflow-hidden"
+              className="w-full max-w-[440px] rounded-[36px] border backdrop-blur-3xl shadow-2xl p-6 sm:p-10 relative overflow-hidden mx-4 sm:mx-0"
               style={{
                 background: dk ? "rgba(5,5,5,0.60)" : "rgba(255,255,255,0.70)",
                 borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
@@ -671,9 +682,24 @@ export default function GlidePassAdmin() {
           /* ═══════════════════ MAIN ADMIN LAYOUT ═══════════════════ */
           <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex min-h-screen relative">
 
+            {/* ─── Mobile Sidebar Overlay ─── */}
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
+                  onClick={() => setSidebarOpen(false)}
+                />
+              )}
+            </AnimatePresence>
+
             {/* ─── Sidebar ─── */}
             <aside
-              className={`border-r shrink-0 flex flex-col justify-between transition-all duration-500 backdrop-blur-3xl sticky top-0 h-screen z-30 ${sidebarOpen ? "w-64" : "w-20"}`}
+              className={`border-r shrink-0 flex flex-col justify-between transition-all duration-300 backdrop-blur-3xl fixed md:sticky top-0 h-screen z-40 md:z-30 ${
+                sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 w-64 md:w-20"
+              }`}
               style={{
                 background: dk ? "rgba(5,5,5,0.85)" : "rgba(255,255,255,0.85)",
                 borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
@@ -763,31 +789,36 @@ export default function GlidePassAdmin() {
             </aside>
 
             {/* ─── Main Content ─── */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 max-w-full">
               {/* Top Header */}
               <header
-                className="h-20 border-b flex items-center justify-between px-8 backdrop-blur-3xl sticky top-0 z-20"
+                className="h-20 border-b flex items-center justify-between px-4 md:px-8 backdrop-blur-3xl sticky top-0 z-20"
                 style={{
                   background: dk ? "rgba(5,5,5,0.80)" : "rgba(255,255,255,0.80)",
                   borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)",
                 }}
               >
-                <div className="flex items-center gap-4">
-                  {!sidebarOpen && (
-                    <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:opacity-70 transition-colors" style={{ color: dk ? P.sky : P.black }}>
+                <div className="flex items-center gap-2 md:gap-4">
+                  {(!sidebarOpen || (typeof window !== 'undefined' && window.innerWidth < 768)) && (
+                    <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:opacity-70 transition-colors md:hidden block" style={{ color: dk ? P.sky : P.black }}>
                       <Menu size={16} />
                     </button>
                   )}
-                  <div className="flex items-center gap-2 text-xs font-mono">
+                  {(!sidebarOpen) && (
+                    <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:opacity-70 transition-colors hidden md:block" style={{ color: dk ? P.sky : P.black }}>
+                      <Menu size={16} />
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-mono">
                     <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>admin</span>
                     <ChevronRight size={10} style={{ color: dk ? `${P.sky}40` : `${P.black}30` }} />
                     <span className="font-bold uppercase" style={{ color: P.blue }}>{view}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                   <select value={workspace} onChange={e => setWorkspace(e.target.value as any)}
-                    className={`text-[10px] uppercase font-bold tracking-widest px-3 py-2 rounded-xl border focus:outline-none ${inputBg}`}>
+                    className={`text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3 py-2 rounded-xl border focus:outline-none ${inputBg}`}>
                     <option value="production">Production</option>
                     <option value="staging">Staging</option>
                   </select>
@@ -1284,7 +1315,7 @@ export default function GlidePassAdmin() {
                         <div className="grid grid-cols-1 gap-4">
                           {contributors.map(c => {
                             const name = c.email.split(".")[0];
-                            const codes = vitSessions.flatMap(s => s.questions).filter(q => q.contributorEmail === c.email);
+                            const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
                             
                             return (
                               <div key={c.email} onClick={() => setSelectedContributor(c.email)} className="p-5 rounded-[24px] border cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -1319,7 +1350,7 @@ export default function GlidePassAdmin() {
                             const c = contributors.find(x => x.email === selectedContributor);
                             if (!c) return null;
                             const name = c.email.split(".")[0];
-                            const codes = vitSessions.flatMap(s => s.questions.map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType }))).filter(q => q.contributorEmail === c.email);
+                            const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
                             const types = Array.from(new Set(codes.map(q => q.sessionType)));
                             
                             // Group by date

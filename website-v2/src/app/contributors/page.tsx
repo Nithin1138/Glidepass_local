@@ -240,22 +240,22 @@ function ContributorsDashboard() {
             Contribute to LANpad
           </h1>
           
-          <p className="text-lg md:text-xl text-white/60 mb-12 leading-relaxed max-w-2xl mx-auto">
+          <p className={`text-lg md:text-xl ${textSecondary} mb-12 leading-relaxed max-w-2xl mx-auto`}>
             A community effort to maintain accurate exam codes for VIT students. Help your peers by providing the latest exam session questions.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left items-stretch">
             <div className="h-full p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col justify-start">
               <h3 className="font-bold mb-3 flex items-center gap-2 text-base"><BookOpen size={18} className="text-sky-400 shrink-0"/> What is Contribute?</h3>
-              <p className="text-sm text-white/50 leading-relaxed">Contributors can submit new VIT-AP code sessions directly to the LANpad database for all users to access seamlessly.</p>
+              <p className={`text-sm ${textSecondary} leading-relaxed`}>Contributors can submit new VIT-AP code sessions directly to the LANpad database for all users to access seamlessly.</p>
             </div>
             <div className="h-full p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col justify-start">
               <h3 className="font-bold mb-3 flex items-center gap-2 text-base"><Layout size={18} className="text-blue-400 shrink-0"/> Minimal Control</h3>
-              <p className="text-sm text-white/50 leading-relaxed">You get access to a simplified version of the Admin panel. Safely add new sessions and code snippets without delete risks.</p>
+              <p className={`text-sm ${textSecondary} leading-relaxed`}>You get access to a simplified version of the Admin panel. Safely add new sessions and code snippets without delete risks.</p>
             </div>
             <div className="h-full p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col justify-start">
               <h3 className="font-bold mb-3 flex items-center gap-2 text-base"><LogOut size={18} className="text-rose-400 shrink-0"/> Who is allowed?</h3>
-              <p className="text-sm text-white/50 leading-relaxed">Access is strictly limited to verified university Google Workspace accounts (e.g. <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">@vitapstudent.ac.in</code>).</p>
+              <p className={`text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google Workspace accounts (e.g. <code className={`px-1.5 py-0.5 rounded ${dk ? 'bg-white/10' : 'bg-black/10'} text-xs`}>@vitapstudent.ac.in</code>).</p>
             </div>
           </div>
 
@@ -273,7 +273,7 @@ function ContributorsDashboard() {
               onChange={(e) => setAcceptedTerms(e.target.checked)}
               className="w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 shrink-0 cursor-pointer"
             />
-            <label htmlFor="terms" className="text-sm text-white/50 cursor-pointer select-none leading-relaxed">
+            <label htmlFor="terms" className={`text-sm ${textSecondary} cursor-pointer select-none leading-relaxed`}>
               I understand that all contributions will be monitored. I agree to provide accurate exam codes.
             </label>
           </div>
@@ -296,7 +296,7 @@ function ContributorsDashboard() {
           </button>
           
           <div className="mt-8">
-            <Link href="/" className="text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
+            <Link href="/" className={`transition-colors text-xs font-bold uppercase tracking-wider ${dk ? 'text-white/40 hover:text-white' : 'text-black/40 hover:text-black'}`}>
               ← Back to Home
             </Link>
           </div>
@@ -324,13 +324,13 @@ function ContributorsDashboard() {
 
       {/* Navigation Bar */}
       <nav className={`sticky top-0 z-40 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'}`}>
-        <div className="px-6 md:px-12 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 font-outfit font-black tracking-tighter">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${dk ? 'bg-white text-black' : 'bg-black text-white'}`}>
+        <div className="px-4 md:px-12 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
+            <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${dk ? 'bg-white text-black' : 'bg-black text-white'}`}>
               <Code size={18} />
             </div>
-            <span className={`text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'}`}>
-              LANpad <span className="text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
+            <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
+              LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
             </span>
           </div>
           
@@ -347,7 +347,7 @@ function ContributorsDashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="px-6 md:px-12 py-10 max-w-7xl mx-auto">
+      <div className="px-4 md:px-12 py-6 md:py-10 max-w-7xl mx-auto">
         <motion.div key="vit" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
           <AnimatePresence mode="wait">
             {!vitDetailView ? (
@@ -355,15 +355,15 @@ function ContributorsDashboard() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <h2 className="text-xl font-black font-outfit tracking-wide uppercase">VIT-AP Code Sessions</h2>
-                    <p className="text-xs text-white/60">Manage exam sessions and code questions</p>
+                    <h2 className="text-lg md:text-xl font-black font-outfit tracking-wide uppercase">VIT-AP Code Sessions</h2>
+                    <p className={`text-xs ${textSecondary}`}>Manage exam sessions and code questions</p>
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                  <div className="flex items-center gap-2 md:gap-3 flex-wrap w-full md:w-auto">
+                    <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`flex-1 md:flex-none text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
                       <option value="all">All Types</option>
                       {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                    <button onClick={() => setShowNewSessionModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 md:px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap"
                       style={{ background: P.blue }}>
                       <Plus size={13} /> New Session
                     </button>
@@ -478,7 +478,7 @@ function ContributorsDashboard() {
                     </div>
 
                     {/* Add Question Form */}
-                    <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
+                    <div className="p-4 md:p-6 rounded-[24px] md:rounded-[28px] border relative overflow-hidden space-y-4 md:space-y-5"
                       style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                       <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                       <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: P.blue }}>
@@ -582,8 +582,8 @@ function ContributorsDashboard() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowNewSessionModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className={`relative w-full max-w-md p-1.5 rounded-[32px] border bg-black border-white/10 shadow-2xl`}>
-              <div className={`p-6 rounded-[28px] ${cardBg}`}>
+              className={`relative w-[95%] sm:w-full max-w-md p-1 sm:p-1.5 rounded-[24px] sm:rounded-[32px] border bg-black border-white/10 shadow-2xl mx-auto`}>
+              <div className={`p-5 sm:p-6 rounded-[20px] sm:rounded-[28px] ${cardBg}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className={`text-lg font-black uppercase ${textPrimary}`}>Create Session</h3>
                   <button onClick={() => setShowNewSessionModal(false)} className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5`}>
