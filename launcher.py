@@ -932,8 +932,8 @@ class LANpadLauncher:
         self.root.destroy()
 
     def on_closing(self):
-        # Just hide the dashboard. The Menubar process manages the backend.
-        self.root.withdraw()
+        # The user requested that clicking the cross ('X') should close the app completely.
+        self.on_quit()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
