@@ -355,7 +355,7 @@ export default function GlidePassAdmin() {
       // Optional: showToast("success", "VIT codes updated.");
     } catch (err: any) {
       showToast("error", err.message);
-      fetchVit(); // revert on failure
+      fetchVitCodes(); // revert on failure
     } finally {
       setSavingVit(false);
     }
