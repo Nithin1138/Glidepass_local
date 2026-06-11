@@ -343,73 +343,101 @@ export default function GlidePassAdmin() {
     }
   };
 
-  const saveVitDB = async (updated: VitCode[]) => {
-    setVitSessions(updated); // Optimistic UI update
-    setSavingVit(true);
-    try {
-      const res = await fetch("/api/vitcodes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
-      // Optional: showToast("success", "VIT codes updated.");
-    } catch (err: any) {
-      showToast("error", err.message);
-      fetchVitCodes(); // revert on failure
-    } finally {
-      setSavingVit(false);
-    }
-  };
+  // We removed saveVitDB because it overrides everything. We now use granular endpoints.
 
-  const handleAddSession = () => {
+  const handleAddSession = async () => {
     if (!newDate) return alert("Select a date");
     const s: VitCode = { id: Date.now().toString(), date: newDate, examType: newExamType, title: newSessionTitle.trim() || undefined, questions: [] };
-    const updated = [...vitSessions, s];
-    saveVitDB(updated);
+    
+    // Optimistic
+    setVitSessions(prev => [s, ...prev]);
     setActiveSessionId(s.id);
     setNewSessionTitle("");
     setShowNewSessionModal(false);
-  };
 
-  const handleAddQuestion = () => {
-    if (!activeSessionId) return;
-    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
-    const updated = vitSessions.map(s => {
-      if (s.id === activeSessionId) {
-        return {
-          ...s,
-          questions: [...s.questions, { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment }]
-        };
-      }
-      return s;
-    });
-    saveVitDB(updated);
-    setQTitle("");
-    setQCode("");
-    setQComment("");
-  };
-
-  const handleDeleteSession = (id: string) => {
-    if (!confirm("Delete this session?")) return;
-    const updated = vitSessions.filter(s => s.id !== id);
-    saveVitDB(updated);
-    if (activeSessionId === id) {
-      setActiveSessionId(updated.length > 0 ? updated[0].id : null);
-      setVitDetailView(false);
+    try {
+      const res = await fetch("/api/vitcodes/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      if (!res.ok) throw new Error("Failed to save session");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
     }
   };
 
-  const handleDeleteQuestion = (qId: string) => {
+  const handleAddQuestion = async () => {
+    if (!activeSessionId) return;
+    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
+    
+    const newQ: Question = { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment };
+    
+    // Optimistic
+    setVitSessions(prev => prev.map(s => {
+      if (s.id === activeSessionId) {
+        return { ...s, questions: [...s.questions, newQ] };
+      }
+      return s;
+    }));
+    setQTitle("");
+    setQCode("");
+    setQComment("");
+
+    try {
+      const res = await fetch("/api/vitcodes/question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: activeSessionId, question: newQ })
+      });
+      if (!res.ok) throw new Error("Failed to add question");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
+  };
+
+  const handleDeleteSession = async (id: string) => {
+    if (!confirm("Delete this session?")) return;
+    
+    // Optimistic
+    setVitSessions(prev => {
+      const next = prev.filter(s => s.id !== id);
+      if (activeSessionId === id) {
+        setActiveSessionId(next.length > 0 ? next[0].id : null);
+        setVitDetailView(false);
+      }
+      return next;
+    });
+
+    try {
+      const res = await fetch(`/api/vitcodes/session?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete session");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
+  };
+
+  const handleDeleteQuestion = async (qId: string) => {
     if (!confirm("Delete this question?")) return;
-    const updated = vitSessions.map(s => {
+    
+    // Optimistic
+    setVitSessions(prev => prev.map(s => {
       if (s.id === activeSessionId) {
         return { ...s, questions: s.questions.filter(q => q.id !== qId) };
       }
       return s;
-    });
-    saveVitDB(updated);
+    }));
+
+    try {
+      const res = await fetch(`/api/vitcodes/question?id=${qId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete question");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
   };
 
   const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId), [vitSessions, activeSessionId]);
@@ -433,11 +461,18 @@ export default function GlidePassAdmin() {
     return groups;
   }, [filteredSessions]);
 
-  // ─── Data Fetching ───
+  // ─── Data Fetching & Real-time Polling ───
   useEffect(() => {
     if (isAuth) {
       if (view === "ota") fetchTemplate(selectedFile);
-      if (view === "vitcodes" || view === "dashboard") fetchVitCodes();
+      if (view === "vitcodes" || view === "dashboard") {
+        fetchVitCodes();
+        // Start polling for real-time sync (every 5 seconds)
+        const interval = setInterval(() => {
+          fetchVitCodes();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, selectedFile, isAuth]);

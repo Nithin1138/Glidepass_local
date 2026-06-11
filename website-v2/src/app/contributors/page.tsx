@@ -102,6 +102,11 @@ function ContributorsDashboard() {
           setAccessStatus(d.status === "blocked" ? "blocked" : "active");
           if (d.status !== "blocked") {
             fetchVitCodes();
+            // Poll for real-time updates every 5 seconds
+            const interval = setInterval(() => {
+              fetchVitCodes();
+            }, 5000);
+            return () => clearInterval(interval);
           }
         })
         .catch(err => {
@@ -130,26 +135,9 @@ function ContributorsDashboard() {
     }
   };
 
-  const saveVitDB = async (updated: VitCode[]) => {
-    setVitSessions(updated); // Optimistic UI update
-    setSavingVit(true);
-    try {
-      const res = await fetch("/api/vitcodes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      if (!res.ok) throw new Error("Failed to save changes.");
-      showToast("success", "Changes saved successfully.");
-    } catch (err: any) {
-      showToast("error", err.message);
-      fetchVitCodes(); // Revert on failure
-    } finally {
-      setSavingVit(false);
-    }
-  };
+  // We removed saveVitDB to prevent overwriting the DB. We use granular API routes.
 
-  const handleAddSession = () => {
+  const handleAddSession = async () => {
     if (!newDate || !newExamType) return showToast("error", "Date and Exam Type required.");
     const session: VitCode = {
       id: "session_" + Date.now(),
@@ -158,30 +146,62 @@ function ContributorsDashboard() {
       title: newSessionTitle,
       questions: []
     };
-    const updated = [session, ...vitSessions];
-    saveVitDB(updated);
+    
+    // Optimistic Update
+    setVitSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
     setShowNewSessionModal(false);
     setNewSessionTitle("");
     setVitDetailView(true);
+
+    try {
+      const res = await fetch("/api/vitcodes/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(session)
+      });
+      if (!res.ok) throw new Error("Failed to create session");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
   };
 
-  const handleAddQuestion = () => {
+  const handleAddQuestion = async () => {
     if (!activeSessionId) return;
     if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
-    const updated = vitSessions.map(s => {
+    
+    const newQ: Question = { 
+      id: "q_" + Date.now(), 
+      title: qTitle, 
+      code: qCode, 
+      language: qLang, 
+      comment: qComment,
+      contributorEmail: sessionData?.user?.email || "unknown" 
+    };
+    
+    // Optimistic Update
+    setVitSessions(prev => prev.map(s => {
       if (s.id === activeSessionId) {
-        return {
-          ...s,
-          questions: [...s.questions, { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment }]
-        };
+        return { ...s, questions: [...s.questions, newQ] };
       }
       return s;
-    });
-    saveVitDB(updated);
+    }));
     setQTitle("");
     setQCode("");
     setQComment("");
+
+    try {
+      const res = await fetch("/api/vitcodes/question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: activeSessionId, question: newQ })
+      });
+      if (!res.ok) throw new Error("Failed to add question");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
   };
 
   // ─── UI Variables ───

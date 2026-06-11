@@ -31,6 +31,10 @@ export async function initDb() {
   if (!pool || isDbInitialized) return;
   const client = await pool.connect();
   try {
+    // We will drop existing tables to recreate them with the correct schema
+    await client.query("DROP TABLE IF EXISTS vit_questions CASCADE;");
+    await client.query("DROP TABLE IF EXISTS vit_sessions CASCADE;");
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_sessions (
         id TEXT PRIMARY KEY,
@@ -46,7 +50,8 @@ export async function initDb() {
         title TEXT NOT NULL,
         code TEXT NOT NULL,
         language TEXT NOT NULL,
-        comment TEXT
+        comment TEXT,
+        contributor_email TEXT
       );
     `);
     
@@ -188,4 +193,110 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
     fs.mkdirSync(parentDir, { recursive: true });
   }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+// ─── Granular Operations ───
+
+export async function createSession(session: VitCode): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "INSERT INTO vit_sessions (id, date, exam_type, title) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET date=$2, exam_type=$3, title=$4",
+        [session.id, session.date, session.examType, session.title || null]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes();
+    all.unshift(session);
+    await writeCodes(all);
+  }
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("DELETE FROM vit_sessions WHERE id = $1", [sessionId]);
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes();
+    const filtered = all.filter(s => s.id !== sessionId);
+    await writeCodes(filtered);
+  }
+}
+
+export async function createQuestion(sessionId: string, q: Question): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [q.id, sessionId, q.title, q.code, q.language, q.comment || null, q.contributorEmail || null]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes();
+    const s = all.find(s => s.id === sessionId);
+    if (s) {
+      if (!s.questions) s.questions = [];
+      s.questions.push(q);
+      await writeCodes(all);
+    }
+  }
+}
+
+export async function updateQuestion(q: Question): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5 WHERE id = $1",
+        [q.id, q.title, q.code, q.language, q.comment || null]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const all = await readCodes();
+    for (const s of all) {
+      const idx = (s.questions || []).findIndex(x => x.id === q.id);
+      if (idx !== -1) {
+        s.questions[idx] = q;
+        await writeCodes(all);
+        return;
+      }
+    }
+  }
+}
+
+export async function deleteQuestion(qId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("DELETE FROM vit_questions WHERE id = $1", [qId]);
+    } finally {
+      client.release();
+    }
+  } else {
+    const all = await readCodes();
+    for (const s of all) {
+      s.questions = (s.questions || []).filter(q => q.id !== qId);
+    }
+    await writeCodes(all);
+  }
 }
