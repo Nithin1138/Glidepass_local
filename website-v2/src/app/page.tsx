@@ -492,8 +492,8 @@ const Features = () => {
       span: "md:col-span-1"
     },
     {
-      title: "VIT Daily Code Vault",
-      desc: "Cooperative repository. Verified contributors maintain and catalog exam codes, syncing them instantly to your local client for quick access.",
+      title: "VIT-AP Exam Code Vault",
+      desc: "Instant academic sharing. Access verified exam solutions uploaded in real-time by trusted campus contributors. Zero exam-day stress, synced right to your screen.",
       icon: <FileCode size={22} />,
       span: "md:col-span-1"
     }
