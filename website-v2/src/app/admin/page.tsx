@@ -501,10 +501,10 @@ export default function GlidePassAdmin() {
       if (view === "ota") fetchTemplate(selectedFile);
       if (view === "vitcodes" || view === "dashboard" || view === "contributors") {
         fetchVitCodes();
-        // Start polling for real-time sync (every 5 seconds)
+        // Start polling for real-time sync (every 1 second)
         const interval = setInterval(() => {
           fetchVitCodes();
-        }, 5000);
+        }, 1000);
         return () => clearInterval(interval);
       }
     }

@@ -107,10 +107,10 @@ function ContributorsDashboard() {
           setAccessStatus(d.status === "blocked" ? "blocked" : "active");
           if (d.status !== "blocked") {
             fetchVitCodes();
-            // Poll for real-time updates every 5 seconds
+            // Poll for real-time updates every 1 second
             const interval = setInterval(() => {
               fetchVitCodes();
-            }, 5000);
+            }, 1000);
             return () => clearInterval(interval);
           }
         })
