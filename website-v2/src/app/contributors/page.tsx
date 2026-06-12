@@ -294,19 +294,19 @@ function ContributorsDashboard() {
             A community effort to maintain accurate exam exam codes for VIT students. Help your peers by providing the latest exam session questions.
           </p>
 
-          {/* Info Cards Row */}
-          <div className="w-full flex md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-x-visible px-6 md:px-0 py-4 mb-4 md:mb-8 scrollbar-none snap-x snap-mandatory min-h-0 shrink-0">
-            <div className="snap-center shrink-0 w-[82%] md:w-auto p-5 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-1.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><BookOpen size={14} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
-              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Contributors submit new VIT exam sessions directly to the LANpad database for real-time local client syncs.</p>
+          {/* Info Cards Container (Stack vertically on mobile, row on desktop) */}
+          <div className="w-full flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-6 px-4 md:px-0 py-1 mb-4 md:mb-8 min-h-0 shrink-0">
+            <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><BookOpen size={13} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
+              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Submit VIT exam sessions directly to the LANpad database for real-time local syncs.</p>
             </div>
-            <div className="snap-center shrink-0 w-[82%] md:w-auto p-5 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-1.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><Layout size={14} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
-              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Enjoy a simplified, fail-safe workspace. Safely add exam sessions and verify codes without deletion risk.</p>
+            <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><Layout size={13} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
+              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>A simplified workspace to add sessions and verify codes safely without deletion risk.</p>
             </div>
-            <div className="snap-center shrink-0 w-[82%] md:w-auto p-5 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-1.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><LogOut size={14} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
-              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google accounts (<code className={`px-1.5 py-0.5 rounded ${dk ? 'bg-white/10' : 'bg-black/10'} text-[9px] md:text-xs`}>@vitapstudent.ac.in</code>).</p>
+            <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
+              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google Workspace accounts.</p>
             </div>
           </div>
 
