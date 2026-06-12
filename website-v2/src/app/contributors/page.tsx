@@ -306,7 +306,7 @@ function ContributorsDashboard() {
             </div>
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
               <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
-              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google Workspace accounts.</p>
+              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google accounts.</p>
             </div>
           </div>
 
@@ -378,8 +378,8 @@ function ContributorsDashboard() {
       <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-40`}>
         <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
-            <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${dk ? 'bg-white text-black' : 'bg-black text-white'}`}>
-              <Code size={18} />
+            <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center bg-white text-black border border-black/10 shadow-sm`}>
+              <Code size={16} />
             </div>
             <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
               LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
