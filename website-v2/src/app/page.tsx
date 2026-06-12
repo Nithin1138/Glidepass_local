@@ -334,72 +334,83 @@ const Visualization = () => {
             </div>
 
             {/* Laptop Side (MacBook Style) */}
-            <div className="flex justify-center origin-center scale-[0.9] sm:scale-100 mt-[-40px] lg:mt-0" style={{ perspective: "1200px" }}>
+            <div className="flex flex-col items-center justify-center w-full max-w-lg origin-center scale-[0.9] sm:scale-100 mt-[-40px] lg:mt-0" style={{ perspective: "1200px" }}>
               <motion.div
                 style={{ transformStyle: "preserve-3d", rotateY: laptopRotate }}
-                className={`w-full max-w-lg aspect-[1.6/1] bg-[#050505] border-[8px] md:border-[12px] border-[#1a1a1a] rounded-[16px] md:rounded-[24px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] relative overflow-hidden`}
+                className="w-full flex flex-col items-center"
               >
-                {/* Aluminum Screen Reflection */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+                {/* Screen (Lid) */}
+                <div className={`w-full aspect-[1.6/1] bg-[#050505] border-[8px] md:border-[12px] border-[#1a1a1a] rounded-t-[16px] md:rounded-t-[24px] shadow-2xl relative overflow-hidden`}>
+                  {/* Aluminum Screen Reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
-                {/* macOS Header */}
-                <div className={`h-10 bg-white/[0.03] border-b border-white/[0.05] flex items-center px-5 gap-2`}>
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-lg" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e] shadow-lg" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-lg" />
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className={`text-[9px] font-mono ${dk ? "text-white" : "text-black"}/20 tracking-widest uppercase`}>lanpad — local_node</span>
-                  </div>
-                </div>
-
-                {/* Editor UI */}
-                <div className="p-8 font-mono text-sm leading-relaxed relative">
-                  <div className="flex gap-6">
-                    <div className={`${dk ? "text-white" : "text-black"}/10 text-right space-y-1 hidden sm:block`}>
-                      {Array.from({ length: 6 }).map((_, i) => <div key={i}>{i + 1}</div>)}
+                  {/* macOS Header */}
+                  <div className={`h-10 bg-white/[0.03] border-b border-white/[0.05] flex items-center px-5 gap-2`}>
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-lg" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e] shadow-lg" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-lg" />
                     </div>
-                    <div className="space-y-1">
-                      <p className={`${dk ? "text-white" : "text-black"}/20`}>const tunnel = <span className={`text-blue-400`}>new</span> Glide(<span className={`text-sky-400`}>"secure"</span>);</p>
-                      <p className={`${dk ? "text-white" : "text-black"}/80 tracking-tight`}>
-                        {text}
-                        <span className={`inline-block w-[1px] h-4 bg-blue-500 ml-1 animate-pulse`} />
-                      </p>
+                    <div className="flex-1 text-center">
+                      <span className={`text-[9px] font-mono ${dk ? "text-white" : "text-black"}/20 tracking-widest uppercase`}>lanpad — local_node</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Data Stream Animation (Visible on LG and above) */}
-                <div className={`absolute -left-[200px] top-1/2 -translate-y-1/2 w-[200px] h-[2px] bg-gradient-to-r from-blue-500/60 via-sky-500/40 to-transparent hidden lg:block overflow-visible`}>
-                  {[0, 1, 2].map((i) => (
+                  {/* Editor UI */}
+                  <div className="p-8 font-mono text-sm leading-relaxed relative">
+                    <div className="flex gap-6">
+                      <div className={`${dk ? "text-white" : "text-black"}/10 text-right space-y-1 hidden sm:block`}>
+                        {Array.from({ length: 6 }).map((_, i) => <div key={i}>{i + 1}</div>)}
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`${dk ? "text-white" : "text-black"}/20`}>const tunnel = <span className={`text-blue-400`}>new</span> Glide(<span className={`text-sky-400`}>"secure"</span>);</p>
+                        <p className={`${dk ? "text-white" : "text-black"}/80 tracking-tight`}>
+                          {text}
+                          <span className={`inline-block w-[1px] h-4 bg-blue-500 ml-1 animate-pulse`} />
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Stream Animation (Visible on LG and above) */}
+                  <div className={`absolute -left-[200px] top-1/2 -translate-y-1/2 w-[200px] h-[2px] bg-gradient-to-r from-blue-500/60 via-sky-500/40 to-transparent hidden lg:block overflow-visible`}>
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ left: "-10%", opacity: 0 }}
+                        animate={{
+                          left: ["-10%", "110%"],
+                          opacity: [0, 1, 1, 0],
+                          scale: [1, 1.5, 1]
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          delay: i * 0.8,
+                          ease: "linear"
+                        }}
+                        className={`absolute -top-2 w-6 h-4 bg-gradient-to-r from-blue-500 to-sky-500 rounded-full blur-[1px] shadow-[0_0_25px_rgba(244,63,94,0.8)] flex items-center justify-center`}
+                      >
+                        <div className="w-full h-[1px] bg-white/60" />
+                      </motion.div>
+                    ))}
+
+                    {/* Glowing Path Pulse */}
                     <motion.div
-                      key={i}
-                      initial={{ left: "-10%", opacity: 0 }}
-                      animate={{
-                        left: ["-10%", "110%"],
-                        opacity: [0, 1, 1, 0],
-                        scale: [1, 1.5, 1]
-                      }}
-                      transition={{
-                        duration: 2.5,
-                        repeat: Infinity,
-                        delay: i * 0.8,
-                        ease: "linear"
-                      }}
-                      className={`absolute -top-2 w-6 h-4 bg-gradient-to-r from-blue-500 to-sky-500 rounded-full blur-[1px] shadow-[0_0_25px_rgba(244,63,94,0.8)] flex items-center justify-center`}
-                    >
-                      <div className="w-full h-[1px] bg-white/60" />
-                    </motion.div>
-                  ))}
-
-                  {/* Glowing Path Pulse */}
-                  <motion.div
-                    animate={{ opacity: [0.2, 0.5, 0.2] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className={`absolute inset-0 bg-blue-500/30 blur-md`}
-                  />
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className={`absolute inset-0 bg-blue-500/30 blur-md`}
+                    />
+                  </div>
                 </div>
+
+                {/* Hinge & Base */}
+                <div className="w-[101.5%] h-3 md:h-4 bg-[#141414] border-t border-white/[0.08] relative z-20 flex items-center justify-center shadow-2xl rounded-b-[6px]" style={{ transform: 'perspective(500px) rotateX(15deg)', transformOrigin: 'top center' }}>
+                  {/* Trackpad notch */}
+                  <div className="w-16 md:w-24 h-1 bg-[#0a0a0a] rounded-b-md border-t border-white/[0.05]" />
+                </div>
+                {/* Thin base bottom edge shadow */}
+                <div className="w-[102%] h-[3px] bg-[#0c0c0c] rounded-b-lg shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
               </motion.div>
             </div>
           </div>
