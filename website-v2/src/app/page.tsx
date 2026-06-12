@@ -426,8 +426,8 @@ const Features = () => {
   const { dk } = useTheme();
   const features = [
     {
-      title: "Live Sync",
-      desc: "Two-way clipboard sync. Copy on your phone, paste on your laptop instantly.",
+      title: "Sub-ms WebSocket Tunnel",
+      desc: "Zero-latency text synchronization. Instantly sync text from your mobile screen to your desktop clipboard over secure local WebSockets.",
       icon: <RefreshCw size={22} />,
       span: "md:col-span-2",
       visual: (
@@ -467,8 +467,8 @@ const Features = () => {
       )
     },
     {
-      title: "Realistic Typing",
-      desc: "Human-like keyboard event simulation.",
+      title: "Humanized Auto-Type",
+      desc: "Keystroke level simulation. Bypasses paste limits on secure portals or exam windows by typing characters with variable speed patterns.",
       icon: <Keyboard size={22} />,
       span: "md:col-span-1",
       visual: (
@@ -480,8 +480,8 @@ const Features = () => {
       )
     },
     {
-      title: "Local-Only",
-      desc: "Zero-cloud persistence. Data stays in RAM.",
+      title: "Zero-Cloud RAM Cache",
+      desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
       icon: <ShieldCheck size={22} />,
       span: "md:col-span-1",
       visual: (
@@ -498,8 +498,8 @@ const Features = () => {
       )
     },
     {
-      title: "Remote Control",
-      desc: "Control your laptop from your phone browser. No mobile app install needed.",
+      title: "Instant Web Controller",
+      desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
       icon: <Smartphone size={22} />,
       span: "md:col-span-2",
       visual: (
@@ -528,7 +528,7 @@ const Features = () => {
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-10">
           <div>
             <h2 className="text-4xl md:text-5xl font-outfit font-black tracking-tighter mb-2">The Input Standard</h2>
-            <p className={`${dk ? "text-white" : "text-black"}/30 max-w-sm font-medium text-sm leading-relaxed font-inter`}>Engineered to eliminate friction between your ideas and your machine.</p>
+            <p className={`${dk ? "text-white/70" : "text-black/70"} max-w-sm font-medium text-sm leading-relaxed font-inter`}>Engineered to eliminate friction between your ideas and your machine.</p>
           </div>
           <div className={`h-[1px] flex-1 bg-gradient-to-r from-blue-500/10 to-transparent hidden md:block mb-4 ml-12`} />
         </div>
@@ -555,7 +555,7 @@ const Features = () => {
                   {f.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-2 font-outfit tracking-tight">{f.title}</h3>
-                <p className={`text-sm ${dk ? "text-white" : "text-black"}/30 leading-relaxed font-inter max-w-[280px]`}>
+                <p className={`text-sm ${dk ? "text-white/60" : "text-black/60"} leading-relaxed font-inter max-w-[280px]`}>
                   {f.desc}
                 </p>
                 {f.visual}
