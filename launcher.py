@@ -969,15 +969,15 @@ def run_launcher():
     root = tk.Tk()
     app  = LANpadLauncher(root)
 
-    # ── Suppress Dock icon: run as an accessory process on macOS ──────────────
+    # ── Allow Dock icon: run as a regular process on macOS ──────────────
     # MUST be called AFTER tk.Tk() — calling NSApplication.sharedApplication()
     # before Tk initializes crashes Tkinter with NSInvalidArgumentException in
     # TkSetMacColor (macOSVersion unrecognized selector).
     if sys.platform == "darwin":
         try:
-            from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+            from AppKit import NSApplication, NSApplicationActivationPolicyRegular
             NSApplication.sharedApplication().setActivationPolicy_(
-                NSApplicationActivationPolicyAccessory
+                NSApplicationActivationPolicyRegular
             )
         except Exception:
             pass
@@ -998,6 +998,9 @@ def run_launcher():
     threading.Thread(target=listen_for_show, daemon=True).start()
 
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
+    if sys.platform == "darwin":
+        root.createcommand("::tk::mac::ReopenApplication", app.show_window)
+        
     root.mainloop()
 
 if __name__ == "__main__":

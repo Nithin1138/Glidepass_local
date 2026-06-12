@@ -210,13 +210,13 @@ if __name__ == "__main__":
     if sys.platform == "darwin" and "--gui" not in sys.argv:
         try:
             from AppKit import NSApplication, NSApplicationActivationPolicyProhibited, \
-                               NSApplicationActivationPolicyAccessory
+                               NSApplicationActivationPolicyRegular
             
             # Determine role based on arguments
             if any(x in sys.argv for x in ["uvicorn", "app:app", "-m"]):
                 NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyProhibited)
             else:
-                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyRegular)
         except Exception:
             pass
 

@@ -87,7 +87,6 @@ app = BUNDLE(
         'CFBundleShortVersionString': '1.5.0',
         'CFBundleVersion': '1.5.0',
         'NSHighResolutionCapable': True,
-        'LSUIElement': True,
         'CFBundleURLTypes': [
             {
                 'CFBundleURLName': 'LANpad Protocol',
