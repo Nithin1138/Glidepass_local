@@ -480,24 +480,6 @@ const Features = () => {
       )
     },
     {
-      title: "Zero-Cloud RAM Cache",
-      desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
-      icon: <ShieldCheck size={22} />,
-      span: "md:col-span-1",
-      visual: (
-        <div className="mt-auto pt-6">
-          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ width: ["0%", "15%", "12%"] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className={`h-full bg-blue-500/40`}
-            />
-          </div>
-          <div className={`mt-1 text-[6px] font-mono ${dk ? "text-white" : "text-black"}/20 uppercase`}>Ram Usage: 0.1%</div>
-        </div>
-      )
-    },
-    {
       title: "Instant Web Controller",
       desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
       icon: <Smartphone size={22} />,
@@ -517,6 +499,43 @@ const Features = () => {
               </div>
             ))}
           </div>
+        </div>
+      )
+    },
+    {
+      title: "Daily VITcodes Integration",
+      desc: "Verified exam sessions. Cooperatively submit, manage, and retrieve slot-wise code questions uploaded by fellow VIT students in real-time.",
+      icon: <BookOpen size={22} />,
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-4 space-y-1.5 opacity-60 group-hover:opacity-85 transition-opacity">
+          {[
+            { tag: "NERD", name: "Morning Batch" },
+            { tag: "Daily Assessment", name: "A1 Slot" }
+          ].map((item, idx) => (
+            <div key={idx} className={`flex items-center justify-between p-2 rounded-lg border ${dk ? "border-white/5 bg-white/[0.02]" : "border-black/5 bg-black/[0.02]"} text-[8px] font-mono`}>
+              <span className="text-blue-400 font-bold uppercase tracking-wider">{item.tag}</span>
+              <span className={dk ? "text-white/60" : "text-black/60"}>{item.name}</span>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    {
+      title: "Zero-Cloud RAM Cache",
+      desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
+      icon: <ShieldCheck size={22} />,
+      span: "md:col-span-3",
+      visual: (
+        <div className="mt-auto pt-6">
+          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+            <motion.div
+              animate={{ width: ["0%", "15%", "12%"] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className={`h-full bg-blue-500/40`}
+            />
+          </div>
+          <div className={`mt-1 text-[6px] font-mono ${dk ? "text-white" : "text-black"}/20 uppercase`}>Ram Usage: 0.1%</div>
         </div>
       )
     }
