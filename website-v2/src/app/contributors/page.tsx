@@ -46,8 +46,21 @@ function ContributorsDashboard() {
   const searchParams = useSearchParams();
   const authError = searchParams.get("error");
 
-  // ─── Theme ───
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  // ─── Theme (shared with admin via localStorage) ───
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    const saved = localStorage.getItem("glidepass-admin-theme");
+    if (saved === "light") return "light";
+    if (saved === "system") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "dark"; // default
+  });
+
+  useEffect(() => {
+    localStorage.setItem("glidepass-admin-theme", theme);
+  }, [theme]);
+
   const dk = theme === "dark";
   const gradientLine = "bg-gradient-to-r from-transparent via-[rgba(199,238,255,0.4)] to-transparent";
 
