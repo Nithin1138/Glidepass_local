@@ -128,7 +128,7 @@ function ContributorsDashboard() {
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
       const data = await res.json();
       setVitSessions(data);
-      if (data.length > 0 && !activeSessionId) setActiveSessionId(data[0].id);
+      if (data.length > 0 && !quiet && !activeSessionId) setActiveSessionId(data[0].id);
       if (data && Array.from) {
         const types = data.map((s: any) => s.examType).filter(Boolean);
         setExamTypes(prev => Array.from(new Set([...prev, ...types])));
