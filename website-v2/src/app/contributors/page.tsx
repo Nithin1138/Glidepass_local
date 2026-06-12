@@ -288,8 +288,9 @@ function ContributorsDashboard() {
 
         {/* Top Spacer or Icon */}
         <div className="relative z-10 shrink-0 mb-1 md:mb-4">
-          <div className="inline-flex items-center justify-center p-2 md:p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
-            <Code size={24} className="text-blue-400 md:w-8 md:h-8" />
+          <div className="inline-flex items-center justify-center rounded-2xl overflow-hidden border border-white/10 shadow-2xl w-12 h-12 md:w-16 md:h-16">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover" />
           </div>
         </div>
 
@@ -391,8 +392,9 @@ function ContributorsDashboard() {
       <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-40`}>
         <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
-            <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center bg-white text-black border border-black/10 shadow-sm`}>
-              <Code size={16} />
+            <div className={`shrink-0 w-8 h-8 rounded-xl overflow-hidden border border-black/10 shadow-sm`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover" />
             </div>
             <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
               LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
