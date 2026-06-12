@@ -69,11 +69,6 @@ export async function initDb() {
   if (!pool || isDbInitialized) return;
   const client = await pool.connect();
   try {
-    // We will drop existing tables to recreate them with the correct schema
-    await client.query("DROP TABLE IF EXISTS vit_questions CASCADE;");
-    await client.query("DROP TABLE IF EXISTS vit_sessions CASCADE;");
-    await client.query("DROP TABLE IF EXISTS vit_contributors CASCADE;");
-
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_sessions (
         id TEXT PRIMARY KEY,
