@@ -109,20 +109,20 @@ const Navbar = () => {
         </div>
 
         <div className={`hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-[10px] font-bold tracking-[0.2em] uppercase ${dk ? "text-white/30" : "text-black/60"}`}>
-          <Link href="#visualization" className={`hover:text-sky-400 transition-colors duration-300`}>Technology</Link>
-          <Link href="#features" className={`hover:text-blue-400 transition-colors duration-300`}>Features</Link>
-          <Link href="#downloads" className="hover:text-amber-400 transition-colors duration-300">Downloads</Link>
-          <Link href="#setup" className="hover:text-orange-500 transition-colors duration-300">How to Use</Link>
+          <a href="#visualization" className={`hover:text-sky-400 transition-colors duration-300`}>Technology</a>
+          <a href="#features" className={`hover:text-blue-400 transition-colors duration-300`}>Features</a>
+          <a href="#downloads" className="hover:text-amber-400 transition-colors duration-300">Downloads</a>
+          <a href="#setup" className="hover:text-orange-500 transition-colors duration-300">How to Use</a>
         </div>
 
         <div className="hidden lg:flex shrink-0 relative z-10 items-center gap-3 md:gap-4">
           <Link href="/contributors" className={`relative group ${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"} px-2 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-300`}>
             Contribute
           </Link>
-          <Link href="#setup" className={`relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block`}>
+          <a href="#setup" className={`relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block`}>
             <span className={`relative z-10 group-hover:${dk ? "text-white" : "text-black"} transition-colors duration-500`}>How to Use</span>
             <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
-          </Link>
+          </a>
         </div>
 
         <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
@@ -139,10 +139,10 @@ const Navbar = () => {
             className={`lg:hidden overflow-hidden border-b ${dk ? "border-white/10 bg-black" : "border-black/10 bg-white"}`}
           >
             <div className="flex flex-col p-6 gap-4 uppercase text-xs font-bold tracking-widest">
-              <Link href="#visualization" onClick={() => setIsOpen(false)}>Technology</Link>
-              <Link href="#features" onClick={() => setIsOpen(false)}>Features</Link>
-              <Link href="#downloads" onClick={() => setIsOpen(false)}>Downloads</Link>
-              <Link href="#setup" onClick={() => setIsOpen(false)}>How to Use</Link>
+              <a href="#visualization" onClick={() => setIsOpen(false)}>Technology</a>
+              <a href="#features" onClick={() => setIsOpen(false)}>Features</a>
+              <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
+              <a href="#setup" onClick={() => setIsOpen(false)}>How to Use</a>
               <Link href="/contributors" className="text-amber-500" onClick={() => setIsOpen(false)}>Contribute</Link>
             </div>
           </motion.div>
@@ -242,16 +242,16 @@ const Hero = () => {
         <motion.div
           className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0"
         >
-          <Link href="#setup" className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden shadow-2xl w-full sm:w-auto">
+          <a href="#setup" className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden shadow-2xl w-full sm:w-auto">
             <div className={`absolute inset-0 transition-transform group-hover:scale-110 duration-500 ${dk ? "bg-white" : "bg-black"}`} />
             <span className={`relative flex items-center justify-center gap-2 text-sm ${dk ? "text-black" : "text-white"}`}>
               Setup Guide
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </span>
-          </Link>
-          <Link href="#downloads" className={`px-8 py-4 rounded-xl font-bold text-sm border ${dk ? "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20" : "border-black/10 bg-black/[0.02] hover:bg-black/[0.05] hover:border-black/20"} transition-all duration-300 w-full sm:w-auto ${dk ? "text-white" : "text-black"}`}>
+          </a>
+          <a href="#downloads" className={`px-8 py-4 rounded-xl font-bold text-sm border ${dk ? "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20" : "border-black/10 bg-black/[0.02] hover:bg-black/[0.05] hover:border-black/20"} transition-all duration-300 w-full sm:w-auto text-center ${dk ? "text-white" : "text-black"}`}>
             Download Assets
-          </Link>
+          </a>
         </motion.div>
       </div>
     </section>
@@ -962,9 +962,9 @@ export default function Home() {
               <div>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Product</h4>
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><Link href="#features" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Features</Link></li>
-                  <li><Link href="#visualization" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Technology</Link></li>
-                  <li><Link href="#downloads" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Download</Link></li>
+                  <li><a href="#features" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Features</a></li>
+                  <li><a href="#visualization" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Technology</a></li>
+                  <li><a href="#downloads" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Download</a></li>
                 </ul>
               </div>
 
@@ -972,9 +972,9 @@ export default function Home() {
               <div>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Resources</h4>
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Documentation</Link></li>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Setup Guide</Link></li>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>API Status</Link></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Documentation</a></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Setup Guide</a></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>API Status</a></li>
                 </ul>
               </div>
 
@@ -982,9 +982,9 @@ export default function Home() {
               <div>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Legal</h4>
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</Link></li>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</Link></li>
-                  <li><Link href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</Link></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</a></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</a></li>
+                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</a></li>
                 </ul>
               </div>
             </div>
