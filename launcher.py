@@ -354,6 +354,12 @@ class LANpadLauncher:
                                     bg=self.BG, fg=self.DIM)
         self._status_lbl.pack(side="left", padx=(8, 0))
 
+        # Connected Devices Status Label (placed on the right side)
+        self._conn_lbl = tk.Label(v, text="0 Connected",
+                                  font=(self.FU, 10, "bold"),
+                                  bg=self.BG, fg=self.DIM, anchor="e")
+        self._conn_lbl.place(x=376, y=68, anchor="ne")
+
         # ── Hero text ────────────────────────────────────────────────────────
         try:
             self._main_logo_img = Image.open(resource_path("logo.png"))
@@ -903,8 +909,39 @@ class LANpadLauncher:
             self._ui_reset()
             self.process = None
 
+        # Update connections count in background
+        def update_connections():
+            if not is_running:
+                if self.root.winfo_exists():
+                    self.root.after(0, lambda: self._update_conn_lbl(0, []))
+                return
+            try:
+                import urllib.request
+                import json
+                with urllib.request.urlopen("http://127.0.0.1:8000/api/connections", timeout=0.5) as response:
+                    data = json.loads(response.read().decode())
+                    count = data.get("count", 0)
+                    devices = data.get("devices", [])
+                    if self.root.winfo_exists():
+                        self.root.after(0, lambda: self._update_conn_lbl(count, devices))
+            except Exception:
+                if self.root.winfo_exists():
+                    self.root.after(0, lambda: self._update_conn_lbl(0, []))
+
+        threading.Thread(target=update_connections, daemon=True).start()
+
         if self.root.winfo_exists():
             self.root.after(2000, self.check_process_status)
+
+    def _update_conn_lbl(self, count, devices):
+        if not hasattr(self, "_conn_lbl"):
+            return
+        if count > 0:
+            dev_str = ", ".join(devices)
+            text = f"{count} Connected ({dev_str})" if dev_str else f"{count} Connected"
+            self._conn_lbl.config(text=text, fg=self.GREEN)
+        else:
+            self._conn_lbl.config(text="0 Connected", fg=self.DIM)
 
     def copy_bookmarklet(self, event=None, silent=False):
         code = self.code_text.get("1.0", "end-1c")

@@ -95,6 +95,7 @@ def get_local_ip():
 # Session management as per PRD
 SESSION_TOKEN = str(uuid.uuid4())[:8]  # Simple temporary token for pairing
 active_connections = []
+active_devices = {}
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
@@ -171,7 +172,7 @@ import threading
 # Initialize global keyboard listener to stop pasting via ESC key
 # This MUST be initialized in the main thread, otherwise HIToolbox will crash on macOS 14+
 try:
-    if IS_WIN:
+    if IS_WINDOWS:
         from pynput import keyboard
         def on_press(key):
             global stop_typing
@@ -681,12 +682,39 @@ def perform_typing(text, wpm, is_coding=False):
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     active_connections.append(websocket)
+    
+    # Identify device name
+    user_agent = websocket.headers.get("user-agent", "").lower()
+    if "iphone" in user_agent:
+        dev = "iPhone"
+    elif "ipad" in user_agent:
+        dev = "iPad"
+    elif "android" in user_agent:
+        dev = "Android"
+    elif "macintosh" in user_agent:
+        dev = "Mac"
+    elif "windows" in user_agent:
+        dev = "Windows"
+    else:
+        dev = "Device"
+        
+    active_devices[websocket] = dev
+    
     try:
         while True:
             data = await websocket.receive_text()
             # Handle incoming WebSocket data if needed
     except WebSocketDisconnect:
         active_connections.remove(websocket)
+        active_devices.pop(websocket, None)
+
+
+@app.get("/api/connections")
+async def get_connections():
+    return {
+        "count": len(active_connections),
+        "devices": list(active_devices.values())
+    }
 
 
 # ── Paste / input endpoints ───────────────────────────────────────────────────
