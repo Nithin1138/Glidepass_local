@@ -161,7 +161,10 @@ function ContributorsDashboard() {
       const res = await fetch("/api/vitcodes", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
       const data = await res.json();
-      setVitSessions(data);
+      setVitSessions(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+        return data;
+      });
       if (data.length > 0 && !quiet && !activeSessionId) setActiveSessionId(data[0].id);
       if (data && Array.from) {
         const types = data.map((s: any) => s.examType).filter(Boolean);
