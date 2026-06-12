@@ -784,16 +784,16 @@ export default function Home() {
                 {
                   title: "macOS Backend",
                   icon: <Monitor size={28} />,
-                  label: "Copy Install Cmd",
-                  installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
+                  label: "Download DMG",
                   version: "v1.5.0",
-                  size: "94.6 MB",
+                  size: "99.0 MB",
                   theme: "rose",
                   gradient: "from-rose-500/30 to-transparent",
                   btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
                   borderHover: "group-hover/card:border-rose-500/40",
                   iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
-                  href: undefined
+                  href: "/downloads/LANpad_macOS.dmg",
+                  installCommand: "xattr -d com.apple.quarantine /Applications/LANpad.app"
                 },
                 {
                   title: "Windows Backend",
@@ -848,11 +848,11 @@ export default function Home() {
                         onClick={() => {
                           if (d.title === "Chrome Extension") {
                             setShowComingSoon(true);
+                          } else if (d.href) {
+                            window.location.href = d.href;
                           } else if (d.installCommand) {
                             navigator.clipboard.writeText(d.installCommand);
                             alert("Install command copied to clipboard! Paste it in your Terminal.");
-                          } else if (d.href) {
-                            window.location.href = d.href;
                           }
                         }}
                         className={`group/btn relative w-full overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.02] p-4 flex items-center justify-between transition-all duration-500 hover:border-white/40 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] ${d.btnGradient}`}
@@ -870,6 +870,25 @@ export default function Home() {
                           <ArrowRight size={14} className={`${dk ? "text-white" : "text-black"} group-hover/btn:text-black group-hover/btn:-rotate-45 transition-all duration-500`} />
                         </div>
                       </button>
+
+                      {d.installCommand && d.href && (
+                        <div className="mt-4 flex flex-col items-center gap-1">
+                          <span className={`text-[9px] font-mono ${dk ? "text-white/40" : "text-black/40"}`}>
+                            If Gatekeeper blocks the app, run:
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(d.installCommand);
+                              alert("Command copied! Run it in Terminal to authorize LANpad.");
+                            }}
+                            className={`text-[9px] font-mono px-3 py-1.5 rounded-lg border ${dk ? "border-white/10 hover:border-white/30 text-white/60 bg-white/[0.02] hover:bg-white/[0.05]" : "border-black/10 hover:border-black/30 text-black/60 bg-black/[0.02] hover:bg-black/[0.05]"} transition-all duration-300 w-full text-center truncate`}
+                            title="Click to copy bypass command"
+                          >
+                            {d.installCommand}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

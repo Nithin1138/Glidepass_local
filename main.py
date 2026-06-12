@@ -210,13 +210,15 @@ if __name__ == "__main__":
     if sys.platform == "darwin" and "--gui" not in sys.argv:
         try:
             from AppKit import NSApplication, NSApplicationActivationPolicyProhibited, \
-                               NSApplicationActivationPolicyRegular
+                               NSApplicationActivationPolicyRegular, NSApplicationActivationPolicyAccessory
             
             # Determine role based on arguments
             if any(x in sys.argv for x in ["uvicorn", "app:app", "-m"]):
                 NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyProhibited)
             else:
-                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyRegular)
+                # The menubar app runs as an Accessory (no Dock icon) to avoid duplicate Dock icons.
+                # Only the --gui process (the Dashboard) runs as Regular and displays in the Dock.
+                NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
         except Exception:
             pass
 

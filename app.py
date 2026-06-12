@@ -171,7 +171,7 @@ import threading
 # Initialize global keyboard listener to stop pasting via ESC key
 # This MUST be initialized in the main thread, otherwise HIToolbox will crash on macOS 14+
 try:
-    if IS_MAC or IS_WIN:
+    if IS_WIN:
         from pynput import keyboard
         def on_press(key):
             global stop_typing
@@ -182,8 +182,23 @@ try:
         
         _global_listener = keyboard.Listener(on_press=on_press)
         _global_listener.start()
+    elif IS_MAC:
+        import AppKit
+        def mac_handler(event):
+            global stop_typing
+            if event.keyCode() == 53:
+                if not stop_typing:
+                    stop_typing = True
+                    print("\n!!! Paste Stopped via Laptop Keyboard (ESC) (macOS Monitor) !!!")
+
+        _global_mac_monitor = AppKit.NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
+            AppKit.NSEventMaskKeyDown,
+            mac_handler
+        )
+        print("[keyboard] Successfully registered global AppKit ESC monitor on macOS")
 except Exception as e:
     print(f"[keyboard] Failed to start ESC listener: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

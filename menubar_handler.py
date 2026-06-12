@@ -132,8 +132,12 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
         @rumps.clicked("About LANpad")
         def about(self, _):
             import subprocess
+            icon_path = resource_path("LANpad.icns")
             msg = "LANpad — The Ultimate Cross-Device Clipboard\\n\\nExperience seamless, secure, and lightning-fast syncing across all your devices.\\n\\nCrafted with passion by Veera Nithin."
-            cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
+            if os.path.exists(icon_path):
+                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
+            else:
+                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     return LANpadMenuApp()
@@ -409,8 +413,12 @@ if is_mac():
         @_rumps.clicked("About LANpad")
         def about(self, _):
             import subprocess
-            msg = "Fast, Private, Cross-Device Sync.\\nCreated by Nithin."
-            cmd = f'display dialog "{msg}" with title "LANpad v1.5.0" buttons {{"OK"}} default button "OK" with icon note'
+            icon_path = resource_path("LANpad.icns")
+            msg = "LANpad — The Ultimate Cross-Device Clipboard\\n\\nExperience seamless, secure, and lightning-fast syncing across all your devices.\\n\\nCrafted with passion by Veera Nithin."
+            if os.path.exists(icon_path):
+                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
+            else:
+                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     LANpadMenuApp = _LANpadMenuAppBase  # type: ignore[assignment,misc]
