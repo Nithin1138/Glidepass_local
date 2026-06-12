@@ -86,6 +86,11 @@ function ContributorsDashboard() {
   const [qComment, setQComment] = useState("");
   const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
 
+  // ─── Delete Session (Two-Step) ───
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingSession, setDeletingSession] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem("vit_exam_types");
     if (saved) {
@@ -207,6 +212,27 @@ function ContributorsDashboard() {
     } catch (e: any) {
       showToast("error", e.message);
       fetchVitCodes();
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!activeSession || deleteConfirmText !== activeSession.examType) return;
+    setDeletingSession(true);
+    // Optimistic removal
+    setVitSessions(prev => prev.filter(s => s.id !== activeSession.id));
+    setVitDetailView(false);
+    setShowDeleteModal(false);
+    setDeleteConfirmText("");
+    setActiveSessionId(null);
+    try {
+      const res = await fetch(`/api/vitcodes/session?id=${activeSession.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete session");
+      showToast("success", "Session deleted successfully.");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    } finally {
+      setDeletingSession(false);
     }
   };
 
@@ -518,10 +544,19 @@ function ContributorsDashboard() {
                     <ArrowLeft size={14} /> Back
                   </button>
 
-                  <button onClick={() => setShowAddQuestionModal(true)} className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
-                    style={{ background: P.blue }}>
-                    <Plus size={12} /> Add Question
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setDeleteConfirmText(""); setShowDeleteModal(true); }}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs border border-red-500/30 text-red-400 hover:bg-red-500/10 active:scale-[0.98] transition-all"
+                      title="Delete this session"
+                    >
+                      <Trash2 size={12} /> <span className="hidden sm:inline">Delete</span>
+                    </button>
+                    <button onClick={() => setShowAddQuestionModal(true)} className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                      style={{ background: P.blue }}>
+                      <Plus size={12} /> Add Question
+                    </button>
+                  </div>
                 </div>
 
                 {activeSession && (
@@ -700,6 +735,91 @@ function ContributorsDashboard() {
                   <button onClick={handleAddQuestion} className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
                     style={{ background: P.blue }}>
                     <Plus size={12} /> Add Question
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE SESSION CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showDeleteModal && activeSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
+            >
+              <div className={`p-5 sm:p-6 rounded-[20px] ${cardBg} space-y-4`}>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                      <Trash2 size={16} className="text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Session</h3>
+                      <p className={`text-[10px] ${textSecondary}`}>This action cannot be undone</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowDeleteModal(false)} className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5 shrink-0`}>
+                    <X size={14} className={textPrimary} />
+                  </button>
+                </div>
+
+                {/* Warning Box */}
+                <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                  <p className="text-xs text-red-300/80 leading-relaxed">
+                    You are about to permanently delete the session{" "}
+                    <span className="font-bold text-white">{activeSession.title || activeSession.date}</span>{" "}
+                    from <span className="font-bold text-white">{activeSession.examType}</span>.
+                    All {activeSession.questions.length} question{activeSession.questions.length !== 1 ? "s" : ""} will be removed from the database.
+                  </p>
+                </div>
+
+                {/* Type-to-confirm */}
+                <div>
+                  <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${textSecondary}`}>
+                    Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{activeSession.examType}</span> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === activeSession.examType) handleDeleteSession(); }}
+                    placeholder={`Type "${activeSession.examType}" here...`}
+                    autoFocus
+                    className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === activeSession.examType ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : `${inputBg}`}`}
+                  />
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold border ${borderLight} hover:bg-white/5 transition-all`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteSession}
+                    disabled={deleteConfirmText !== activeSession.examType || deletingSession}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                      deleteConfirmText === activeSession.examType && !deletingSession
+                        ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
+                        : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
+                    }`}
+                  >
+                    {deletingSession ? (
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-red-300/40 border-t-white animate-spin" />
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                    Delete Session
                   </button>
                 </div>
               </div>
