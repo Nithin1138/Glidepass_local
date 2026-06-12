@@ -608,10 +608,15 @@
                         </button>
                         <pre class="code-pre"><code>${escapeHtml(q.code)}</code></pre>
                     </div>
-                    <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}">
-                        <i data-lucide="send" size="13"></i>
-                        Enter Command Center with Code
-                    </button>
+                    <div class="q-actions" style="display: flex; align-items: center; justify-content: space-between; margin: 0 16px 16px 16px; gap: 12px;">
+                        <span class="contributor-name" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace; text-align: left; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${q.contributorName ? `Contributed by: <strong style="color: #ffffff;">${q.contributorName}</strong>` : ''}
+                        </span>
+                        <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" style="margin: 0; width: auto; flex-grow: 1; max-width: 80%;">
+                            <i data-lucide="send" size="13"></i>
+                            Enter Command Center with Code
+                        </button>
+                    </div>
                 `;
                 qListDiv.appendChild(card);
             });

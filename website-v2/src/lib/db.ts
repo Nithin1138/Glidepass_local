@@ -101,6 +101,11 @@ export async function initDb() {
         college TEXT
       );
     `);
+
+    // Ensure say_my_name column exists
+    await client.query(`
+      ALTER TABLE vit_contributors ADD COLUMN IF NOT EXISTS say_my_name BOOLEAN DEFAULT false;
+    `);
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -138,8 +143,12 @@ export async function readCodes(): Promise<VitCode[]> {
     try {
       // Fetch all sessions
       const sessionsRes = await client.query("SELECT * FROM vit_sessions ORDER BY date DESC, id DESC");
-      // Fetch all questions
-      const questionsRes = await client.query("SELECT * FROM vit_questions");
+      // Fetch all questions with contributor preference join
+      const questionsRes = await client.query(`
+        SELECT q.*, c.say_my_name, c.name as contributor_db_name
+        FROM vit_questions q
+        LEFT JOIN vit_contributors c ON q.contributor_email = c.email
+      `);
       
       const questionsBySession: Record<string, Question[]> = {};
       questionsRes.rows.forEach((row) => {
@@ -150,7 +159,7 @@ export async function readCodes(): Promise<VitCode[]> {
           language: row.language,
           comment: row.comment,
           contributorEmail: row.contributor_email,
-          contributorName: row.contributor_name,
+          contributorName: row.say_my_name ? (row.contributor_db_name || row.contributor_name) : undefined,
           contributorRegno: row.contributor_regno,
           contributorCollege: row.contributor_college,
         };

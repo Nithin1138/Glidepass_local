@@ -83,6 +83,7 @@ function ContributorsDashboard() {
   const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [accessStatus, setAccessStatus] = useState<"loading" | "active" | "blocked" | "error">("loading");
+  const [sayMyName, setSayMyName] = useState(false);
 
   // New session form
   const [newDate, setNewDate] = useState(() => {
@@ -118,6 +119,9 @@ function ContributorsDashboard() {
         .then(r => r.json())
         .then(d => {
           setAccessStatus(d.status === "blocked" ? "blocked" : "active");
+          if (d.sayMyName !== undefined) {
+            setSayMyName(d.sayMyName);
+          }
           if (d.status !== "blocked") {
             fetchVitCodes();
             // Poll for real-time updates every 1 second (quiet mode)
@@ -133,6 +137,23 @@ function ContributorsDashboard() {
         });
     }
   }, [status]);
+
+  const handleToggleSayMyName = async () => {
+    const nextVal = !sayMyName;
+    setSayMyName(nextVal);
+    try {
+      const res = await fetch("/api/contributors/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sayMyName: nextVal })
+      });
+      if (!res.ok) throw new Error("Failed to save preference");
+      showToast("success", nextVal ? "Your name will be shown on contributions." : "Your contributions are now anonymous.");
+    } catch (e: any) {
+      setSayMyName(sayMyName); // rollback
+      showToast("error", e.message);
+    }
+  };
 
   const fetchVitCodes = async (quiet = false) => {
     if (!quiet) setLoadingVit(true);
@@ -407,6 +428,18 @@ function ContributorsDashboard() {
           
           <div className="flex items-center gap-3">
             <span className="hidden md:block text-xs font-mono" style={{ color: textSecondary }}>{session?.user?.email}</span>
+            
+            {/* Say My Name Toggle */}
+            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${borderLight} ${dk ? 'bg-white/[0.02]' : 'bg-black/[0.02]'}`}>
+              <span className={`text-[9px] font-bold uppercase tracking-wider ${dk ? "text-white/60" : "text-black/60"}`}>Say my name</span>
+              <button 
+                onClick={handleToggleSayMyName} 
+                className={`w-7 h-4 rounded-full relative transition-colors duration-200 focus:outline-none shrink-0 ${sayMyName ? 'bg-blue-500' : 'bg-neutral-600'}`}
+              >
+                <span className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ${sayMyName ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+
             <button onClick={() => setTheme(dk ? "light" : "dark")} className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors`}>
               {dk ? <Sun size={14} className="text-white" /> : <Moon size={14} className="text-black" />}
             </button>

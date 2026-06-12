@@ -11,6 +11,7 @@ interface Question {
   title: string;
   code: string;
   language: string;
+  contributorName?: string;
 }
 
 interface VitCode {
@@ -166,10 +167,15 @@ function SessionCodesContent({ params }: PageProps) {
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-2 flex flex-row items-center justify-between gap-4">
+                      <div className={`text-[10px] ${dk ? "text-white/40" : "text-black/40"} font-mono truncate`}>
+                        {q.contributorName && (
+                          <span>Contributed by: <span className={`${dk ? "text-white/70" : "text-black/70"} font-semibold`}>{q.contributorName}</span></span>
+                        )}
+                      </div>
                       <button
                         onClick={() => handleSendCommandCenter(q.code)}
-                        className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold transition-all shadow-lg shadow-emerald-600/10 active:scale-[0.98]"
+                        className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold transition-all shadow-lg shadow-emerald-600/10 active:scale-[0.98] shrink-0"
                       >
                         <Send size={13} />
                         Enter Command Center with Code
