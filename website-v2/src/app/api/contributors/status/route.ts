@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Pool } from "pg";
+import { parseVitEmail } from "@/lib/db";
 
 const pool = process.env.DATABASE_URL ? new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -21,12 +22,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: "active", message: "Database not configured, assuming active" });
     }
 
+    const { name, regno, college } = parseVitEmail(session.user.email);
+
     const client = await pool.connect();
     try {
-      // Create user if they don't exist
+      // Create or update user metadata on status check
       await client.query(
-        "INSERT INTO vit_contributors (email, status) VALUES ($1, 'active') ON CONFLICT DO NOTHING",
-        [session.user.email]
+        `INSERT INTO vit_contributors (email, status, name, regno, college) 
+         VALUES ($1, 'active', $2, $3, $4) 
+         ON CONFLICT (email) DO UPDATE SET name = $2, regno = $3, college = $4`,
+        [session.user.email, name, regno, college]
       );
       
       const res = await client.query("SELECT status FROM vit_contributors WHERE email = $1", [session.user.email]);

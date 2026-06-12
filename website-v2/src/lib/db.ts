@@ -26,6 +26,44 @@ const getJsonFilePath = () => {
 const globalDb = globalThis as unknown as { isDbInitialized: boolean };
 let isDbInitialized = globalDb.isDbInitialized || false;
 
+// Helper to parse VIT email into metadata
+export function parseVitEmail(email: string) {
+  const parts = email.split("@");
+  if (parts.length !== 2) return { name: "unknown", regno: "unknown", college: "unknown" };
+  const localPart = parts[0];
+  const domain = parts[1].toLowerCase();
+
+  // Parse Name & Register Number from local part (e.g. nithin.23bce20064 -> Name: Nithin, Regno: 23bce20064)
+  const dotIndex = localPart.indexOf(".");
+  let name = localPart;
+  let regno = "unknown";
+  if (dotIndex !== -1) {
+    name = localPart.substring(0, dotIndex);
+    regno = localPart.substring(dotIndex + 1);
+  }
+  // Capitalize name first letter
+  if (name.length > 0) {
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  // Parse College from domain
+  let college = "unknown";
+  if (domain.includes("vitap")) {
+    college = "vit-ap";
+  } else if (domain.includes("vitbhopal")) {
+    college = "vit-bhopal";
+  } else if (domain.includes("vitchennai") || domain.includes("chennai")) {
+    college = "vit-chennai";
+  } else if (domain.includes("vitstudent") || domain.includes("vellore")) {
+    // Default vitstudent domain is Vellore
+    college = "vit-vellore";
+  } else {
+    college = domain.split(".")[0];
+  }
+
+  return { name, regno, college };
+}
+
 // Initialize Postgres tables
 export async function initDb() {
   if (!pool || isDbInitialized) return;
@@ -34,6 +72,7 @@ export async function initDb() {
     // We will drop existing tables to recreate them with the correct schema
     await client.query("DROP TABLE IF EXISTS vit_questions CASCADE;");
     await client.query("DROP TABLE IF EXISTS vit_sessions CASCADE;");
+    await client.query("DROP TABLE IF EXISTS vit_contributors CASCADE;");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_sessions (
@@ -51,17 +90,22 @@ export async function initDb() {
         code TEXT NOT NULL,
         language TEXT NOT NULL,
         comment TEXT,
-        contributor_email TEXT
+        contributor_email TEXT,
+        contributor_name TEXT,
+        contributor_regno TEXT,
+        contributor_college TEXT
       );
     `);
     
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_contributors (
         email TEXT PRIMARY KEY,
-        status TEXT DEFAULT 'active'
+        status TEXT DEFAULT 'active',
+        name TEXT,
+        regno TEXT,
+        college TEXT
       );
     `);
-    
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -79,6 +123,9 @@ export interface Question {
   language: string;
   comment?: string;
   contributorEmail?: string;
+  contributorName?: string;
+  contributorRegno?: string;
+  contributorCollege?: string;
 }
 
 export interface VitCode {
@@ -108,6 +155,9 @@ export async function readCodes(): Promise<VitCode[]> {
           language: row.language,
           comment: row.comment,
           contributorEmail: row.contributor_email,
+          contributorName: row.contributor_name,
+          contributorRegno: row.contributor_regno,
+          contributorCollege: row.contributor_college,
         };
         if (!questionsBySession[row.session_id]) {
           questionsBySession[row.session_id] = [];
@@ -168,9 +218,21 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
         );
 
         for (const q of session.questions) {
+          const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
           await client.query(
-            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            [q.id, session.id, q.title, q.code, q.language, q.comment || null, q.contributorEmail || null]
+            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            [
+              q.id,
+              session.id,
+              q.title,
+              q.code,
+              q.language,
+              q.comment || null,
+              q.contributorEmail || null,
+              q.contributorName || parsed.name || null,
+              q.contributorRegno || parsed.regno || null,
+              q.contributorCollege || parsed.college || null
+            ]
           );
         }
       }
@@ -235,13 +297,32 @@ export async function deleteSession(sessionId: string): Promise<void> {
 }
 
 export async function createQuestion(sessionId: string, q: Question): Promise<void> {
+  const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
+  const updatedQ: Question = {
+    ...q,
+    contributorName: q.contributorName || parsed.name || undefined,
+    contributorRegno: q.contributorRegno || parsed.regno || undefined,
+    contributorCollege: q.contributorCollege || parsed.college || undefined,
+  };
+
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
       await client.query(
-        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        [q.id, sessionId, q.title, q.code, q.language, q.comment || null, q.contributorEmail || null]
+        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        [
+          updatedQ.id,
+          sessionId,
+          updatedQ.title,
+          updatedQ.code,
+          updatedQ.language,
+          updatedQ.comment || null,
+          updatedQ.contributorEmail || null,
+          updatedQ.contributorName || null,
+          updatedQ.contributorRegno || null,
+          updatedQ.contributorCollege || null
+        ]
       );
     } finally {
       client.release();
@@ -252,7 +333,7 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
     const s = all.find(s => s.id === sessionId);
     if (s) {
       if (!s.questions) s.questions = [];
-      s.questions.push(q);
+      s.questions.push(updatedQ);
       await writeCodes(all);
     }
   }
