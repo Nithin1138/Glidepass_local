@@ -186,18 +186,27 @@ void main() {
     const program = new Program(gl, { vertex: vert, fragment: frag, uniforms });
     const mesh = new Mesh(gl, { geometry, program });
 
+    let docRect = { left: 0, top: 0, width: 1, height: 1 };
+
     const resize = () => {
       if (!containerRef.current) return;
       const { clientWidth: w, clientHeight: h } = containerRef.current;
       renderer.setSize(w, h);
       uniforms.iResolution.value = [w, h];
+      
+      const r = containerRef.current.getBoundingClientRect();
+      docRect = {
+        left: r.left + window.scrollX,
+        top: r.top + window.scrollY,
+        width: r.width || 1,
+        height: r.height || 1
+      };
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!mouseInteraction || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = 1.0 - (e.clientY - rect.top) / rect.height;
+      if (!mouseInteraction) return;
+      const x = (e.pageX - docRect.left) / docRect.width;
+      const y = 1.0 - (e.pageY - docRect.top) / docRect.height;
       targetMouseRef.current = { x, y };
     };
 

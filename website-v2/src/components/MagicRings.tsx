@@ -179,6 +179,8 @@ export default function MagicRings({
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
     scene.add(quad);
 
+    let docRect = { left: 0, top: 0, width: 1, height: 1 };
+
     const resize = () => {
       const w = mount.clientWidth;
       const h = mount.clientHeight;
@@ -186,6 +188,14 @@ export default function MagicRings({
       renderer.setSize(w, h);
       renderer.setPixelRatio(dpr);
       uniforms.uResolution.value.set(w * dpr, h * dpr);
+
+      const r = mount.getBoundingClientRect();
+      docRect = {
+        left: r.left + window.scrollX,
+        top: r.top + window.scrollY,
+        width: r.width || 1,
+        height: r.height || 1
+      };
     };
     resize();
     window.addEventListener('resize', resize);
@@ -195,9 +205,8 @@ export default function MagicRings({
 
     // Instead of local events, listen to window so it is extremely smooth and responsive, especially behind text.
     const onMouseMove = (e: MouseEvent) => {
-      const rect = mount.getBoundingClientRect();
-      mouseRef.current[0] = (e.clientX - rect.left) / rect.width - 0.5;
-      mouseRef.current[1] = -((e.clientY - rect.top) / rect.height - 0.5);
+      mouseRef.current[0] = (e.pageX - docRect.left) / docRect.width - 0.5;
+      mouseRef.current[1] = -((e.pageY - docRect.top) / docRect.height - 0.5);
     };
     const onMouseEnter = () => { isHoveredRef.current = true; };
     const onMouseLeave = () => {
