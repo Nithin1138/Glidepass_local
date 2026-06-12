@@ -784,16 +784,16 @@ export default function Home() {
                 {
                   title: "macOS Backend",
                   icon: <Monitor size={28} />,
-                  label: "Download DMG",
+                  label: "Copy Install Cmd",
+                  installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
                   version: "v1.5.0",
-                  size: "99.0 MB",
+                  size: "94.6 MB",
                   theme: "rose",
                   gradient: "from-rose-500/30 to-transparent",
                   btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
                   borderHover: "group-hover/card:border-rose-500/40",
                   iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
-                  href: "/downloads/LANpad_macOS.dmg",
-                  installCommand: "xattr -d com.apple.quarantine /Applications/LANpad.app"
+                  href: undefined
                 },
                 {
                   title: "Windows Backend",
