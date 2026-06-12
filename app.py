@@ -166,26 +166,31 @@ def fetch_ota_templates():
                 print(f"[OTA] Failed to fetch {tmpl} from GitHub fallback: {e}")
 
 
+_listener_started = False
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _listener_started
     # Fetch latest templates in the background on startup
     import threading
     threading.Thread(target=fetch_ota_templates, daemon=True).start()
     
     # Start global keyboard listener to stop pasting via ESC key
-    try:
-        from pynput import keyboard
-        def on_press(key):
-            global stop_typing
-            if key == keyboard.Key.esc:
-                if not stop_typing:
-                    stop_typing = True
-                    print("\n!!! Paste Stopped via Laptop Keyboard (ESC) !!!")
-        listener = keyboard.Listener(on_press=on_press)
-        app.state.keyboard_listener = listener
-        listener.start()
-    except Exception as e:
-        print(f"[keyboard] Failed to start ESC listener: {e}")
+    if not _listener_started:
+        try:
+            from pynput import keyboard
+            def on_press(key):
+                global stop_typing
+                if key == keyboard.Key.esc:
+                    if not stop_typing:
+                        stop_typing = True
+                        print("\n!!! Paste Stopped via Laptop Keyboard (ESC) !!!")
+            listener = keyboard.Listener(on_press=on_press)
+            app.state.keyboard_listener = listener
+            listener.start()
+            _listener_started = True
+        except Exception as e:
+            print(f"[keyboard] Failed to start ESC listener: {e}")
 
     yield
 
