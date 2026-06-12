@@ -823,7 +823,12 @@ export default function Home() {
                     e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
                   }}
-                  className={`group/card relative p-8 bg-[#050505] border border-white/[0.04] rounded-[32px] overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]`}
+                  style={{
+                    background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
+                    borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+                    backdropFilter: "blur(40px)"
+                  }}
+                  className={`group/card relative p-8 border rounded-[32px] overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]`}
                 >
                   {/* Cursor Spotlight Glow */}
                   <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(255,255,255,0.03)_0%,_transparent_60%)]" />
