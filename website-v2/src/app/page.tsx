@@ -4,6 +4,9 @@ import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, An
 import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const RippleGrid = dynamic(() => import("../components/RippleGrid"), { ssr: false });
 
 import React, { createContext, useContext } from "react";
 const ThemeContext = createContext({ dk: true, setTheme: (t: string) => { } });
@@ -750,6 +753,18 @@ export default function Home() {
         </AnimatePresence>
 
         <div className="mesh-gradient" />
+        <div className="absolute top-0 left-0 w-full h-[120vh] overflow-hidden pointer-events-none z-0">
+          <RippleGrid
+            enableRainbow={false}
+            gridColor={dk ? "#ffffff" : "#000000"}
+            rippleIntensity={0.02}
+            gridSize={12}
+            gridThickness={15}
+            mouseInteraction={true}
+            mouseInteractionRadius={1.2}
+            opacity={dk ? 0.25 : 0.08}
+          />
+        </div>
         <BackgroundOrbs />
         <CursorSpotlight />
         <Navbar />
