@@ -85,6 +85,40 @@ function ContributorsDashboard() {
   const [accessStatus, setAccessStatus] = useState<"loading" | "active" | "blocked" | "error">("loading");
   const [sayMyName, setSayMyName] = useState(false);
 
+  const [examRules, setExamRules] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const loadRules = () => {
+      const savedRules = localStorage.getItem("glidepass-exam-rules");
+      if (savedRules) {
+        try { setExamRules(JSON.parse(savedRules)); } catch (e) {}
+      }
+    };
+    loadRules();
+    window.addEventListener("storage", loadRules);
+    return () => window.removeEventListener("storage", loadRules);
+  }, []);
+
+  const checkRuleSatisfied = (questionsCount: number, ruleStr: string | null | undefined): boolean => {
+    if (!ruleStr) return questionsCount >= 1;
+    const trimmed = ruleStr.trim();
+    if (!trimmed) return questionsCount >= 1;
+
+    if (trimmed.includes("-")) {
+      const [minStr, maxStr] = trimmed.split("-");
+      const min = parseInt(minStr.trim(), 10);
+      const max = parseInt(maxStr.trim(), 10);
+      if (isNaN(min) && isNaN(max)) return questionsCount >= 1;
+      if (isNaN(min)) return questionsCount <= max;
+      if (isNaN(max)) return questionsCount >= min;
+      return questionsCount >= min && questionsCount <= max;
+    } else {
+      const min = parseInt(trimmed, 10);
+      if (isNaN(min)) return questionsCount >= 1;
+      return questionsCount >= min;
+    }
+  };
+
   // New session form
   const [newDate, setNewDate] = useState(() => {
     const d = new Date();
@@ -494,14 +528,28 @@ function ContributorsDashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {Object.entries(groupedSessions).map(([type, sessions]) => {
                             const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
+                            const today = new Date();
+                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                            const todaySessions = sessions.filter(s => s.date === todayStr);
+                            const todayCodes = todaySessions.reduce((acc, s) => acc + (s.questions?.length || 0), 0);
+                            const hasSessionToday = todaySessions.length > 0;
+                            const isSatisfied = hasSessionToday && checkRuleSatisfied(todayCodes, examRules[type]);
+
                             return (
                               <div key={type}
                                 onClick={() => setSelectedExamType(type)}
-                                className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
+                                className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden flex justify-between items-center"
                                 style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                                 <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                <h2 className="text-base font-black uppercase tracking-wider mb-1">{type}</h2>
-                                <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{totalCodes} Codes Contributed</p>
+                                <div className="space-y-1">
+                                  <h2 className="text-base font-black uppercase tracking-wider">{type}</h2>
+                                  <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                                    {sessions.length} Session{sessions.length !== 1 && 's'} • {totalCodes} Code{totalCodes !== 1 && 's'}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className={`w-3 h-3 rounded-full ${isSatisfied ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'} transition-all duration-300 animate-pulse`} />
+                                </div>
                               </div>
                             );
                           })}
