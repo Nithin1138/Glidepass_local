@@ -13,7 +13,7 @@ export async function GET() {
   
   const client = await pool.connect();
   try {
-    const res = await client.query("SELECT email, status FROM vit_contributors ORDER BY email ASC");
+    const res = await client.query("SELECT email, status, name, regno, college FROM vit_contributors ORDER BY email ASC");
     return NextResponse.json(res.rows, {
       headers: {
         "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59"

@@ -11,6 +11,40 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Client-safe VIT email metadata parser
+function parseVitEmail(email: string) {
+  const parts = email.split("@");
+  if (parts.length !== 2) return { name: "unknown", regno: "unknown", college: "unknown" };
+  const localPart = parts[0];
+  const domain = parts[1].toLowerCase();
+
+  const dotIndex = localPart.indexOf(".");
+  let name = localPart;
+  let regno = "unknown";
+  if (dotIndex !== -1) {
+    name = localPart.substring(0, dotIndex);
+    regno = localPart.substring(dotIndex + 1);
+  }
+  if (name.length > 0) {
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  let college = "unknown";
+  if (domain.includes("vitap")) {
+    college = "vit-ap";
+  } else if (domain.includes("vitbhopal")) {
+    college = "vit-bhopal";
+  } else if (domain.includes("vitchennai") || domain.includes("chennai")) {
+    college = "vit-chennai";
+  } else if (domain.includes("vitstudent") || domain.includes("vellore")) {
+    college = "vit-vellore";
+  } else {
+    college = domain.split(".")[0];
+  }
+
+  return { name, regno, college };
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PALETTE TOKENS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -290,7 +324,7 @@ export default function GlidePassAdmin() {
   const [qComment, setQComment] = useState("");
 
   // ─── Contributors Management ───
-  const [contributors, setContributors] = useState<{ email: string; status: string }[]>([]);
+  const [contributors, setContributors] = useState<{ email: string; status: string; name?: string; regno?: string; college?: string; }[]>([]);
   const [loadingContributors, setLoadingContributors] = useState(false);
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null);
   const [expandedContribQId, setExpandedContribQId] = useState<string | null>(null);
@@ -465,7 +499,7 @@ export default function GlidePassAdmin() {
   useEffect(() => {
     if (isAuth) {
       if (view === "ota") fetchTemplate(selectedFile);
-      if (view === "vitcodes" || view === "dashboard") {
+      if (view === "vitcodes" || view === "dashboard" || view === "contributors") {
         fetchVitCodes();
         // Start polling for real-time sync (every 5 seconds)
         const interval = setInterval(() => {
@@ -1351,7 +1385,10 @@ export default function GlidePassAdmin() {
                       ) : !selectedContributor ? (
                         <div className="grid grid-cols-1 gap-4">
                           {contributors.map(c => {
-                            const name = c.email.split(".")[0];
+                            const parsed = parseVitEmail(c.email);
+                            const name = c.name || parsed.name;
+                            const regno = c.regno || parsed.regno;
+                            const college = c.college || parsed.college;
                             const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
                             
                             return (
@@ -1359,11 +1396,14 @@ export default function GlidePassAdmin() {
                                 <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
                                 <div className="flex items-center gap-4">
                                   <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase text-lg" style={{ background: `${P.blue}15`, color: P.blue }}>
-                                    {name[0]}
+                                    {name[0] || "?"}
                                   </div>
                                   <div>
-                                    <h3 className="text-sm font-bold uppercase">{name}</h3>
-                                    <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email}</p>
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="text-sm font-bold uppercase">{name}</h3>
+                                      <span className="text-[8px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{college}</span>
+                                    </div>
+                                    <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email} • {regno}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-6 w-full md:w-auto">
@@ -1386,7 +1426,10 @@ export default function GlidePassAdmin() {
                           {(() => {
                             const c = contributors.find(x => x.email === selectedContributor);
                             if (!c) return null;
-                            const name = c.email.split(".")[0];
+                            const parsed = parseVitEmail(c.email);
+                            const name = c.name || parsed.name;
+                            const regno = c.regno || parsed.regno;
+                            const college = c.college || parsed.college;
                             const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
                             const types = Array.from(new Set(codes.map(q => q.sessionType)));
                             
@@ -1403,8 +1446,11 @@ export default function GlidePassAdmin() {
                                   <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <div>
-                                      <h2 className="text-xl font-black uppercase mb-1">{name}</h2>
-                                      <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email}</p>
+                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                        <h2 className="text-xl font-black uppercase">{name}</h2>
+                                        <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{college}</span>
+                                      </div>
+                                      <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email} • ID: {regno}</p>
                                     </div>
                                     <div className="flex items-center gap-3 flex-wrap">
                                       {types.map(t => (
