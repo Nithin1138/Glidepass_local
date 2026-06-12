@@ -124,17 +124,6 @@ function SessionCodesContent({ params }: PageProps) {
             >
               <ArrowLeft size={18} />
             </Link>
-            
-            <button 
-              onClick={() => {
-                const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-                setTheme(next);
-              }} 
-              className={`w-9 h-9 rounded-xl border ${borderLight} hover:bg-white/5 flex items-center justify-center transition-all`}
-              title={`Theme: ${theme}`}
-            >
-              {theme === "dark" ? <Moon size={14} className={txt1} /> : theme === "light" ? <Sun size={14} className={txt1} /> : <Sparkles size={14} className="text-blue-400" />}
-            </button>
 
             <div className="flex items-center gap-2 md:gap-3">
               <div className={`shrink-0 w-8 h-8 rounded-lg overflow-hidden border ${dk ? 'border-white/10' : 'border-black/10'} ${dk ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
@@ -152,6 +141,19 @@ function SessionCodesContent({ params }: PageProps) {
                 Session Questions
               </span>
             </div>
+          </div>
+
+          <div>
+            <button 
+              onClick={() => {
+                const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+                setTheme(next);
+              }} 
+              className={`w-9 h-9 rounded-xl border ${borderLight} hover:bg-white/5 flex items-center justify-center transition-all`}
+              title={`Theme: ${theme}`}
+            >
+              {theme === "dark" ? <Moon size={14} className={txt1} /> : theme === "light" ? <Sun size={14} className={txt1} /> : <Sparkles size={14} className="text-blue-400" />}
+            </button>
           </div>
         </div>
       </header>
