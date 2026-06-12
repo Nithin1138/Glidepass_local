@@ -782,7 +782,8 @@ export default function Home() {
                   borderHover: "group-hover/card:border-amber-500/40",
                   iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
                   installCommand: undefined,
-                  href: undefined
+                  href: undefined,
+                  topLineColor: "via-amber-500/40"
                 },
                 {
                   title: "macOS Backend",
@@ -796,7 +797,8 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
                   borderHover: "group-hover/card:border-rose-500/40",
                   iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
-                  href: undefined
+                  href: undefined,
+                  topLineColor: "via-rose-500/40"
                 },
                 {
                   title: "Windows Backend",
@@ -810,7 +812,8 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                   borderHover: "group-hover/card:border-indigo-500/40",
                   iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
-                  href: undefined
+                  href: undefined,
+                  topLineColor: "via-indigo-500/40"
                 }
               ].map((d, i) => (
                 <motion.div
@@ -830,6 +833,9 @@ export default function Home() {
                   }}
                   className={`group/card relative p-8 border rounded-[32px] overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]`}
                 >
+                  {/* Top Highlight Line */}
+                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent ${d.topLineColor} to-transparent`} />
+
                   {/* Cursor Spotlight Glow */}
                   <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(255,255,255,0.03)_0%,_transparent_60%)]" />
 
