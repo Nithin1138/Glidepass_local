@@ -292,6 +292,12 @@ export default function GlidePassAdmin() {
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
 
+  // ─── Delete Session (Two-Step) ───
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetSession, setDeleteTargetSession] = useState<VitCode | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingSession, setDeletingSession] = useState(false);
+
   // New session form
   const [newDate, setNewDate] = useState(() => {
     const d = new Date();
@@ -432,10 +438,18 @@ export default function GlidePassAdmin() {
     }
   };
 
-  const handleDeleteSession = async (id: string) => {
-    if (!confirm("Delete this session?")) return;
-    
-    // Optimistic
+  const openDeleteModal = (session: VitCode) => {
+    setDeleteTargetSession(session);
+    setDeleteConfirmText("");
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteSession = async () => {
+    if (!deleteTargetSession || deleteConfirmText !== deleteTargetSession.examType) return;
+    const id = deleteTargetSession.id;
+    setDeletingSession(true);
+
+    // Optimistic removal
     setVitSessions(prev => {
       const next = prev.filter(s => s.id !== id);
       if (activeSessionId === id) {
@@ -444,13 +458,19 @@ export default function GlidePassAdmin() {
       }
       return next;
     });
+    setShowDeleteModal(false);
+    setDeleteConfirmText("");
+    setDeleteTargetSession(null);
 
     try {
       const res = await fetch(`/api/vitcodes/session?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete session");
+      showToast("success", "Session deleted successfully.");
     } catch (e: any) {
       showToast("error", e.message);
       fetchVitCodes();
+    } finally {
+      setDeletingSession(false);
     }
   };
 
@@ -1252,7 +1272,7 @@ export default function GlidePassAdmin() {
                                             <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
                                             <div className="flex items-center justify-between">
                                               <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
-                                              <button onClick={e => { e.stopPropagation(); handleDeleteSession(s.id); }}
+                                              <button onClick={e => { e.stopPropagation(); openDeleteModal(s); }}
                                                 className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:opacity-80"
                                                 style={{ color: P.error }}>
                                                 <Trash2 size={12} />
@@ -1369,6 +1389,91 @@ export default function GlidePassAdmin() {
                       </AnimatePresence>
                     </motion.div>
                   )}
+
+                  {/* ═══ DELETE SESSION CONFIRMATION MODAL ═══ */}
+                  <AnimatePresence>
+                    {showDeleteModal && deleteTargetSession && (
+                      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.92 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.92 }}
+                          className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
+                        >
+                          <div className={`p-5 sm:p-6 rounded-[20px] ${cardBg} space-y-4`}>
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                                  <Trash2 size={16} className="text-red-400" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Session</h3>
+                                  <p className={`text-[10px] ${txt3}`}>This action cannot be undone</p>
+                                </div>
+                              </div>
+                              <button onClick={() => setShowDeleteModal(false)} className={`p-1.5 rounded-lg border border-white/10 hover:bg-white/5 shrink-0`}>
+                                <X size={14} className={txt1} />
+                              </button>
+                            </div>
+
+                            {/* Warning Box */}
+                            <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                              <p className="text-xs text-red-300/80 leading-relaxed">
+                                You are about to permanently delete session{" "}
+                                <span className="font-bold text-white">{deleteTargetSession.title || deleteTargetSession.date}</span>{" "}
+                                from <span className="font-bold text-white">{deleteTargetSession.examType}</span>.
+                                All {deleteTargetSession.questions.length} question{deleteTargetSession.questions.length !== 1 ? "s" : ""} will be removed from the database.
+                              </p>
+                            </div>
+
+                            {/* Type-to-confirm */}
+                            <div>
+                              <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
+                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.examType}</span> to confirm
+                              </label>
+                              <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={e => setDeleteConfirmText(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === deleteTargetSession.examType) handleDeleteSession(); }}
+                                placeholder={`Type "${deleteTargetSession.examType}" here...`}
+                                autoFocus
+                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === deleteTargetSession.examType ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
+                              />
+                            </div>
+
+                            {/* Footer Buttons */}
+                            <div className="flex justify-end gap-2 pt-1">
+                              <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-all`}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleDeleteSession}
+                                disabled={deleteConfirmText !== deleteTargetSession.examType || deletingSession}
+                                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                  deleteConfirmText === deleteTargetSession.examType && !deletingSession
+                                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
+                                    : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
+                                }`}
+                              >
+                                {deletingSession ? (
+                                  <div className="w-3.5 h-3.5 rounded-full border-2 border-red-300/40 border-t-white animate-spin" />
+                                ) : (
+                                  <Trash2 size={12} />
+                                )}
+                                Delete Session
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
 
                   {/* ═══ CONTRIBUTORS ═══ */}
                   {view === "contributors" && (
