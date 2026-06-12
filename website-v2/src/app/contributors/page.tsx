@@ -288,9 +288,9 @@ function ContributorsDashboard() {
 
         {/* Top Spacer or Icon */}
         <div className="relative z-10 shrink-0 mb-1 md:mb-4">
-          <div className="inline-flex items-center justify-center rounded-2xl overflow-hidden border border-white/10 shadow-2xl w-12 h-12 md:w-16 md:h-16">
+          <div className="inline-flex items-center justify-center rounded-full overflow-hidden border border-white/10 shadow-2xl w-14 h-14 md:w-20 md:h-20 bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover" />
+            <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover scale-[1.05]" />
           </div>
         </div>
 
@@ -392,9 +392,9 @@ function ContributorsDashboard() {
       <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-40`}>
         <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
-            <div className={`shrink-0 w-8 h-8 rounded-xl overflow-hidden border border-black/10 shadow-sm`}>
+            <div className={`shrink-0 w-10 h-10 rounded-full overflow-hidden border border-black/10 shadow-sm bg-white`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover" />
+              <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover scale-[1.05]" />
             </div>
             <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
               LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
