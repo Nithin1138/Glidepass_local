@@ -55,7 +55,7 @@ const CursorSpotlight = () => {
       style={{
         background: useTransform(
           [mouseX, mouseY],
-          ([x, y]) => `radial-gradient(400px at ${x}px ${y}px, ${dk ? "rgba(0, 119, 192, 0.25), rgba(199, 238, 255, 0.1)" : "rgba(0, 119, 192, 0.1), rgba(199, 238, 255, 0.05)"}, transparent 80%)`
+          ([x, y]) => `radial-gradient(400px at ${x}px ${y}px, ${dk ? "rgba(0, 119, 192, 0.12), rgba(199, 238, 255, 0.04)" : "rgba(0, 119, 192, 0.05), rgba(199, 238, 255, 0.02)"}, transparent 80%)`
         ),
       }}
     />
