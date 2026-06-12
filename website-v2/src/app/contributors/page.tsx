@@ -259,7 +259,7 @@ function ContributorsDashboard() {
   // ─── UNAUTHENTICATED STATE ───
   if (status === "unauthenticated") {
     return (
-      <div className={`h-[100dvh] ${cardBg} ${textPrimary} font-inter flex flex-col items-center justify-between relative overflow-hidden py-6 md:py-12 px-4`}>
+      <div className="h-[100dvh] bg-[#050505] text-[#FAFAFA] font-inter flex flex-col items-center justify-between relative overflow-hidden py-6 md:py-12 px-4">
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[120px] rounded-full mix-blend-screen" />
@@ -276,7 +276,7 @@ function ContributorsDashboard() {
             baseRadius={0.25}
             radiusStep={0.08}
             scaleRate={0.08}
-            opacity={dk ? 0.35 : 0.1}
+            opacity={0.35}
             blur={0}
             noiseAmount={0.05}
             followMouse={true}
@@ -288,9 +288,9 @@ function ContributorsDashboard() {
 
         {/* Top Spacer or Icon */}
         <div className="relative z-10 shrink-0 mb-1 md:mb-4">
-          <div className="inline-flex items-center justify-center rounded-full overflow-hidden border border-white/10 shadow-2xl w-14 h-14 md:w-20 md:h-20 bg-white">
+          <div className="inline-flex items-center justify-center rounded-2xl overflow-hidden border border-white/10 shadow-2xl w-14 h-14 md:w-20 md:h-20 bg-white/5 backdrop-blur-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover scale-[1.05]" />
+            <img src="/logo.png" alt="LANpad Logo" className="w-[85%] h-[85%] object-contain scale-[1.05] invert hue-rotate-180 brightness-110 contrast-125" />
           </div>
         </div>
 
@@ -304,23 +304,23 @@ function ContributorsDashboard() {
             Contribute to LANpad
           </h1>
           
-          <p className={`text-xs md:text-lg ${textSecondary} mb-4 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4`}>
+          <p className="text-xs md:text-lg text-[#FAFAFA]/60 mb-4 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
             A community effort to maintain accurate exam exam codes for VIT students. Help your peers by providing the latest exam session questions.
           </p>
 
           {/* Info Cards Container (Stack vertically on mobile, row on desktop) */}
           <div className="w-full flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-6 px-4 md:px-0 py-1 mb-4 md:mb-8 min-h-0 shrink-0">
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><BookOpen size={13} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
-              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Submit VIT exam sessions directly to the LANpad database for real-time local syncs.</p>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><BookOpen size={13} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
+              <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">Submit VIT exam sessions directly to the LANpad database for real-time local syncs.</p>
             </div>
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><Layout size={13} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
-              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>A simplified workspace to add sessions and verify codes safely without deletion risk.</p>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><Layout size={13} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
+              <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">A simplified workspace to add sessions and verify codes safely without deletion risk.</p>
             </div>
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
-              <p className={`text-[9px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google accounts.</p>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
+              <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">Access is strictly limited to verified university Google accounts.</p>
             </div>
           </div>
 
@@ -338,7 +338,7 @@ function ContributorsDashboard() {
               onChange={(e) => setAcceptedTerms(e.target.checked)}
               className="w-3.5 h-3.5 md:w-4 md:h-4 rounded border-white/20 bg-white/5 accent-blue-500 shrink-0 cursor-pointer mt-0.5 md:mt-0"
             />
-            <label htmlFor="terms" className={`text-[10px] md:text-sm ${textSecondary} cursor-pointer select-none leading-normal`}>
+            <label htmlFor="terms" className="text-[10px] md:text-sm text-[#FAFAFA]/60 cursor-pointer select-none leading-normal">
               I understand that all contributions are monitored. I agree to provide accurate and clean exam codes.
             </label>
           </div>
@@ -363,7 +363,7 @@ function ContributorsDashboard() {
 
         {/* Footer Link */}
         <div className="relative z-10 shrink-0 mt-2 md:mt-6">
-          <Link href="/" className={`transition-colors text-[10px] md:text-xs font-bold uppercase tracking-wider ${dk ? 'text-white/40 hover:text-white' : 'text-black/40 hover:text-black'}`}>
+          <Link href="/" className="transition-colors text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/40 hover:text-white">
             ← Back to Home
           </Link>
         </div>
@@ -392,9 +392,13 @@ function ContributorsDashboard() {
       <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-40`}>
         <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
-            <div className={`shrink-0 w-10 h-10 rounded-full overflow-hidden border border-black/10 shadow-sm bg-white`}>
+            <div className={`shrink-0 w-8 h-8 rounded-lg overflow-hidden border ${dk ? 'border-white/10' : 'border-black/10'} ${dk ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-favicon.png" alt="LANpad Logo" className="w-full h-full object-cover scale-[1.05]" />
+              <img 
+                src="/logo.png" 
+                alt="LANpad Logo" 
+                className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert hue-rotate-180 brightness-110 contrast-125' : ''}`} 
+              />
             </div>
             <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
               LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
