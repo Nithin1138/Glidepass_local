@@ -431,12 +431,12 @@ function ContributorsDashboard() {
             
             {/* Say My Name Toggle */}
             <div className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${borderLight} ${dk ? 'bg-white/[0.02]' : 'bg-black/[0.02]'}`}>
-              <span className={`text-[9px] font-bold uppercase tracking-wider ${dk ? "text-white/60" : "text-black/60"}`}>Say my name</span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${dk ? "text-white/60" : "text-black/60"}`}>Say my name</span>
               <button 
                 onClick={handleToggleSayMyName} 
-                className={`w-7 h-4 rounded-full relative transition-colors duration-200 focus:outline-none shrink-0 ${sayMyName ? 'bg-blue-500' : 'bg-neutral-600'}`}
+                className={`w-9 h-5 rounded-full p-0.5 relative transition-colors duration-200 focus:outline-none shrink-0 ${sayMyName ? 'bg-blue-500' : 'bg-neutral-600'}`}
               >
-                <span className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ${sayMyName ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                <span className={`w-4 h-4 bg-white rounded-full block transition-transform duration-200 ${sayMyName ? 'translate-x-4' : 'translate-x-0'}`} />
               </button>
             </div>
 
