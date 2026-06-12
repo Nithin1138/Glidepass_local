@@ -778,6 +778,9 @@ class LANpadLauncher:
             self.start_server()
         else:
             self.stop_server()
+        # Force the window to stay visible in case macOS attempts to hide it
+        if self.root.state() != "withdrawn":
+            self.root.after(100, self.show_window)
 
     def start_server(self):
         # Check if already running (external process)
@@ -827,6 +830,8 @@ class LANpadLauncher:
         self._ip_text = f"http://{ip}:8000"
         self._draw_ip(True)
         self.root.after(200, lambda: self.update_qr_code(ip))
+        if self.root.state() != "withdrawn":
+            self.root.after(100, self.show_window)
         # If the user has multiple network interfaces, draw a small
         # hint under the URL pill so they know which one to use.
         if len(all_ips) > 1:
@@ -878,6 +883,8 @@ class LANpadLauncher:
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
         self._draw_qr_empty()
+        if self.root.state() != "withdrawn":
+            self.root.after(100, self.show_window)
 
     def check_process_status(self):
         try:
