@@ -84,6 +84,7 @@ function ContributorsDashboard() {
   const [qCode, setQCode] = useState("");
   const [qLang, setQLang] = useState("cpp");
   const [qComment, setQComment] = useState("");
+  const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("vit_exam_types");
@@ -194,6 +195,7 @@ function ContributorsDashboard() {
     setQTitle("");
     setQCode("");
     setQComment("");
+    setShowAddQuestionModal(false);
 
     try {
       const res = await fetch("/api/vitcodes/question", {
@@ -359,7 +361,7 @@ function ContributorsDashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${cardBg} ${textPrimary} font-inter relative overflow-hidden pb-32`}>
+    <div className={`h-[100dvh] flex flex-col ${cardBg} ${textPrimary} font-inter relative overflow-hidden`}>
       {/* Background Orbs */}
       <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
         <motion.div animate={{ x: [0, 50, 0], y: [0, 30, 0] }} transition={{ duration: 20, repeat: Infinity }} className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full mix-blend-screen" />
@@ -367,8 +369,8 @@ function ContributorsDashboard() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className={`sticky top-0 z-40 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'}`}>
-        <div className="px-4 md:px-12 h-16 flex items-center justify-between">
+      <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-40`}>
+        <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
             <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${dk ? 'bg-white text-black' : 'bg-black text-white'}`}>
               <Code size={18} />
@@ -378,229 +380,197 @@ function ContributorsDashboard() {
             </span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="hidden md:block text-xs font-mono" style={{ color: textSecondary }}>{session?.user?.email}</span>
             <button onClick={() => setTheme(dk ? "light" : "dark")} className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors`}>
-              {dk ? <Sun size={16} className="text-white" /> : <Moon size={16} className="text-black" />}
+              {dk ? <Sun size={14} className="text-white" /> : <Moon size={14} className="text-black" />}
             </button>
             <button onClick={() => signOut()} className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors`}>
-              <LogOut size={16} className={dk ? "text-white/60" : "text-black/60"} />
+              <LogOut size={14} className={dk ? "text-white/60" : "text-black/60"} />
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="px-4 md:px-12 py-6 md:py-10 max-w-7xl mx-auto">
-        <motion.div key="vit" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+      {/* Main Content Area */}
+      <main className="flex-1 min-h-0 flex flex-col relative w-full max-w-7xl mx-auto px-4 md:px-12 py-4">
+        <div className="flex-1 min-h-0 flex flex-col">
           <AnimatePresence mode="wait">
             {!vitDetailView ? (
-              <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
+              <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="flex-1 min-h-0 flex flex-col space-y-4">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="shrink-0 flex flex-row justify-between items-center gap-4">
                   <div>
-                    <h2 className="text-lg md:text-xl font-black font-outfit tracking-wide uppercase">VIT-AP Code Sessions</h2>
-                    <p className={`text-xs ${textSecondary}`}>Manage exam sessions and code questions</p>
+                    <h2 className="text-base md:text-lg font-black font-outfit tracking-wide uppercase">VIT-AP Code Sessions</h2>
+                    <p className={`text-[10px] ${textSecondary}`}>Manage exam sessions and code questions</p>
                   </div>
-                  <div className="flex items-center gap-2 md:gap-3 flex-wrap w-full md:w-auto">
-                    <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`flex-1 md:flex-none text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
-                      <option value="all">All Types</option>
+                  <div className="flex items-center gap-2">
+                    <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-2.5 py-1.5 border focus:outline-none ${inputBg}`}>
+                      <option value="all">All</option>
                       {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <button onClick={() => setShowNewSessionModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 md:px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap"
+                    <button onClick={() => setShowNewSessionModal(true)} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap"
                       style={{ background: P.blue }}>
-                      <Plus size={13} /> New Session
+                      <Plus size={12} /> <span className="hidden sm:inline">New Session</span><span className="sm:hidden">New</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Session Cards Grid */}
-                {loadingVit ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
-                  </div>
-                ) : filteredSessions.length === 0 ? (
-                  <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(0,0,0,0.1)", color: dk ? `${P.sky}60` : `${P.black}60` }}>
-                    <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-xs">No sessions yet. Create your first one.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {!selectedExamType ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(groupedSessions).map(([type, sessions]) => {
-                          const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
-                          return (
-                            <div key={type}
-                              onClick={() => setSelectedExamType(type)}
-                              className="p-6 rounded-[28px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
-                              style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                              <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                              <h2 className="text-xl font-black uppercase tracking-wider mb-2">{type}</h2>
-                              <p className="text-sm font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{totalCodes} Codes Contributed</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <button onClick={() => setSelectedExamType(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
-                          <ArrowLeft size={14} /> Back to Exam Types
-                        </button>
-                        
-                        {(() => {
-                          const sessions = groupedSessions[selectedExamType] || [];
-                          const today = new Date();
-                          const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                {/* Session Cards list (Scrollable internally) */}
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                  {loadingVit ? (
+                    <div className="flex items-center justify-center py-20">
+                      <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                    </div>
+                  ) : filteredSessions.length === 0 ? (
+                    <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(0,0,0,0.1)", color: dk ? `${P.sky}60` : `${P.black}60` }}>
+                      <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-xs">No sessions yet. Create your first one.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {!selectedExamType ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {Object.entries(groupedSessions).map(([type, sessions]) => {
+                            const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
+                            return (
+                              <div key={type}
+                                onClick={() => setSelectedExamType(type)}
+                                className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
+                                style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                <h2 className="text-base font-black uppercase tracking-wider mb-1">{type}</h2>
+                                <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{totalCodes} Codes Contributed</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                          <button onClick={() => setSelectedExamType(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
+                            <ArrowLeft size={14} /> Back to Exam Types
+                          </button>
                           
-                          const sorted = [...sessions].sort((a, b) => {
-                            if (a.date === todayStr && b.date !== todayStr) return -1;
-                            if (b.date === todayStr && a.date !== todayStr) return 1;
-                            const dateCmp = b.date.localeCompare(a.date);
-                            if (dateCmp !== 0) return dateCmp;
-                            return b.id.localeCompare(a.id);
-                          });
-                          
-                          const formatDate = (d: string) => {
-                            const p = d.split("-");
-                            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
-                          };
-                          
-                          const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
+                          {(() => {
+                            const sessions = groupedSessions[selectedExamType] || [];
+                            const today = new Date();
+                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                            
+                            const sorted = [...sessions].sort((a, b) => {
+                              if (a.date === todayStr && b.date !== todayStr) return -1;
+                              if (b.date === todayStr && a.date !== todayStr) return 1;
+                              const dateCmp = b.date.localeCompare(a.date);
+                              if (dateCmp !== 0) return dateCmp;
+                              return b.id.localeCompare(a.id);
+                            });
+                            
+                            const formatDate = (d: string) => {
+                              const p = d.split("-");
+                              return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+                            };
+                            
+                            const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
 
-                          return (
-                            <>
-                              <div className="mb-4">
-                                <h2 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>{selectedExamType}</h2>
-                                <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{sessions.length} Session{sessions.length !== 1 && 's'} • {totalCodes} Codes Contributed</p>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {sorted.map(s => (
-                                  <div key={s.id}
-                                    onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
-                                    className="p-5 rounded-[24px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
-                                    style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                    <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
-                                      <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                            return (
+                              <>
+                                <div className="mb-2 shrink-0">
+                                  <h2 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>{selectedExamType}</h2>
+                                  <p className="text-[10px] font-mono mt-0.5" style={{ color: dk ? `${P.sky}60` : `${P.black}44` }}>{sessions.length} Session{sessions.length !== 1 && 's'} • {totalCodes} Codes Contributed</p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {sorted.map(s => (
+                                    <div key={s.id}
+                                      onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
+                                      className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
+                                      style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                      <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
+                                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                                      </div>
+                                      <h3 className="text-xs font-bold mb-2 truncate">{s.title || formatDate(s.date)}</h3>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
+                                      </div>
                                     </div>
-                                    <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                )}
+                                  ))}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ) : (
               /* Session Detail View */
-              <motion.div key="vit-detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
-                <button onClick={() => setVitDetailView(false)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
-                  <ArrowLeft size={14} /> Back to Sessions
-                </button>
+              <motion.div key="vit-detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="flex-1 min-h-0 flex flex-col space-y-4">
+                <div className="shrink-0 flex items-center justify-between">
+                  <button onClick={() => setVitDetailView(false)} className="flex items-center gap-1.5 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
+                    <ArrowLeft size={14} /> Back
+                  </button>
+
+                  <button onClick={() => setShowAddQuestionModal(true)} className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                    style={{ background: P.blue }}>
+                    <Plus size={12} /> Add Question
+                  </button>
+                </div>
 
                 {activeSession && (
-                  <>
-                    {/* Session Header */}
-                    <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                  <div className="flex-1 min-h-0 flex flex-col space-y-3">
+                    {/* Session Header Card */}
+                    <div className="shrink-0 p-4 rounded-[20px] border relative overflow-hidden"
                       style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                       <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-lg font-black font-outfit uppercase">{activeSession.title || activeSession.date}</h2>
-                        <span className="text-[9px] px-2.5 py-0.5 rounded-md font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{activeSession.examType}</span>
-                        <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
-                        <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes Contributed</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-sm font-black font-outfit uppercase">{activeSession.title || activeSession.date}</h2>
+                        <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{activeSession.examType}</span>
+                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
+                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes</span>
                       </div>
                     </div>
 
-                    {/* Add Question Form */}
-                    <div className="p-4 md:p-6 rounded-[24px] md:rounded-[28px] border relative overflow-hidden space-y-4 md:space-y-5"
-                      style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                      <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                      <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: P.blue }}>
-                        <Plus size={14} /> Add Code Question
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2">
-                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
-                          <input type="text" value={qTitle} onChange={e => setQTitle(e.target.value)} placeholder="e.g. Matrix Transpose"
-                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                        </div>
-                        <div>
-                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
-                          <select value={qLang} onChange={e => setQLang(e.target.value)} className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}>
-                            <option value="cpp">C++ (cpp)</option>
-                            <option value="c">C (c)</option>
-                            <option value="python">Python</option>
-                            <option value="java">Java</option>
-                            <option value="javascript">JavaScript</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
-                        <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
-                          className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                      </div>
-                      <div>
-                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: `${P.sky}80` }}>Source Code</label>
-                        <textarea value={qCode} onChange={e => setQCode(e.target.value)} placeholder="Paste source code..."
-                          className="w-full h-40 text-xs font-mono rounded-xl p-4 border focus:outline-none resize-none"
-                          style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
-                      </div>
-                      <div className="flex justify-end">
-                        <button onClick={handleAddQuestion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-[0.98] transition-all"
-                          style={{ background: P.blue }}><Plus size={13} /> Add Question</button>
-                      </div>
-                    </div>
-
-                    {/* Questions List */}
-                    <div className="space-y-4">
+                    {/* Questions List (Fills remainder & scrolls internally) */}
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
                       {activeSession.questions.length === 0 ? (
-                        <div className="py-12 text-center rounded-[28px] border border-dashed" style={{ borderColor: "rgba(199,238,255,0.1)", color: `${P.sky}60` }}>
+                        <div className="py-16 text-center rounded-[28px] border border-dashed" style={{ borderColor: "rgba(199,238,255,0.1)", color: `${P.sky}60` }}>
                           <Code size={32} className="mx-auto mb-3 opacity-30" />
-                          <p className="text-xs">No questions in this session.</p>
+                          <p className="text-xs">No questions in this session. Click "Add Question" to start contributing.</p>
                         </div>
                       ) : (
                         activeSession.questions.map((q, idx) => (
-                          <div key={q.id} className="p-1.5 rounded-[28px] border relative overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+                          <div key={q.id} className="p-1 rounded-[20px] border relative overflow-hidden cursor-pointer hover:shadow-lg transition-all"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(240,240,240,0.5)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(0,0,0,0.05)", backdropFilter: "blur(40px)" }}
                             onClick={() => setExpandedQId(expandedQId === q.id ? null : q.id)}>
                             <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-50`} />
                             
-                            <div className="p-4 md:p-5 rounded-[24px] border" style={{ background: dk ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.8)", borderColor: dk ? "transparent" : "rgba(0,0,0,0.03)" }}>
+                            <div className="p-3 md:p-4 rounded-[16px] border" style={{ background: dk ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.8)", borderColor: dk ? "transparent" : "rgba(0,0,0,0.03)" }}>
                               <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-3">
-                                  <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded-lg text-[10px] font-bold mt-0.5" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
-                                  <div className="flex flex-col">
-                                    <h4 className="text-sm font-bold" style={{ color: dk ? "white" : "black" }}>{q.title}</h4>
-                                    {q.comment && <p className="text-xs mt-1" style={{ color: dk ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)" }}>{q.comment}</p>}
+                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                  <span className="w-5 h-5 shrink-0 flex items-center justify-center rounded-lg text-[9px] font-bold mt-0.5" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
+                                  <div className="flex flex-col min-w-0 flex-1">
+                                    <h4 className="text-xs font-bold truncate" style={{ color: dk ? "white" : "black" }}>{q.title}</h4>
+                                    {q.comment && <p className="text-[10px] mt-0.5 truncate" style={{ color: dk ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)" }}>{q.comment}</p>}
                                   </div>
                                 </div>
-                                <div className="flex items-center shrink-0 ml-4">
-                                  <span className="text-[10px] font-mono uppercase px-2 py-1 rounded-md border" style={{ color: dk ? `${P.sky}80` : `${P.black}60`, borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}>{q.language}</span>
+                                <div className="flex items-center shrink-0 ml-3">
+                                  <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border" style={{ color: dk ? `${P.sky}80` : `${P.black}60`, borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}>{q.language}</span>
                                 </div>
                               </div>
                               <AnimatePresence>
                                 {expandedQId === q.id && (
-                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4">
+                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-3">
                                     <div className="rounded-xl overflow-hidden border relative" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(0,0,0,0.1)" }}>
                                       <div className="absolute top-0 left-0 right-0 h-6 flex items-center px-3 border-b" style={{ background: dk ? "black" : "#f3f4f6", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                         <div className="flex gap-1.5">
-                                          <div className="w-2 h-2 rounded-full bg-red-500/50" />
-                                          <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
-                                          <div className="w-2 h-2 rounded-full bg-green-500/50" />
+                                          <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
+                                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
+                                          <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
                                         </div>
                                       </div>
-                                      <pre className="text-[11px] font-mono p-4 pt-10 overflow-x-auto" style={{ background: dk ? "#0d1117" : "#ffffff", color: dk ? "#c9d1d9" : "#24292e" }}>
+                                      <pre className="text-[10px] font-mono p-3 pt-8 overflow-x-auto" style={{ background: dk ? "#0d1117" : "#ffffff", color: dk ? "#c9d1d9" : "#24292e" }}>
                                         <code>{q.code}</code>
                                       </pre>
                                     </div>
@@ -612,13 +582,13 @@ function ContributorsDashboard() {
                         ))
                       )}
                     </div>
-                  </>
+                  </div>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
-      </div>
+        </div>
+      </main>
 
       {/* NEW SESSION MODAL */}
       <AnimatePresence>
@@ -626,17 +596,17 @@ function ContributorsDashboard() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowNewSessionModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className={`relative w-[95%] sm:w-full max-w-md p-1 sm:p-1.5 rounded-[24px] sm:rounded-[32px] border bg-black border-white/10 shadow-2xl mx-auto`}>
+              className={`relative w-[95%] sm:w-full max-w-md p-1 sm:p-1.5 rounded-[24px] sm:rounded-[32px] border bg-black border-white/10 shadow-2xl mx-auto z-10`}>
               <div className={`p-5 sm:p-6 rounded-[20px] sm:rounded-[28px] ${cardBg}`}>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className={`text-lg font-black uppercase ${textPrimary}`}>Create Session</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`text-sm font-black uppercase ${textPrimary}`}>Create Session</h3>
                   <button onClick={() => setShowNewSessionModal(false)} className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5`}>
                     <X size={14} className={textPrimary} />
                   </button>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className={`block text-[10px] font-mono mb-1.5 ${textSecondary}`}>Exam Type</label>
+                    <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Exam Type</label>
                     <div className="flex gap-2">
                       <select value={newExamType} onChange={e => setNewExamType(e.target.value)} className={`flex-1 text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`}>
                         {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
@@ -644,15 +614,86 @@ function ContributorsDashboard() {
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-mono mb-1.5 ${textSecondary}`}>Session Date</label>
+                    <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Session Date</label>
                     <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`} />
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-mono mb-1.5 ${textSecondary}`}>Optional Title</label>
+                    <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Optional Title</label>
                     <input type="text" value={newSessionTitle} onChange={e => setNewSessionTitle(e.target.value)} placeholder="e.g. Morning Batch" className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`} />
                   </div>
                   <button onClick={handleAddSession} className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-white font-bold text-xs shadow-md" style={{ background: P.blue }}>
                     <Check size={14} /> Create Session
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD QUESTION MODAL (Bottom Sheet style on mobile, center modal on desktop) */}
+      <AnimatePresence>
+        {showAddQuestionModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddQuestionModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div 
+              initial={{ y: "100%", opacity: 0.5 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className={`relative w-full sm:max-w-xl p-1 rounded-t-[24px] sm:rounded-b-[24px] sm:rounded-t-[24px] border bg-black border-white/10 shadow-2xl z-10 max-h-[90vh] sm:max-h-[85vh] flex flex-col`}
+            >
+              <div className={`p-4 sm:p-6 rounded-t-[20px] sm:rounded-[20px] ${cardBg} flex-1 overflow-hidden flex flex-col`}>
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${textPrimary}`}>
+                    <Plus size={16} /> Add Code Question
+                  </h3>
+                  <button onClick={() => setShowAddQuestionModal(false)} className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5`}>
+                    <X size={14} className={textPrimary} />
+                  </button>
+                </div>
+
+                {/* Form Body - Scrollable internally */}
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
+                      <input type="text" value={qTitle} onChange={e => setQTitle(e.target.value)} placeholder="e.g. Matrix Transpose"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
+                      <select value={qLang} onChange={e => setQLang(e.target.value)} className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
+                        <option value="cpp">C++ (cpp)</option>
+                        <option value="c">C (c)</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="javascript">JavaScript</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
+                    <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
+                      className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                  </div>
+                  <div className="flex-1 flex flex-col min-h-[180px] sm:min-h-[220px]">
+                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
+                    <textarea value={qCode} onChange={e => setQCode(e.target.value)} placeholder="Paste source code..."
+                      className="w-full flex-1 text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none min-h-[160px]"
+                      style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="mt-4 pt-3 border-t shrink-0 flex justify-end gap-2" style={{ borderColor: borderLight }}>
+                  <button onClick={() => setShowAddQuestionModal(false)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${borderLight} hover:bg-white/5`}>
+                    Cancel
+                  </button>
+                  <button onClick={handleAddQuestion} className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
+                    style={{ background: P.blue }}>
+                    <Plus size={12} /> Add Question
                   </button>
                 </div>
               </div>
