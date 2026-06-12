@@ -298,6 +298,11 @@ export default function GlidePassAdmin() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingSession, setDeletingSession] = useState(false);
 
+  // ─── Delete Exam Type (Two-Step) ───
+  const [showDeleteTypeModal, setShowDeleteTypeModal] = useState(false);
+  const [deleteTargetType, setDeleteTargetType] = useState<string | null>(null);
+  const [deleteTypeConfirmText, setDeleteTypeConfirmText] = useState("");
+
   // New session form
   const [newDate, setNewDate] = useState(() => {
     const d = new Date();
@@ -2026,7 +2031,7 @@ export default function GlidePassAdmin() {
                             ) : (
                               <>
                                 <button onClick={() => { setEditingTypeIdx(i); setEditingTypeName(t); }} className="p-1 rounded hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><Edit2 size={12} /></button>
-                                <button onClick={() => setExamTypes(examTypes.filter((_, j) => j !== i))} className="p-1 rounded hover:opacity-70" style={{ color: P.error }}><Trash2 size={12} /></button>
+                                <button onClick={() => { setDeleteTargetType(t); setDeleteTypeConfirmText(""); setShowDeleteTypeModal(true); }} className="p-1 rounded hover:opacity-70" style={{ color: P.error }}><Trash2 size={12} /></button>
                               </>
                             )}
                           </div>
@@ -2044,6 +2049,105 @@ export default function GlidePassAdmin() {
                     </div>
                   </motion.div>
                 </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ═══ DELETE EXAM TYPE CONFIRMATION MODAL ═══ */}
+            <AnimatePresence>
+              {showDeleteTypeModal && deleteTargetType && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteTypeModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className={`p-5 sm:p-6 rounded-[20px] space-y-4`} style={{ background: dk ? "rgba(5,5,5,0.98)" : "rgba(255,255,255,0.98)" }}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                            <Trash2 size={16} className="text-red-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Exam Type</h3>
+                            <p className={`text-[10px] ${txt3}`}>This will remove the type permanently</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setShowDeleteTypeModal(false)} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 shrink-0">
+                          <X size={14} className={txt1} />
+                        </button>
+                      </div>
+
+                      {/* Warning */}
+                      <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                        <p className="text-xs text-red-300/80 leading-relaxed">
+                          You are about to permanently delete the exam type{" "}
+                          <span className="font-bold text-white">{deleteTargetType}</span>.
+                          {" "}Existing sessions using this type will not be deleted but the type will no longer be available.
+                        </p>
+                      </div>
+
+                      {/* Type-to-confirm */}
+                      <div>
+                        <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
+                          Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetType}</span> to confirm
+                        </label>
+                        <input
+                          type="text"
+                          value={deleteTypeConfirmText}
+                          onChange={e => setDeleteTypeConfirmText(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && deleteTypeConfirmText === deleteTargetType) {
+                              setExamTypes(prev => prev.filter(t => t !== deleteTargetType));
+                              setShowDeleteTypeModal(false);
+                              setDeleteTargetType(null);
+                              setDeleteTypeConfirmText("");
+                            }
+                          }}
+                          placeholder={`Type "${deleteTargetType}" here...`}
+                          autoFocus
+                          className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${
+                            deleteTypeConfirmText === deleteTargetType
+                              ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5'
+                              : inputBg
+                          }`}
+                        />
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          onClick={() => setShowDeleteTypeModal(false)}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (deleteTypeConfirmText !== deleteTargetType) return;
+                            setExamTypes(prev => prev.filter(t => t !== deleteTargetType));
+                            setShowDeleteTypeModal(false);
+                            setDeleteTargetType(null);
+                            setDeleteTypeConfirmText("");
+                            showToast("success", `Exam type "${deleteTargetType}" deleted.`);
+                          }}
+                          disabled={deleteTypeConfirmText !== deleteTargetType}
+                          className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                            deleteTypeConfirmText === deleteTargetType
+                              ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
+                              : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
+                          }`}
+                        >
+                          <Trash2 size={12} />
+                          Delete Type
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
               )}
             </AnimatePresence>
 
