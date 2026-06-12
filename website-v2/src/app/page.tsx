@@ -483,58 +483,19 @@ const Features = () => {
       title: "Zero-Cloud RAM Cache",
       desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
       icon: <ShieldCheck size={22} />,
-      span: "md:col-span-1",
-      visual: (
-        <div className="mt-auto pt-6">
-          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ width: ["0%", "15%", "12%"] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className={`h-full bg-blue-500/40`}
-            />
-          </div>
-          <div className={`mt-1 text-[6px] font-mono ${dk ? "text-white" : "text-black"}/20 uppercase`}>Ram Usage: 0.1%</div>
-        </div>
-      )
+      span: "md:col-span-1"
     },
     {
       title: "Instant Web Controller",
       desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
       icon: <Smartphone size={22} />,
-      span: "md:col-span-1",
-      visual: (
-        <div className="mt-auto pt-6">
-          <div className={`p-3 ${dk ? "bg-black" : "bg-white"}/40 border ${dk ? "border-white/5" : "border-black/5"} rounded-xl font-mono text-[9px] text-blue-400/60 overflow-hidden relative`}>
-            <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse`} />
-            <p className={`${dk ? "text-white" : "text-black"}/20 mb-1 tracking-tighter`}>NODE_ESTABLISHED // PORT: 8080</p>
-            <p className="">$ glide --tunnel --open</p>
-          </div>
-        </div>
-      )
+      span: "md:col-span-1"
     },
     {
       title: "VIT Daily Code Vault",
       desc: "Cooperative repository. Verified contributors maintain and catalog exam codes, syncing them instantly to your local client for quick access.",
       icon: <FileCode size={22} />,
-      span: "md:col-span-1",
-      visual: (
-        <div className="mt-auto pt-4 flex flex-col gap-2">
-          <div className={`p-2 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between`}>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[9px] font-mono">Session_0x8f2d.cpp</span>
-            </div>
-            <span className="text-[8px] font-bold text-sky-400 uppercase tracking-widest">Active</span>
-          </div>
-          <div className={`p-2 rounded-xl bg-white/[0.01] border border-white/[0.03] flex items-center justify-between opacity-50`}>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-              <span className="text-[9px] font-mono">Session_0x3c2a.java</span>
-            </div>
-            <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Synced</span>
-          </div>
-        </div>
-      )
+      span: "md:col-span-1"
     }
   ];
 
