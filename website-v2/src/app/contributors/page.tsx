@@ -246,7 +246,7 @@ function ContributorsDashboard() {
   // ─── UNAUTHENTICATED STATE ───
   if (status === "unauthenticated") {
     return (
-      <div className={`h-[100dvh] ${cardBg} ${textPrimary} font-inter flex flex-col items-center justify-between relative overflow-hidden py-6 px-4`}>
+      <div className={`h-[100dvh] ${cardBg} ${textPrimary} font-inter flex flex-col items-center justify-between relative overflow-hidden py-6 md:py-12 px-4`}>
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[120px] rounded-full mix-blend-screen" />
@@ -273,10 +273,10 @@ function ContributorsDashboard() {
           />
         </div>
 
-        {/* Top Spacer or Small Icon */}
-        <div className="relative z-10 shrink-0 mb-1">
-          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
-            <Code size={24} className="text-blue-400" />
+        {/* Top Spacer or Icon */}
+        <div className="relative z-10 shrink-0 mb-1 md:mb-4">
+          <div className="inline-flex items-center justify-center p-2 md:p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
+            <Code size={24} className="text-blue-400 md:w-8 md:h-8" />
           </div>
         </div>
 
@@ -284,47 +284,47 @@ function ContributorsDashboard() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 max-w-4xl w-full flex-1 flex flex-col justify-center items-center text-center min-h-0"
+          className="relative z-10 max-w-5xl w-full flex-1 flex flex-col justify-center items-center text-center min-h-0"
         >
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+          <h1 className="text-3xl md:text-6xl font-black tracking-tighter mb-2 md:mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
             Contribute to LANpad
           </h1>
           
-          <p className={`text-xs md:text-sm ${textSecondary} mb-4 leading-relaxed max-w-xl mx-auto px-4`}>
-            A community effort to maintain accurate exam codes for VIT students. Help your peers by providing the latest exam session questions.
+          <p className={`text-xs md:text-lg ${textSecondary} mb-4 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4`}>
+            A community effort to maintain accurate exam exam codes for VIT students. Help your peers by providing the latest exam session questions.
           </p>
 
-          {/* Info Cards Row (Scrollable horizontally on mobile, static on desktop) */}
-          <div className="w-full flex md:grid md:grid-cols-3 gap-3 overflow-x-auto md:overflow-x-visible px-4 md:px-0 py-2 mb-4 scrollbar-none snap-x snap-mandatory min-h-0 shrink-0">
-            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left">
-              <h3 className="font-bold mb-1 flex items-center gap-1.5 text-xs"><BookOpen size={14} className="text-sky-400 shrink-0"/> What is Contribute?</h3>
-              <p className={`text-[10px] ${textSecondary} leading-relaxed`}>Contributors submit new VIT exam sessions directly to the LANpad database for real-time local syncing.</p>
+          {/* Info Cards Row */}
+          <div className="w-full flex md:grid md:grid-cols-3 gap-3 md:gap-6 overflow-x-auto md:overflow-x-visible px-4 md:px-0 py-2 mb-4 md:mb-8 scrollbar-none snap-x snap-mandatory min-h-0 shrink-0">
+            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-1 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><BookOpen size={14} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
+              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Contributors submit new VIT exam sessions directly to the LANpad database for real-time local client syncs.</p>
             </div>
-            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left">
-              <h3 className="font-bold mb-1 flex items-center gap-1.5 text-xs"><Layout size={14} className="text-blue-400 shrink-0"/> Minimal Control</h3>
-              <p className={`text-[10px] ${textSecondary} leading-relaxed`}>Enjoy a simplified, fail-safe workspace. Safely add sessions and verify codes without data deletion risks.</p>
+            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-1 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><Layout size={14} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
+              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Enjoy a simplified, fail-safe workspace. Safely add exam sessions and verify codes without deletion risk.</p>
             </div>
-            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left">
-              <h3 className="font-bold mb-1 flex items-center gap-1.5 text-xs"><LogOut size={14} className="text-rose-400 shrink-0"/> Who is allowed?</h3>
-              <p className={`text-[10px] ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google accounts (<code className={`px-1 rounded ${dk ? 'bg-white/10' : 'bg-black/10'} text-[9px]`}>@vitapstudent.ac.in</code>).</p>
+            <div className="snap-center shrink-0 w-[85%] md:w-auto p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
+              <h3 className="font-bold mb-1 md:mb-2 flex items-center gap-1.5 md:gap-2 text-xs md:text-base"><LogOut size={14} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
+              <p className={`text-[10px] md:text-sm ${textSecondary} leading-relaxed`}>Access is strictly limited to verified university Google accounts (<code className={`px-1.5 py-0.5 rounded ${dk ? 'bg-white/10' : 'bg-black/10'} text-[9px] md:text-xs`}>@vitapstudent.ac.in</code>).</p>
             </div>
           </div>
 
           {authError === "AccessDenied" && (
-            <div className="mb-4 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
+            <div className="mb-4 p-2.5 md:p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs md:text-sm font-bold">
               Access Denied. You must use a valid VIT university email to sign in.
             </div>
           )}
 
-          <div className="flex items-start gap-3 text-left max-w-md mx-auto p-3.5 rounded-xl border border-white/5 bg-white/[0.02] mb-4">
+          <div className="flex items-start md:items-center gap-3 text-left max-w-md md:max-w-xl mx-auto p-3.5 md:p-5 rounded-xl md:rounded-2xl border border-white/5 bg-white/[0.02] mb-4 md:mb-8">
             <input 
               type="checkbox" 
               id="terms" 
               checked={acceptedTerms} 
               onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-blue-500 shrink-0 cursor-pointer mt-0.5"
+              className="w-3.5 h-3.5 md:w-4 md:h-4 rounded border-white/20 bg-white/5 accent-blue-500 shrink-0 cursor-pointer mt-0.5 md:mt-0"
             />
-            <label htmlFor="terms" className={`text-[10px] ${textSecondary} cursor-pointer select-none leading-normal`}>
+            <label htmlFor="terms" className={`text-[10px] md:text-sm ${textSecondary} cursor-pointer select-none leading-normal`}>
               I understand that all contributions are monitored. I agree to provide accurate and clean exam codes.
             </label>
           </div>
@@ -332,10 +332,10 @@ function ContributorsDashboard() {
           <button
             onClick={() => signIn("google")}
             disabled={!acceptedTerms}
-            className={`group relative w-full max-w-xs inline-flex items-center justify-center gap-2.5 px-6 py-3.5 bg-white text-black rounded-full font-black uppercase tracking-wider text-xs transition-all shadow-xl shrink-0
-              ${acceptedTerms ? 'hover:scale-102 active:scale-98 hover:shadow-white/10 cursor-pointer' : 'opacity-50 cursor-not-allowed grayscale'}`}
+            className={`group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 md:gap-3.5 px-6 py-3.5 md:px-10 md:py-4.5 bg-white text-black rounded-full font-black uppercase tracking-wider text-xs md:text-sm transition-all shadow-xl shrink-0
+              ${acceptedTerms ? 'hover:scale-105 active:scale-95 hover:shadow-white/20 cursor-pointer' : 'opacity-50 cursor-not-allowed grayscale'}`}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 24 24" width="16" height="16" className="md:w-5 md:h-5" xmlns="http://www.w3.org/2000/svg">
               <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
                 <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
                 <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
@@ -348,8 +348,8 @@ function ContributorsDashboard() {
         </motion.div>
 
         {/* Footer Link */}
-        <div className="relative z-10 shrink-0 mt-2">
-          <Link href="/" className={`transition-colors text-[10px] font-bold uppercase tracking-wider ${dk ? 'text-white/40 hover:text-white' : 'text-black/40 hover:text-black'}`}>
+        <div className="relative z-10 shrink-0 mt-2 md:mt-6">
+          <Link href="/" className={`transition-colors text-[10px] md:text-xs font-bold uppercase tracking-wider ${dk ? 'text-white/40 hover:text-white' : 'text-black/40 hover:text-black'}`}>
             ← Back to Home
           </Link>
         </div>
