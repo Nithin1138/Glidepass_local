@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -480,52 +480,10 @@ const Features = () => {
       )
     },
     {
-      title: "Instant Web Controller",
-      desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
-      icon: <Smartphone size={22} />,
-      span: "md:col-span-2",
-      visual: (
-        <div className="mt-4 flex items-end gap-6">
-          <div className={`flex-1 p-3 ${dk ? "bg-black" : "bg-white"}/40 border ${dk ? "border-white/5" : "border-black/5"} rounded-xl font-mono text-[9px] text-blue-400/60 overflow-hidden relative`}>
-            <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse`} />
-            <p className={`${dk ? "text-white" : "text-black"}/20 mb-1 tracking-tighter`}>NODE_ESTABLISHED // PORT: 8080</p>
-            <p className="">$ glide --tunnel --open</p>
-          </div>
-          <div className="flex gap-2 mb-1">
-            {["Sync", "Macro", "CMD"].map(tag => (
-              <div key={tag} className={`px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[7px] font-black uppercase tracking-widest ${dk ? "text-white" : "text-black"}/20 hover:${dk ? "text-white" : "text-black"} hover:border-blue-500/30 transition-all flex items-center gap-1.5`}>
-                <div className="w-1 h-1 rounded-full bg-white/10" />
-                {tag}
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Daily VITcodes Integration",
-      desc: "Verified exam sessions. Cooperatively submit, manage, and retrieve slot-wise code questions uploaded by fellow VIT students in real-time.",
-      icon: <BookOpen size={22} />,
-      span: "md:col-span-1",
-      visual: (
-        <div className="mt-auto pt-4 space-y-1.5 opacity-60 group-hover:opacity-85 transition-opacity">
-          {[
-            { tag: "NERD", name: "Morning Batch" },
-            { tag: "Daily Assessment", name: "A1 Slot" }
-          ].map((item, idx) => (
-            <div key={idx} className={`flex items-center justify-between p-2 rounded-lg border ${dk ? "border-white/5 bg-white/[0.02]" : "border-black/5 bg-black/[0.02]"} text-[8px] font-mono`}>
-              <span className="text-blue-400 font-bold uppercase tracking-wider">{item.tag}</span>
-              <span className={dk ? "text-white/60" : "text-black/60"}>{item.name}</span>
-            </div>
-          ))}
-        </div>
-      )
-    },
-    {
       title: "Zero-Cloud RAM Cache",
       desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
       icon: <ShieldCheck size={22} />,
-      span: "md:col-span-3",
+      span: "md:col-span-1",
       visual: (
         <div className="mt-auto pt-6">
           <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
@@ -536,6 +494,45 @@ const Features = () => {
             />
           </div>
           <div className={`mt-1 text-[6px] font-mono ${dk ? "text-white" : "text-black"}/20 uppercase`}>Ram Usage: 0.1%</div>
+        </div>
+      )
+    },
+    {
+      title: "Instant Web Controller",
+      desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
+      icon: <Smartphone size={22} />,
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-6">
+          <div className={`p-3 ${dk ? "bg-black" : "bg-white"}/40 border ${dk ? "border-white/5" : "border-black/5"} rounded-xl font-mono text-[9px] text-blue-400/60 overflow-hidden relative`}>
+            <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse`} />
+            <p className={`${dk ? "text-white" : "text-black"}/20 mb-1 tracking-tighter`}>NODE_ESTABLISHED // PORT: 8080</p>
+            <p className="">$ glide --tunnel --open</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "VIT Daily Code Vault",
+      desc: "Cooperative repository. Verified contributors maintain and catalog exam codes, syncing them instantly to your local client for quick access.",
+      icon: <FileCode size={22} />,
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-4 flex flex-col gap-2">
+          <div className={`p-2 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between`}>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-mono">Session_0x8f2d.cpp</span>
+            </div>
+            <span className="text-[8px] font-bold text-sky-400 uppercase tracking-widest">Active</span>
+          </div>
+          <div className={`p-2 rounded-xl bg-white/[0.01] border border-white/[0.03] flex items-center justify-between opacity-50`}>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+              <span className="text-[9px] font-mono">Session_0x3c2a.java</span>
+            </div>
+            <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Synced</span>
+          </div>
         </div>
       )
     }
