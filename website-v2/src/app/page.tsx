@@ -234,7 +234,7 @@ const Hero = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 1 }}
-          className={`text-base md:text-xl ${dk ? "text-white/40" : "text-black/60"} max-w-xl mx-auto mb-12 font-inter leading-relaxed tracking-tight`}
+          className={`text-base md:text-xl ${dk ? "text-white/75" : "text-black/75"} max-w-xl mx-auto mb-12 font-inter leading-relaxed tracking-tight`}
         >
           Instant local text transfer, human-like typing simulation, and real-time input orchestration. Built for power users who demand zero-lag productivity.
         </motion.p>
