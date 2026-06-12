@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SessionProvider, useSession, signIn, signOut } from "next-auth/react";
+import dynamic from "next/dynamic";
+
+const MagicRings = dynamic(() => import("../../components/MagicRings"), { ssr: false });
 import {
   LogOut, Plus, Trash2, Calendar, Check, X, ChevronLeft, ArrowLeft,
   FileCode, Settings, Layout, Code, BookOpen, CheckCircle, AlertCircle, Sun, Moon
@@ -246,6 +249,26 @@ function ContributorsDashboard() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[120px] rounded-full mix-blend-screen" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-sky-400/10 blur-[120px] rounded-full mix-blend-screen" />
+        </div>
+        <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
+          <MagicRings
+            color="#0077c0"
+            colorTwo="#c7eeff"
+            ringCount={8}
+            speed={0.8}
+            attenuation={12}
+            lineThickness={1.5}
+            baseRadius={0.25}
+            radiusStep={0.08}
+            scaleRate={0.08}
+            opacity={dk ? 0.35 : 0.1}
+            blur={0}
+            noiseAmount={0.05}
+            followMouse={true}
+            mouseInfluence={0.15}
+            hoverScale={1.1}
+            parallax={0.03}
+          />
         </div>
 
         <motion.div 
