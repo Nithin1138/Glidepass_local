@@ -107,9 +107,9 @@ function ContributorsDashboard() {
           setAccessStatus(d.status === "blocked" ? "blocked" : "active");
           if (d.status !== "blocked") {
             fetchVitCodes();
-            // Poll for real-time updates every 1 second
+            // Poll for real-time updates every 1 second (quiet mode)
             const interval = setInterval(() => {
-              fetchVitCodes();
+              fetchVitCodes(true);
             }, 1000);
             return () => clearInterval(interval);
           }
@@ -121,8 +121,8 @@ function ContributorsDashboard() {
     }
   }, [status]);
 
-  const fetchVitCodes = async () => {
-    setLoadingVit(true);
+  const fetchVitCodes = async (quiet = false) => {
+    if (!quiet) setLoadingVit(true);
     try {
       const res = await fetch("/api/vitcodes", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
@@ -136,7 +136,7 @@ function ContributorsDashboard() {
     } catch (err: any) {
       showToast("error", err.message);
     } finally {
-      setLoadingVit(false);
+      if (!quiet) setLoadingVit(false);
     }
   };
 

@@ -358,8 +358,8 @@ export default function GlidePassAdmin() {
     }
   };
 
-  const fetchVitCodes = async () => {
-    setLoadingVit(true);
+  const fetchVitCodes = async (quiet = false) => {
+    if (!quiet) setLoadingVit(true);
     try {
       const res = await fetch("/api/vitcodes", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
@@ -373,7 +373,7 @@ export default function GlidePassAdmin() {
     } catch (err: any) {
       showToast("error", err.message);
     } finally {
-      setLoadingVit(false);
+      if (!quiet) setLoadingVit(false);
     }
   };
 
@@ -501,9 +501,9 @@ export default function GlidePassAdmin() {
       if (view === "ota") fetchTemplate(selectedFile);
       if (view === "vitcodes" || view === "dashboard" || view === "contributors") {
         fetchVitCodes();
-        // Start polling for real-time sync (every 1 second)
+        // Start polling for real-time sync (every 1 second, quiet mode)
         const interval = setInterval(() => {
-          fetchVitCodes();
+          fetchVitCodes(true);
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -990,7 +990,7 @@ export default function GlidePassAdmin() {
                           <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                           <div className="flex justify-between items-center pb-4 mb-4" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
                             <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System Events</h3>
-                            <button onClick={fetchVitCodes} className="p-1 rounded-lg hover:opacity-70 transition-colors" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                            <button onClick={() => fetchVitCodes()} className="p-1 rounded-lg hover:opacity-70 transition-colors" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
                               <RefreshCw size={12} />
                             </button>
                           </div>

@@ -6,11 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const data = await readCodes();
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59"
-      }
-    });
+    return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
