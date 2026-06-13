@@ -119,6 +119,24 @@ function ContributorsDashboard() {
     }
   };
 
+  const getMaxCap = (ruleStr: string | null | undefined): number | null => {
+    if (!ruleStr) return null;
+    const trimmed = ruleStr.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.includes("-")) {
+      const parts = trimmed.split("-");
+      if (parts.length === 2) {
+        const maxVal = parseInt(parts[1].trim(), 10);
+        return isNaN(maxVal) ? null : maxVal;
+      }
+    } else {
+      const val = parseInt(trimmed, 10);
+      return isNaN(val) ? null : val;
+    }
+    return null;
+  };
+
   // New session form
   const [newDate, setNewDate] = useState(() => {
     const d = new Date();
@@ -619,10 +637,23 @@ function ContributorsDashboard() {
                     <ArrowLeft size={14} /> Back
                   </button>
 
-                  <button onClick={() => setShowAddQuestionModal(true)} className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
-                    style={{ background: P.blue }}>
-                    <Plus size={12} /> Add Question
-                  </button>
+                  {(() => {
+                    const ruleForType = activeSession ? examRules[activeSession.examType] : undefined;
+                    const maxCap = getMaxCap(ruleForType);
+                    const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                    
+                    return (
+                      <button 
+                        onClick={() => { if (!isCapped) setShowAddQuestionModal(true); }} 
+                        disabled={!!isCapped}
+                        className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md transition-all ${isCapped ? 'opacity-50 cursor-not-allowed bg-neutral-600' : 'active:scale-[0.98]'}`}
+                        style={{ background: isCapped ? undefined : P.blue }}
+                        title={isCapped ? `Capped at max ${maxCap} codes` : undefined}
+                      >
+                        <Plus size={12} /> {isCapped ? `Capped (${maxCap} Max)` : 'Add Question'}
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 {activeSession && (
@@ -636,6 +667,19 @@ function ContributorsDashboard() {
                         <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{activeSession.examType}</span>
                         <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
                         <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes</span>
+                        {(() => {
+                          const ruleForType = examRules[activeSession.examType];
+                          const maxCap = getMaxCap(ruleForType);
+                          const isCapped = maxCap !== null && activeSession.questions.length >= maxCap;
+                          if (isCapped) {
+                            return (
+                              <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                                Capped (Max {maxCap})
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
 
