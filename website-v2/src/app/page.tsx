@@ -788,8 +788,7 @@ export default function Home() {
                 {
                   title: "macOS Backend",
                   icon: <Monitor size={28} />,
-                  label: "Copy Install Cmd",
-                  installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
+                  label: "Download DMG",
                   version: "v1.5.0",
                   size: "94.6 MB",
                   theme: "rose",
@@ -797,14 +796,13 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
                   borderHover: "group-hover/card:border-rose-500/40",
                   iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
-                  href: undefined,
+                  href: "/downloads/LANpad_macOS.dmg",
                   topLineColor: "via-rose-500/40"
                 },
                 {
                   title: "Windows Backend",
                   icon: <Monitor size={28} />,
-                  label: "Copy Install Cmd",
-                  installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
+                  label: "Download ZIP",
                   version: "v1.5.0",
                   size: "38.2 MB",
                   theme: "indigo",
@@ -812,7 +810,7 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                   borderHover: "group-hover/card:border-indigo-500/40",
                   iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
-                  href: undefined,
+                  href: "/downloads/LANpad_Windows.zip",
                   topLineColor: "via-indigo-500/40"
                 }
               ].map((d, i) => (
@@ -863,7 +861,12 @@ export default function Home() {
                           if (d.title === "Chrome Extension") {
                             setShowComingSoon(true);
                           } else if (d.href) {
-                            window.location.href = d.href;
+                            const a = document.createElement("a");
+                            a.href = d.href;
+                            a.download = d.href.split('/').pop() || "LANpad";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
                           } else if (d.installCommand) {
                             navigator.clipboard.writeText(d.installCommand);
                             alert("Install command copied to clipboard! Paste it in your Terminal.");
