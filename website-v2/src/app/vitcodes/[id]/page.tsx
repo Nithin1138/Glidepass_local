@@ -251,11 +251,21 @@ function SessionCodesContent({ params }: PageProps) {
                 >
                   {/* Card Header */}
                   <div className={`px-6 py-4 border-b ${borderLight} flex items-center justify-between ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'}`}>
-                    <div className="flex items-center gap-2 min-w-0 mr-3">
+                    <div className="flex items-center gap-2 min-w-0 mr-3 flex-wrap">
                       <Terminal size={14} className="text-blue-400 shrink-0" />
                       <span className={`text-xs font-bold ${dk ? "text-white/80" : "text-black/80"} font-mono truncate`}>Question {idx + 1}: {q.title}</span>
+                      {q.contributorName && (
+                        <span className={`text-[10px] ${txt3} font-mono`}>• by <span className={dk ? "text-white/70" : "text-black/70"}>{q.contributorName}</span></span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleSendCommandCenter(q.code); }}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold uppercase transition-all"
+                      >
+                        <Send size={10} />
+                        <span>Center</span>
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopy(q.code, q.id); }}
                         className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/[0.05] transition-colors`}
@@ -296,11 +306,10 @@ function SessionCodesContent({ params }: PageProps) {
                             </div>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleSendCommandCenter(q.code); }}
-                              className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
                             >
-                              <Send size={12} className="shrink-0" />
-                              <span className="hidden sm:inline">Enter Command Center with Code</span>
-                              <span className="sm:hidden">Command Center</span>
+                              <Send size={11} className="shrink-0" />
+                              <span>Enter Command Center</span>
                             </button>
                           </div>
                         </div>

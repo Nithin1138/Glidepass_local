@@ -608,12 +608,17 @@
                 const card = document.createElement('div');
                 card.className = 'question-card';
                 card.innerHTML = `
-                    <div class="q-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                        <div class="q-title-wrap" style="display: flex; align-items: center; gap: 8px; min-w-0; margin-right: 12px;">
+                    <div class="q-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; flex-wrap: wrap; gap: 8px;">
+                        <div class="q-title-wrap" style="display: flex; align-items: center; gap: 8px; min-w-0; flex-wrap: wrap; margin-right: 12px;">
                             <i data-lucide="terminal" size="14" style="color: var(--accent-color); flex-shrink: 0;"></i>
                             <span class="q-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Question ${idx + 1}: ${q.title}</span>
+                            ${q.contributorName ? `<span class="contributor-name" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace;">• by ${q.contributorName}</span>` : ''}
                         </div>
-                        <div class="q-header-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <div class="q-header-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                            <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" style="margin: 0; background: var(--accent-color); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase;">
+                                <i data-lucide="send" size="10"></i>
+                                <span>Center</span>
+                            </button>
                             <button class="copy-btn-header" data-code="${encodeURIComponent(q.code)}" data-qid="${q.id}" style="background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); padding: 4px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
                                 <i data-lucide="copy" size="12"></i>
                             </button>
@@ -629,10 +634,9 @@
                             <span class="contributor-name" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace; text-align: left; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 ${q.contributorName ? `Contributed by: <strong style="color: #ffffff;">${q.contributorName}</strong>` : ''}
                             </span>
-                            <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" style="margin: 0; padding: 6px 12px; font-size: 0.75rem; width: auto; flex-grow: 1; max-width: 80%;">
-                                <i data-lucide="send" size="11"></i>
-                                <span class="dispatch-text-desktop">Enter Command Center with Code</span>
-                                <span class="dispatch-text-mobile">Command Center</span>
+                            <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" style="margin: 0; padding: 5px 10px; font-size: 0.7rem; width: auto; flex-grow: 0;">
+                                <i data-lucide="send" size="10"></i>
+                                <span>Enter Command Center</span>
                             </button>
                         </div>
                     </div>
