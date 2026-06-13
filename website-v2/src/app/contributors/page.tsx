@@ -32,6 +32,7 @@ interface Question {
   comment?: string;
   contributorEmail?: string;
   isLocked?: boolean;
+  edits?: any[];
 }
 
 interface VitCode {

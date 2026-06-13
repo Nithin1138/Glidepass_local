@@ -12,6 +12,7 @@ interface Question {
   code: string;
   language: string;
   contributorName?: string;
+  edits?: any[];
 }
 
 interface VitCode {

@@ -68,6 +68,7 @@ interface Question {
   contributorEmail?: string;
   isDeleted?: boolean;
   isLocked?: boolean;
+  edits?: any[];
 }
 
 interface VitCode {

@@ -11,6 +11,7 @@ interface Question {
   title: string;
   code: string;
   language: string;
+  edits?: any[];
 }
 
 interface VitCode {
