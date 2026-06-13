@@ -1238,23 +1238,7 @@ export default function GlidePassAdmin() {
                                   <option value="all">All Types</option>
                                   {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
-                                <div className="flex items-center gap-1.5 border rounded-xl p-1.5" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}>
-                                  <select 
-                                    value={selectedRuleType} 
-                                    onChange={e => setSelectedRuleType(e.target.value)} 
-                                    className="text-xs rounded-lg px-2 py-1 focus:outline-none bg-transparent"
-                                    style={{ color: dk ? P.white : P.black }}
-                                  >
-                                    {examTypes.map(t => <option key={t} value={t} style={{ background: dk ? P.black : P.white }}>{t}</option>)}
-                                  </select>
-                                  <input 
-                                    type="text" 
-                                    placeholder="Min/Range (e.g. 5 or 3-5)" 
-                                    value={examRules[selectedRuleType] || ""} 
-                                    onChange={e => handleUpdateRule(selectedRuleType, e.target.value)}
-                                    className={`w-28 text-xs rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
-                                  />
-                                </div>
+
                                 <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80"
                                   style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}>
                                   <Settings size={14} />
@@ -2063,7 +2047,19 @@ export default function GlidePassAdmin() {
                           {editingTypeIdx === i ? (
                             <input type="text" value={editingTypeName} onChange={e => setEditingTypeName(e.target.value)} className={`text-xs rounded-lg px-2 py-1 border focus:outline-none flex-1 mr-2 ${inputBg}`} autoFocus />
                           ) : (
-                            <span className="text-xs font-semibold">{t}</span>
+                            <div className="flex items-center justify-between flex-1 mr-4">
+                              <span className="text-xs font-semibold">{t}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Rule:</span>
+                                <input 
+                                  type="text" 
+                                  placeholder="e.g. 5 or 3-5" 
+                                  value={examRules[t] || ""} 
+                                  onChange={e => handleUpdateRule(t, e.target.value)}
+                                  className={`w-20 text-[11px] rounded-lg px-2 py-0.5 border focus:outline-none ${inputBg}`} 
+                                />
+                              </div>
+                            </div>
                           )}
                           <div className="flex items-center gap-1">
                             {editingTypeIdx === i ? (
