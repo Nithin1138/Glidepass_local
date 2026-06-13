@@ -48,9 +48,32 @@ function VitCodesContent() {
 
   const dk = resolvedTheme === "dark";
   const [codes, setCodes] = useState<VitCode[]>([]);
+  const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
   const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Group sessions by examType
+  const sessionsByExamType = codes.reduce((acc, session) => {
+    const type = session.examType || "Other";
+    if (!acc[type]) {
+      acc[type] = [];
+    }
+    acc[type].push(session);
+    return acc;
+  }, {} as Record<string, VitCode[]>);
+
+  const examTypes = Object.keys(sessionsByExamType);
+
+  const getExamTypeDates = (type: string) => {
+    const list = sessionsByExamType[type] || [];
+    if (list.length === 0) return "";
+    const dates = list.map(s => s.date).filter(Boolean);
+    if (dates.length === 0) return "";
+    const earliest = dates.reduce((a, b) => (a < b ? a : b), dates[0]);
+    const latest = dates.reduce((a, b) => (a > b ? a : b), dates[0]);
+    return earliest === latest ? earliest : `${earliest} → ${latest}`;
+  };
 
   useEffect(() => {
     const fetchCodes = async () => {
@@ -207,67 +230,132 @@ function VitCodesContent() {
           <div className={`text-center py-20 border ${borderLight} ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'} rounded-3xl max-w-lg mx-auto shadow-xl`}>
             <p className={`${txt3} text-sm`}>No exam codes added yet.</p>
           </div>
-        ) : (
+        ) : selectedExamType === null ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {codes.map((session, index) => (
-              <motion.div
-                key={session.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06, duration: 0.5 }}
-                whileHover={{ y: -6, scale: 1.01 }}
-                className="flex"
-              >
-                <Link
-                  href={`/vitcodes/${session.id}${origin ? `?origin=${encodeURIComponent(origin)}` : ""}`}
-                  className={`block w-full p-6 rounded-2xl ${cardBg} ${cardBorder} transition-all duration-300 group flex flex-col justify-between`}
+            {examTypes.map((type, index) => {
+              const sessions = sessionsByExamType[type] || [];
+              const count = sessions.length;
+              const daysInfo = getExamTypeDates(type);
+              return (
+                <motion.div
+                  key={type}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.5 }}
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  className="flex cursor-pointer"
+                  onClick={() => setSelectedExamType(type)}
                 >
-                  <div>
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex flex-col gap-1.5">
+                  <div className={`block w-full p-6 rounded-2xl ${cardBg} ${cardBorder} transition-all duration-300 group flex flex-col justify-between`}>
+                    <div>
+                      <div className="flex justify-between items-start mb-6">
                         <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${
                           dk 
                             ? 'border-blue-400/30 bg-blue-500/10 text-blue-300' 
                             : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
                         }`}>
                           <Award size={10} />
-                          {session.examType}
+                          <span>{type}</span>
                         </div>
-                        {(() => {
-                          const ruleForType = getRuleForType(session.examType);
-                          const maxCap = getMaxCap(ruleForType);
-                          const isCapped = maxCap !== null && session.questions && session.questions.length >= maxCap;
-                          if (isCapped) {
-                            return (
-                              <span className="text-[8px] self-start px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
-                                Capped (Max {maxCap})
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
                       </div>
-                      <div className={`flex items-center gap-1.5 text-xs ${txt3} font-medium`}>
-                        <Calendar size={12} />
-                        {session.date}
-                      </div>
+                      <h3 className={`text-lg font-black font-outfit ${txt1} group-hover:${txt2} transition-colors duration-300 mb-4`}>
+                        {type}
+                      </h3>
+                      {daysInfo && (
+                        <p className={`flex items-center gap-1.5 text-xs ${txt3} font-medium`}>
+                          <Calendar size={12} />
+                          {daysInfo}
+                        </p>
+                      )}
                     </div>
+                    
+                    <div className={`flex items-center justify-between text-xs ${txt3} pt-4 border-t ${borderLight} mt-8`}>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Code2 size={12} className={txt2} />
+                        {count} Session{count > 1 ? "s" : ""} Available
+                      </span>
+                      <ChevronRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-300" />
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <button
+                onClick={() => setSelectedExamType(null)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${borderLight} hover:bg-white/5 text-xs font-semibold transition-all`}
+              >
+                <ArrowLeft size={12} />
+                Back to Exam Types
+              </button>
+              <span className={`text-xs ${txt3}`}>/</span>
+              <span className={`text-xs font-bold ${txt2}`}>{selectedExamType}</span>
+            </div>
 
-                    <h3 className={`text-lg font-black font-outfit ${txt1} group-hover:${txt2} transition-colors duration-300 mb-4`}>
-                      {session.title || session.examType} Session
-                    </h3>
-                  </div>
-                  
-                  <div className={`flex items-center justify-between text-xs ${txt3} pt-4 border-t ${borderLight} mt-auto`}>
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <Code2 size={12} className={txt2} />
-                      {session.questions.length} Question{session.questions.length > 1 ? "s" : ""} Available
-                    </span>
-                    <ChevronRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-300" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(sessionsByExamType[selectedExamType] || []).map((session, index) => (
+                <motion.div
+                  key={session.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.5 }}
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  className="flex"
+                >
+                  <Link
+                    href={`/vitcodes/${session.id}${origin ? `?origin=${encodeURIComponent(origin)}` : ""}`}
+                    className={`block w-full p-6 rounded-2xl ${cardBg} ${cardBorder} transition-all duration-300 group flex flex-col justify-between`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex flex-col gap-1.5">
+                          <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${
+                            dk 
+                              ? 'border-blue-400/30 bg-blue-500/10 text-blue-300' 
+                              : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
+                          }`}>
+                            <Award size={10} />
+                            {session.examType}
+                          </div>
+                          {(() => {
+                            const ruleForType = getRuleForType(session.examType);
+                            const maxCap = getMaxCap(ruleForType);
+                            const isCapped = maxCap !== null && session.questions && session.questions.length >= maxCap;
+                            if (isCapped) {
+                              return (
+                                <span className="text-[8px] self-start px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                                  Capped (Max {maxCap})
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                        <div className={`flex items-center gap-1.5 text-xs ${txt3} font-medium`}>
+                          <Calendar size={12} />
+                          {session.date}
+                        </div>
+                      </div>
+
+                      <h3 className={`text-lg font-black font-outfit ${txt1} group-hover:${txt2} transition-colors duration-300 mb-4`}>
+                        {session.title || session.examType} Session
+                      </h3>
+                    </div>
+                    
+                    <div className={`flex items-center justify-between text-xs ${txt3} pt-4 border-t ${borderLight} mt-auto`}>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Code2 size={12} className={txt2} />
+                        {session.questions.length} Question{session.questions.length > 1 ? "s" : ""} Available
+                      </span>
+                      <ChevronRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-300" />
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
       </main>
