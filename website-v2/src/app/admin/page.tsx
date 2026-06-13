@@ -1514,16 +1514,16 @@ export default function GlidePassAdmin() {
                             {/* Type-to-confirm */}
                             <div>
                               <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
-                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.examType}</span> to confirm
+                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.title || deleteTargetSession.date}</span> to confirm
                               </label>
                               <input
                                 type="text"
                                 value={deleteConfirmText}
                                 onChange={e => setDeleteConfirmText(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === deleteTargetSession.examType) handleDeleteSession(); }}
-                                placeholder={`Type "${deleteTargetSession.examType}" here...`}
+                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === (deleteTargetSession.title || deleteTargetSession.date)) handleDeleteSession(); }}
+                                placeholder={`Type "${deleteTargetSession.title || deleteTargetSession.date}" here...`}
                                 autoFocus
-                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === deleteTargetSession.examType ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
+                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === (deleteTargetSession.title || deleteTargetSession.date) ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
                               />
                             </div>
 
@@ -1537,9 +1537,9 @@ export default function GlidePassAdmin() {
                               </button>
                               <button
                                 onClick={handleDeleteSession}
-                                disabled={deleteConfirmText !== deleteTargetSession.examType || deletingSession}
+                                disabled={deleteConfirmText !== (deleteTargetSession.title || deleteTargetSession.date) || deletingSession}
                                 className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                  deleteConfirmText === deleteTargetSession.examType && !deletingSession
+                                  deleteConfirmText === (deleteTargetSession.title || deleteTargetSession.date) && !deletingSession
                                     ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
                                     : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
                                 }`}
