@@ -198,8 +198,8 @@ function VitCodesContent() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 relative z-10">
-        <div className="text-center mb-16 space-y-4">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-12 relative z-10">
+        <div className="text-center mb-10 space-y-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
