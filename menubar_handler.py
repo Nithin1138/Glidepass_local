@@ -16,8 +16,9 @@ import subprocess
 
 # Cross-platform helpers (with local fallback if platform_utils is missing)
 try:
-    from platform_utils import is_mac, is_windows, resource_path
+    from platform_utils import is_mac, is_windows, resource_path, VERSION
 except ImportError:  # pragma: no cover
+    VERSION = "1.5.0"
     def is_mac():     return sys.platform == "darwin"
     def is_windows(): return sys.platform.startswith("win")
     def resource_path(p):
@@ -135,9 +136,9 @@ def _make_macos_app(launcher_callback, start_callback, stop_callback):
             icon_path = resource_path("LANpad.icns")
             msg = "LANpad — The Ultimate Cross-Device Clipboard\\n\\nExperience seamless, secure, and lightning-fast syncing across all your devices.\\n\\nCrafted with passion by Veera Nithin."
             if os.path.exists(icon_path):
-                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
+                cmd = f'display dialog "{msg}" with title "About LANpad v{VERSION}" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
             else:
-                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
+                cmd = f'display dialog "{msg}" with title "About LANpad v{VERSION}" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     return LANpadMenuApp()
@@ -197,11 +198,11 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
                 try:
                     from tkinter import messagebox
                     messagebox.showinfo(
-                        "About LANpad v1.5.0",
+                        f"About LANpad v{VERSION}",
                         "LANpad — The Ultimate Cross-Device Clipboard\n\nExperience seamless, secure, and lightning-fast syncing across all your devices.\n\nCrafted with passion by Veera Nithin.",
                     )
                 except Exception:
-                    print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
+                    print(f"LANpad v{VERSION} – Fast, Private, Cross-Device Sync.")
 
             def on_quit(icon, item):
                 if self.stop_callback:
@@ -303,11 +304,11 @@ def _make_pystray_app(launcher_callback, start_callback, stop_callback):
             try:
                 from tkinter import messagebox
                 messagebox.showinfo(
-                    "About LANpad v1.5.0",
+                    f"About LANpad v{VERSION}",
                     "LANpad — The Ultimate Cross-Device Clipboard\n\nExperience seamless, secure, and lightning-fast syncing across all your devices.\n\nCrafted with passion by Veera Nithin.",
                 )
             except Exception:
-                print("LANpad v1.5.0 \u2013 Fast, Private, Cross-Device Sync.")
+                print(f"LANpad v{VERSION} – Fast, Private, Cross-Device Sync.")
 
         def custom_quit(self, *args):
             if self.stop_callback:
@@ -416,9 +417,9 @@ if is_mac():
             icon_path = resource_path("LANpad.icns")
             msg = "LANpad — The Ultimate Cross-Device Clipboard\\n\\nExperience seamless, secure, and lightning-fast syncing across all your devices.\\n\\nCrafted with passion by Veera Nithin."
             if os.path.exists(icon_path):
-                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
+                cmd = f'display dialog "{msg}" with title "About LANpad v{VERSION}" buttons {{"Awesome!"}} default button "Awesome!" with icon (POSIX file "{icon_path}")'
             else:
-                cmd = f'display dialog "{msg}" with title "About LANpad v1.5.0" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
+                cmd = f'display dialog "{msg}" with title "About LANpad v{VERSION}" buttons {{"Awesome!"}} default button "Awesome!" with icon note'
             subprocess.run(["osascript", "-e", cmd], capture_output=True)
 
     LANpadMenuApp = _LANpadMenuAppBase  # type: ignore[assignment,misc]
