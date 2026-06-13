@@ -303,8 +303,10 @@ function ContributorsDashboard() {
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
       const data = await res.json();
       setVitSessions(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-        return data;
+        const localOnly = prev.filter(ps => ps.id.startsWith("session_") && !data.some((ds: any) => ds.id === ps.id));
+        const merged = [...localOnly, ...data];
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
       });
       if (data.length > 0 && !quiet && !activeSessionId) setActiveSessionId(data[0].id);
       if (data && Array.from) {
@@ -406,12 +408,9 @@ function ContributorsDashboard() {
            session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
          })
        });
-       if (!res.ok) {
-         const errData = await res.json().catch(() => ({}));
-         throw new Error(errData.error || "Failed to add question");
-       }
+       if (!res.ok) throw new Error("Failed to add question");
      } catch (e: any) {
-       showToast("error", e.message);
+       showToast("error", "Failed to add question");
        fetchVitCodes();
      }
    };
