@@ -234,7 +234,10 @@ function ContributorsDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedQ)
       });
-      if (!res.ok) throw new Error("Failed to save edit");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to save edit");
+      }
       showToast("success", "Code edited successfully.");
     } catch (e: any) {
       showToast("error", e.message);

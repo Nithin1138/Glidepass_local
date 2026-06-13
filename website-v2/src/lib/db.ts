@@ -408,6 +408,33 @@ export async function updateQuestionLock(questionId: string, isLocked: boolean) 
   }
 }
 
+export async function isQuestionLocked(questionId: string): Promise<boolean> {
+  if (pool && isDbInitialized) {
+    const client = await pool.connect();
+    try {
+      const res = await client.query("SELECT is_locked FROM vit_questions WHERE id = $1", [questionId]);
+      if (res.rows.length > 0) {
+        return !!res.rows[0].is_locked;
+      }
+      return false;
+    } catch (e) {
+      console.error("Failed to query question lock in pg, falling back to JSON", e);
+    } finally {
+      client.release();
+    }
+  }
+  
+  const all = await readCodes(true);
+  for (const s of all) {
+    for (const q of s.questions) {
+      if (q.id === questionId) {
+        return !!q.isLocked;
+      }
+    }
+  }
+  return false;
+}
+
 export async function deleteSession(sessionId: string): Promise<void> {
   if (pool) {
     await initDb();
@@ -523,6 +550,9 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
 }
 
 export async function updateQuestion(q: Question): Promise<void> {
+  if (await isQuestionLocked(q.id)) {
+    throw new Error("This question is locked by an admin and cannot be modified.");
+  }
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -551,6 +581,9 @@ export async function updateQuestion(q: Question): Promise<void> {
 }
 
 export async function deleteQuestion(qId: string): Promise<void> {
+  if (await isQuestionLocked(qId)) {
+    throw new Error("This question is locked by an admin and cannot be modified.");
+  }
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -574,6 +607,9 @@ export async function deleteQuestion(qId: string): Promise<void> {
 }
 
 export async function permanentlyDeleteQuestion(qId: string): Promise<void> {
+  if (await isQuestionLocked(qId)) {
+    throw new Error("This question is locked by an admin and cannot be modified.");
+  }
   if (pool) {
     await initDb();
     const client = await pool.connect();
