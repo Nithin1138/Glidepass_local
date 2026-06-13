@@ -409,7 +409,8 @@ export async function updateQuestionLock(questionId: string, isLocked: boolean) 
 }
 
 export async function isQuestionLocked(questionId: string): Promise<boolean> {
-  if (pool && isDbInitialized) {
+  if (pool) {
+    await initDb();
     const client = await pool.connect();
     try {
       const res = await client.query("SELECT is_locked FROM vit_questions WHERE id = $1", [questionId]);
