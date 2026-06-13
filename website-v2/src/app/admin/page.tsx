@@ -326,6 +326,36 @@ export default function GlidePassAdmin() {
   const [editingTypeIdx, setEditingTypeIdx] = useState<number | null>(null);
   const [editingTypeName, setEditingTypeName] = useState("");
 
+  const [deletedExamTypes, _setDeletedExamTypes] = useState<string[]>([]);
+  const deletedExamTypesRef = useRef<string[]>([]);
+  const setDeletedExamTypes = (val: string[] | ((prev: string[]) => string[])) => {
+    if (typeof val === 'function') {
+      _setDeletedExamTypes(prev => {
+        const next = val(prev);
+        deletedExamTypesRef.current = next;
+        return next;
+      });
+    } else {
+      _setDeletedExamTypes(val);
+      deletedExamTypesRef.current = val;
+    }
+  };
+
+  useEffect(() => {
+    const savedDeleted = localStorage.getItem("vit_deleted_exam_types");
+    if (savedDeleted) {
+      try {
+        const parsed = JSON.parse(savedDeleted);
+        _setDeletedExamTypes(parsed);
+        deletedExamTypesRef.current = parsed;
+      } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("vit_deleted_exam_types", JSON.stringify(deletedExamTypes));
+  }, [deletedExamTypes]);
+
   const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
   const [selectedRuleType, setSelectedRuleType] = useState("NERD");
@@ -437,7 +467,8 @@ export default function GlidePassAdmin() {
       if (data.length > 0 && !activeSessionId) setActiveSessionId(data[0].id);
       if (data && Array.from) {
         const types = data.map((s: any) => s.examType).filter(Boolean);
-        setExamTypes(prev => Array.from(new Set([...prev, ...types])));
+        const activeTypes = types.filter((t: string) => !deletedExamTypesRef.current.includes(t));
+        setExamTypes(prev => Array.from(new Set([...prev, ...activeTypes])).filter(t => !deletedExamTypesRef.current.includes(t)));
       }
 
        // Sync rules in real-time
@@ -1972,7 +2003,7 @@ export default function GlidePassAdmin() {
                         </div>
                       ) : (
                         <div className="space-y-6">
-                          <button onClick={() => setSelectedContributor(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}><ChevronLeft size={14} /> Back to Contributors</button>
+                          <button onClick={() => setSelectedContributor(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors relative z-50 cursor-pointer" style={{ color: P.blue }}><ChevronLeft size={14} /> Back to Contributors</button>
                           
                           {(() => {
                             const c = contributors.find(x => x.email === selectedContributor);
@@ -2026,6 +2057,7 @@ export default function GlidePassAdmin() {
                                                 <div className="flex items-center gap-3">
                                                   <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
                                                   <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
+                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.sky}10`, color: dk ? P.sky : P.black, borderColor: `${P.sky}20` }}>{q.sessionType}</span>
                                                 </div>
                                                 {timeStr && <span className="text-[10px] font-mono opacity-60 mt-1">{timeStr}</span>}
                                               </div>
@@ -2510,7 +2542,15 @@ export default function GlidePassAdmin() {
                     <div className="flex gap-2">
                       <input type="text" value={newExamTypeName} onChange={e => setNewExamTypeName(e.target.value)} placeholder="New type..."
                         className={`flex-1 text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`} />
-                      <button onClick={() => { const added = newExamTypeName.trim(); if (added) { setExamTypes(prev => Array.from(new Set([...prev, added]))); setNewExamType(added); setNewExamTypeName(""); } }}
+                      <button onClick={() => {
+                        const added = newExamTypeName.trim();
+                        if (added) {
+                          setDeletedExamTypes(prev => prev.filter(t => t.toLowerCase() !== added.toLowerCase()));
+                          setExamTypes(prev => Array.from(new Set([...prev, added])));
+                          setNewExamType(added);
+                          setNewExamTypeName("");
+                        }
+                      }}
                         className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all" style={{ background: P.blue }}>
                         <Plus size={13} />
                       </button>
@@ -2561,14 +2601,15 @@ export default function GlidePassAdmin() {
                       {/* Type-to-confirm */}
                       <div>
                         <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
-                          Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetType}</span> to confirm
+                          Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10 normal-case">{deleteTargetType}</span> to confirm
                         </label>
                         <input
                           type="text"
                           value={deleteTypeConfirmText}
                           onChange={e => setDeleteTypeConfirmText(e.target.value)}
                           onKeyDown={e => {
-                            if (e.key === "Enter" && deleteTypeConfirmText === deleteTargetType) {
+                            if (e.key === "Enter" && deleteTypeConfirmText.trim().toLowerCase() === deleteTargetType.trim().toLowerCase()) {
+                              setDeletedExamTypes(prev => Array.from(new Set([...prev, deleteTargetType])));
                               setExamTypes(prev => prev.filter(t => t !== deleteTargetType));
                               setShowDeleteTypeModal(false);
                               setDeleteTargetType(null);
@@ -2578,7 +2619,7 @@ export default function GlidePassAdmin() {
                           placeholder={`Type "${deleteTargetType}" here...`}
                           autoFocus
                           className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${
-                            deleteTypeConfirmText === deleteTargetType
+                            deleteTypeConfirmText.trim().toLowerCase() === deleteTargetType.trim().toLowerCase()
                               ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5'
                               : inputBg
                           }`}
@@ -2595,16 +2636,17 @@ export default function GlidePassAdmin() {
                         </button>
                         <button
                           onClick={() => {
-                            if (deleteTypeConfirmText !== deleteTargetType) return;
+                            if (deleteTypeConfirmText.trim().toLowerCase() !== deleteTargetType.trim().toLowerCase()) return;
+                            setDeletedExamTypes(prev => Array.from(new Set([...prev, deleteTargetType])));
                             setExamTypes(prev => prev.filter(t => t !== deleteTargetType));
                             setShowDeleteTypeModal(false);
                             setDeleteTargetType(null);
                             setDeleteTypeConfirmText("");
                             showToast("success", `Exam type "${deleteTargetType}" deleted.`);
                           }}
-                          disabled={deleteTypeConfirmText !== deleteTargetType}
+                          disabled={deleteTypeConfirmText.trim().toLowerCase() !== deleteTargetType.trim().toLowerCase()}
                           className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                            deleteTypeConfirmText === deleteTargetType
+                            deleteTypeConfirmText.trim().toLowerCase() === deleteTargetType.trim().toLowerCase()
                               ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
                               : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
                           }`}

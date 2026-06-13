@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, use, Suspense } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Send, Copy, Check, Terminal, Sun, Moon, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Send, Copy, Check, Terminal, Sun, Moon, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -58,6 +58,7 @@ function SessionCodesContent({ params }: PageProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedQId, setExpandedQId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSessionData = async () => {
@@ -245,53 +246,67 @@ function SessionCodesContent({ params }: PageProps) {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.08, duration: 0.5 }}
-                  className={`rounded-2xl overflow-hidden ${cardBg} ${cardBorder}`}
+                  className={`rounded-2xl overflow-hidden cursor-pointer transition-all ${cardBg} ${cardBorder}`}
+                  onClick={() => setExpandedQId(expandedQId === q.id ? null : q.id)}
                 >
                   {/* Card Header */}
                   <div className={`px-6 py-4 border-b ${borderLight} flex items-center justify-between ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'}`}>
-                    <div className="flex items-center gap-2">
-                      <Terminal size={14} className="text-blue-400" />
-                      <span className={`text-xs font-bold ${dk ? "text-white/80" : "text-black/80"} font-mono`}>Question {idx + 1}: {q.title}</span>
+                    <div className="flex items-center gap-2 min-w-0 mr-3">
+                      <Terminal size={14} className="text-blue-400 shrink-0" />
+                      <span className={`text-xs font-bold ${dk ? "text-white/80" : "text-black/80"} font-mono truncate`}>Question {idx + 1}: {q.title}</span>
                     </div>
-                    <span className={`text-[9px] uppercase tracking-wider ${dk ? "bg-white/10 text-white/70" : "bg-black/10 text-black/75"} font-mono font-bold px-2 py-0.5 rounded border ${borderLight}`}>
-                      {q.language}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleCopy(q.code, q.id); }}
+                        className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/[0.05] transition-colors`}
+                        title="Copy Code"
+                      >
+                        {copiedId === q.id ? <Check size={12} className="text-blue-400" /> : <Copy size={12} />}
+                      </button>
+                      <span className={`text-[9px] uppercase tracking-wider ${dk ? "bg-white/10 text-white/70" : "bg-black/10 text-black/75"} font-mono font-bold px-2 py-0.5 rounded border ${borderLight}`}>
+                        {q.language}
+                      </span>
+                      {expandedQId === q.id ? <ChevronUp size={14} className="opacity-60" /> : <ChevronDown size={14} className="opacity-60" />}
+                    </div>
                   </div>
 
                   {/* Title & Body */}
-                  <div className="p-6 space-y-4">
-                    {/* Code Editor Preview */}
-                    <div className={`relative rounded-xl overflow-hidden border ${borderLight} ${dk ? "bg-black/40" : "bg-white/60"}`}>
-                      <div className="absolute top-3 right-3 z-10 flex gap-2">
-                        <button
-                          onClick={() => handleCopy(q.code, q.id)}
-                          className={`p-1.5 rounded-lg border ${borderLight} ${dk ? "bg-black" : "bg-white"}/60 hover:bg-white/[0.05] ${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"} transition-colors`}
-                          title="Copy Code"
-                        >
-                          {copiedId === q.id ? <Check size={13} className="text-blue-400" /> : <Copy size={13} />}
-                        </button>
-                      </div>
-                      <pre className="p-4 overflow-x-auto text-[11px] font-mono text-blue-200/90 leading-relaxed max-h-85 select-all">
-                        <code className={dk ? "text-blue-200/90" : "text-blue-900"}>{q.code}</code>
-                      </pre>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="pt-2 flex flex-row items-center justify-between gap-4">
-                      <div className={`text-[10px] ${txt3} font-mono truncate`}>
-                        {q.contributorName && (
-                          <span>Contributed by: <span className={`${dk ? "text-white/70" : "text-black/70"} font-bold`}>{q.contributorName}</span></span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleSendCommandCenter(q.code)}
-                        className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
+                  <AnimatePresence>
+                    {expandedQId === q.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
                       >
-                        <Send size={13} />
-                        Enter Command Center with Code
-                      </button>
-                    </div>
-                  </div>
+                        <div className="p-6 space-y-4 border-t border-white/5">
+                          {/* Code Editor Preview */}
+                          <div className={`relative rounded-xl overflow-hidden border ${borderLight} ${dk ? "bg-black/40" : "bg-white/60"}`}>
+                            <pre className="p-4 overflow-x-auto text-[11px] font-mono text-blue-200/90 leading-relaxed max-h-85 select-all">
+                              <code className={dk ? "text-blue-200/90" : "text-blue-900"}>{q.code}</code>
+                            </pre>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="pt-2 flex flex-row items-center justify-between gap-4">
+                            <div className={`text-[10px] ${txt3} font-mono flex-1 min-w-0`}>
+                              {q.contributorName && (
+                                <span className="block truncate">Contributed by: <span className={`${dk ? "text-white/70" : "text-black/70"} font-bold`}>{q.contributorName}</span></span>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleSendCommandCenter(q.code); }}
+                              className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
+                            >
+                              <Send size={12} className="shrink-0" />
+                              <span className="hidden sm:inline">Enter Command Center with Code</span>
+                              <span className="sm:hidden">Command Center</span>
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ))}
             </div>
