@@ -790,7 +790,7 @@ export default function Home() {
                   icon: <Monitor size={28} />,
                   label: "Copy Install Cmd",
                   installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
-                  version: "v1.5.1",
+                  version: "v1.5.2",
                   size: "94.6 MB",
                   theme: "rose",
                   gradient: "from-rose-500/30 to-transparent",
@@ -805,7 +805,7 @@ export default function Home() {
                   icon: <Monitor size={28} />,
                   label: "Copy Install Cmd",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
-                  version: "v1.5.1",
+                  version: "v1.5.2",
                   size: "38.2 MB",
                   theme: "indigo",
                   gradient: "from-indigo-500/30 to-transparent",
@@ -815,6 +815,7 @@ export default function Home() {
                   href: undefined,
                   topLineColor: "via-indigo-500/40"
                 }
+
               ].map((d, i) => (
                 <motion.div
                   key={i}

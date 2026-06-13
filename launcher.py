@@ -12,6 +12,8 @@ import urllib.request
 import urllib.parse
 import io
 import ssl
+import json
+
 try:
     import certifi
     ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
@@ -238,6 +240,7 @@ class LANpadLauncher:
         self._build_main()
         self._build_bypass()
 
+        self.check_disclaimer()
         self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
@@ -1137,6 +1140,103 @@ rm -f "{download_path}"
     def on_closing(self):
         # The user requested that clicking the cross ('X') should hide the dashboard and let the app run in the background.
         self.root.withdraw()
+
+    def check_disclaimer(self):
+        settings_path = os.path.expanduser("~/.lanpad_settings.json")
+        accepted = False
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    data = json.load(f)
+                    accepted = data.get("disclaimer_accepted", False)
+            except Exception:
+                pass
+        
+        if accepted:
+            return
+
+        # Show beautiful Tkinter Toplevel Disclaimer Dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Disclaimer")
+        dialog.geometry("360x300")
+        dialog.configure(bg=self.BG)
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Center dialog relative to main launcher window
+        self.root.update_idletasks()
+        rx = self.root.winfo_x()
+        ry = self.root.winfo_y()
+        dialog.geometry(f"360x300+{rx+20}+{ry+150}")
+
+        # Remove window decorations on macOS/Windows if possible, or just style it
+        dialog.configure(padx=16, pady=16)
+
+        title_lbl = tk.Label(dialog, text="Terms of Service & Disclaimer", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE)
+        title_lbl.pack(anchor="w", pady=(0, 12))
+
+        desc_text = (
+            "LANpad is a productivity utility designed for automation and local clipboard sync. "
+            "By checking the box below, you agree to use this software in compliance with your "
+            "educational institution's rules and academic integrity policies.\n\n"
+            "The developers assume no liability for misuse."
+        )
+        desc_lbl = tk.Label(dialog, text=desc_text, font=(self.FU, 10), bg=self.BG, fg=self.DIM, justify="left", wraplength=320)
+        desc_lbl.pack(anchor="w", pady=(0, 20))
+
+        # Checkbox variable
+        var = tk.BooleanVar(value=False)
+
+        def toggle_btn():
+            if var.get():
+                agree_btn.config(state="normal", bg="#48BB78", activebackground="#38A169")
+            else:
+                agree_btn.config(state="disabled", bg=self.BG2, activebackground=self.BG2)
+
+        cb = tk.Checkbutton(
+            dialog, 
+            text="I agree that LANpad is a productivity utility and I will use it in compliance with my institution's rules.",
+            variable=var, 
+            onvalue=True, 
+            offvalue=False,
+            bg=self.BG, 
+            fg=self.WHITE,
+            activebackground=self.BG, 
+            activeforeground=self.WHITE,
+            selectcolor=self.BG,
+            font=(self.FU, 9),
+            justify="left",
+            wraplength=300,
+            command=toggle_btn
+        )
+        cb.pack(anchor="w", pady=(0, 20))
+
+        def on_agree():
+            try:
+                with open(settings_path, "w") as f:
+                    json.dump({"disclaimer_accepted": True}, f)
+            except Exception:
+                pass
+            dialog.destroy()
+
+        agree_btn = tk.Button(
+            dialog,
+            text="Agree & Continue",
+            font=(self.FU, 11, "bold"),
+            bg=self.BG2,
+            fg=self.WHITE,
+            activeforeground=self.WHITE,
+            activebackground=self.BG2,
+            bd=0,
+            highlightthickness=0,
+            padx=16,
+            pady=8,
+            state="disabled",
+            command=on_agree
+        )
+        agree_btn.pack(fill="x", side="bottom")
+
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
