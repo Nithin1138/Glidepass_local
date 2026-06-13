@@ -332,6 +332,16 @@ function ContributorsDashboard() {
 
   const handleAddQuestion = async () => {
     if (!activeSessionId) return;
+
+    const currentSession = vitSessions.find(s => s.id === activeSessionId);
+    if (currentSession) {
+      const ruleForType = examRules[currentSession.examType];
+      const maxCap = getMaxCap(ruleForType);
+      if (maxCap !== null && currentSession.questions.length >= maxCap) {
+        return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
+      }
+    }
+
     if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
     
     const newQ: Question = { 
