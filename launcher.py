@@ -11,6 +11,12 @@ from PIL import Image, ImageTk, ImageOps
 import urllib.request
 import urllib.parse
 import io
+import ssl
+try:
+    import certifi
+    ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    pass
 
 # ---------------------------------------------------------------------------
 # Windows High-DPI awareness.

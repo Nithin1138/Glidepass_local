@@ -4,6 +4,12 @@ import io
 import threading
 import traceback
 import subprocess
+import ssl
+try:
+    import certifi
+    ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    pass
 
 # ---------------------------------------------------------------------------
 # Heavy imports (tkinter, rumps/menubar_handler, uvicorn, launcher) are
