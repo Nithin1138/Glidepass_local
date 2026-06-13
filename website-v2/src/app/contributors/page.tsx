@@ -232,7 +232,10 @@ function ContributorsDashboard() {
       const res = await fetch("/api/vitcodes/question", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedQ)
+        body: JSON.stringify({
+          question: updatedQ,
+          editorEmail: session?.user?.email || "unknown"
+        })
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

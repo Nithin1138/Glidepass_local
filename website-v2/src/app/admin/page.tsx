@@ -424,6 +424,13 @@ export default function GlidePassAdmin() {
   const [loadingContributors, setLoadingContributors] = useState(false);
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null);
   const [expandedContribQId, setExpandedContribQId] = useState<string | null>(null);
+  const [activeSlideTab, setActiveSlideTab] = useState<"contributed" | "edits">("contributed");
+  const [contribExamTypeFilter, setContribExamTypeFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActiveSlideTab("contributed");
+    setContribExamTypeFilter(null);
+  }, [selectedContributor]);
 
   useEffect(() => {
     if (isAuth && view === "contributors") {
@@ -2014,9 +2021,65 @@ export default function GlidePassAdmin() {
                             const college = c.college || parsed.college;
                             const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
                             const types = Array.from(new Set(codes.map(q => q.sessionType)));
+
+                            const editsMade = (() => {
+                              const list: {
+                                questionId: string;
+                                questionTitle: string;
+                                language: string;
+                                reason: string;
+                                timestamp: number;
+                              }[] = [];
+                              
+                              vitSessions.forEach(s => {
+                                if (!s.isDeleted && s.questions) {
+                                  s.questions.forEach(q => {
+                                    if (!q.isDeleted) {
+                                      if (q.edits && q.edits.length > 0) {
+                                        q.edits.forEach(edit => {
+                                          if (edit.editorEmail === c.email) {
+                                            list.push({
+                                              questionId: q.id,
+                                              questionTitle: q.title,
+                                              language: q.language,
+                                              reason: edit.reason,
+                                              timestamp: edit.timestamp
+                                            });
+                                          }
+                                        });
+                                      } else if (q.contributorEmail === c.email && q.comment) {
+                                        const tsStr = q.id.replace("q_", "");
+                                        const ts = parseInt(tsStr);
+                                        list.push({
+                                          questionId: q.id,
+                                          questionTitle: q.title,
+                                          language: q.language,
+                                          reason: q.comment,
+                                          timestamp: !isNaN(ts) ? ts : Date.now()
+                                        });
+                                      }
+                                    }
+                                  });
+                                }
+                              });
+                              
+                              const seen = new Set<string>();
+                              const uniqueList = list.filter(item => {
+                                const key = `${item.questionId}_${item.reason}`;
+                                if (seen.has(key)) return false;
+                                seen.add(key);
+                                return true;
+                              });
+                              
+                              return uniqueList.sort((a, b) => b.timestamp - a.timestamp);
+                            })();
+
+                            const filteredCodes = contribExamTypeFilter 
+                              ? codes.filter(q => q.sessionType === contribExamTypeFilter) 
+                              : codes;
                             
                             // Group by date
-                            const byDate = codes.reduce((acc, q) => {
+                            const byDate = filteredCodes.reduce((acc, q) => {
                               if (!acc[q.sessionDate]) acc[q.sessionDate] = [];
                               acc[q.sessionDate].push(q);
                               return acc;
@@ -2034,51 +2097,132 @@ export default function GlidePassAdmin() {
                                       </div>
                                       <p className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email} • ID: {regno}</p>
                                     </div>
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                      {types.map(t => (
-                                        <span key={t} className="text-[9px] px-2.5 py-1 rounded border font-bold uppercase" style={{ background: `${P.sky}10`, color: dk ? P.sky : P.black, borderColor: `${P.sky}20` }}>{t}</span>
-                                      ))}
-                                    </div>
+                                    
+                                    {activeSlideTab === "contributed" && types.length > 0 && (
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] font-bold uppercase opacity-55 mr-1">Filter Exam:</span>
+                                        {types.map(t => {
+                                          const isFiltered = contribExamTypeFilter === t;
+                                          return (
+                                            <button 
+                                              key={t} 
+                                              onClick={() => setContribExamTypeFilter(isFiltered ? null : t)}
+                                              className="text-[9px] px-2.5 py-1 rounded border font-bold uppercase transition-all duration-200 cursor-pointer hover:opacity-90" 
+                                              style={{ 
+                                                background: isFiltered ? P.blue : `${P.sky}10`, 
+                                                color: isFiltered ? "#fff" : dk ? P.sky : P.black, 
+                                                borderColor: isFiltered ? P.blue : `${P.sky}20` 
+                                              }}
+                                            >
+                                              {t}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                  {Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, qs]) => (
-                                    <div key={date} className="space-y-3">
-                                      <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: P.blue }}>{date}</h3>
+                                {/* Sliding Selector (Segmented Tab Control) */}
+                                <div className="flex p-1 rounded-2xl max-w-sm border self-start" style={{ background: dk ? "rgba(255,255,255,0.02)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                  <button
+                                    onClick={() => setActiveSlideTab("contributed")}
+                                    className="flex-1 py-2 px-4 text-xs font-bold rounded-xl transition-all relative cursor-pointer"
+                                    style={{
+                                      background: activeSlideTab === "contributed" ? P.blue : "transparent",
+                                      color: activeSlideTab === "contributed" ? "#fff" : dk ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"
+                                    }}
+                                  >
+                                    Codes Contributed ({codes.length})
+                                  </button>
+                                  <button
+                                    onClick={() => setActiveSlideTab("edits")}
+                                    className="flex-1 py-2 px-4 text-xs font-bold rounded-xl transition-all relative cursor-pointer"
+                                    style={{
+                                      background: activeSlideTab === "edits" ? P.blue : "transparent",
+                                      color: activeSlideTab === "edits" ? "#fff" : dk ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"
+                                    }}
+                                  >
+                                    Edits Made ({editsMade.length})
+                                  </button>
+                                </div>
+
+                                {activeSlideTab === "contributed" ? (
+                                  <div className="space-y-6">
+                                    {Object.entries(byDate).length === 0 ? (
+                                      <div className="p-8 text-center rounded-[24px] border text-xs opacity-60" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                        No contributions match this filter.
+                                      </div>
+                                    ) : (
+                                      Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, qs]) => (
+                                        <div key={date} className="space-y-3">
+                                          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: P.blue }}>{date}</h3>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {qs.map((q, idx) => {
+                                              const tsStr = q.id.replace("q_", "");
+                                              const ts = parseInt(tsStr);
+                                              const timeStr = !isNaN(ts) ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                                              return (
+                                                <div key={q.id} className="p-5 rounded-[24px] border relative cursor-pointer hover:shadow-lg transition-all" style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }} onClick={() => setExpandedContribQId(expandedContribQId === q.id ? null : q.id)}>
+                                                  <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex items-center gap-3">
+                                                      <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
+                                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
+                                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.sky}10`, color: dk ? P.sky : P.black, borderColor: `${P.sky}20` }}>{q.sessionType}</span>
+                                                    </div>
+                                                    {timeStr && <span className="text-[10px] font-mono opacity-60 mt-1">{timeStr}</span>}
+                                                  </div>
+                                                  <h4 className="text-sm font-bold mb-2">{q.title}</h4>
+                                                  {q.comment && <p className="text-xs italic mb-2" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</p>}
+                                                  <AnimatePresence>
+                                                    {expandedContribQId === q.id && (
+                                                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4">
+                                                        <pre className="p-4 rounded-xl text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-52 border" style={{ background: "#151b22", color: "#8ecfff", borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                                                          <code>{q.code}</code>
+                                                        </pre>
+                                                      </motion.div>
+                                                    )}
+                                                  </AnimatePresence>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-6">
+                                    {editsMade.length === 0 ? (
+                                      <div className="p-8 text-center rounded-[24px] border text-xs opacity-60" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                        No edits logged for this contributor yet.
+                                      </div>
+                                    ) : (
                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {qs.map((q, idx) => {
-                                          const tsStr = q.id.replace("q_", "");
-                                          const ts = parseInt(tsStr);
-                                          const timeStr = !isNaN(ts) ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                                        {editsMade.map((edit, idx) => {
+                                          const dateStr = new Date(edit.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                                          const timeStr = new Date(edit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                           return (
-                                            <div key={q.id} className="p-5 rounded-[24px] border relative cursor-pointer hover:shadow-lg transition-all" style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }} onClick={() => setExpandedContribQId(expandedContribQId === q.id ? null : q.id)}>
+                                            <div key={`${edit.questionId}_${idx}`} className="p-5 rounded-[24px] border relative hover:shadow-lg transition-all" style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                                               <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-center gap-3">
                                                   <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
-                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
-                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.sky}10`, color: dk ? P.sky : P.black, borderColor: `${P.sky}20` }}>{q.sessionType}</span>
+                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{edit.language}</span>
                                                 </div>
-                                                {timeStr && <span className="text-[10px] font-mono opacity-60 mt-1">{timeStr}</span>}
+                                                <span className="text-[10px] font-mono opacity-60 mt-1">{dateStr} • {timeStr}</span>
                                               </div>
-                                              <h4 className="text-sm font-bold mb-2">{q.title}</h4>
-                                              {q.comment && <p className="text-xs italic mb-2" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</p>}
-                                              <AnimatePresence>
-                                                {expandedContribQId === q.id && (
-                                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4">
-                                                    <pre className="p-4 rounded-xl text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-52 border" style={{ background: "#151b22", color: "#8ecfff", borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
-                                                      <code>{q.code}</code>
-                                                    </pre>
-                                                  </motion.div>
-                                                )}
-                                              </AnimatePresence>
+                                              <h4 className="text-sm font-bold mb-2">{edit.questionTitle}</h4>
+                                              <div className="mt-3 pt-3 border-t text-xs" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                                <span className="text-[9px] uppercase font-bold tracking-wider mr-1.5 opacity-55">Reason for Edit:</span>
+                                                <span className="font-medium" style={{ color: P.blue }}>{edit.reason}</span>
+                                              </div>
                                             </div>
                                           );
                                         })}
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}

@@ -132,6 +132,11 @@ export async function initDb() {
     await client.query(`
       ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;
     `);
+
+    // Ensure edits column exists for question edit logging
+    await client.query(`
+      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS edits TEXT DEFAULT '[]';
+    `);
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -189,6 +194,14 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
       
       const questionsBySession: Record<string, Question[]> = {};
       questionsRes.rows.forEach((row) => {
+        let parsedEdits = [];
+        if (row.edits) {
+          try {
+            parsedEdits = JSON.parse(row.edits);
+          } catch (e) {
+            parsedEdits = [];
+          }
+        }
         const q: Question = {
           id: row.id,
           title: row.title,
@@ -201,6 +214,7 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
           contributorCollege: row.contributor_college,
           isDeleted: !!row.is_deleted,
           isLocked: !!row.is_locked,
+          edits: parsedEdits,
         };
         if (!questionsBySession[row.session_id]) {
           questionsBySession[row.session_id] = [];
@@ -302,7 +316,7 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
         for (const q of session.questions) {
           const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
           await client.query(
-            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted, edits) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             [
               q.id,
               session.id,
@@ -314,7 +328,8 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
               q.contributorName || parsed.name || null,
               q.contributorRegno || parsed.regno || null,
               q.contributorCollege || parsed.college || null,
-              q.isDeleted || false
+              q.isDeleted || false,
+              q.edits ? JSON.stringify(q.edits) : "[]"
             ]
           );
         }
@@ -551,17 +566,40 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
   }
 }
 
-export async function updateQuestion(q: Question): Promise<void> {
+export async function updateQuestion(q: Question, editorEmail?: string): Promise<void> {
   if (await isQuestionLocked(q.id)) {
     throw new Error("This question is locked by an admin and cannot be modified.");
   }
+  
+  let editsList: any[] = [];
+  
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
+      const existingRes = await client.query("SELECT edits FROM vit_questions WHERE id = $1", [q.id]);
+      if (existingRes.rows.length > 0 && existingRes.rows[0].edits) {
+        try {
+          editsList = JSON.parse(existingRes.rows[0].edits);
+        } catch (e) {
+          editsList = [];
+        }
+      }
+      
+      if (editorEmail) {
+        editsList.push({
+          editorEmail,
+          reason: q.comment || "Updated code",
+          timestamp: Date.now(),
+          questionId: q.id,
+          questionTitle: q.title,
+          language: q.language
+        });
+      }
+      
       await client.query(
-        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5, is_deleted = $6 WHERE id = $1",
-        [q.id, q.title, q.code, q.language, q.comment || null, q.isDeleted || false]
+        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5, is_deleted = $6, edits = $7 WHERE id = $1",
+        [q.id, q.title, q.code, q.language, q.comment || null, q.isDeleted || false, JSON.stringify(editsList)]
       );
     } finally {
       client.release();
@@ -571,9 +609,22 @@ export async function updateQuestion(q: Question): Promise<void> {
     for (const s of all) {
       const idx = (s.questions || []).findIndex(x => x.id === q.id);
       if (idx !== -1) {
+        const existingQ = s.questions[idx];
+        editsList = existingQ.edits || [];
+        if (editorEmail) {
+          editsList.push({
+            editorEmail,
+            reason: q.comment || "Updated code",
+            timestamp: Date.now(),
+            questionId: q.id,
+            questionTitle: q.title,
+            language: q.language
+          });
+        }
         s.questions[idx] = {
           ...q,
-          isDeleted: q.isDeleted !== undefined ? q.isDeleted : s.questions[idx].isDeleted
+          isDeleted: q.isDeleted !== undefined ? q.isDeleted : s.questions[idx].isDeleted,
+          edits: editsList
         };
         await writeCodes(all);
         return;

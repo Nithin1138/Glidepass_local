@@ -24,12 +24,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const question = await request.json();
+    const body = await request.json();
+    const question = body.question || body;
+    const editorEmail = body.editorEmail || null;
     if (!question || !question.id) {
       return NextResponse.json({ error: "Invalid question data" }, { status: 400 });
     }
 
-    await updateQuestion(question);
+    await updateQuestion(question, editorEmail);
     return NextResponse.json({ success: true, message: "Question updated successfully" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
