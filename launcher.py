@@ -236,6 +236,7 @@ class LANpadLauncher:
         self._tick_dot()
         self.check_process_status()
         self.show_view("main")
+        self.root.after(2000, self.check_for_updates)
 
     # ── Shared drawing utilities ──────────────────────────────────────────────
 
@@ -965,6 +966,154 @@ class LANpadLauncher:
                 NSApp.activateIgnoringOtherApps_(True)
             except Exception:
                 pass
+
+    def check_for_updates(self):
+        """Check for updates in a background thread."""
+        def _thread():
+            try:
+                import json
+                url = "https://lanpad.vercel.app/downloads/version.json"
+                req = urllib.request.Request(
+                    url, 
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                
+                online_version = data.get("version")
+                if not online_version:
+                    return
+
+                from platform_utils import VERSION as local_version
+                
+                def v_tuple(v):
+                    clean = v.lower().lstrip('v')
+                    return tuple(map(int, clean.split('.')))
+
+                try:
+                    if v_tuple(online_version) > v_tuple(local_version):
+                        self.root.after(0, lambda: self.prompt_update(online_version, data))
+                except Exception:
+                    pass
+            except Exception as e:
+                print(f"[auto-updater] check failed: {e}")
+
+        threading.Thread(target=_thread, daemon=True).start()
+
+    def prompt_update(self, version, data):
+        """Prompt user to update."""
+        ans = messagebox.askyesno(
+            "Update Available",
+            f"A new version of LANpad (v{version}) is available.\n\n"
+            "Would you like to download and install it automatically now?\n"
+            "This will restart the application.",
+            parent=self.root
+        )
+        if ans:
+            self.apply_update(version, data)
+
+    def apply_update(self, version, data):
+        """Download and install the update."""
+        status_win = tk.Toplevel(self.root)
+        status_win.title("Updating LANpad")
+        status_win.geometry("300x120")
+        status_win.resizable(False, False)
+        status_win.configure(bg=self.BG)
+        status_win.transient(self.root)
+        status_win.grab_set()
+
+        lbl = tk.Label(
+            status_win, 
+            text="Downloading update...", 
+            font=(self.FU, 12, "bold"), 
+            bg=self.BG, 
+            fg=self.WHITE
+        )
+        lbl.pack(pady=25)
+
+        try:
+            self.root.update_idletasks()
+            x = self.root.winfo_x() + (self.root.winfo_width() - 300) // 2
+            y = self.root.winfo_y() + (self.root.winfo_height() - 120) // 2
+            status_win.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        def _download_and_install():
+            try:
+                import tempfile
+                import shutil
+                import subprocess
+                from platform_utils import is_windows, is_mac
+
+                if is_windows():
+                    url = data.get("windows_url")
+                elif is_mac():
+                    url = data.get("mac_url")
+                else:
+                    return
+
+                if not url:
+                    self.root.after(0, lambda: messagebox.showerror("Update Error", "No download link available for your OS.", parent=self.root))
+                    status_win.destroy()
+                    return
+
+                temp_dir = tempfile.gettempdir()
+                filename = url.split("/")[-1]
+                download_path = os.path.join(temp_dir, filename)
+
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=30) as response, open(download_path, 'wb') as out_file:
+                    shutil.copyfileobj(response, out_file)
+
+                self.root.after(0, lambda: lbl.config(text="Applying update..."))
+
+                mypid = os.getpid()
+                if is_windows():
+                    install_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "LANpad")
+                    bat_content = f"""@echo off
+taskkill /F /PID {mypid} >nul 2>&1
+timeout /t 2 /nobreak >nul
+powershell -Command "Expand-Archive -Path '{download_path}' -DestinationPath '{install_dir}' -Force"
+start "" "{install_dir}\\LANpad\\LANpad.exe"
+del "%~f0"
+"""
+                    bat_path = os.path.join(temp_dir, "lanpad_update.bat")
+                    with open(bat_path, "w") as f:
+                        f.write(bat_content)
+
+                    subprocess.Popen([bat_path], shell=True, creationflags=0x00000010)
+                    os._exit(0)
+
+                elif is_mac():
+                    sh_content = f"""#!/bin/bash
+while kill -0 {mypid} 2>/dev/null; do
+    sleep 0.5
+done
+mkdir -p /tmp/LANpad_Mount_Update
+hdiutil attach "{download_path}" -mountpoint /tmp/LANpad_Mount_Update -nobrowse -quiet
+if [ -d "/tmp/LANpad_Mount_Update/LANpad.app" ]; then
+    cp -R /tmp/LANpad_Mount_Update/LANpad.app /Applications/
+    hdiutil detach /tmp/LANpad_Mount_Update -quiet
+    xattr -cr /Applications/LANpad.app 2>/dev/null
+    open /Applications/LANpad.app
+fi
+rm -rf /tmp/LANpad_Mount_Update
+rm -f "{download_path}"
+"""
+                    sh_path = os.path.join(temp_dir, "lanpad_update.sh")
+                    with open(sh_path, "w") as f:
+                        f.write(sh_content)
+                    
+                    os.chmod(sh_path, 0o755)
+                    subprocess.Popen([sh_path], close_fds=True)
+                    os._exit(0)
+
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror("Update Error", f"Failed to download/install update:\n{str(e)}", parent=self.root))
+                status_win.destroy()
+
+        threading.Thread(target=_download_and_install, daemon=True).start()
 
     def on_quit(self, *args):
         # Handle Command+Q by killing the entire app (parent menubar + self)

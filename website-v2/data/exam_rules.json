@@ -1,3 +1,8 @@
 {
-  "NERD": "2"
+  "rules": {
+    "NERD": "3"
+  },
+  "sessionLimits": {
+    "NERD": 1
+  }
 }

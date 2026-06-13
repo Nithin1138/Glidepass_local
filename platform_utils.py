@@ -51,3 +51,7 @@ def user_data_dir() -> str:
     if is_windows():
         return os.path.join(os.path.expanduser("~"), "AppData", "Local", "LANpad")
     return os.path.expanduser("~/.lanpad")
+
+
+VERSION = "1.5.0"
+

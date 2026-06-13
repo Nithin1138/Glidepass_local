@@ -4,7 +4,7 @@
     "date": "2026-06-13",
     "examType": "NERD",
     "title": "Test Session",
-    "isDeleted": false,
+    "isDeleted": true,
     "questions": [
       {
         "id": "q_test_1781339996903",
@@ -16,7 +16,7 @@
         "contributorName": "Test",
         "contributorRegno": "unknown",
         "contributorCollege": "vit-ap",
-        "isDeleted": false
+        "isDeleted": true
       }
     ]
   },
