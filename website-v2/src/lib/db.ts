@@ -159,6 +159,7 @@ export interface Question {
   contributorCollege?: string;
   isDeleted?: boolean;
   isLocked?: boolean;
+  edits?: any[];
 }
 
 export interface VitCode {
