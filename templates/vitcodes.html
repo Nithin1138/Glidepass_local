@@ -567,18 +567,22 @@
         let currentView = 'overview'; // 'overview' or 'detail'
         let currentSubView = 'types'; // 'types' or 'sessions'
         let currentSessionId = null;
+        let currentExamType = null;
+
+        // Initialize history state on page load
+        function initHistoryState() {
+            if (!history.state) {
+                history.replaceState({ view: 'overview', subView: 'types', examType: null, sessionId: null }, '');
+            }
+        }
 
         // Header Back Button Logic
         const backBtn = document.getElementById('header-back-btn');
         backBtn.addEventListener('click', () => {
-            if (currentView === 'detail') {
-                showOverview();
-            } else if (currentView === 'overview') {
-                if (currentSubView === 'sessions') {
-                    renderExamTypes();
-                } else {
-                    window.location.href = '/';
-                }
+            if (currentView === 'overview' && currentSubView === 'types') {
+                window.location.href = '/';
+            } else {
+                history.back();
             }
         });
 
@@ -637,7 +641,7 @@
         }
 
         // Show Detailed View
-        function showDetail(sessionId) {
+        function showDetail(sessionId, push = true) {
             currentView = 'detail';
             currentSessionId = sessionId;
             const session = allSessions.find(s => s.id === sessionId);
@@ -736,11 +740,25 @@
             document.getElementById('overview-view').classList.remove('active');
             document.getElementById('detail-view').classList.add('active');
             refreshIcons();
+
+            if (push) {
+                history.pushState({ view: 'detail', subView: 'sessions', examType: currentExamType, sessionId: sessionId }, '');
+            }
+        }
+
+        function selectExamType(type, push = true) {
+            currentExamType = type;
+            const sessions = allSessions.filter(s => s.examType === type);
+            renderSessions(sessions);
+            if (push) {
+                history.pushState({ view: 'overview', subView: 'sessions', examType: type, sessionId: null }, '');
+            }
         }
 
         // Render Exam Types
         function renderExamTypes() {
             currentSubView = 'types';
+            currentExamType = null;
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
             
@@ -776,7 +794,7 @@
                     </div>
                 `;
                 typeCard.addEventListener('click', () => {
-                    renderSessions(sessions);
+                    selectExamType(type);
                 });
                 grid.appendChild(typeCard);
             });
@@ -835,6 +853,7 @@
                 })
                 .then(data => {
                     allSessions = data;
+                    initHistoryState();
                     renderExamTypes();
                 })
                 .catch(err => {
@@ -855,6 +874,36 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // Browser Back/Forward navigation listener
+        window.addEventListener('popstate', (event) => {
+            const state = event.state;
+            if (!state) return;
+
+            if (state.view === 'overview') {
+                if (state.subView === 'types') {
+                    currentView = 'overview';
+                    currentSubView = 'types';
+                    currentSessionId = null;
+                    currentExamType = null;
+                    document.getElementById('detail-view').classList.remove('active');
+                    document.getElementById('overview-view').classList.add('active');
+                    renderExamTypes();
+                } else if (state.subView === 'sessions') {
+                    currentView = 'overview';
+                    currentSubView = 'sessions';
+                    currentSessionId = null;
+                    currentExamType = state.examType;
+                    document.getElementById('detail-view').classList.remove('active');
+                    document.getElementById('overview-view').classList.add('active');
+                    const sessions = allSessions.filter(s => s.examType === state.examType);
+                    renderSessions(sessions);
+                }
+            } else if (state.view === 'detail') {
+                currentExamType = state.examType;
+                showDetail(state.sessionId, false);
+            }
+        });
 
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
