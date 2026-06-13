@@ -119,6 +119,14 @@ export async function initDb() {
     await client.query(`
       ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS session_limit INTEGER DEFAULT 1;
     `);
+
+    // Ensure is_deleted column exists
+    await client.query(`
+      ALTER TABLE vit_sessions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
+    `);
+    await client.query(`
+      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
+    `);
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -139,6 +147,7 @@ export interface Question {
   contributorName?: string;
   contributorRegno?: string;
   contributorCollege?: string;
+  isDeleted?: boolean;
 }
 
 export interface VitCode {
@@ -147,21 +156,30 @@ export interface VitCode {
   examType: string;
   title?: string;
   questions: Question[];
+  isDeleted?: boolean;
 }
 
-export async function readCodes(): Promise<VitCode[]> {
+export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      // Fetch all sessions
-      const sessionsRes = await client.query("SELECT * FROM vit_sessions ORDER BY date DESC, id DESC");
-      // Fetch all questions with contributor preference join
-      const questionsRes = await client.query(`
-        SELECT q.*, c.say_my_name, c.name as contributor_db_name
-        FROM vit_questions q
-        LEFT JOIN vit_contributors c ON q.contributor_email = c.email
-      `);
+      // Fetch all sessions (filtered or not)
+      const sessionsQuery = includeDeleted
+        ? "SELECT * FROM vit_sessions ORDER BY date DESC, id DESC"
+        : "SELECT * FROM vit_sessions WHERE is_deleted = false ORDER BY date DESC, id DESC";
+      const sessionsRes = await client.query(sessionsQuery);
+
+      // Fetch all questions (filtered or not)
+      const questionsQuery = includeDeleted
+        ? `SELECT q.*, c.say_my_name, c.name as contributor_db_name
+           FROM vit_questions q
+           LEFT JOIN vit_contributors c ON q.contributor_email = c.email`
+        : `SELECT q.*, c.say_my_name, c.name as contributor_db_name
+           FROM vit_questions q
+           LEFT JOIN vit_contributors c ON q.contributor_email = c.email
+           WHERE q.is_deleted = false`;
+      const questionsRes = await client.query(questionsQuery);
       
       const questionsBySession: Record<string, Question[]> = {};
       questionsRes.rows.forEach((row) => {
@@ -175,6 +193,7 @@ export async function readCodes(): Promise<VitCode[]> {
           contributorName: row.say_my_name ? (row.contributor_db_name || row.contributor_name) : undefined,
           contributorRegno: row.contributor_regno,
           contributorCollege: row.contributor_college,
+          isDeleted: !!row.is_deleted,
         };
         if (!questionsBySession[row.session_id]) {
           questionsBySession[row.session_id] = [];
@@ -187,6 +206,7 @@ export async function readCodes(): Promise<VitCode[]> {
         date: row.date,
         examType: row.exam_type,
         title: row.title || undefined,
+        isDeleted: !!row.is_deleted,
         questions: questionsBySession[row.id] || [],
       }));
     } catch (error) {
@@ -206,10 +226,21 @@ export async function readCodes(): Promise<VitCode[]> {
         const raw = fs.readFileSync(defaultFilePath, "utf8");
         const data = JSON.parse(raw);
         if (Array.isArray(data)) {
-          return data.map((s: any) => ({
+          const sessions = data.map((s: any) => ({
             ...s,
-            questions: Array.isArray(s.questions) ? s.questions : []
+            isDeleted: !!s.isDeleted,
+            questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
+              ...q,
+              isDeleted: !!q.isDeleted
+            }))
           }));
+          if (includeDeleted) return sessions;
+          return sessions
+            .filter((s: any) => !s.isDeleted)
+            .map((s: any) => ({
+              ...s,
+              questions: s.questions.filter((q: any) => !q.isDeleted)
+            }));
         }
       } catch (e) {}
     }
@@ -219,10 +250,21 @@ export async function readCodes(): Promise<VitCode[]> {
     const raw = fs.readFileSync(filePath, "utf8");
     const data = JSON.parse(raw);
     if (Array.isArray(data)) {
-      return data.map((s: any) => ({
+      const sessions = data.map((s: any) => ({
         ...s,
-        questions: Array.isArray(s.questions) ? s.questions : []
+        isDeleted: !!s.isDeleted,
+        questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
+          ...q,
+          isDeleted: !!q.isDeleted
+        }))
       }));
+      if (includeDeleted) return sessions;
+      return sessions
+        .filter((s: any) => !s.isDeleted)
+        .map((s: any) => ({
+          ...s,
+          questions: s.questions.filter((q: any) => !q.isDeleted)
+        }));
     }
     return [];
   } catch (error) {
@@ -244,14 +286,14 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
       // Insert fresh data
       for (const session of data) {
         await client.query(
-          "INSERT INTO vit_sessions (id, date, exam_type, title) VALUES ($1, $2, $3, $4)",
-          [session.id, session.date, session.examType, session.title || null]
+          "INSERT INTO vit_sessions (id, date, exam_type, title, is_deleted) VALUES ($1, $2, $3, $4, $5)",
+          [session.id, session.date, session.examType, session.title || null, session.isDeleted || false]
         );
 
         for (const q of session.questions) {
           const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
           await client.query(
-            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
             [
               q.id,
               session.id,
@@ -262,7 +304,8 @@ export async function writeCodes(data: VitCode[]): Promise<void> {
               q.contributorEmail || null,
               q.contributorName || parsed.name || null,
               q.contributorRegno || parsed.regno || null,
-              q.contributorCollege || parsed.college || null
+              q.contributorCollege || parsed.college || null,
+              q.isDeleted || false
             ]
           );
         }
@@ -296,15 +339,15 @@ export async function createSession(session: VitCode): Promise<void> {
     const client = await pool.connect();
     try {
       await client.query(
-        "INSERT INTO vit_sessions (id, date, exam_type, title) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET date=$2, exam_type=$3, title=$4",
-        [session.id, session.date, session.examType, session.title || null]
+        "INSERT INTO vit_sessions (id, date, exam_type, title, is_deleted) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET date=$2, exam_type=$3, title=$4, is_deleted=$5",
+        [session.id, session.date, session.examType, session.title || null, session.isDeleted || false]
       );
     } finally {
       client.release();
     }
   } else {
     // JSON fallback
-    const all = await readCodes();
+    const all = await readCodes(true);
     const existingIdx = all.findIndex(s => s.id === session.id);
     if (existingIdx !== -1) {
       all[existingIdx] = {
@@ -312,11 +355,13 @@ export async function createSession(session: VitCode): Promise<void> {
         date: session.date,
         examType: session.examType,
         title: session.title,
+        isDeleted: session.isDeleted !== undefined ? session.isDeleted : all[existingIdx].isDeleted,
         questions: all[existingIdx].questions || []
       };
     } else {
       all.unshift({
         ...session,
+        isDeleted: session.isDeleted || false,
         questions: session.questions || []
       });
     }
@@ -329,15 +374,67 @@ export async function deleteSession(sessionId: string): Promise<void> {
     await initDb();
     const client = await pool.connect();
     try {
+      await client.query("UPDATE vit_sessions SET is_deleted = true WHERE id = $1", [sessionId]);
+      await client.query("UPDATE vit_questions SET is_deleted = true WHERE session_id = $1", [sessionId]);
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes(true);
+    const session = all.find(s => s.id === sessionId);
+    if (session) {
+      session.isDeleted = true;
+      if (session.questions) {
+        session.questions.forEach(q => {
+          q.isDeleted = true;
+        });
+      }
+      await writeCodes(all);
+    }
+  }
+}
+
+export async function permanentlyDeleteSession(sessionId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
       await client.query("DELETE FROM vit_sessions WHERE id = $1", [sessionId]);
     } finally {
       client.release();
     }
   } else {
     // JSON fallback
-    const all = await readCodes();
+    const all = await readCodes(true);
     const filtered = all.filter(s => s.id !== sessionId);
     await writeCodes(filtered);
+  }
+}
+
+export async function restoreSession(sessionId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("UPDATE vit_sessions SET is_deleted = false WHERE id = $1", [sessionId]);
+      await client.query("UPDATE vit_questions SET is_deleted = false WHERE session_id = $1", [sessionId]);
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes(true);
+    const session = all.find(s => s.id === sessionId);
+    if (session) {
+      session.isDeleted = false;
+      if (session.questions) {
+        session.questions.forEach(q => {
+          q.isDeleted = false;
+        });
+      }
+      await writeCodes(all);
+    }
   }
 }
 
@@ -348,6 +445,7 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
     contributorName: q.contributorName || parsed.name || undefined,
     contributorRegno: q.contributorRegno || parsed.regno || undefined,
     contributorCollege: q.contributorCollege || parsed.college || undefined,
+    isDeleted: q.isDeleted || false
   };
 
   if (pool) {
@@ -355,7 +453,7 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
     const client = await pool.connect();
     try {
       await client.query(
-        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
         [
           updatedQ.id,
           sessionId,
@@ -366,7 +464,8 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
           updatedQ.contributorEmail || null,
           updatedQ.contributorName || null,
           updatedQ.contributorRegno || null,
-          updatedQ.contributorCollege || null
+          updatedQ.contributorCollege || null,
+          updatedQ.isDeleted || false
         ]
       );
     } finally {
@@ -374,7 +473,7 @@ export async function createQuestion(sessionId: string, q: Question): Promise<vo
     }
   } else {
     // JSON fallback
-    const all = await readCodes();
+    const all = await readCodes(true);
     const s = all.find(s => s.id === sessionId);
     if (s) {
       if (!s.questions) s.questions = [];
@@ -390,18 +489,21 @@ export async function updateQuestion(q: Question): Promise<void> {
     const client = await pool.connect();
     try {
       await client.query(
-        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5 WHERE id = $1",
-        [q.id, q.title, q.code, q.language, q.comment || null]
+        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5, is_deleted = $6 WHERE id = $1",
+        [q.id, q.title, q.code, q.language, q.comment || null, q.isDeleted || false]
       );
     } finally {
       client.release();
     }
   } else {
-    const all = await readCodes();
+    const all = await readCodes(true);
     for (const s of all) {
       const idx = (s.questions || []).findIndex(x => x.id === q.id);
       if (idx !== -1) {
-        s.questions[idx] = q;
+        s.questions[idx] = {
+          ...q,
+          isDeleted: q.isDeleted !== undefined ? q.isDeleted : s.questions[idx].isDeleted
+        };
         await writeCodes(all);
         return;
       }
@@ -414,16 +516,73 @@ export async function deleteQuestion(qId: string): Promise<void> {
     await initDb();
     const client = await pool.connect();
     try {
+      await client.query("UPDATE vit_questions SET is_deleted = true WHERE id = $1", [qId]);
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes(true);
+    for (const s of all) {
+      const q = (s.questions || []).find(q => q.id === qId);
+      if (q) {
+        q.isDeleted = true;
+        await writeCodes(all);
+        return;
+      }
+    }
+  }
+}
+
+export async function permanentlyDeleteQuestion(qId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
       await client.query("DELETE FROM vit_questions WHERE id = $1", [qId]);
     } finally {
       client.release();
     }
   } else {
-    const all = await readCodes();
+    // JSON fallback
+    const all = await readCodes(true);
     for (const s of all) {
-      s.questions = (s.questions || []).filter(q => q.id !== qId);
+      const idx = (s.questions || []).findIndex(q => q.id === qId);
+      if (idx !== -1) {
+        s.questions.splice(idx, 1);
+        await writeCodes(all);
+        return;
+      }
     }
-    await writeCodes(all);
+  }
+}
+
+export async function restoreQuestion(qId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("UPDATE vit_questions SET is_deleted = false WHERE id = $1", [qId]);
+      const res = await client.query("SELECT session_id FROM vit_questions WHERE id = $1", [qId]);
+      if (res.rows.length > 0) {
+        const parentSessionId = res.rows[0].session_id;
+        await client.query("UPDATE vit_sessions SET is_deleted = false WHERE id = $1", [parentSessionId]);
+      }
+    } finally {
+      client.release();
+    }
+  } else {
+    // JSON fallback
+    const all = await readCodes(true);
+    for (const s of all) {
+      const q = (s.questions || []).find(q => q.id === qId);
+      if (q) {
+        q.isDeleted = false;
+        s.isDeleted = false; // Restore parent session too
+        await writeCodes(all);
+        return;
+      }
+    }
   }
 }
 

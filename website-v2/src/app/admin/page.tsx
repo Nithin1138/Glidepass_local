@@ -66,6 +66,7 @@ interface Question {
   language: string;
   comment?: string;
   contributorEmail?: string;
+  isDeleted?: boolean;
 }
 
 interface VitCode {
@@ -74,6 +75,7 @@ interface VitCode {
   examType: string;
   title?: string;
   questions: Question[];
+  isDeleted?: boolean;
 }
 
 interface UserRecord {
@@ -292,6 +294,14 @@ export default function GlidePassAdmin() {
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
 
+  // ─── VIT Bin States ───
+  const [showBin, setShowBin] = useState(false);
+  const [binTab, setBinTab] = useState<"sessions" | "questions">("sessions");
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<{ type: "session" | "question"; id: string; name: string } | null>(null);
+  const [showPermanentDeleteModal, setShowPermanentDeleteModal] = useState(false);
+  const [permanentDeleteConfirmText, setPermanentDeleteConfirmText] = useState("");
+  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
+
   // ─── Delete Session (Two-Step) ───
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetSession, setDeleteTargetSession] = useState<VitCode | null>(null);
@@ -416,7 +426,7 @@ export default function GlidePassAdmin() {
   const fetchVitCodes = async (quiet = false) => {
     if (!quiet) setLoadingVit(true);
     try {
-      const res = await fetch("/api/vitcodes", { cache: "no-store" });
+      const res = await fetch("/api/vitcodes?includeDeleted=true", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch VIT codes");
       const data = await res.json();
       setVitSessions(prev => {
@@ -578,16 +588,106 @@ export default function GlidePassAdmin() {
     }
   };
 
-  const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId), [vitSessions, activeSessionId]);
-  const totalQ = useMemo(() => vitSessions.reduce((a, s) => a + (s.questions?.length || 0), 0), [vitSessions]);
+  const handleRestoreItem = async (type: "session" | "question", id: string) => {
+    // Optimistic restoration
+    setVitSessions(prev => prev.map(s => {
+      if (type === "session" && s.id === id) {
+        return {
+          ...s,
+          isDeleted: false,
+          questions: (s.questions || []).map(q => ({ ...q, isDeleted: false }))
+        };
+      }
+      if (type === "question") {
+        const hasQ = (s.questions || []).some(q => q.id === id);
+        if (hasQ) {
+          return {
+            ...s,
+            isDeleted: false, // restore parent session if it was deleted
+            questions: (s.questions || []).map(q => q.id === id ? { ...q, isDeleted: false } : q)
+          };
+        }
+      }
+      return s;
+    }));
+
+    try {
+      const res = await fetch("/api/vitcodes/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, id })
+      });
+      if (!res.ok) throw new Error("Failed to restore");
+      showToast("success", `${type === "session" ? "Session" : "Question"} restored successfully.`);
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
+  };
+
+  const openPermanentDeleteModal = (type: "session" | "question", id: string, name: string) => {
+    setPermanentDeleteTarget({ type, id, name });
+    setPermanentDeleteConfirmText("");
+    setShowPermanentDeleteModal(true);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteTarget) return;
+    const { type, id, name } = permanentDeleteTarget;
+    if (permanentDeleteConfirmText.trim().toLowerCase() !== name.trim().toLowerCase()) {
+      return showToast("error", "Confirmation text mismatch.");
+    }
+
+    setIsPermanentlyDeleting(true);
+
+    // Optimistic delete
+    setVitSessions(prev => {
+      if (type === "session") {
+        return prev.filter(s => s.id !== id);
+      }
+      return prev.map(s => ({
+        ...s,
+        questions: (s.questions || []).filter(q => q.id !== id)
+      }));
+    });
+
+    setShowPermanentDeleteModal(false);
+    setPermanentDeleteConfirmText("");
+    setPermanentDeleteTarget(null);
+
+    try {
+      const endpoint = type === "session" ? `/api/vitcodes/session?id=${id}&permanent=true` : `/api/vitcodes/question?id=${id}&permanent=true`;
+      const res = await fetch(endpoint, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to permanently delete");
+      showToast("success", `${type === "session" ? "Session" : "Question"} deleted permanently.`);
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    } finally {
+      setIsPermanentlyDeleting(false);
+    }
+  };
+
+  const activeSession = useMemo(() => {
+    const s = vitSessions.find(s => s.id === activeSessionId);
+    if (!s) return undefined;
+    return {
+      ...s,
+      questions: (s.questions || []).filter(q => !q.isDeleted)
+    };
+  }, [vitSessions, activeSessionId]);
+  const totalQ = useMemo(() => vitSessions.filter(s => !s.isDeleted).reduce((a, s) => a + (s.questions?.filter(q => !q.isDeleted).length || 0), 0), [vitSessions]);
 
   const contributorCodes = useMemo(() => {
-    return vitSessions.flatMap(s => (s.questions || []).map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType })));
+    return vitSessions.filter(s => !s.isDeleted).flatMap(s => (s.questions || []).filter(q => !q.isDeleted).map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType })));
   }, [vitSessions]);
 
   const filteredSessions = useMemo(() => {
-    if (examTypeFilter === "all") return vitSessions;
-    return vitSessions.filter(s => s.examType === examTypeFilter);
+    const active = vitSessions.filter(s => !s.isDeleted);
+    if (examTypeFilter === "all") return active;
+    return active.filter(s => s.examType === examTypeFilter);
   }, [vitSessions, examTypeFilter]);
 
   const groupedSessions = useMemo(() => {
@@ -598,6 +698,27 @@ export default function GlidePassAdmin() {
     });
     return groups;
   }, [filteredSessions]);
+
+  const binnedSessions = useMemo(() => {
+    return vitSessions.filter(s => s.isDeleted);
+  }, [vitSessions]);
+
+  const binnedQuestions = useMemo(() => {
+    const list: { question: Question; session: VitCode }[] = [];
+    vitSessions.forEach(s => {
+      if (!s.isDeleted && s.questions) {
+        s.questions.forEach(q => {
+          if (q.isDeleted) {
+            list.push({ question: q, session: s });
+          }
+        });
+      }
+    });
+    return list;
+  }, [vitSessions]);
+
+  const binnedSessionsCount = binnedSessions.length;
+  const binnedQuestionsCount = binnedQuestions.length;
 
   // ─── Data Fetching & Real-time Polling ───
   useEffect(() => {
@@ -928,7 +1049,7 @@ export default function GlidePassAdmin() {
                       {group.items.map(item => {
                         const active = view === item.key;
                         return (
-                          <button key={item.key} onClick={() => { setView(item.key as any); setVitDetailView(false); }}
+                          <button key={item.key} onClick={() => { setView(item.key as any); setVitDetailView(false); setShowBin(false); }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${active ? "text-white shadow-lg" : "hover:opacity-80"}`}
                             style={{
                               background: active ? P.blue : "transparent",
@@ -947,7 +1068,7 @@ export default function GlidePassAdmin() {
 
               {/* Profile footer */}
               <div className="p-4 space-y-2" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
-                <button onClick={() => setView("profile")} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
+                <button onClick={() => { setView("profile"); setShowBin(false); }} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
                   <img src={adminAvatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border shadow-md shrink-0" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
                   {sidebarOpen && (
                     <div className="flex flex-col min-w-0">
@@ -1278,7 +1399,129 @@ export default function GlidePassAdmin() {
                   {view === "vitcodes" && (
                     <motion.div key="vit" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
                       <AnimatePresence mode="wait">
-                        {!vitDetailView ? (
+                        {showBin ? (
+                          <motion.div key="vit-bin" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
+                            {/* Bin Header */}
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <button onClick={() => setShowBin(false)} className="flex items-center gap-1.5 text-xs font-bold hover:opacity-70 transition-colors mb-2" style={{ color: P.blue }}>
+                                  <ArrowLeft size={14} /> Back to Sessions
+                                </button>
+                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase text-red-400">VIT AP TRASH BIN</h2>
+                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Restore or permanently delete sessions and questions</p>
+                              </div>
+                            </div>
+
+                            {/* Bin Tabs */}
+                            <div className="flex gap-2 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                              <button
+                                onClick={() => setBinTab("sessions")}
+                                className={`px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 ${binTab === "sessions" ? "border-red-500 text-red-400" : "border-transparent opacity-60"}`}
+                              >
+                                Binned Sessions ({binnedSessionsCount})
+                              </button>
+                              <button
+                                onClick={() => setBinTab("questions")}
+                                className={`px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 ${binTab === "questions" ? "border-red-500 text-red-400" : "border-transparent opacity-60"}`}
+                              >
+                                Binned Questions ({binnedQuestionsCount})
+                              </button>
+                            </div>
+
+                            {/* Bin Content */}
+                            {binTab === "sessions" ? (
+                              binnedSessions.length === 0 ? (
+                                <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                  <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
+                                  <p className="text-xs">No sessions in trash bin.</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {binnedSessions.map(s => {
+                                    const formatDate = (d: string) => {
+                                      const p = d.split("-");
+                                      return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
+                                    };
+                                    return (
+                                      <div key={s.id}
+                                        className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between"
+                                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: "rgba(239, 68, 68, 0.20)", backdropFilter: "blur(40px)" }}>
+                                        <div>
+                                          <div className="flex items-center gap-2 mb-3">
+                                            <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-red-500/30 bg-red-500/10 text-red-400">{s.examType}</span>
+                                            <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                                          </div>
+                                          <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
+                                          <p className="text-[10px] font-mono mb-4" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</p>
+                                        </div>
+                                        <div className="flex gap-2 mt-2">
+                                          <button
+                                            onClick={() => handleRestoreItem("session", s.id)}
+                                            className="flex-1 py-2 rounded-xl border border-white/10 hover:bg-white/5 font-bold text-xs transition-all flex items-center justify-center gap-1"
+                                            style={{ color: P.blue }}
+                                          >
+                                            <RotateCcw size={12} /> Restore
+                                          </button>
+                                          <button
+                                            onClick={() => openPermanentDeleteModal("session", s.id, s.title || s.date)}
+                                            className="flex-1 py-2 rounded-xl bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold text-xs transition-all flex items-center justify-center gap-1"
+                                          >
+                                            <Trash2 size={12} /> Delete Forever
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )
+                            ) : (
+                              binnedQuestions.length === 0 ? (
+                                <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                  <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
+                                  <p className="text-xs">No questions in trash bin.</p>
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {binnedQuestions.map(({ question: q, session: s }) => (
+                                    <div key={q.id} className="rounded-2xl border overflow-hidden transition-all p-5"
+                                      style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: "rgba(239, 68, 68, 0.15)" }}>
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                                        <div>
+                                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                            <span className="text-[9px] font-mono px-2 py-0.5 rounded border border-red-500/20 bg-red-500/5 text-red-400">{q.language}</span>
+                                            <span className="text-[9px] font-sans px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>
+                                              Session: {s.title || s.date} ({s.examType})
+                                            </span>
+                                          </div>
+                                          <h4 className="text-xs font-bold">{q.title}</h4>
+                                          {q.comment && <p className="text-[10px] font-mono mt-1 opacity-60">{q.comment}</p>}
+                                        </div>
+                                        <div className="flex gap-2 shrink-0">
+                                          <button
+                                            onClick={() => handleRestoreItem("question", q.id)}
+                                            className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 font-bold text-[10px] transition-all flex items-center gap-1"
+                                            style={{ color: P.blue }}
+                                          >
+                                            <RotateCcw size={10} /> Restore
+                                          </button>
+                                          <button
+                                            onClick={() => openPermanentDeleteModal("question", q.id, q.title)}
+                                            className="px-3 py-1.5 rounded-xl bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold text-[10px] transition-all flex items-center gap-1"
+                                          >
+                                            <Trash2 size={10} /> Delete Forever
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <pre className="p-3 text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-32 rounded-lg" style={{ background: "#151b22", color: "#8ecfff" }}>
+                                        <code>{q.code}</code>
+                                      </pre>
+                                    </div>
+                                  ))}
+                                </div>
+                              )
+                            )}
+                          </motion.div>
+                        ) : !vitDetailView ? (
                           <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
                             {/* Header */}
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1295,6 +1538,9 @@ export default function GlidePassAdmin() {
                                 <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80"
                                   style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}>
                                   <Settings size={14} />
+                                </button>
+                                <button onClick={() => setShowBin(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs shadow-md active:scale-[0.98] transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5">
+                                  <Trash2 size={13} /> VIT Bin ({binnedSessionsCount + binnedQuestionsCount})
                                 </button>
                                 <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
                                   style={{ background: P.blue }}>
@@ -1421,10 +1667,10 @@ export default function GlidePassAdmin() {
                                     <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
                                       className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
                                   </div>
-                                  <div>
+                                  <div className="flex flex-col h-64">
                                     <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
                                     <textarea value={qCode} onChange={e => setQCode(e.target.value)} placeholder="Paste source code..."
-                                      className="w-full h-40 text-xs font-[family-name:var(--font-mono)] rounded-xl p-4 border focus:outline-none resize-none"
+                                      className="w-full flex-1 text-xs font-mono rounded-xl p-4 border focus:outline-none resize-none"
                                       style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
                                   </div>
                                   <div className="flex justify-end">
@@ -1552,6 +1798,89 @@ export default function GlidePassAdmin() {
                                   <Trash2 size={12} />
                                 )}
                                 Delete Session
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ═══ PERMANENT DELETE CONFIRMATION MODAL ═══ */}
+                  <AnimatePresence>
+                    {showPermanentDeleteModal && permanentDeleteTarget && (
+                      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPermanentDeleteModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.92 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.92 }}
+                          className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
+                        >
+                          <div className={`p-5 sm:p-6 rounded-[20px] ${cardBg} space-y-4`}>
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                                  <Trash2 size={16} className="text-red-400" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Permanently</h3>
+                                  <p className={`text-[10px] ${txt3}`}>This action cannot be undone</p>
+                                </div>
+                              </div>
+                              <button onClick={() => setShowPermanentDeleteModal(false)} className={`p-1.5 rounded-lg border border-white/10 hover:bg-white/5 shrink-0`}>
+                                <X size={14} className={txt1} />
+                              </button>
+                            </div>
+
+                            {/* Warning Box */}
+                            <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                              <p className="text-xs text-red-300/80 leading-relaxed">
+                                You are about to **permanently delete** this {permanentDeleteTarget.type}: <span className="font-bold text-white">{permanentDeleteTarget.name}</span>.
+                                This will erase it from the database forever.
+                              </p>
+                            </div>
+
+                            {/* Type-to-confirm */}
+                            <div>
+                              <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
+                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{permanentDeleteTarget.name}</span> to confirm
+                              </label>
+                              <input
+                                type="text"
+                                value={permanentDeleteConfirmText}
+                                onChange={e => setPermanentDeleteConfirmText(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase()) handlePermanentDelete(); }}
+                                placeholder={`Type confirmation name here...`}
+                                autoFocus
+                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase() ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
+                              />
+                            </div>
+
+                            {/* Footer Buttons */}
+                            <div className="flex justify-end gap-2 pt-1">
+                              <button
+                                onClick={() => setShowPermanentDeleteModal(false)}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-all`}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handlePermanentDelete}
+                                disabled={permanentDeleteConfirmText.trim().toLowerCase() !== permanentDeleteTarget.name.trim().toLowerCase() || isPermanentlyDeleting}
+                                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                  permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase() && !isPermanentlyDeleting
+                                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
+                                    : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
+                                }`}
+                              >
+                                {isPermanentlyDeleting ? (
+                                  <div className="w-3.5 h-3.5 rounded-full border-2 border-red-300/40 border-t-white animate-spin" />
+                                ) : (
+                                  <Trash2 size={12} />
+                                )}
+                                Delete Permanently
                               </button>
                             </div>
                           </div>

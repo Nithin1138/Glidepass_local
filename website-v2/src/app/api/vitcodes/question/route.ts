@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createQuestion, deleteQuestion, updateQuestion, createSession } from "@/lib/db";
+import { createQuestion, deleteQuestion, updateQuestion, createSession, permanentlyDeleteQuestion } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +40,17 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const permanent = searchParams.get("permanent") === "true";
     if (!id) {
       return NextResponse.json({ error: "Question ID required" }, { status: 400 });
     }
 
-    await deleteQuestion(id);
-    return NextResponse.json({ success: true, message: "Question deleted successfully" });
+    if (permanent) {
+      await permanentlyDeleteQuestion(id);
+    } else {
+      await deleteQuestion(id);
+    }
+    return NextResponse.json({ success: true, message: permanent ? "Question permanently deleted successfully" : "Question moved to bin successfully" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

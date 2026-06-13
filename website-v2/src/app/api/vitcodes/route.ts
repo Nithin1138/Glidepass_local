@@ -3,9 +3,11 @@ import { readCodes, writeCodes } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const data = await readCodes();
+    const { searchParams } = new URL(request.url);
+    const includeDeleted = searchParams.get("includeDeleted") === "true";
+    const data = await readCodes(includeDeleted);
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
