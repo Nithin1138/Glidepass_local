@@ -128,6 +128,11 @@ export async function initDb() {
       ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
     `);
     
+    // Ensure is_locked column exists for questions
+    await client.query(`
+      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;
+    `);
+    
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
   } catch (error) {
@@ -148,6 +153,7 @@ export interface Question {
   contributorRegno?: string;
   contributorCollege?: string;
   isDeleted?: boolean;
+  isLocked?: boolean;
 }
 
 export interface VitCode {
@@ -194,6 +200,7 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
           contributorRegno: row.contributor_regno,
           contributorCollege: row.contributor_college,
           isDeleted: !!row.is_deleted,
+          isLocked: !!row.is_locked,
         };
         if (!questionsBySession[row.session_id]) {
           questionsBySession[row.session_id] = [];
@@ -231,7 +238,8 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
             isDeleted: !!s.isDeleted,
             questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
               ...q,
-              isDeleted: !!q.isDeleted
+              isDeleted: !!q.isDeleted,
+              isLocked: !!q.isLocked
             }))
           }));
           if (includeDeleted) return sessions;
@@ -255,7 +263,8 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
         isDeleted: !!s.isDeleted,
         questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
           ...q,
-          isDeleted: !!q.isDeleted
+          isDeleted: !!q.isDeleted,
+          isLocked: !!q.isLocked
         }))
       }));
       if (includeDeleted) return sessions;
@@ -365,6 +374,36 @@ export async function createSession(session: VitCode): Promise<void> {
         questions: session.questions || []
       });
     }
+    await writeCodes(all);
+  }
+}
+
+export async function updateQuestionLock(questionId: string, isLocked: boolean) {
+  if (pool && isDbInitialized) {
+    const client = await pool.connect();
+    try {
+      await client.query("UPDATE vit_questions SET is_locked = $1 WHERE id = $2", [isLocked, questionId]);
+      return;
+    } catch (e) {
+      console.error("Failed to update question lock in pg, falling back to JSON", e);
+    } finally {
+      client.release();
+    }
+  }
+  
+  const all = await readCodes(true);
+  let found = false;
+  for (const s of all) {
+    for (const q of s.questions) {
+      if (q.id === questionId) {
+        q.isLocked = isLocked;
+        found = true;
+        break;
+      }
+    }
+    if (found) break;
+  }
+  if (found) {
     await writeCodes(all);
   }
 }

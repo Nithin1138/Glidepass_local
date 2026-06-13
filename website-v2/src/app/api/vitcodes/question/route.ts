@@ -55,3 +55,17 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const { id, isLocked } = await request.json();
+    if (!id || typeof isLocked !== "boolean") {
+      return NextResponse.json({ error: "Invalid lock data" }, { status: 400 });
+    }
+    const { updateQuestionLock } = await import("@/lib/db");
+    await updateQuestionLock(id, isLocked);
+    return NextResponse.json({ success: true, message: `Question ${isLocked ? 'locked' : 'unlocked'} successfully` });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

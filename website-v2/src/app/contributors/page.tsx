@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 const MagicRings = dynamic(() => import("../../components/MagicRings"), { ssr: false });
 import {
   LogOut, Plus, Trash2, Calendar, Check, X, ChevronLeft, ArrowLeft,
-  FileCode, Settings, Layout, Code, BookOpen, CheckCircle, AlertCircle, Sun, Moon, Copy, Edit
+  FileCode, Settings, Layout, Code, BookOpen, CheckCircle, AlertCircle, Sun, Moon, Copy, Edit, Lock
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -31,6 +31,7 @@ interface Question {
   language: string;
   comment?: string;
   contributorEmail?: string;
+  isLocked?: boolean;
 }
 
 interface VitCode {
@@ -638,7 +639,10 @@ function ContributorsDashboard() {
                       <option value="all">All</option>
                       {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <button onClick={() => setShowNewSessionModal(true)} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap"
+                    <button onClick={() => {
+                      setNewExamType(selectedExamType || examTypes[0] || "");
+                      setShowNewSessionModal(true);
+                    }} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap"
                       style={{ background: P.blue }}>
                       <Plus size={12} /> <span className="hidden sm:inline">New Session</span><span className="sm:hidden">New</span>
                     </button>
@@ -842,14 +846,20 @@ function ContributorsDashboard() {
                                   >
                                     {copiedQId === q.id ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} style={{ color: dk ? P.sky : P.blue }} />}
                                   </button>
-                                  <button
-                                    onClick={(e) => handleOpenEdit(q, e)}
-                                    className="p-1 rounded border hover:bg-white/5 transition-all mr-1"
-                                    style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}
-                                    title="Edit Code"
-                                  >
-                                    <Edit size={11} style={{ color: dk ? P.sky : P.blue }} />
-                                  </button>
+                                  {q.isLocked ? (
+                                    <div className="p-1 rounded border mr-1 flex items-center justify-center cursor-not-allowed opacity-60" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }} title="Locked by Admin">
+                                      <Lock size={11} style={{ color: dk ? P.sky : P.blue }} />
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => handleOpenEdit(q, e)}
+                                      className="p-1 rounded border hover:bg-white/5 transition-all mr-1"
+                                      style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}
+                                      title="Edit Code"
+                                    >
+                                      <Edit size={11} style={{ color: dk ? P.sky : P.blue }} />
+                                    </button>
+                                  )}
                                   <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border" style={{ color: dk ? `${P.sky}80` : `${P.black}60`, borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}>{q.language}</span>
                                 </div>
                               </div>
@@ -899,14 +909,16 @@ function ContributorsDashboard() {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  <div>
-                    <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Exam Type</label>
-                    <div className="flex gap-2">
-                      <select value={newExamType} onChange={e => setNewExamType(e.target.value)} className={`flex-1 text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`}>
-                        {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                  {!selectedExamType && (
+                    <div>
+                      <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Exam Type</label>
+                      <div className="flex gap-2">
+                        <select value={newExamType} onChange={e => setNewExamType(e.target.value)} className={`flex-1 text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`}>
+                          {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div>
                     <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Session Date</label>
                     <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`} />

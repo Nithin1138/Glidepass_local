@@ -67,6 +67,7 @@ interface Question {
   comment?: string;
   contributorEmail?: string;
   isDeleted?: boolean;
+  isLocked?: boolean;
 }
 
 interface VitCode {
@@ -582,6 +583,34 @@ export default function GlidePassAdmin() {
     try {
       const res = await fetch(`/api/vitcodes/question?id=${qId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete question");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
+  };
+
+  const handleToggleQuestionLock = async (qId: string, currentLockStatus: boolean) => {
+    const newLockStatus = !currentLockStatus;
+    
+    // Optimistic
+    setVitSessions(prev => prev.map(s => {
+      if (s.id === activeSessionId) {
+        return { 
+          ...s, 
+          questions: s.questions.map(q => q.id === qId ? { ...q, isLocked: newLockStatus } : q) 
+        };
+      }
+      return s;
+    }));
+
+    try {
+      const res = await fetch(`/api/vitcodes/question`, { 
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: qId, isLocked: newLockStatus })
+      });
+      if (!res.ok) throw new Error("Failed to toggle question lock");
+      showToast("success", `Question ${newLockStatus ? 'locked' : 'unlocked'}.`);
     } catch (e: any) {
       showToast("error", e.message);
       fetchVitCodes();
@@ -1697,7 +1726,10 @@ export default function GlidePassAdmin() {
                                         </div>
                                         <div className="flex items-center gap-3 shrink-0 ml-4">
                                           <span className="text-[9px] font-mono px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
-                                          <button onClick={e => { e.stopPropagation(); handleDeleteQuestion(q.id); }} className="p-1 rounded hover:opacity-70" style={{ color: P.error }}><Trash2 size={12} /></button>
+                                          <button onClick={e => { e.stopPropagation(); handleToggleQuestionLock(q.id, !!q.isLocked); }} className="p-1 rounded hover:opacity-70 transition-colors" style={{ color: q.isLocked ? P.blue : P.sky }} title={q.isLocked ? "Unlock code" : "Lock code"}>
+                                            {q.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                                          </button>
+                                          <button onClick={e => { e.stopPropagation(); handleDeleteQuestion(q.id); }} className="p-1 rounded hover:opacity-70" style={{ color: P.error }} title="Delete code"><Trash2 size={12} /></button>
                                           <ChevronRight size={14} className={`transition-transform ${expandedQId === q.id ? "rotate-90" : ""}`} style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
                                         </div>
                                       </div>
