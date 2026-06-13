@@ -110,8 +110,14 @@ export async function initDb() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_exam_rules (
         exam_type TEXT PRIMARY KEY,
-        rule TEXT NOT NULL
+        rule TEXT NOT NULL,
+        session_limit INTEGER DEFAULT 1
       );
+    `);
+
+    // Ensure session_limit column exists
+    await client.query(`
+      ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS session_limit INTEGER DEFAULT 1;
     `);
     
     isDbInitialized = true;
@@ -393,48 +399,79 @@ export async function deleteQuestion(qId: string): Promise<void> {
   }
 }
 
-export async function readRules(): Promise<Record<string, string>> {
+export interface ExamSettings {
+  rules: Record<string, string>;
+  sessionLimits: Record<string, number>;
+}
+
+export async function readRules(): Promise<ExamSettings> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
       const res = await client.query("SELECT * FROM vit_exam_rules");
       const rules: Record<string, string> = {};
+      const sessionLimits: Record<string, number> = {};
       res.rows.forEach(row => {
         rules[row.exam_type] = row.rule;
+        sessionLimits[row.exam_type] = row.session_limit !== null ? row.session_limit : 1;
       });
-      return rules;
+      return { rules, sessionLimits };
     } finally {
       client.release();
     }
   } else {
     const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
-    if (!fs.existsSync(filePath)) return {};
+    if (!fs.existsSync(filePath)) return { rules: {}, sessionLimits: {} };
     try {
-      return JSON.parse(fs.readFileSync(filePath, "utf8"));
+      const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (data.rules && data.sessionLimits) {
+        return data as ExamSettings;
+      } else {
+        const rules: Record<string, string> = {};
+        const sessionLimits: Record<string, number> = {};
+        Object.keys(data).forEach(k => {
+          rules[k] = data[k];
+          sessionLimits[k] = 1;
+        });
+        return { rules, sessionLimits };
+      }
     } catch (e) {
-      return {};
+      return { rules: {}, sessionLimits: {} };
     }
   }
 }
 
-export async function writeRule(examType: string, rule: string): Promise<void> {
+export async function writeRule(examType: string, rule?: string, sessionLimit?: number): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      await client.query(
-        "INSERT INTO vit_exam_rules (exam_type, rule) VALUES ($1, $2) ON CONFLICT (exam_type) DO UPDATE SET rule = $2",
-        [examType, rule]
-      );
+      if (rule !== undefined) {
+        await client.query(
+          "INSERT INTO vit_exam_rules (exam_type, rule) VALUES ($1, $2) ON CONFLICT (exam_type) DO UPDATE SET rule = $2",
+          [examType, rule]
+        );
+      }
+      if (sessionLimit !== undefined) {
+        await client.query(
+          "INSERT INTO vit_exam_rules (exam_type, rule, session_limit) VALUES ($1, '1', $2) ON CONFLICT (exam_type) DO UPDATE SET session_limit = $2",
+          [examType, sessionLimit]
+        );
+      }
     } finally {
       client.release();
     }
   } else {
-    const rules = await readRules();
-    rules[examType] = rule;
+    const settings = await readRules();
+    if (rule !== undefined) {
+      settings.rules[examType] = rule;
+    }
+    if (sessionLimit !== undefined) {
+      settings.sessionLimits[examType] = sessionLimit;
+    }
     const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(rules, null, 2), "utf8");
+    fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
   }
 }

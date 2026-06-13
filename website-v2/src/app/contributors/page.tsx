@@ -86,11 +86,15 @@ function ContributorsDashboard() {
   const [sayMyName, setSayMyName] = useState(false);
 
   const [examRules, setExamRules] = useState<Record<string, string>>({});
+  const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetch("/api/vitcodes/rules")
       .then(r => r.json())
-      .then(data => setExamRules(data))
+      .then(data => {
+        if (data.rules) setExamRules(data.rules);
+        if (data.sessionLimits) setSessionLimits(data.sessionLimits);
+      })
       .catch(() => {});
   }, []);
 
@@ -101,6 +105,18 @@ function ContributorsDashboard() {
       key => key.trim().toLowerCase() === target
     );
     return matchedKey ? examRules[matchedKey] : null;
+  };
+
+  const getSessionLimitForType = (type: string | null | undefined): number => {
+    if (!type) return 1;
+    const target = type.trim().toLowerCase();
+    const matchedKey = Object.keys(sessionLimits).find(
+      key => key.trim().toLowerCase() === target
+    );
+    if (matchedKey && sessionLimits[matchedKey] !== undefined) {
+      return sessionLimits[matchedKey];
+    }
+    return 1; // default 1 session per day
   };
 
   const checkRuleSatisfied = (questionsCount: number, ruleStr: string | null | undefined): boolean => {
@@ -300,10 +316,14 @@ function ContributorsDashboard() {
       const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
       if (rulesRes.ok) {
         const rulesData = await rulesRes.json();
-        setExamRules(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(rulesData)) return prev;
-          return rulesData;
-        });
+        if (rulesData) {
+          if (rulesData.rules) {
+            setExamRules(prev => JSON.stringify(prev) === JSON.stringify(rulesData.rules) ? prev : rulesData.rules);
+          }
+          if (rulesData.sessionLimits) {
+            setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);
+          }
+        }
       }
     } catch (err: any) {
       showToast("error", err.message);
@@ -316,6 +336,14 @@ function ContributorsDashboard() {
 
   const handleAddSession = async () => {
     if (!newDate || !newExamType) return showToast("error", "Date and Exam Type required.");
+
+    const sessionsToday = vitSessions.filter(
+      s => s.date === newDate && s.examType.trim().toLowerCase() === newExamType.trim().toLowerCase()
+    );
+    const limitRule = getSessionLimitForType(newExamType);
+    if (sessionsToday.length >= limitRule) {
+      return showToast("error", `Failed to create session: The daily limit of ${limitRule} session(s) for ${newExamType} has been reached.`);
+    }
     const session: VitCode = {
       id: "session_" + Date.now(),
       date: newDate,

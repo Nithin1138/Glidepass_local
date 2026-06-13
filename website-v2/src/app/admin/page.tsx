@@ -316,12 +316,16 @@ export default function GlidePassAdmin() {
   const [editingTypeName, setEditingTypeName] = useState("");
 
   const [examRules, setExamRules] = useState<Record<string, string>>({});
+  const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
   const [selectedRuleType, setSelectedRuleType] = useState("NERD");
 
   useEffect(() => {
     fetch("/api/vitcodes/rules")
       .then(r => r.json())
-      .then(data => setExamRules(data))
+      .then(data => {
+        if (data.rules) setExamRules(data.rules);
+        if (data.sessionLimits) setSessionLimits(data.sessionLimits);
+      })
       .catch(() => {});
   }, []);
 
@@ -333,6 +337,18 @@ export default function GlidePassAdmin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ examType: type, rule: val })
+      });
+    } catch (e) {}
+  };
+
+  const handleUpdateSessionLimit = async (type: string, val: number) => {
+    const updated = { ...sessionLimits, [type]: val };
+    setSessionLimits(updated);
+    try {
+      await fetch("/api/vitcodes/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examType: type, sessionLimit: val })
       });
     } catch (e) {}
   };
@@ -413,15 +429,19 @@ export default function GlidePassAdmin() {
         setExamTypes(prev => Array.from(new Set([...prev, ...types])));
       }
 
-      // Sync rules in real-time
-      const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
-      if (rulesRes.ok) {
-        const rulesData = await rulesRes.json();
-        setExamRules(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(rulesData)) return prev;
-          return rulesData;
-        });
-      }
+       // Sync rules in real-time
+       const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
+       if (rulesRes.ok) {
+         const rulesData = await rulesRes.json();
+         if (rulesData) {
+           if (rulesData.rules) {
+             setExamRules(prev => JSON.stringify(prev) === JSON.stringify(rulesData.rules) ? prev : rulesData.rules);
+           }
+           if (rulesData.sessionLimits) {
+             setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);
+           }
+         }
+       }
     } catch (err: any) {
       showToast("error", err.message);
     } finally {
@@ -431,8 +451,29 @@ export default function GlidePassAdmin() {
 
   // We removed saveVitDB because it overrides everything. We now use granular endpoints.
 
+  const getSessionLimitForType = (type: string | null | undefined): number => {
+    if (!type) return 1;
+    const target = type.trim().toLowerCase();
+    const matchedKey = Object.keys(sessionLimits).find(
+      key => key.trim().toLowerCase() === target
+    );
+    if (matchedKey && sessionLimits[matchedKey] !== undefined) {
+      return sessionLimits[matchedKey];
+    }
+    return 1; // default 1 session per day
+  };
+
   const handleAddSession = async () => {
     if (!newDate) return alert("Select a date");
+
+    const sessionsToday = vitSessions.filter(
+      s => s.date === newDate && s.examType.trim().toLowerCase() === newExamType.trim().toLowerCase()
+    );
+    const limitRule = getSessionLimitForType(newExamType);
+    if (sessionsToday.length >= limitRule) {
+      return showToast("error", `Failed to create session: The daily limit of ${limitRule} session(s) for ${newExamType} has been reached.`);
+    }
+
     const s: VitCode = { id: Date.now().toString(), date: newDate, examType: newExamType, title: newSessionTitle.trim() || undefined, questions: [] };
     
     // Optimistic
@@ -2062,17 +2103,32 @@ export default function GlidePassAdmin() {
                           {editingTypeIdx === i ? (
                             <input type="text" value={editingTypeName} onChange={e => setEditingTypeName(e.target.value)} className={`text-xs rounded-lg px-2 py-1 border focus:outline-none flex-1 mr-2 ${inputBg}`} autoFocus />
                           ) : (
-                            <div className="flex items-center justify-between flex-1 mr-4">
-                              <span className="text-xs font-semibold">{t}</span>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <span className="text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Rule:</span>
-                                <input 
-                                  type="text" 
-                                  placeholder="e.g. 5 or 3-5" 
-                                  value={examRules[t] || ""} 
-                                  onChange={e => handleUpdateRule(t, e.target.value)}
-                                  className={`w-20 text-[11px] rounded-lg px-2 py-0.5 border focus:outline-none ${inputBg}`} 
-                                />
+                            <div className="flex flex-col gap-2 flex-1 mr-4 min-w-0">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold truncate">{t}</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Rule:</span>
+                                  <input 
+                                    type="text" 
+                                    placeholder="e.g. 5" 
+                                    value={examRules[t] || ""} 
+                                    onChange={e => handleUpdateRule(t, e.target.value)}
+                                    className={`w-14 text-[10px] rounded-lg px-1.5 py-0.5 border focus:outline-none ${inputBg}`} 
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Sessions:</span>
+                                  <input 
+                                    type="number" 
+                                    min="1"
+                                    placeholder="1" 
+                                    value={sessionLimits[t] !== undefined ? sessionLimits[t] : 1} 
+                                    onChange={e => handleUpdateSessionLimit(t, parseInt(e.target.value, 10) || 1)}
+                                    className={`w-10 text-[10px] rounded-lg px-1 py-0.5 border focus:outline-none ${inputBg}`} 
+                                  />
+                                </div>
                               </div>
                             </div>
                           )}
