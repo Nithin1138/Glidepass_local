@@ -300,11 +300,10 @@ function SessionCodesContent({ params }: PageProps) {
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleSendCommandCenter(q.code); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[9px] sm:text-[10px] font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] shrink-0"
                     >
-                      <Send size={11} className="shrink-0" />
-                      <span className="hidden sm:inline">Enter Command Center with Code</span>
-                      <span className="sm:hidden">Command Center</span>
+                      <Send size={10} className="shrink-0" />
+                      Command Center
                     </button>
                   </div>
                 </motion.div>
