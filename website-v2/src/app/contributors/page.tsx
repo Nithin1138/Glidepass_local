@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 const MagicRings = dynamic(() => import("../../components/MagicRings"), { ssr: false });
 import {
   LogOut, Plus, Trash2, Calendar, Check, X, ChevronLeft, ArrowLeft,
-  FileCode, Settings, Layout, Code, BookOpen, CheckCircle, AlertCircle, Sun, Moon
+  FileCode, Settings, Layout, Code, BookOpen, CheckCircle, AlertCircle, Sun, Moon, Copy, Edit
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -151,6 +151,75 @@ function ContributorsDashboard() {
   const [qLang, setQLang] = useState("cpp");
   const [qComment, setQComment] = useState("");
   const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
+
+  // Copy and Edit states
+  const [copiedQId, setCopiedQId] = useState<string | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [editQTitle, setEditQTitle] = useState("");
+  const [editQCode, setEditQCode] = useState("");
+  const [editQLang, setEditQLang] = useState("cpp");
+  const [editQComment, setEditQComment] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleCopyCode = (qId: string, code: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code);
+    setCopiedQId(qId);
+    showToast("success", "Code copied to clipboard!");
+    setTimeout(() => setCopiedQId(null), 2000);
+  };
+
+  const handleOpenEdit = (q: Question, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingQuestion(q);
+    setEditQTitle(q.title);
+    setEditQCode(q.code);
+    setEditQLang(q.language);
+    setEditQComment(q.comment || "");
+    setEditReason("");
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingQuestion) return;
+    if (!editQTitle || !editQCode) return showToast("error", "Title and Code required.");
+    if (!editReason.trim()) return showToast("error", "Reason for edit is required.");
+
+    const updatedQ: Question = {
+      ...editingQuestion,
+      title: editQTitle,
+      code: editQCode,
+      language: editQLang,
+      comment: editReason.trim()
+    };
+
+    setVitSessions(prev => prev.map(s => {
+      if (s.id === activeSessionId) {
+        return {
+          ...s,
+          questions: s.questions.map(q => q.id === updatedQ.id ? updatedQ : q)
+        };
+      }
+      return s;
+    }));
+
+    setShowEditModal(false);
+    setEditingQuestion(null);
+
+    try {
+      const res = await fetch("/api/vitcodes/question", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedQ)
+      });
+      if (!res.ok) throw new Error("Failed to save edit");
+      showToast("success", "Code edited successfully.");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("vit_exam_types");
@@ -706,7 +775,23 @@ function ContributorsDashboard() {
                                     {q.comment && <p className="text-[10px] mt-0.5 truncate" style={{ color: dk ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)" }}>{q.comment}</p>}
                                   </div>
                                 </div>
-                                <div className="flex items-center shrink-0 ml-3">
+                                <div className="flex items-center shrink-0 ml-3 gap-1">
+                                  <button
+                                    onClick={(e) => handleCopyCode(q.id, q.code, e)}
+                                    className="p-1 rounded border hover:bg-white/5 transition-all"
+                                    style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}
+                                    title="Copy Code"
+                                  >
+                                    {copiedQId === q.id ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} style={{ color: dk ? P.sky : P.blue }} />}
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleOpenEdit(q, e)}
+                                    className="p-1 rounded border hover:bg-white/5 transition-all mr-1"
+                                    style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}
+                                    title="Edit Code"
+                                  >
+                                    <Edit size={11} style={{ color: dk ? P.sky : P.blue }} />
+                                  </button>
                                   <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border" style={{ color: dk ? `${P.sky}80` : `${P.black}60`, borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(0,0,0,0.1)", background: dk ? "rgba(199,238,255,0.05)" : "rgba(0,0,0,0.02)" }}>{q.language}</span>
                                 </div>
                               </div>
@@ -845,6 +930,84 @@ function ContributorsDashboard() {
                   <button onClick={handleAddQuestion} className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
                     style={{ background: P.blue }}>
                     <Plus size={12} /> Add Question
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* EDIT QUESTION MODAL (Bottom Sheet style on mobile, center modal on desktop) */}
+      <AnimatePresence>
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div 
+              initial={{ y: "100%", opacity: 0.5 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className={`relative w-full sm:max-w-xl p-1 rounded-t-[24px] sm:rounded-b-[24px] sm:rounded-t-[24px] border bg-black border-white/10 shadow-2xl z-10 max-h-[90vh] sm:max-h-[85vh] flex flex-col`}
+            >
+              <div className={`p-4 sm:p-6 rounded-t-[20px] sm:rounded-[20px] ${cardBg} flex-1 overflow-hidden flex flex-col`}>
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${textPrimary}`}>
+                    <Edit size={16} /> Edit Code Question
+                  </h3>
+                  <button onClick={() => setShowEditModal(false)} className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5`}>
+                    <X size={14} className={textPrimary} />
+                  </button>
+                </div>
+
+                {/* Form Body - Scrollable internally */}
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
+                      <input type="text" value={editQTitle} onChange={e => setEditQTitle(e.target.value)} placeholder="e.g. Matrix Transpose"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
+                      <select value={editQLang} onChange={e => setEditQLang(e.target.value)} className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
+                        <option value="cpp">C++ (cpp)</option>
+                        <option value="c">C (c)</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="javascript">JavaScript</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
+                      <input type="text" value={editQComment} onChange={e => setEditQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: P.error }}>Reason for Edit (Required)</label>
+                      <input type="text" value={editReason} onChange={e => setEditReason(e.target.value)} placeholder="e.g. fixed compilation error, passed 6/6"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-red-500/30 ${inputBg}`} />
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col min-h-[180px] sm:min-h-[220px]">
+                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
+                    <textarea value={editQCode} onChange={e => setEditQCode(e.target.value)} placeholder="Paste source code..."
+                      className="w-full flex-1 text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none min-h-[160px]"
+                      style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="mt-4 pt-3 border-t shrink-0 flex justify-end gap-2" style={{ borderColor: borderLight }}>
+                  <button onClick={() => setShowEditModal(false)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${borderLight} hover:bg-white/5`}>
+                    Cancel
+                  </button>
+                  <button onClick={handleSaveEdit} className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
+                    style={{ background: P.blue }}>
+                    <Check size={12} /> Save Edit
                   </button>
                 </div>
               </div>
