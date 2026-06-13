@@ -565,6 +565,7 @@
     <script>
         let allSessions = [];
         let currentView = 'overview'; // 'overview' or 'detail'
+        let currentSubView = 'types'; // 'types' or 'sessions'
         let currentSessionId = null;
 
         // Header Back Button Logic
@@ -572,8 +573,12 @@
         backBtn.addEventListener('click', () => {
             if (currentView === 'detail') {
                 showOverview();
-            } else {
-                window.location.href = '/';
+            } else if (currentView === 'overview') {
+                if (currentSubView === 'sessions') {
+                    renderExamTypes();
+                } else {
+                    window.location.href = '/';
+                }
             }
         });
 
@@ -733,6 +738,86 @@
             refreshIcons();
         }
 
+        // Render Exam Types
+        function renderExamTypes() {
+            currentSubView = 'types';
+            const grid = document.getElementById('sessions-grid');
+            grid.innerHTML = '';
+            
+            const groups = {};
+            allSessions.forEach(s => {
+                if (!groups[s.examType]) groups[s.examType] = [];
+                groups[s.examType].push(s);
+            });
+
+            Object.entries(groups).forEach(([type, sessions]) => {
+                const typeCard = document.createElement('div');
+                typeCard.className = 'session-card';
+                const count = sessions.length;
+                const dates = sessions.map(s => s.date);
+                const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
+                const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
+                const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
+                typeCard.innerHTML = `
+                    <div class="card-top">
+                        <div class="exam-badge">
+                            ${getIcon('award-10')}
+                            <span>${type}</span>
+                        </div>
+                    </div>
+                    <h3 class="session-title">${type}</h3>
+                    <p class="session-date">${getIcon('calendar-12')} ${daysInfo}</p>
+                    <div class="card-footer">
+                        <span>
+                            ${getIcon('code-2-12')}
+                            ${count} Session${count > 1 ? 's' : ''}
+                        </span>
+                        ${getIcon('chevron-right-14')}
+                    </div>
+                `;
+                typeCard.addEventListener('click', () => {
+                    renderSessions(sessions);
+                });
+                grid.appendChild(typeCard);
+            });
+        }
+
+        // Render Sessions list
+        function renderSessions(sessions) {
+            currentSubView = 'sessions';
+            const grid = document.getElementById('sessions-grid');
+            grid.innerHTML = '';
+            if (sessions.length === 0) {
+                grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
+                return;
+            }
+            sessions.forEach(session => {
+                const card = document.createElement('div');
+                card.className = 'session-card';
+                const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
+                const dateHTML = session.title ? `<p class="session-date">${getIcon('calendar-12')} ${session.date}</p>` : '';
+                card.innerHTML = `
+                    <div class="card-top">
+                        <div class="exam-badge">
+                            ${getIcon('award-10')}
+                            <span>${session.examType}</span>
+                        </div>
+                    </div>
+                    ${titleHTML}
+                    ${dateHTML}
+                    <div class="card-footer">
+                        <span>
+                            ${getIcon('code-2-12')}
+                            ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
+                        </span>
+                        ${getIcon('chevron-right-14')}
+                    </div>
+                `;
+                card.addEventListener('click', () => showDetail(session.id));
+                grid.appendChild(card);
+            });
+        }
+
         // Fetch Sessions
         function loadSessions() {
             const grid = document.getElementById('sessions-grid');
@@ -750,45 +835,7 @@
                 })
                 .then(data => {
                     allSessions = data;
-                    // Group sessions by examType
-                    const groups = {};
-                    data.forEach(s => {
-                        if (!groups[s.examType]) groups[s.examType] = [];
-                        groups[s.examType].push(s);
-                    });
-                    // Render exam type cards
-                    grid.innerHTML = '';
-                    Object.entries(groups).forEach(([type, sessions]) => {
-                        const typeCard = document.createElement('div');
-                        typeCard.className = 'session-card';
-                        const count = sessions.length;
-                        const dates = sessions.map(s => s.date);
-                        const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
-                        const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
-                        const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
-                        typeCard.innerHTML = `
-                            <div class="card-top">
-                                <div class="exam-badge">
-                                    ${getIcon('award-10')}
-                                    <span>${type}</span>
-                                </div>
-                            </div>
-                            <h3 class="session-title">${type}</h3>
-                            <p class="session-date">${getIcon('calendar-12')} ${daysInfo}</p>
-                            <div class="card-footer">
-                                <span>
-                                    ${getIcon('code-2-12')}
-                                    ${count} Session${count > 1 ? 's' : ''}
-                                </span>
-                                ${getIcon('chevron-right-14')}
-                            </div>
-                        `;
-                        typeCard.addEventListener('click', () => {
-                            // Render sessions for this exam type
-                            renderSessions(sessions);
-                        });
-                        grid.appendChild(typeCard);
-                    });
+                    renderExamTypes();
                 })
                 .catch(err => {
                     grid.innerHTML = `
@@ -797,40 +844,6 @@
                         </div>
                     `;
                 });
-
-            function renderSessions(sessions) {
-                const grid = document.getElementById('sessions-grid');
-                grid.innerHTML = '';
-                if (sessions.length === 0) {
-                    grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
-                    return;
-                }
-                sessions.forEach(session => {
-                    const card = document.createElement('div');
-                    card.className = 'session-card';
-                    const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
-                    const dateHTML = session.title ? `<p class="session-date">${getIcon('calendar-12')} ${session.date}</p>` : '';
-                    card.innerHTML = `
-                        <div class="card-top">
-                            <div class="exam-badge">
-                                ${getIcon('award-10')}
-                                <span>${session.examType}</span>
-                            </div>
-                        </div>
-                        ${titleHTML}
-                        ${dateHTML}
-                        <div class="card-footer">
-                            <span>
-                                ${getIcon('code-2-12')}
-                                ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
-                            </span>
-                            ${getIcon('chevron-right-14')}
-                        </div>
-                    `;
-                    card.addEventListener('click', () => showDetail(session.id));
-                    grid.appendChild(card);
-                });
-            }
         }
 
         // Escape HTML helper
