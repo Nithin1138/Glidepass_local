@@ -533,7 +533,7 @@
 
         <!-- View 1: Overview Grid of Sessions -->
         <div class="view active" id="overview-view">
-            <div class="hero">
+            <div class="hero" id="overview-hero">
                 <div class="ota-badge">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" style="color: var(--accent-color);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5.5z"/><path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/></svg>
                     <span>Over-The-Air Code Repository</span>
@@ -759,6 +759,7 @@
         function renderExamTypes() {
             currentSubView = 'types';
             currentExamType = null;
+            document.getElementById('overview-hero').style.display = 'flex';
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
             
@@ -803,6 +804,7 @@
         // Render Sessions list
         function renderSessions(sessions) {
             currentSubView = 'sessions';
+            document.getElementById('overview-hero').style.display = 'none';
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
             if (sessions.length === 0) {

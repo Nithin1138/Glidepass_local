@@ -199,23 +199,25 @@ function VitCodesContent() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-12 relative z-10">
-        <div className="text-center mb-10 space-y-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${borderLight} ${dk ? 'bg-white/[0.02] text-white/50' : 'bg-black/[0.02] text-black/50'} text-xs`}
-          >
-            <Sparkles size={12} className="text-blue-400" />
-            <span>Over-The-Air Code Repository</span>
-          </motion.div>
-          <h1 className={`text-4xl md:text-5xl font-outfit font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'}`}>
-            VIT-AP Today's Codes
-          </h1>
-          <p className={`${txt3} max-w-md mx-auto text-sm`}>
-            Select your exam session, copy questions directly, or dispatch code straight to your laptop's clipboard.
-          </p>
-        </div>
+        {selectedExamType === null && (
+          <div className="text-center mb-10 space-y-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${borderLight} ${dk ? 'bg-white/[0.02] text-white/50' : 'bg-black/[0.02] text-black/50'} text-xs`}
+            >
+              <Sparkles size={12} className="text-blue-400" />
+              <span>Over-The-Air Code Repository</span>
+            </motion.div>
+            <h1 className={`text-4xl md:text-5xl font-outfit font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'}`}>
+              VIT-AP Today's Codes
+            </h1>
+            <p className={`${txt3} max-w-md mx-auto text-sm`}>
+              Select your exam session, copy questions directly, or dispatch code straight to your laptop's clipboard.
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
