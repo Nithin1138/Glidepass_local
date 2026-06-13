@@ -406,7 +406,10 @@ function ContributorsDashboard() {
            session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
          })
        });
-       if (!res.ok) throw new Error("Failed to add question");
+       if (!res.ok) {
+         const errData = await res.json().catch(() => ({}));
+         throw new Error(errData.error || "Failed to add question");
+       }
      } catch (e: any) {
        showToast("error", e.message);
        fetchVitCodes();

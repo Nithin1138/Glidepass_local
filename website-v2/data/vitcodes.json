@@ -1,5 +1,26 @@
 [
   {
+    "id": "session_test_1781339996903",
+    "date": "2026-06-13",
+    "examType": "NERD",
+    "title": "Test Session",
+    "isDeleted": false,
+    "questions": [
+      {
+        "id": "q_test_1781339996903",
+        "title": "Test Question In New Session",
+        "code": "console.log('hello');",
+        "language": "javascript",
+        "comment": "test comment",
+        "contributorEmail": "test@vitap.ac.in",
+        "contributorName": "Test",
+        "contributorRegno": "unknown",
+        "contributorCollege": "vit-ap",
+        "isDeleted": false
+      }
+    ]
+  },
+  {
     "id": "1781178233367",
     "date": "2026-06-11",
     "examType": "NERD",
@@ -10,8 +31,22 @@
         "title": "1st",
         "code": "import java.util.*;\nclass Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine();\n        int first = -1, second = -1;\n        for (int i = 0; i < s.length(); i++) {\n            int count = 0;\n            for (int j = 0; j < s.length(); j++) {\n                if (s.charAt(i) == s.charAt(j))\n                    count++;\n            }\n            if (count == 1) {\n                if (first == -1)\n                    first = i;\n                else {\n                    second = i;\n                    break;\n                }\n            }\n        }\n        if (first != -1 && second != -1) {\n            System.out.println(first + \" - \" + s.charAt(first));\n            System.out.println(second + \" - \" + s.charAt(second));\n        } else {\n            System.out.print(\"-1\");\n        }\n    }\n}",
         "language": "java",
-        "comment": "6/6 pass"
+        "comment": "6/6 pass",
+        "isDeleted": false
+      },
+      {
+        "id": "q_test_1781339939765",
+        "title": "Test Question",
+        "code": "console.log('hello');",
+        "language": "javascript",
+        "comment": "test comment",
+        "contributorEmail": "test@vitap.ac.in",
+        "contributorName": "Test",
+        "contributorRegno": "unknown",
+        "contributorCollege": "vit-ap",
+        "isDeleted": false
       }
-    ]
+    ],
+    "isDeleted": false
   }
 ]
