@@ -665,7 +665,7 @@ function ContributorsDashboard() {
                             const today = new Date();
                             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                             const todaySessions = sessions.filter(s => s.date === todayStr);
-                            const isSatisfied = todaySessions.some(s => checkRuleSatisfied(s.questions?.length || 0, examRules[type]));
+                            const isSatisfied = todaySessions.some(s => checkRuleSatisfied(s.questions?.length || 0, getRuleForType(type)));
 
                             return (
                               <div key={type}
