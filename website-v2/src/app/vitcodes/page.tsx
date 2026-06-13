@@ -297,16 +297,16 @@ function VitCodesContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(sessionsByExamType[selectedExamType] || []).map((session, index) => (
-                <motion.div
+                <Link
                   key={session.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.5 }}
-                  whileHover={{ y: -6, scale: 1.01 }}
-                  className="flex"
+                  href={`/vitcodes/${session.id}${origin ? `?origin=${encodeURIComponent(origin)}` : ""}`}
+                  className="flex w-full"
                 >
-                  <Link
-                    href={`/vitcodes/${session.id}${origin ? `?origin=${encodeURIComponent(origin)}` : ""}`}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.06, duration: 0.5 }}
+                    whileHover={{ y: -6, scale: 1.01 }}
                     className={`block w-full p-6 rounded-2xl ${cardBg} ${cardBorder} transition-all duration-300 group flex flex-col justify-between`}
                   >
                     <div>
@@ -352,8 +352,8 @@ function VitCodesContent() {
                       </span>
                       <ChevronRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-300" />
                     </div>
-                  </Link>
-                </motion.div>
+                  </motion.div>
+                </Link>
               ))}
             </div>
           </div>
