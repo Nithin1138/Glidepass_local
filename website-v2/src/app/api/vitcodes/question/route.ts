@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createQuestion, deleteQuestion, updateQuestion } from "@/lib/db";
+import { createQuestion, deleteQuestion, updateQuestion, createSession } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, question } = await request.json();
+    const { sessionId, question, session } = await request.json();
     if (!sessionId || !question || !question.id) {
       return NextResponse.json({ error: "Invalid question data" }, { status: 400 });
+    }
+
+    if (session) {
+      // Ensure the session exists in DB before adding question
+      await createSession(session);
     }
 
     await createQuestion(sessionId, question);

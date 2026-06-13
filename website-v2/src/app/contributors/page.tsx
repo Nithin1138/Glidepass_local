@@ -359,66 +359,59 @@ function ContributorsDashboard() {
     setNewSessionTitle("");
     setVitDetailView(true);
 
-    try {
-      const res = await fetch("/api/vitcodes/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(session)
-      });
-      if (!res.ok) throw new Error("Failed to create session");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
   };
-
-  const handleAddQuestion = async () => {
-    if (!activeSessionId) return;
-
-    const currentSession = vitSessions.find(s => s.id === activeSessionId);
-    if (currentSession) {
-      const ruleForType = getRuleForType(currentSession.examType);
-      const maxCap = getMaxCap(ruleForType);
-      if (maxCap !== null && currentSession.questions.length >= maxCap) {
-        return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
-      }
-    }
-
-    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
-    
-    const newQ: Question = { 
-      id: "q_" + Date.now(), 
-      title: qTitle, 
-      code: qCode, 
-      language: qLang, 
-      comment: qComment,
-      contributorEmail: session?.user?.email || "unknown" 
-    };
-    
-    // Optimistic Update
-    setVitSessions(prev => prev.map(s => {
-      if (s.id === activeSessionId) {
-        return { ...s, questions: [...s.questions, newQ] };
-      }
-      return s;
-    }));
-    setQTitle("");
-    setQCode("");
-    setQComment("");
-    setShowAddQuestionModal(false);
-
-    try {
-      const res = await fetch("/api/vitcodes/question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: activeSessionId, question: newQ })
-      });
-      if (!res.ok) throw new Error("Failed to add question");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
-  };
+ 
+   const handleAddQuestion = async () => {
+     if (!activeSessionId) return;
+ 
+     const currentSession = vitSessions.find(s => s.id === activeSessionId);
+     if (currentSession) {
+       const ruleForType = getRuleForType(currentSession.examType);
+       const maxCap = getMaxCap(ruleForType);
+       if (maxCap !== null && currentSession.questions.length >= maxCap) {
+         return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
+       }
+     }
+ 
+     if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
+     
+     const newQ: Question = { 
+       id: "q_" + Date.now(), 
+       title: qTitle, 
+       code: qCode, 
+       language: qLang, 
+       comment: qComment,
+       contributorEmail: session?.user?.email || "unknown" 
+     };
+     
+     // Optimistic Update
+     setVitSessions(prev => prev.map(s => {
+       if (s.id === activeSessionId) {
+         return { ...s, questions: [...s.questions, newQ] };
+       }
+       return s;
+     }));
+     setQTitle("");
+     setQCode("");
+     setQComment("");
+     setShowAddQuestionModal(false);
+ 
+     try {
+       const res = await fetch("/api/vitcodes/question", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ 
+           sessionId: activeSessionId, 
+           question: newQ,
+           session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
+         })
+       });
+       if (!res.ok) throw new Error("Failed to add question");
+     } catch (e: any) {
+       showToast("error", e.message);
+       fetchVitCodes();
+     }
+   };
 
   // ─── UI Variables ───
   const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId) || null, [vitSessions, activeSessionId]);

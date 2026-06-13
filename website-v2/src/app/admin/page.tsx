@@ -482,17 +482,6 @@ export default function GlidePassAdmin() {
     setNewSessionTitle("");
     setShowNewSessionModal(false);
 
-    try {
-      const res = await fetch("/api/vitcodes/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(s)
-      });
-      if (!res.ok) throw new Error("Failed to save session");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
   };
 
   const handleAddQuestion = async () => {
@@ -512,11 +501,17 @@ export default function GlidePassAdmin() {
     setQCode("");
     setQComment("");
 
+    const currentSession = vitSessions.find(s => s.id === activeSessionId);
+
     try {
       const res = await fetch("/api/vitcodes/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: activeSessionId, question: newQ })
+        body: JSON.stringify({ 
+          sessionId: activeSessionId, 
+          question: newQ,
+          session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
+        })
       });
       if (!res.ok) throw new Error("Failed to add question");
     } catch (e: any) {
