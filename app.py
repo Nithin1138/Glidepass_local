@@ -606,29 +606,10 @@ def perform_typing(text, wpm, is_coding=False):
                     # native auto-indentation instead of literal spaces/tabs.
                     line_to_type = line.lstrip(' \t')
 
-                i = 0
-                while i < len(line_to_type):
+                for char in line_to_type:
                     if stop_typing:
                         break
                     char_start = time.time()
-
-                    char = line_to_type[i]
-                    # If this is an opening bracket and the next char is the matching closing bracket,
-                    # skip sending the closing bracket because IDE auto‑completion will insert it.
-                    brackets = {"(": ")", "[": "]", "{": "}"}
-                    if char in brackets and i + 1 < len(line_to_type) and line_to_type[i + 1] == brackets[char]:
-                        # Type the opening bracket only
-                        if char == '\t':
-                            if not press_key_native(48):
-                                pyautogui.press('tab')
-                        else:
-                            write_char_native(char)
-                        # Skip the auto‑generated closing bracket
-                        i += 2
-                        elapsed = time.time() - char_start
-                        sleep_time = max(0, typing_interval - elapsed)
-                        time.sleep(sleep_time)
-                        continue
 
                     if char == '\t':
                         if not press_key_native(48):
@@ -639,8 +620,6 @@ def perform_typing(text, wpm, is_coding=False):
                     elapsed = time.time() - char_start
                     sleep_time = max(0, typing_interval - elapsed)
                     time.sleep(sleep_time)
-                    
-                    i += 1
 
         # Trigger cleanup if coding mode is active
         if is_coding and not stop_typing:
