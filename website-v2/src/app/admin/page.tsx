@@ -319,17 +319,22 @@ export default function GlidePassAdmin() {
   const [selectedRuleType, setSelectedRuleType] = useState("NERD");
 
   useEffect(() => {
-    const savedRules = localStorage.getItem("glidepass-exam-rules");
-    if (savedRules) {
-      try { setExamRules(JSON.parse(savedRules)); } catch (e) {}
-    }
+    fetch("/api/vitcodes/rules")
+      .then(r => r.json())
+      .then(data => setExamRules(data))
+      .catch(() => {});
   }, []);
 
-  const handleUpdateRule = (type: string, val: string) => {
+  const handleUpdateRule = async (type: string, val: string) => {
     const updated = { ...examRules, [type]: val };
     setExamRules(updated);
-    localStorage.setItem("glidepass-exam-rules", JSON.stringify(updated));
-    window.dispatchEvent(new Event("storage"));
+    try {
+      await fetch("/api/vitcodes/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examType: type, rule: val })
+      });
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -406,6 +411,16 @@ export default function GlidePassAdmin() {
       if (data && Array.from) {
         const types = data.map((s: any) => s.examType).filter(Boolean);
         setExamTypes(prev => Array.from(new Set([...prev, ...types])));
+      }
+
+      // Sync rules in real-time
+      const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
+      if (rulesRes.ok) {
+        const rulesData = await rulesRes.json();
+        setExamRules(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(rulesData)) return prev;
+          return rulesData;
+        });
       }
     } catch (err: any) {
       showToast("error", err.message);

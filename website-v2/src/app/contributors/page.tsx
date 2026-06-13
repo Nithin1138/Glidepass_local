@@ -88,15 +88,10 @@ function ContributorsDashboard() {
   const [examRules, setExamRules] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const loadRules = () => {
-      const savedRules = localStorage.getItem("glidepass-exam-rules");
-      if (savedRules) {
-        try { setExamRules(JSON.parse(savedRules)); } catch (e) {}
-      }
-    };
-    loadRules();
-    window.addEventListener("storage", loadRules);
-    return () => window.removeEventListener("storage", loadRules);
+    fetch("/api/vitcodes/rules")
+      .then(r => r.json())
+      .then(data => setExamRules(data))
+      .catch(() => {});
   }, []);
 
   const checkRuleSatisfied = (questionsCount: number, ruleStr: string | null | undefined): boolean => {
@@ -290,6 +285,16 @@ function ContributorsDashboard() {
       if (data && Array.from) {
         const types = data.map((s: any) => s.examType).filter(Boolean);
         setExamTypes(prev => Array.from(new Set([...prev, ...types])));
+      }
+
+      // Sync rules in real-time
+      const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
+      if (rulesRes.ok) {
+        const rulesData = await rulesRes.json();
+        setExamRules(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(rulesData)) return prev;
+          return rulesData;
+        });
       }
     } catch (err: any) {
       showToast("error", err.message);

@@ -106,6 +106,13 @@ export async function initDb() {
     await client.query(`
       ALTER TABLE vit_contributors ADD COLUMN IF NOT EXISTS say_my_name BOOLEAN DEFAULT false;
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_exam_rules (
+        exam_type TEXT PRIMARY KEY,
+        rule TEXT NOT NULL
+      );
+    `);
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -383,5 +390,51 @@ export async function deleteQuestion(qId: string): Promise<void> {
       s.questions = (s.questions || []).filter(q => q.id !== qId);
     }
     await writeCodes(all);
+  }
+}
+
+export async function readRules(): Promise<Record<string, string>> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const res = await client.query("SELECT * FROM vit_exam_rules");
+      const rules: Record<string, string> = {};
+      res.rows.forEach(row => {
+        rules[row.exam_type] = row.rule;
+      });
+      return rules;
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
+    if (!fs.existsSync(filePath)) return {};
+    try {
+      return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (e) {
+      return {};
+    }
+  }
+}
+
+export async function writeRule(examType: string, rule: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "INSERT INTO vit_exam_rules (exam_type, rule) VALUES ($1, $2) ON CONFLICT (exam_type) DO UPDATE SET rule = $2",
+        [examType, rule]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const rules = await readRules();
+    rules[examType] = rule;
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(rules, null, 2), "utf8");
   }
 }
