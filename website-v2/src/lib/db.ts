@@ -203,14 +203,28 @@ export async function readCodes(): Promise<VitCode[]> {
     const defaultFilePath = path.join(process.cwd(), "public", "templates", "vitcodes.json");
     if (fs.existsSync(defaultFilePath)) {
       try {
-        return JSON.parse(fs.readFileSync(defaultFilePath, "utf8"));
+        const raw = fs.readFileSync(defaultFilePath, "utf8");
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) {
+          return data.map((s: any) => ({
+            ...s,
+            questions: Array.isArray(s.questions) ? s.questions : []
+          }));
+        }
       } catch (e) {}
     }
     return [];
   }
   try {
     const raw = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      return data.map((s: any) => ({
+        ...s,
+        questions: Array.isArray(s.questions) ? s.questions : []
+      }));
+    }
+    return [];
   } catch (error) {
     return [];
   }
@@ -291,7 +305,21 @@ export async function createSession(session: VitCode): Promise<void> {
   } else {
     // JSON fallback
     const all = await readCodes();
-    all.unshift(session);
+    const existingIdx = all.findIndex(s => s.id === session.id);
+    if (existingIdx !== -1) {
+      all[existingIdx] = {
+        ...all[existingIdx],
+        date: session.date,
+        examType: session.examType,
+        title: session.title,
+        questions: all[existingIdx].questions || []
+      };
+    } else {
+      all.unshift({
+        ...session,
+        questions: session.questions || []
+      });
+    }
     await writeCodes(all);
   }
 }
