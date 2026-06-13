@@ -1102,7 +1102,7 @@ function ContributorsDashboard() {
                         className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-red-500/30 ${inputBg}`}>
                         <option value="">Select a reason...</option>
                         <option value="Optimized code">Optimized code</option>
-                        <option value="Solved error">Solved error</option>
+                        <option value="Error solved">Error solved</option>
                         <option value="All test cases passed">All test cases passed</option>
                         <option value="More test cases passed than previous one">More test cases passed than previous one</option>
                       </select>

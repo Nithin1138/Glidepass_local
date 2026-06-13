@@ -2215,7 +2215,9 @@ export default function GlidePassAdmin() {
                                               <h4 className="text-sm font-bold mb-2">{edit.questionTitle}</h4>
                                               <div className="mt-3 pt-3 border-t text-xs" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                                 <span className="text-[9px] uppercase font-bold tracking-wider mr-1.5 opacity-55">Reason for Edit:</span>
-                                                <span className="font-medium" style={{ color: P.blue }}>{edit.reason}</span>
+                                                <span className="font-medium" style={{ color: P.blue }}>
+                                                  {edit.reason.replace(/solved error/i, "Error solved")}
+                                                </span>
                                               </div>
                                             </div>
                                           );
