@@ -94,6 +94,15 @@ function ContributorsDashboard() {
       .catch(() => {});
   }, []);
 
+  const getRuleForType = (type: string | null | undefined): string | null => {
+    if (!type) return null;
+    const target = type.trim().toLowerCase();
+    const matchedKey = Object.keys(examRules).find(
+      key => key.trim().toLowerCase() === target
+    );
+    return matchedKey ? examRules[matchedKey] : null;
+  };
+
   const checkRuleSatisfied = (questionsCount: number, ruleStr: string | null | undefined): boolean => {
     if (!ruleStr) return questionsCount >= 1;
     const trimmed = ruleStr.trim();
@@ -340,7 +349,7 @@ function ContributorsDashboard() {
 
     const currentSession = vitSessions.find(s => s.id === activeSessionId);
     if (currentSession) {
-      const ruleForType = examRules[currentSession.examType];
+      const ruleForType = getRuleForType(currentSession.examType);
       const maxCap = getMaxCap(ruleForType);
       if (maxCap !== null && currentSession.questions.length >= maxCap) {
         return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
@@ -687,22 +696,33 @@ function ContributorsDashboard() {
                                   <p className="text-[10px] font-mono mt-0.5" style={{ color: dk ? `${P.sky}60` : `${P.black}44` }}>{sessions.length} Session{sessions.length !== 1 && 's'} • {totalCodes} Codes Contributed</p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {sorted.map(s => (
-                                    <div key={s.id}
-                                      onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
-                                      className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
-                                      style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                      <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
-                                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                                  {sorted.map(s => {
+                                    const ruleForType = getRuleForType(s.examType);
+                                    const maxCap = getMaxCap(ruleForType);
+                                    const isCapped = maxCap !== null && s.questions && s.questions.length >= maxCap;
+
+                                    return (
+                                      <div key={s.id}
+                                        onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
+                                        className="p-4 rounded-[20px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
+                                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
+                                          <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
+                                          {isCapped && (
+                                            <span className="text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                                              Capped (Max {maxCap})
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h3 className="text-xs font-bold mb-2 truncate">{s.title || formatDate(s.date)}</h3>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
+                                        </div>
                                       </div>
-                                      <h3 className="text-xs font-bold mb-2 truncate">{s.title || formatDate(s.date)}</h3>
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
-                                      </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </>
                             );
@@ -722,7 +742,7 @@ function ContributorsDashboard() {
                   </button>
 
                   {(() => {
-                    const ruleForType = activeSession ? examRules[activeSession.examType] : undefined;
+                    const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
                     const maxCap = getMaxCap(ruleForType);
                     const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
                     
@@ -752,7 +772,7 @@ function ContributorsDashboard() {
                         <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
                         <span className="text-[9px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes</span>
                         {(() => {
-                          const ruleForType = examRules[activeSession.examType];
+                          const ruleForType = getRuleForType(activeSession.examType);
                           const maxCap = getMaxCap(ruleForType);
                           const isCapped = maxCap !== null && activeSession.questions.length >= maxCap;
                           if (isCapped) {
@@ -907,6 +927,19 @@ function ContributorsDashboard() {
 
                 {/* Form Body - Scrollable internally */}
                 <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
+                  {(() => {
+                    const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
+                    const maxCap = getMaxCap(ruleForType);
+                    const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                    if (isCapped) {
+                      return (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold text-center animate-pulse">
+                          This session has reached its capacity limit of {maxCap} questions. You cannot add more codes.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
@@ -942,8 +975,28 @@ function ContributorsDashboard() {
                   <button onClick={() => setShowAddQuestionModal(false)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${borderLight} hover:bg-white/5`}>
                     Cancel
                   </button>
-                  <button onClick={handleAddQuestion} className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
-                    style={{ background: P.blue }}>
+                   <button 
+                    onClick={handleAddQuestion} 
+                    disabled={!!(() => {
+                      const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
+                      const maxCap = getMaxCap(ruleForType);
+                      return maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                    })()}
+                    className={`px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all ${
+                      (() => {
+                        const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
+                        const maxCap = getMaxCap(ruleForType);
+                        const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                        return isCapped ? 'opacity-50 cursor-not-allowed bg-neutral-600' : 'active:scale-[0.98]';
+                      })()
+                    }`}
+                    style={{ background: (() => {
+                      const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
+                      const maxCap = getMaxCap(ruleForType);
+                      const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                      return isCapped ? undefined : P.blue;
+                    })() }}
+                  >
                     <Plus size={12} /> Add Question
                   </button>
                 </div>

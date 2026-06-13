@@ -48,16 +48,26 @@ function VitCodesContent() {
 
   const dk = resolvedTheme === "dark";
   const [codes, setCodes] = useState<VitCode[]>([]);
+  const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCodes = async () => {
       try {
-        const res = await fetch("/api/vitcodes");
-        if (!res.ok) throw new Error("Failed to fetch codes");
-        const data = await res.json();
+        const [codesRes, rulesRes] = await Promise.all([
+          fetch("/api/vitcodes"),
+          fetch("/api/vitcodes/rules")
+        ]);
+        if (!codesRes.ok) throw new Error("Failed to fetch codes");
+        
+        const data = await codesRes.json();
         setCodes(data);
+
+        if (rulesRes.ok) {
+          const rulesData = await rulesRes.json();
+          setExamRules(rulesData);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load VIT-AP codes.");
       } finally {
@@ -66,6 +76,33 @@ function VitCodesContent() {
     };
     fetchCodes();
   }, []);
+
+  const getRuleForType = (type: string | null | undefined): string | null => {
+    if (!type) return null;
+    const target = type.trim().toLowerCase();
+    const matchedKey = Object.keys(examRules).find(
+      key => key.trim().toLowerCase() === target
+    );
+    return matchedKey ? examRules[matchedKey] : null;
+  };
+
+  const getMaxCap = (ruleStr: string | null | undefined): number | null => {
+    if (!ruleStr) return null;
+    const trimmed = ruleStr.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.includes("-")) {
+      const parts = trimmed.split("-");
+      if (parts.length === 2) {
+        const maxVal = parseInt(parts[1].trim(), 10);
+        return isNaN(maxVal) ? null : maxVal;
+      }
+    } else {
+      const val = parseInt(trimmed, 10);
+      return isNaN(val) ? null : val;
+    }
+    return null;
+  };
 
   // ─── Style Tokens ───
   const bg = dk ? `bg-[#050505]` : `bg-[#F0F4F8]`; 
@@ -187,13 +224,28 @@ function VitCodesContent() {
                 >
                   <div>
                     <div className="flex justify-between items-start mb-6">
-                      <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${
-                        dk 
-                          ? 'border-blue-400/30 bg-blue-500/10 text-blue-300' 
-                          : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
-                      }`}>
-                        <Award size={10} />
-                        {session.examType}
+                      <div className="flex flex-col gap-1.5">
+                        <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${
+                          dk 
+                            ? 'border-blue-400/30 bg-blue-500/10 text-blue-300' 
+                            : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
+                        }`}>
+                          <Award size={10} />
+                          {session.examType}
+                        </div>
+                        {(() => {
+                          const ruleForType = getRuleForType(session.examType);
+                          const maxCap = getMaxCap(ruleForType);
+                          const isCapped = maxCap !== null && session.questions && session.questions.length >= maxCap;
+                          if (isCapped) {
+                            return (
+                              <span className="text-[8px] self-start px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                                Capped (Max {maxCap})
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <div className={`flex items-center gap-1.5 text-xs ${txt3} font-medium`}>
                         <Calendar size={12} />

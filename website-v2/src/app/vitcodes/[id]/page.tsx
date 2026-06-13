@@ -54,6 +54,7 @@ function SessionCodesContent({ params }: PageProps) {
 
   const dk = resolvedTheme === "dark";
   const [session, setSession] = useState<VitCode | null>(null);
+  const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -61,12 +62,20 @@ function SessionCodesContent({ params }: PageProps) {
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
-        const res = await fetch("/api/vitcodes");
+        const [res, rulesRes] = await Promise.all([
+          fetch("/api/vitcodes"),
+          fetch("/api/vitcodes/rules")
+        ]);
         if (!res.ok) throw new Error("Failed to load session codes");
         const data: VitCode[] = await res.json();
         const found = data.find((item) => item.id === sessionId);
         if (!found) throw new Error("Session not found");
         setSession(found);
+
+        if (rulesRes.ok) {
+          const rulesData = await rulesRes.json();
+          setExamRules(rulesData);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load session details.");
       } finally {
@@ -75,6 +84,33 @@ function SessionCodesContent({ params }: PageProps) {
     };
     fetchSessionData();
   }, [sessionId]);
+
+  const getRuleForType = (type: string | null | undefined): string | null => {
+    if (!type) return null;
+    const target = type.trim().toLowerCase();
+    const matchedKey = Object.keys(examRules).find(
+      key => key.trim().toLowerCase() === target
+    );
+    return matchedKey ? examRules[matchedKey] : null;
+  };
+
+  const getMaxCap = (ruleStr: string | null | undefined): number | null => {
+    if (!ruleStr) return null;
+    const trimmed = ruleStr.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.includes("-")) {
+      const parts = trimmed.split("-");
+      if (parts.length === 2) {
+        const maxVal = parseInt(parts[1].trim(), 10);
+        return isNaN(maxVal) ? null : maxVal;
+      }
+    } else {
+      const val = parseInt(trimmed, 10);
+      return isNaN(val) ? null : val;
+    }
+    return null;
+  };
 
   const handleCopy = (code: string, qId: string) => {
     navigator.clipboard.writeText(code);
@@ -173,15 +209,33 @@ function SessionCodesContent({ params }: PageProps) {
           </div>
         ) : (
           <div className="space-y-8">
-            <div>
-              <div className={`flex items-center gap-2 text-xs ${txt3} mb-2 font-mono`}>
-                <span>{session.date}</span>
-                <span>•</span>
-                <span className="text-blue-400 font-semibold">{session.examType}</span>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className={`flex items-center gap-2 text-xs ${txt3} mb-2 font-mono`}>
+                  <span>{session.date}</span>
+                  <span>•</span>
+                  <span className="text-blue-400 font-semibold">{session.examType}</span>
+                  {(() => {
+                    const ruleForType = getRuleForType(session.examType);
+                    const maxCap = getMaxCap(ruleForType);
+                    const isCapped = maxCap !== null && session.questions && session.questions.length >= maxCap;
+                    if (isCapped) {
+                      return (
+                        <>
+                          <span>•</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                            Capped (Max {maxCap})
+                          </span>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+                <h1 className={`text-3xl font-outfit font-black tracking-tight ${txt1}`}>
+                  {session.examType} Questions
+                </h1>
               </div>
-              <h1 className={`text-3xl font-outfit font-black tracking-tight ${txt1}`}>
-                {session.examType} Questions
-              </h1>
             </div>
 
             <div className="space-y-6">
