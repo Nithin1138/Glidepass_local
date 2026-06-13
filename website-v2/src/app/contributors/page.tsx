@@ -573,7 +573,7 @@ function ContributorsDashboard() {
                             
                             const formatDate = (d: string) => {
                               const p = d.split("-");
-                              return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+                              return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
                             };
                             
                             const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
