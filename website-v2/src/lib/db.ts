@@ -379,7 +379,8 @@ export async function createSession(session: VitCode): Promise<void> {
 }
 
 export async function updateQuestionLock(questionId: string, isLocked: boolean) {
-  if (pool && isDbInitialized) {
+  if (pool) {
+    await initDb();
     const client = await pool.connect();
     try {
       await client.query("UPDATE vit_questions SET is_locked = $1 WHERE id = $2", [isLocked, questionId]);
