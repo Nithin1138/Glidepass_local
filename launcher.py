@@ -362,19 +362,23 @@ class LANpadLauncher:
         self._conn_lbl.place(x=376, y=68, anchor="ne")
 
         # ── Hero text ────────────────────────────────────────────────────────
+        title_frame = tk.Frame(v, bg=self.BG)
+        title_frame.place(x=24, y=96)
+
         try:
             self._main_logo_img = Image.open(resource_path("logo.png"))
             # Original aspect ratio: 596 x 419 (~1.42)
             # Desired height: 36 -> Width: 51
             self._main_logo_img = self._main_logo_img.resize((51, 36), Image.Resampling.LANCZOS)
             self._main_logo_tk = ImageTk.PhotoImage(self._main_logo_img)
-            tk.Label(v, image=self._main_logo_tk, bg=self.BG).place(x=24, y=96)
-            title_x = 84
+            logo_lbl = tk.Label(title_frame, image=self._main_logo_tk, bg=self.BG)
+            logo_lbl.pack(side="left")
+            padx_text = 10
         except Exception as e:
-            title_x = 24
+            padx_text = 0
 
-        tk.Label(v, text="LANpad", font=(self.FD, 28, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w").place(x=title_x, y=98)
+        tk.Label(title_frame, text="LANpad", font=(self.FD, 28, "bold"),
+                 bg=self.BG, fg=self.WHITE, anchor="w").pack(side="left", padx=(padx_text, 0))
         tk.Label(v,
                  text="Bridge your devices locally.",
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
@@ -497,7 +501,7 @@ class LANpadLauncher:
         ic = tk.Canvas(hdr, width=48, height=48, bg=self.BG, highlightthickness=0)
         ic.pack(side="left")
         rounded_rect(ic, 0, 0, 48, 48, r=12, fill=self.BG2, outline="")
-        ic.create_text(24, 27, text="🛡", font=(self.FU, 20))
+        ic.create_text(24, 24, text="🛡", font=(self.FU, 20), anchor="center")
 
         # Title block
         ti = tk.Frame(hdr, bg=self.BG)
@@ -515,7 +519,7 @@ class LANpadLauncher:
             ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'LANpad'"),
             ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
-        cw, ch = (W - 44) // 2, 115
+        cw, ch = (W - 44) // 2, 125
         grid_top = 135
         for i, (num, icon, title, desc) in enumerate(steps):
             col, row = i % 2, i // 2
@@ -528,18 +532,18 @@ class LANpadLauncher:
             cv.create_text(cw - 12, 14, text=num,
                            font=(self.FM, 9, "bold"), fill=self.DIM, anchor="e")
             # Icon
-            cv.create_text(15, 32, text=icon, font=(self.FU, 18), anchor="w")
+            cv.create_text(15, 28, text=icon, font=(self.FU, 18), anchor="w")
             # Title
-            cv.create_text(15, 60, text=title,
+            cv.create_text(15, 52, text=title,
                            font=(self.FU, 11, "bold"), fill=self.WHITE, anchor="w")
             # Description (wrapping)
             if i == 3:
                 # Highlight "Copied!"
-                cv.create_text(15, 76, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
-                cv.create_text(68, 76, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
-                cv.create_text(15, 92, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
+                cv.create_text(15, 70, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
+                cv.create_text(74, 70, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
+                cv.create_text(15, 86, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
             else:
-                cv.create_text(15, 76, text=desc,
+                cv.create_text(15, 70, text=desc,
                                font=(self.FU, 9), fill=self.DIM,
                                anchor="nw", width=cw - 22)
 
