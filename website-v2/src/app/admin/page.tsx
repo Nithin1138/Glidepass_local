@@ -1514,16 +1514,16 @@ export default function GlidePassAdmin() {
                             {/* Type-to-confirm */}
                             <div>
                               <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
-                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.title}</span> to confirm
+                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.examType}</span> to confirm
                               </label>
                               <input
                                 type="text"
                                 value={deleteConfirmText}
                                 onChange={e => setDeleteConfirmText(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === deleteTargetSession.title) handleDeleteSession(); }}
-                                placeholder={`Type "${deleteTargetSession.title}" here...`}
+                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText === deleteTargetSession.examType) handleDeleteSession(); }}
+                                placeholder={`Type "${deleteTargetSession.examType}" here...`}
                                 autoFocus
-                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === deleteTargetSession.title ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
+                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText === deleteTargetSession.examType ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
                               />
                             </div>
 
