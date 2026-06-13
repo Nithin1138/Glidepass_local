@@ -594,6 +594,30 @@
             return SVGS[name] || '';
         }
 
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return Promise.resolve();
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return Promise.reject(err);
+                }
+            }
+        }
+
         // Initialize Lucide Icons
         function refreshIcons() {
             // Dummy function to prevent errors (bypassed with inline SVGs for performance)
@@ -681,7 +705,7 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const code = decodeURIComponent(btn.getAttribute('data-code'));
-                    navigator.clipboard.writeText(code).then(() => {
+                    copyToClipboard(code).then(() => {
                         btn.classList.add('copied');
                         btn.style.color = 'var(--accent-color)';
                         btn.style.borderColor = 'rgba(0, 119, 192, 0.3)';
