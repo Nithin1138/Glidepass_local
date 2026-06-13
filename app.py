@@ -129,6 +129,18 @@ def fetch_ota_templates():
 
     for tmpl in ["index.html", "center.html", "vitcodes.html"]:
         success = False
+        
+        # 0. Try local templates directory in workspace
+        local_path = os.path.join("templates", tmpl)
+        if os.path.exists(local_path):
+            try:
+                import shutil
+                shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
+                success = True
+                print(f"[OTA] Successfully copied {tmpl} from local repository templates")
+            except Exception as e:
+                print(f"[OTA] Failed to copy {tmpl} from local repository: {e}")
+
         # 1. Try custom_url if configured in user config
         if custom_url:
             try:
