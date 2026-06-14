@@ -5156,7 +5156,7 @@ export default function GlidePassAdmin() {
                                 <thead>
                                   <tr>
                                     <th className="p-2 border-b opacity-60 uppercase font-bold tracking-wider" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>Feature</th>
-                                    {monetizationSettings.plans.map(plan => (
+                                    {monetizationSettings.plans.map((plan: any) => (
                                       <th key={plan.tier} className="p-2 border-b text-center font-bold uppercase tracking-wider" style={{ color: P.blue, borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>{plan.tier}</th>
                                     ))}
                                   </tr>
@@ -5165,7 +5165,7 @@ export default function GlidePassAdmin() {
                                   {/* Sessions */}
                                   <tr>
                                     <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>Max Devices</td>
-                                    {monetizationSettings.plans.map((plan, planIdx) => (
+                                    {monetizationSettings.plans.map((plan: any, planIdx: number) => (
                                       <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                           <input 
                                             type="number" min="0" max="999"
@@ -5183,7 +5183,7 @@ export default function GlidePassAdmin() {
                                   {/* VITCodes */}
                                   <tr>
                                     <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>VITCode Session Limit</td>
-                                    {monetizationSettings.plans.map((plan, planIdx) => (
+                                    {monetizationSettings.plans.map((plan: any, planIdx: number) => (
                                       <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                           <input 
                                             type="number" min="0" max="999"
@@ -5212,7 +5212,7 @@ export default function GlidePassAdmin() {
                                   ].map((toggle) => (
                                     <tr key={toggle.key}>
                                       <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>
-                                      {monetizationSettings.plans.map((plan, planIdx) => (
+                                      {monetizationSettings.plans.map((plan: any, planIdx: number) => (
                                         <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                           <input 
                                             type="number" min="-1" max="999"
