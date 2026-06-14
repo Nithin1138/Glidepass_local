@@ -324,7 +324,7 @@ async def get_api_vitcodes():
             pass
         return None
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=False) as client:
         tasks = [fetch_one(client, url) for url in urls]
         for task in asyncio.as_completed(tasks):
             res = await task
@@ -333,7 +333,7 @@ async def get_api_vitcodes():
 
     # Fallback: if all lists were empty, try to return any successful response (even if empty)
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             for url in urls:
                 try:
                     r = await client.get(url, timeout=2.0)
