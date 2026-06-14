@@ -1397,11 +1397,20 @@ export default function GlidePassAdmin() {
         fetchTelemetry();
         fetchDiagnostics();
         fetchAuditLogs();
+        fetchMonetization();
         const interval = setInterval(() => {
           fetchVitCodes(true);
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
+          fetchMonetization();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+      if (view === "subscriptions") {
+        fetchMonetization();
+        const interval = setInterval(() => {
+          fetchMonetization();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1480,6 +1489,86 @@ export default function GlidePassAdmin() {
     }
   }, [freeTierLimits]);
 
+  const handleDeleteTxn = async (id: string) => {
+    try {
+      await fetch(`/api/admin/monetization?type=subscription&id=${id}`, { method: "DELETE" });
+      setSubscriptions(prev => prev.filter(t => t.id !== id));
+      showToast("success", "Transaction log removed from DB.");
+    } catch (e) {
+      showToast("error", "Failed to delete from DB.");
+    }
+  };
+
+  const handleAddTxn = async () => {
+    if (!newTxnEmail.trim()) return showToast("error", "Email is required.");
+    const newTxn = {
+      id: `TXN_${Math.floor(1000 + Math.random() * 9000)}`,
+      email: newTxnEmail.trim(),
+      plan: newTxnPlan,
+      amount: newTxnAmount,
+      status: "success",
+      date: new Date().toISOString().replace("T", " ").substring(0, 16)
+    };
+    try {
+      await fetch("/api/admin/monetization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "subscription", data: newTxn })
+      });
+      setSubscriptions(prev => [newTxn, ...prev]);
+      setNewTxnEmail("");
+      showToast("success", "Transaction recorded in DB.");
+    } catch (e) {
+      showToast("error", "Failed to save to DB.");
+    }
+  };
+
+  const handleGeneratePromo = async () => {
+    if (!newPromoCode.trim()) return showToast("error", "Code is required.");
+    const newCoupon = {
+      code: newPromoCode.trim(),
+      discount: newPromoDiscount,
+      usage: 0,
+      status: "active"
+    };
+    try {
+      await fetch("/api/admin/monetization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "coupon", data: newCoupon })
+      });
+      setPromoCodes(prev => [newCoupon, ...prev]);
+      setNewPromoCode("");
+      showToast("success", "Promo code created in DB.");
+    } catch (e) {
+      showToast("error", "Failed to save to DB.");
+    }
+  };
+
+  const handleTogglePromo = async (code: string, currentStatus: string) => {
+    try {
+      await fetch("/api/admin/monetization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "coupon", code })
+      });
+      setPromoCodes(prev => prev.map(item => item.code === code ? { ...item, status: currentStatus === "active" ? "expired" : "active" } : item));
+      showToast("success", `Coupon status updated in DB.`);
+    } catch (e) {
+      showToast("error", "Failed to update status in DB.");
+    }
+  };
+
+  const handleDeletePromo = async (code: string) => {
+    try {
+      await fetch(`/api/admin/monetization?type=coupon&code=${code}`, { method: "DELETE" });
+      setPromoCodes(prev => prev.filter(item => item.code !== code));
+      showToast("success", "Coupon code deleted from DB.");
+    } catch (e) {
+      showToast("error", "Failed to delete coupon from DB.");
+    }
+  };
+
   const toggleVerify = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, verified: !u.verified } : u)); showToast("success", "Verification toggled."); };
   const toggleBan = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u)); showToast("success", "User status updated."); };
   const handleUpdateRole = (id: string, role: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, role } : u)); showToast("success", `Role updated to ${role}.`); };
@@ -1539,6 +1628,17 @@ export default function GlidePassAdmin() {
       }
     } catch (e) {}
     setLoadingAudit(false);
+  };
+
+  const fetchMonetization = async () => {
+    try {
+      const res = await fetch("/api/admin/monetization");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subscriptions) setSubscriptions(data.subscriptions);
+        if (data.coupons) setPromoCodes(data.coupons);
+      }
+    } catch (e) {}
   };
 
   const formatLocalTime = (isoString: string) => {
@@ -3940,10 +4040,7 @@ export default function GlidePassAdmin() {
                                       </td>
                                       <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.date}</td>
                                       <td className="p-4 text-right pr-6">
-                                        <button onClick={() => {
-                                          setSubscriptions(prev => prev.filter(t => t.id !== s.id));
-                                          showToast("success", "Transaction log removed.");
-                                        }} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Delete Log">
+                                        <button onClick={() => handleDeleteTxn(s.id)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Delete Log">
                                           <Trash2 size={12} />
                                         </button>
                                       </td>
@@ -3985,20 +4082,7 @@ export default function GlidePassAdmin() {
                                   <option value="Yearly Pass">Yearly Pass (₹499)</option>
                                 </select>
                               </div>
-                              <button onClick={() => {
-                                if (!newTxnEmail.trim()) return showToast("error", "Email is required.");
-                                const newTxn = {
-                                  id: `TXN_${Math.floor(1000 + Math.random() * 9000)}`,
-                                  email: newTxnEmail.trim(),
-                                  plan: newTxnPlan,
-                                  amount: newTxnAmount,
-                                  status: "success",
-                                  date: new Date().toISOString().replace("T", " ").substring(0, 16)
-                                };
-                                setSubscriptions(prev => [newTxn, ...prev]);
-                                setNewTxnEmail("");
-                                showToast("success", "Transaction recorded successfully.");
-                              }} className="py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                              <button onClick={handleAddTxn} className="py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
                                 Log Transaction
                               </button>
                             </div>
@@ -4026,12 +4110,7 @@ export default function GlidePassAdmin() {
                                   <option value="100%">100% (Free Pass)</option>
                                 </select>
                               </div>
-                              <button onClick={() => {
-                                if (!newPromoCode.trim()) return showToast("error", "Code is required.");
-                                setPromoCodes(prev => [{ code: newPromoCode.trim(), discount: newPromoDiscount, usage: 0, status: "active" }, ...prev]);
-                                setNewPromoCode("");
-                                showToast("success", "Promo code created successfully.");
-                              }} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                              <button onClick={handleGeneratePromo} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
                                 Create Promo Code
                               </button>
                             </div>
@@ -4050,10 +4129,7 @@ export default function GlidePassAdmin() {
                                     <p className="text-[9px] uppercase font-bold" style={{ color: P.blue }}>{c.discount} Off • {c.usage} Uses</p>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <button onClick={() => {
-                                      setPromoCodes(prev => prev.map(item => item.code === c.code ? { ...item, status: item.status === "active" ? "expired" : "active" } : item));
-                                      showToast("success", `Coupon status changed to ${c.status === "active" ? "expired" : "active"}`);
-                                    }} className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border hover:opacity-75 transition-all"
+                                    <button onClick={() => handleTogglePromo(c.code, c.status)} className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border hover:opacity-75 transition-all"
                                       style={{
                                         background: c.status === "active" ? `${P.blue}15` : `${P.error}15`,
                                         color: c.status === "active" ? P.blue : P.error,
@@ -4061,10 +4137,7 @@ export default function GlidePassAdmin() {
                                       }}>
                                       {c.status}
                                     </button>
-                                    <button onClick={() => {
-                                      setPromoCodes(prev => prev.filter(item => item.code !== c.code));
-                                      showToast("success", "Coupon code deleted.");
-                                    }} className="p-1 rounded text-red-500 hover:bg-red-500/10 transition-colors" title="Delete Coupon">
+                                    <button onClick={() => handleDeletePromo(c.code)} className="p-1 rounded text-red-500 hover:bg-red-500/10 transition-colors" title="Delete Coupon">
                                       <Trash2 size={11} />
                                     </button>
                                   </div>

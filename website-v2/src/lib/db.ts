@@ -176,6 +176,26 @@ export async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_subscriptions (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        plan TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        status TEXT NOT NULL,
+        date TEXT NOT NULL
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_coupons (
+        code TEXT PRIMARY KEY,
+        discount TEXT NOT NULL,
+        usage INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active'
+      );
+    `);
+
     const auditCountRes = await client.query("SELECT COUNT(*) FROM vit_audit_logs");
     if (parseInt(auditCountRes.rows[0].count, 10) === 0) {
       await client.query(`
@@ -184,6 +204,27 @@ export async function initDb() {
         ('Failed Auth Attempt', 'Unknown', '198.51.100.42', 'failed', NOW() - INTERVAL '2 hours'),
         ('VIT Database Modified', 'Nithin', '10.251.103.162', 'warning', NOW() - INTERVAL '3 hours'),
         ('SSL Handshake Verified', 'System', '127.0.0.1', 'success', NOW() - INTERVAL '4 hours');
+      `);
+    }
+
+    const subsCountRes = await client.query("SELECT COUNT(*) FROM vit_subscriptions");
+    if (parseInt(subsCountRes.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO vit_subscriptions (id, email, plan, amount, status, date) VALUES
+        ('TXN_001', 'student1@vitap.ac.in', 'Monthly Pass', '₹99', 'success', '2026-06-14 10:15'),
+        ('TXN_002', 'student2@vitap.ac.in', 'Yearly Pass', '₹499', 'success', '2026-06-14 09:30'),
+        ('TXN_003', 'student3@vitstudent.ac.in', 'Monthly Pass', '₹99', 'failed', '2026-06-13 18:45'),
+        ('TXN_004', 'student4@vit.ac.in', 'Semester Pass', '₹249', 'success', '2026-06-13 14:20');
+      `);
+    }
+
+    const couponsCountRes = await client.query("SELECT COUNT(*) FROM vit_coupons");
+    if (parseInt(couponsCountRes.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO vit_coupons (code, discount, usage, status) VALUES
+        ('VITAP50', '50%', 42, 'active'),
+        ('FREEWEEK', '100%', 118, 'active'),
+        ('WELCOME10', '20%', 5, 'expired');
       `);
     }
     
@@ -1085,4 +1126,134 @@ export async function getDiagnosticsData(): Promise<any> {
       serverTime: new Date().toISOString()
     }
   };
+}
+
+const getMonetizationJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "monetization.json");
+};
+
+async function readMonetization(): Promise<{ subscriptions: any[], coupons: any[] }> {
+  const filePath = getMonetizationJsonPath();
+  try {
+    if (!fs.existsSync(filePath)) {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const defaults = {
+        subscriptions: [
+          { id: "TXN_001", email: "student1@vitap.ac.in", plan: "Monthly Pass", amount: "₹99", status: "success", date: "2026-06-14 10:15" },
+          { id: "TXN_002", email: "student2@vitap.ac.in", plan: "Yearly Pass", amount: "₹499", status: "success", date: "2026-06-14 09:30" },
+          { id: "TXN_003", email: "student3@vitstudent.ac.in", plan: "Monthly Pass", amount: "₹99", status: "failed", date: "2026-06-13 18:45" },
+          { id: "TXN_004", email: "student4@vit.ac.in", plan: "Semester Pass", amount: "₹249", status: "success", date: "2026-06-13 14:20" },
+        ],
+        coupons: [
+          { code: "VITAP50", discount: "50%", usage: 42, status: "active" },
+          { code: "FREEWEEK", discount: "100%", usage: 118, status: "active" },
+          { code: "WELCOME10", discount: "20%", usage: 5, status: "expired" },
+        ]
+      };
+      fs.writeFileSync(filePath, JSON.stringify(defaults, null, 2), "utf8");
+      return defaults;
+    }
+    const data = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (e) {
+    return { subscriptions: [], coupons: [] };
+  }
+}
+
+async function writeMonetization(data: { subscriptions: any[], coupons: any[] }) {
+  const filePath = getMonetizationJsonPath();
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {}
+}
+
+export async function getSubscriptions(): Promise<any[]> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM vit_subscriptions ORDER BY date DESC");
+      return res.rows;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  } else {
+    const data = await readMonetization();
+    return data.subscriptions;
+  }
+}
+
+export async function getCoupons(): Promise<any[]> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM vit_coupons ORDER BY code ASC");
+      return res.rows;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  } else {
+    const data = await readMonetization();
+    return data.coupons;
+  }
+}
+
+export async function addSubscription(txn: any): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_subscriptions (id, email, plan, amount, status, date) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, plan = EXCLUDED.plan, amount = EXCLUDED.amount, status = EXCLUDED.status, date = EXCLUDED.date",
+      [txn.id, txn.email, txn.plan, txn.amount, txn.status, txn.date]
+    );
+  } else {
+    const data = await readMonetization();
+    data.subscriptions = [txn, ...data.subscriptions.filter((s: any) => s.id !== txn.id)];
+    await writeMonetization(data);
+  }
+}
+
+export async function deleteSubscription(id: string): Promise<void> {
+  if (pool) {
+    await pool.query("DELETE FROM vit_subscriptions WHERE id = $1", [id]);
+  } else {
+    const data = await readMonetization();
+    data.subscriptions = data.subscriptions.filter((s: any) => s.id !== id);
+    await writeMonetization(data);
+  }
+}
+
+export async function addCoupon(coupon: any): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_coupons (code, discount, usage, status) VALUES ($1, $2, $3, $4) ON CONFLICT (code) DO UPDATE SET discount = EXCLUDED.discount, usage = EXCLUDED.usage, status = EXCLUDED.status",
+      [coupon.code, coupon.discount, coupon.usage || 0, coupon.status || 'active']
+    );
+  } else {
+    const data = await readMonetization();
+    data.coupons = [coupon, ...data.coupons.filter((c: any) => c.code !== coupon.code)];
+    await writeMonetization(data);
+  }
+}
+
+export async function toggleCoupon(code: string): Promise<void> {
+  if (pool) {
+    await pool.query("UPDATE vit_coupons SET status = CASE WHEN status = 'active' THEN 'expired' ELSE 'active' END WHERE code = $1", [code]);
+  } else {
+    const data = await readMonetization();
+    data.coupons = data.coupons.map((c: any) => c.code === code ? { ...c, status: c.status === "active" ? "expired" : "active" } : c);
+    await writeMonetization(data);
+  }
+}
+
+export async function deleteCoupon(code: string): Promise<void> {
+  if (pool) {
+    await pool.query("DELETE FROM vit_coupons WHERE code = $1", [code]);
+  } else {
+    const data = await readMonetization();
+    data.coupons = data.coupons.filter((c: any) => c.code !== code);
+    await writeMonetization(data);
+  }
 }
