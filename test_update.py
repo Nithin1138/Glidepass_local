@@ -10,8 +10,8 @@ def run_test():
     # We point to the actual latest files just to test the download mechanics
     mock_update_data = {
         "version": "99.9.9",
-        "windows_url": "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad_setup.exe",
-        "mac_url": "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad.dmg"
+        "windows_url": "http://localhost:3000/downloads/LANpad_Windows.zip",
+        "mac_url": "http://localhost:3000/downloads/LANpad_macOS.dmg"
     }
     
     print("Initializing Launcher GUI...")
