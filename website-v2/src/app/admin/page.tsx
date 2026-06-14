@@ -1555,10 +1555,6 @@ export default function GlidePassAdmin() {
       }
       if (view === "versioning") {
         fetchAppVersion();
-        const interval = setInterval(() => {
-          fetchAppVersion();
-        }, 1000);
-        return () => clearInterval(interval);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2064,7 +2060,7 @@ export default function GlidePassAdmin() {
 
   const fetchAppVersion = async () => {
     try {
-      const res = await fetch("/api/ota?file=downloads/version.json");
+      const res = await fetch(`/api/ota?file=downloads/version.json&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         setAppVersionData({
