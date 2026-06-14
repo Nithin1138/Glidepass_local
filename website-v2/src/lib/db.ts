@@ -296,6 +296,38 @@ export async function initDb() {
       `, [JSON.stringify(adminMasterPerms)]);
     }
     
+    // Initialize Monetization Tables
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_licenses (
+        key TEXT PRIMARY KEY,
+        tier TEXT NOT NULL,
+        email TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+
+    const monetizationRes = await client.query("SELECT COUNT(*) FROM vit_settings WHERE key = 'monetization_settings'");
+    if (parseInt(monetizationRes.rows[0].count, 10) === 0) {
+      const defaultSettings = {
+        monetization_enabled: false,
+        plans: [
+          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39" },
+          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99" },
+          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299" },
+          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499" }
+        ]
+      };
+      await client.query("INSERT INTO vit_settings (key, value) VALUES ('monetization_settings', $1)", [JSON.stringify(defaultSettings)]);
+    }
+
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
   } catch (error) {
@@ -1440,4 +1472,151 @@ export async function updateDbRbac(role: string, permissions: any): Promise<void
     data.rbac[role] = permissions;
     await writeUsersRbac(data);
   }
+}
+
+
+// ─── Monetization & License Keys Operations ───
+
+const getMonetizationSettingsPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "monetization_settings.json");
+};
+
+const getLicensesJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "licenses.json");
+};
+
+export async function getMonetizationSettings(): Promise<any> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT value FROM vit_settings WHERE key = 'monetization_settings'");
+    if (res.rows.length > 0) {
+      return JSON.parse(res.rows[0].value);
+    }
+  }
+  const filePath = getMonetizationSettingsPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (e) {}
+  }
+  return {
+    monetization_enabled: false,
+    plans: [
+      { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39" },
+      { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99" },
+      { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299" },
+      { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499" }
+    ]
+  };
+}
+
+export async function setMonetizationSettings(settings: any): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_settings (key, value) VALUES ('monetization_settings', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [JSON.stringify(settings)]
+    );
+  }
+  const filePath = getMonetizationSettingsPath();
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
+}
+
+export async function verifyLicenseKey(key: string): Promise<any> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT * FROM vit_licenses WHERE key = $1", [key]);
+    if (res.rows.length > 0) {
+      const lic = res.rows[0];
+      const expiry = new Date(lic.expires_at).getTime();
+      const now = Date.now();
+      if (now < expiry) {
+        return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+      }
+    }
+    return { valid: false };
+  }
+  const filePath = getLicensesJsonPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      const licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (licenses[key]) {
+        const lic = licenses[key];
+        const expiry = new Date(lic.expires_at).getTime();
+        const now = Date.now();
+        if (now < expiry) {
+          return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+        }
+      }
+    } catch (e) {}
+  }
+  return { valid: false };
+}
+
+export async function generateLicenseKey(tier: string, email: string, durationDays: number): Promise<string> {
+  const generatedKey = `LP-${tier.toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+  
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_licenses (key, tier, email, expires_at) VALUES ($1, $2, $3, $4)",
+      [generatedKey, tier, email, expiresAt]
+    );
+    return generatedKey;
+  }
+  
+  const filePath = getLicensesJsonPath();
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  let licenses: any = {};
+  if (fs.existsSync(filePath)) {
+    try {
+      licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (e) {}
+  }
+  licenses[generatedKey] = { tier, email, expires_at: expiresAt, created_at: new Date().toISOString() };
+  fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2), "utf8");
+  return generatedKey;
+}
+
+export async function deleteLicense(key: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("DELETE FROM vit_licenses WHERE key = $1", [key]);
+    return;
+  }
+  const filePath = getLicensesJsonPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      const licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      delete licenses[key];
+      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2), "utf8");
+    } catch (e) {}
+  }
+}
+
+export async function getAllLicenses(): Promise<any[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT * FROM vit_licenses ORDER BY created_at DESC");
+    return res.rows;
+  }
+  const filePath = getLicensesJsonPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      const licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      return Object.entries(licenses).map(([key, value]: [string, any]) => ({
+        key,
+        ...value
+      })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } catch (e) {}
+  }
+  return [];
 }

@@ -237,16 +237,24 @@ class LANpadLauncher:
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
         self.bypass_view = tk.Frame(root, bg=self.BG)
+        self.lock_view   = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
+        self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
         self._build_bypass()
+        self._build_lock()
 
         self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
-        self.show_view("main")
+        
+        # Boot to lock screen first to check license status
+        self.show_view("lock")
+        self.root.after(200, self.check_monetization_status)
+        self.start_license_loop()
+        
         self.root.after(2000, self.check_for_updates)
         self._poll_tunnel()
 
@@ -419,6 +427,32 @@ class LANpadLauncher:
                 self._update_display()
                 
         def click_tunnel(e):
+            # Enforce Basic plan restrictions
+            license_path = os.path.expanduser("~/.lanpad_license.json")
+            tier = "Basic"
+            if os.path.exists(license_path):
+                try:
+                    import json
+                    with open(license_path, "r", encoding="utf-8") as f:
+                        lic_data = json.load(f)
+                        tier = lic_data.get("tier", "Basic")
+                except Exception:
+                    pass
+            try:
+                import urllib.request
+                import json
+                req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                with urllib.request.urlopen(req, timeout=2) as resp:
+                    status_data = json.loads(resp.read().decode("utf-8"))
+                    if not status_data.get("monetization_enabled", False):
+                        tier = "DEVELOPER"
+            except Exception:
+                pass
+
+            if tier == "Basic":
+                messagebox.showwarning("Upgrade Required", "AP Isolation Bypass (College Wi-Fi Tunnel Mode) is only available on Pro, Max, and Ultra plans. Please upgrade your package.")
+                return
+
             if self._active_tab != "tunnel":
                 self._active_tab = "tunnel"
                 self._draw_tabs()
@@ -1007,9 +1041,189 @@ class LANpadLauncher:
     def show_view(self, name: str):
         if name == "main":
             self.main_view.tkraise()
+        elif name == "lock":
+            self.lock_view.tkraise()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
+
+    # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
+
+    def _build_lock(self):
+        v = self.lock_view
+        W, H = 400, 760
+        
+        # Logo placeholder
+        logo_y = 120
+        self._lock_logo_cv = tk.Canvas(v, width=80, height=80, bg=self.BG, highlightthickness=0)
+        self._lock_logo_cv.place(x=160, y=logo_y)
+        
+        try:
+            from PIL import Image, ImageTk
+            logo_img = Image.open(resource_path("logo.png")).resize((80, 80), Image.Resampling.LANCZOS)
+            self._lock_logo_tk = ImageTk.PhotoImage(logo_img)
+            self._lock_logo_cv.create_image(40, 40, image=self._lock_logo_tk)
+        except Exception:
+            self._lock_logo_cv.create_text(40, 40, text="🔒", fill=self.WHITE, font=(self.FD, 32, "bold"))
+            
+        # Title
+        title_lbl = tk.Label(v, text="LANpad Activation", fg=self.WHITE, bg=self.BG, font=(self.FD, 22, "bold"))
+        title_lbl.place(x=24, y=logo_y + 110, width=W - 48)
+        
+        # Subtitle
+        sub_lbl = tk.Label(v, text="Bypass campus peer-to-peer restrictions and\nAP Isolation instantly.", fg=self.DIM, bg=self.BG, font=(self.FU, 12))
+        sub_lbl.place(x=24, y=logo_y + 155, width=W - 48)
+        
+        # Key Input Label
+        key_lbl = tk.Label(v, text="ACTIVATION KEY", fg=self.DIM, bg=self.BG, font=(self.FU, 9, "bold"))
+        key_lbl.place(x=48, y=logo_y + 230)
+        
+        # Input Entry
+        self.key_entry = tk.Entry(v, bg=self.BG2, fg=self.WHITE, insertbackground=self.WHITE, font=(self.FM, 12), highlightthickness=1, highlightbackground=self.BORDER, highlightcolor=self.AMBER, bd=0)
+        self.key_entry.place(x=48, y=logo_y + 255, width=W - 96, height=42)
+        
+        # Status Label
+        self.lock_status_lbl = tk.Label(v, text="", fg=self.RED, bg=self.BG, font=(self.FU, 10))
+        self.lock_status_lbl.place(x=24, y=logo_y + 310, width=W - 48)
+        
+        # Action Handler
+        def do_activation():
+            key = self.key_entry.get().strip()
+            if not key:
+                self.lock_status_lbl.config(text="Please enter an activation key", fg=self.RED)
+                return
+            self.lock_status_lbl.config(text="Verifying activation key...", fg=self.DIM)
+            self.root.update()
+            
+            success, tier = self.verify_key_online(key)
+            if success:
+                self.lock_status_lbl.config(text="Activation successful!", fg=self.GREEN)
+                license_path = os.path.expanduser("~/.lanpad_license.json")
+                try:
+                    import json
+                    with open(license_path, "w", encoding="utf-8") as f:
+                        json.dump({"key": key, "tier": tier, "last_checked": time.time()}, f)
+                except Exception:
+                    pass
+                self.root.after(1000, lambda: self.show_view("main"))
+            else:
+                self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
+
+        # Button
+        act_btn = tk.Button(v, text="ACTIVATE LANPAD", bg=self.AMBER, fg=self.BG, font=(self.FU, 11, "bold"), bd=0, highlightthickness=0, command=do_activation, cursor="hand2")
+        act_btn.place(x=48, y=logo_y + 350, width=W - 96, height=46)
+        
+        # Web Link
+        def open_pricing():
+            import webbrowser
+            webbrowser.open("https://lanpad.vercel.app/pricing")
+            
+        get_btn = tk.Button(v, text="Get Activation Key", fg=self.DIM, activeforeground=self.WHITE, bg=self.BG, activebackground=self.BG, font=(self.FU, 11, "underline"), bd=0, highlightthickness=0, command=open_pricing, cursor="hand2")
+        get_btn.place(x=48, y=logo_y + 410, width=W - 96, height=30)
+
+    def check_monetization_status(self):
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                monetization_enabled = data.get("monetization_enabled", False)
+        except Exception as e:
+            print(f"[monetization] Status fetch failed: {e}. Defaulting to OFF.")
+            monetization_enabled = False
+            
+        if not monetization_enabled:
+            self.show_view("main")
+            return
+            
+        license_path = os.path.expanduser("~/.lanpad_license.json")
+        if os.path.exists(license_path):
+            try:
+                import json
+                with open(license_path, "r", encoding="utf-8") as f:
+                    lic = json.load(f)
+                key = lic.get("key")
+                tier = lic.get("tier")
+                last_checked = lic.get("last_checked", 0)
+                
+                # Trust key offline if checked within 24 hours
+                if time.time() - last_checked < 86400:
+                    print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
+                    self.show_view("main")
+                    return
+                    
+                success, new_tier = self.verify_key_online(key)
+                if success:
+                    print(f"[monetization] Key verified online ({new_tier}).")
+                    with open(license_path, "w", encoding="utf-8") as f:
+                        json.dump({"key": key, "tier": new_tier, "last_checked": time.time()}, f)
+                    self.show_view("main")
+                    return
+            except Exception as e:
+                print(f"[monetization] License check error: {e}")
+                
+        self.show_view("lock")
+
+    def verify_key_online(self, key):
+        try:
+            import urllib.request
+            import json
+            payload = json.dumps({"key": key}).encode("utf-8")
+            req = urllib.request.Request(
+                "https://lanpad.vercel.app/api/monetization/verify",
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                res = json.loads(resp.read().decode("utf-8"))
+                if res.get("valid", False):
+                    return True, res.get("tier", "Basic")
+        except Exception as e:
+            print(f"[monetization] Verify online error: {e}")
+        return False, "Basic"
+
+    def start_license_loop(self):
+        self.root.after(3600000, self.periodic_license_check)
+        
+    def periodic_license_check(self):
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                monetization_enabled = data.get("monetization_enabled", False)
+        except Exception:
+            monetization_enabled = False
+            
+        if monetization_enabled:
+            license_path = os.path.expanduser("~/.lanpad_license.json")
+            if os.path.exists(license_path):
+                try:
+                    import json
+                    with open(license_path, "r", encoding="utf-8") as f:
+                        lic = json.load(f)
+                    key = lic.get("key")
+                    
+                    success, tier = self.verify_key_online(key)
+                    if success:
+                        with open(license_path, "w", encoding="utf-8") as f:
+                            json.dump({"key": key, "tier": tier, "last_checked": time.time()}, f)
+                    else:
+                        print("[monetization] Key expired or invalid. Locking app.")
+                        try:
+                            os.remove(license_path)
+                        except Exception:
+                            pass
+                        self.show_view("lock")
+                except Exception:
+                    self.show_view("lock")
+            else:
+                self.show_view("lock")
+                
+        self.root.after(3600000, self.periodic_license_check)
 
     # ── Network helpers ───────────────────────────────────────────────────────
 

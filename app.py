@@ -122,6 +122,29 @@ def _read_custom_website_url():
             return None
     return None
 
+def get_license_tier():
+    # If monetization is disabled, we default to DEVELOPER (all features unlocked)
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if not data.get("monetization_enabled", False):
+                return "DEVELOPER"
+    except Exception:
+        pass
+
+    license_path = os.path.expanduser("~/.lanpad_license.json")
+    if os.path.exists(license_path):
+        try:
+            with open(license_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("tier", "Basic")
+        except Exception:
+            pass
+    return "Basic" 
+
 
 def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
@@ -671,6 +694,19 @@ def perform_typing(text, wpm, is_coding=False):
 
 @app.websocket("/ws/connect")
 async def websocket_endpoint(websocket: WebSocket):
+    tier = get_license_tier()
+    max_sessions = 999
+    if tier == "Basic":
+        max_sessions = 1
+    elif tier == "Pro":
+        max_sessions = 2
+        
+    if len(active_connections) >= max_sessions:
+        await websocket.accept()
+        await websocket.send_text(json.dumps({"error": f"Session limit exceeded. {tier} tier allows max {max_sessions} active session(s). Please upgrade."}))
+        await websocket.close()
+        return
+
     await websocket.accept()
     active_connections.append(websocket)
     
@@ -722,6 +758,14 @@ async def paste(data: dict):
             wpm = int(data.get("wpm", 40))
         except (ValueError, TypeError):
             wpm = 40
+        
+        # Enforce basic WPM cap
+        try:
+            tier = get_license_tier()
+            if tier == "Basic" and wpm > 150:
+                wpm = 150
+        except Exception:
+            pass
         is_coding = bool(data.get("is_coding", False))
     except Exception as e:
         return {"status": "error", "message": f"Data parsing error: {str(e)}"}
