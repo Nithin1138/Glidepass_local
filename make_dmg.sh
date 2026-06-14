@@ -37,9 +37,13 @@ sleep 2 # Give it a second to settle
 
 # 5. Copy the app and add a link to /Applications
 echo "🚚 Copying files to $MOUNT_DIR..."
-# Note: cp -R needs the source to be the bundle
-cp -R "$APP_BUNDLE" "$MOUNT_DIR/"
+# Use ditto to copy to preserve resource forks, permissions, and code signatures perfectly
+ditto "$APP_BUNDLE" "$MOUNT_DIR/$APP_BUNDLE"
 ln -s /Applications "$MOUNT_DIR/Applications"
+
+# Codesign the copy inside the DMG to ensure its signature remains intact
+echo "✍️ Codesigning the bundle inside the DMG..."
+codesign --force --deep --sign - "$MOUNT_DIR/$APP_BUNDLE"
 
 # 6. Optional: You could add a custom icon or background here if available
 # cp logo.png "$MOUNT_DIR/.background.png"

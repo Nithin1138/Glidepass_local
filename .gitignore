@@ -46,3 +46,4 @@ dist/
 !website-v2/public/downloads/*.dmg
 LANpad.app/
 tmp.dmg
+.vercel

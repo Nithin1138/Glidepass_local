@@ -1,0 +1,5 @@
+# Exclude large binary files from Vercel deployment
+# DMG files should be hosted on GitHub Releases, not Vercel
+public/downloads/*.dmg
+public/downloads/*.zip
+public/downloads/*.exe

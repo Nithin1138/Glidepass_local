@@ -33,5 +33,16 @@ else
     exit 1
 fi
 
-# 4. Optional: Open the folder
+# 4. Ad-hoc Sign the Application Bundle to avoid SIGKILL (Code Signature Invalid) crashes on Apple Silicon
+echo "✍️ Codesigning LANpad.app..."
+codesign --force --deep --sign - LANpad.app
+if [ $? -eq 0 ]; then
+    echo "✅ Codesigning successful!"
+else
+    echo "❌ Codesigning failed!"
+    exit 1
+fi
+
+# 5. Optional: Open the folder
 open .
+

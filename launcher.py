@@ -179,6 +179,9 @@ class LANpadLauncher:
         self.root.configure(bg="#060606")
         self.root.resizable(False, False)
         self.process = None
+        self._tunnel_process = None
+        self._tunnel_url = None
+        self._active_tab = "local"
 
         # Set proper app icon (title bar + Dock) so the window no
         # longer shows the default Tkinter feather.
@@ -240,12 +243,12 @@ class LANpadLauncher:
         self._build_main()
         self._build_bypass()
 
-        self.check_disclaimer()
         self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
         self.show_view("main")
         self.root.after(2000, self.check_for_updates)
+        self._poll_tunnel()
 
     # ── Shared drawing utilities ──────────────────────────────────────────────
 
@@ -393,49 +396,343 @@ class LANpadLauncher:
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
                  anchor="w", justify="left").place(x=24, y=136)
 
-        tk.Label(v,
-                 text="Scan in mobile:",
-                 font=(self.FU, 10, "bold"), bg=self.BG, fg=self.WHITE,
-                 anchor="w").place(x=24, y=192)
+        # Tab selector frame
+        self._tab_frame = tk.Frame(v, bg=self.BG)
+        self._tab_frame.place(x=24, y=184, width=W - 48, height=42)
+        
+        # Local Tab
+        self._tab_local = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=40, bg=self.BG, highlightthickness=0)
+        self._tab_local.pack(side="left", padx=(0, 4))
+        
+        # Tunnel Tab
+        self._tab_tunnel = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=40, bg=self.BG, highlightthickness=0)
+        self._tab_tunnel.pack(side="left")
+
+        def click_local(e):
+            if self._active_tab != "local":
+                self._active_tab = "local"
+                self._draw_tabs()
+                self._update_display()
+                
+        def click_tunnel(e):
+            if self._active_tab != "tunnel":
+                self._active_tab = "tunnel"
+                self._draw_tabs()
+                self._update_display()
+                
+        self._tab_local.bind("<Button-1>", click_local)
+        self._tab_tunnel.bind("<Button-1>", click_tunnel)
+        self._tab_local.config(cursor="hand2")
+        self._tab_tunnel.config(cursor="hand2")
 
         # ── QR card ──────────────────────────────────────────────────────────
-        self._qr_cv = tk.Canvas(v, width=W - 48, height=210,
+        self._qr_cv = tk.Canvas(v, width=W - 48, height=240,
                                  bg=self.BG, highlightthickness=0)
-        self._qr_cv.place(x=24, y=228)
+        self._qr_cv.place(x=24, y=234)
         self._draw_qr_empty()
+        self._draw_tabs()
 
         # ── IP pill ──────────────────────────────────────────────────────────
-        self._ip_cv = tk.Canvas(v, width=W - 48, height=34,
+        self._ip_cv = tk.Canvas(v, width=W - 48, height=50,
                                  bg=self.BG, highlightthickness=0)
-        self._ip_cv.place(x=24, y=448)
+        self._ip_cv.place(x=24, y=482)
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
 
         # ── Info row (Port / Protocol / State) ───────────────────────────────
         cw = (W - 48 - 12) // 3
-        info_y = 505
+        info_y = 542
         info_specs = [("Port", "8000"), ("Protocol", "HTTP"), ("State", "Off")]
         self._info_cards = {}
         for i, (lbl, default) in enumerate(info_specs):
-            cv = tk.Canvas(v, width=cw, height=64, bg=self.BG, highlightthickness=0)
+            cv = tk.Canvas(v, width=cw, height=70, bg=self.BG, highlightthickness=0)
             cv.place(x=24 + i * (cw + 6), y=info_y)
-            rounded_rect(cv, 0, 0, cw, 64, r=12, fill=self.BG2, outline=self.BORDER)
+            rounded_rect(cv, 0, 0, cw, 70, r=12, fill=self.BG2, outline=self.BORDER)
             cv.create_text(cw // 2, 20, text=lbl.upper(),
-                           font=(self.FU, 8, "bold"), fill=self.DIM)
-            tid = cv.create_text(cw // 2, 44, text=default,
-                                 font=(self.FM, 14, "bold"), fill=self.DIM)
+                           font=(self.FU, 9, "bold"), fill=self.DIM)
+            tid = cv.create_text(cw // 2, 48, text=default,
+                                 font=(self.FM, 16, "bold"), fill=self.DIM)
             self._info_cards[lbl] = (cv, tid)
 
         # ── Action button ────────────────────────────────────────────────────
-        self._btn_cv = tk.Canvas(v, width=W - 48, height=54,
+        self._btn_cv = tk.Canvas(v, width=W - 48, height=58,
                                   bg=self.BG, highlightthickness=0)
-        self._btn_cv.place(x=24, y=590)
+        self._btn_cv.place(x=24, y=626)
         self._draw_main_btn(active=False)
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
                  font=(self.FU, 9), bg=self.BG, fg=self.DIM).place(
                  x=0, y=726, relwidth=1, anchor="nw")
+
+    def _draw_tabs(self):
+        # Local tab
+        c_local = self._tab_local
+        c_local.delete("all")
+        w_l = int(c_local["width"])
+        h_l = int(c_local["height"])
+        
+        if self._active_tab == "local":
+            rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG2, outline=self.GREEN)
+            c_local.create_text(w_l // 2, h_l // 2, text="Local (Home Wi-Fi)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+        else:
+            rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG, outline="#222222")
+            c_local.create_text(w_l // 2, h_l // 2, text="Local (Home Wi-Fi)", fill=self.DIM, font=(self.FU, 12))
+            
+        # Tunnel tab
+        c_tunnel = self._tab_tunnel
+        c_tunnel.delete("all")
+        w_t = int(c_tunnel["width"])
+        h_t = int(c_tunnel["height"])
+        
+        if self._active_tab == "tunnel":
+            rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG2, outline=self.GREEN)
+            c_tunnel.create_text(w_t // 2, h_t // 2, text="College (Tunnel)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+        else:
+            rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG, outline="#222222")
+            c_tunnel.create_text(w_t // 2, h_t // 2, text="College (Tunnel)", fill=self.DIM, font=(self.FU, 12))
+
+    def _draw_qr_loading(self):
+        c = self._qr_cv
+        c.delete("all")
+        W, H = int(c["width"]), int(c["height"])
+        rounded_rect(c, 0, 0, W, H, r=16, fill=self.BG2, outline=self.BORDER)
+        cx, cy = W // 2, H // 2
+        c.create_text(cx, cy - 14, text="Establishing Tunnel...", font=(self.FU, 16, "bold"), fill=self.ORANGE)
+        c.create_text(cx, cy + 14, text="Fetching public secure link over Port 443",
+                      font=(self.FU, 11), fill=self.DIM)
+
+    def _show_tunnel_status(self, text):
+        c = self._qr_cv
+        c.delete("all")
+        W, H = int(c["width"]), int(c["height"])
+        rounded_rect(c, 0, 0, W, H, r=16, fill=self.BG2, outline=self.BORDER)
+        c.create_text(W//2, H//2, text=text, font=(self.FU, 12), fill=self.DIM)
+
+    def _poll_tunnel(self):
+        """Called every second — refreshes the tunnel tab if a URL just became available."""
+        if self._server_on and self._active_tab == "tunnel" and self._tunnel_url:
+            self._update_display()
+        self.root.after(1000, self._poll_tunnel)
+
+    def _update_display(self):
+        if not self._server_on:
+            self._ip_text = "http://0.0.0.0:8000"
+            self._draw_ip(False)
+            self._draw_qr_empty()
+            return
+
+        if self._active_tab == "local":
+            ip = self.get_local_ip()
+            self._ip_text = f"http://{ip}:8000"
+            self._draw_ip(True)
+            try:
+                from app import SESSION_TOKEN
+            except ImportError:
+                SESSION_TOKEN = ""
+            url = f"http://{ip}:8000"
+            if SESSION_TOKEN:
+                url = f"{url}?sid={SESSION_TOKEN}"
+            self.update_qr_code(url)
+        else:  # tunnel
+            if self._tunnel_url:
+                self._ip_text = self._tunnel_url
+                self._draw_ip(True)
+                try:
+                    from app import SESSION_TOKEN
+                except ImportError:
+                    SESSION_TOKEN = ""
+                url = self._tunnel_url
+                if SESSION_TOKEN:
+                    url = f"{url}?sid={SESSION_TOKEN}"
+                self.update_qr_code(url)
+            else:
+                self._ip_text = "Connecting to tunnel..."
+                self._draw_ip(True)
+                self._draw_qr_loading()
+
+    def start_tunnel(self):
+        """Starts the tunnel fallback in a background thread."""
+        if self._tunnel_process is not None:
+            return  # already running
+
+        self._tunnel_url = None
+        self.root.after(0, self._update_display)
+
+        def shorten_url(url):
+            try:
+                import urllib.request
+                import urllib.parse
+                import json
+                api_url = f"https://is.gd/create.php?format=json&url={urllib.parse.quote(url)}"
+                req = urllib.request.Request(
+                    api_url,
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=2) as response:
+                    data = json.loads(response.read().decode())
+                    if "shorturl" in data:
+                        return data["shorturl"]
+            except Exception as e:
+                print(f"[lanpad] URL shortening failed: {e}")
+            return url
+
+        def _get_cloudflared_bin():
+            """Return path to cloudflared binary, downloading it if needed."""
+            import shutil, platform, os, stat, tarfile, io, sys
+
+            # 1. Already on PATH?
+            system_bin = shutil.which("cloudflared")
+            if system_bin:
+                return system_bin
+
+            # 2. Cached copy?
+            cache_dir = os.path.expanduser("~/.lanpad")
+            os.makedirs(cache_dir, exist_ok=True)
+            cached = os.path.join(cache_dir, "cloudflared")
+            if os.path.isfile(cached) and os.access(cached, os.X_OK):
+                return cached
+
+            # 3. Download from GitHub releases
+            print("[lanpad] Downloading cloudflared binary (one-time setup)...")
+            self.root.after(0, lambda: self._show_tunnel_status("Downloading tunnel binary…"))
+
+            machine = platform.machine().lower()
+            arch = "arm64" if ("arm" in machine or "aarch" in machine) else "amd64"
+            if sys.platform.startswith("win"):
+                bin_url = f"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-{arch}.exe"
+                dest = cached + ".exe"
+            else:
+                bin_url = f"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-{arch}.tgz"
+                if sys.platform.startswith("linux"):
+                    bin_url = f"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-{arch}.tgz"
+                dest = cached
+
+            try:
+                import urllib.request
+                req = urllib.request.Request(bin_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = resp.read()
+
+                if bin_url.endswith(".tgz"):
+                    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+                        member = next((m for m in tar.getmembers() if "cloudflared" in m.name and not m.isdir()), None)
+                        if member is None: raise Exception("binary not found")
+                        with tar.extractfile(member) as src, open(dest, "wb") as out:
+                            out.write(src.read())
+                else:
+                    with open(dest, "wb") as out:
+                        out.write(data)
+
+                os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+                return dest
+            except Exception as dl_err:
+                print(f"[lanpad] cloudflared download failed: {dl_err}")
+                return None
+
+        def _run():
+            import subprocess
+            import re
+            import sys
+            print("[lanpad] Starting tunnel fallback...")
+
+            cloudflared_bin = _get_cloudflared_bin()
+
+            # ── Cloudflare Quick Tunnel ──────────────────────────────────────────
+            if cloudflared_bin:
+                try:
+                    cmd = [cloudflared_bin, "tunnel", "--url", "http://localhost:8000"]
+                    proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1,
+                    )
+                    self._tunnel_process = proc
+                    url_found = False
+
+                    def _read_lines():
+                        nonlocal url_found
+                        try:
+                            for line in proc.stdout:
+                                if not self._tunnel_process: break
+                                sys.stdout.write(line)
+                                sys.stdout.flush()
+                                match = re.search(r"https://[a-zA-Z0-9\-]+\.trycloudflare\.com", line)
+                                if match:
+                                    raw_url = match.group(0)
+                                    print(f"\n[lanpad] Cloudflare URL: {raw_url}")
+                                    self._tunnel_url = shorten_url(raw_url)
+                                    print(f"[lanpad] Tunnel ready: {self._tunnel_url}")
+                                    self.root.after(0, self._update_display)
+                                    url_found = True
+                                    return
+                        except Exception as _e:
+                            print(f"[lanpad] _read_lines error: {_e}")
+
+                    import threading as _thr
+                    reader = _thr.Thread(target=_read_lines, daemon=True)
+                    reader.start()
+                    reader.join(timeout=30)
+
+                    if not url_found: raise Exception("Cloudflare Tunnel timed out")
+                except Exception as e:
+                    print(f"\n[lanpad] Cloudflare Tunnel failed: {e}. Falling back to Pinggy...")
+                    self.stop_tunnel()
+            else:
+                print("[lanpad] cloudflared unavailable — using Pinggy (SSH) tunnel...")
+
+            # ── Pinggy SSH fallback ──
+            if not self._tunnel_url:
+                try:
+                    cmd = ["ssh", "-tt", "-p", "443", "-o", "StrictHostKeyChecking=no",
+                           "-o", "ConnectTimeout=10", "-R", "80:localhost:8000", "a.pinggy.io"]
+                    proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1
+                    )
+                    self._tunnel_process = proc
+                    accumulated = ""
+                    while True:
+                        if not self._tunnel_process: break
+                        char = proc.stdout.read(1)
+                        if not char: break
+                        accumulated += char
+                        cleaned = re.sub(r"[\s\r\n\│]+", "", accumulated)
+                        match = re.search(r"https://[a-zA-Z0-9\-]+\.a\.pinggy\.(io|link)", cleaned)
+                        if match:
+                            raw_url = match.group(0)
+                            print(f"\n[lanpad] Pinggy HTTPS URL found: {raw_url}")
+                            self._tunnel_url = shorten_url(raw_url)
+                            print(f"[lanpad] Shortened URL: {self._tunnel_url}")
+                            self.root.after(0, self._update_display)
+                            url_found = True
+                            break
+                except Exception as p_err:
+                    print(f"\n[lanpad] Pinggy fallback failed: {p_err}")
+                    self.stop_tunnel()
+
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
+
+    def stop_tunnel(self):
+        """Terminates the active SSH tunnel fallback."""
+        if self._tunnel_process is not None:
+            try:
+                self._tunnel_process.terminate()
+                self._tunnel_process.wait(timeout=1)
+            except Exception:
+                try:
+                    self._tunnel_process.kill()
+                except Exception:
+                    pass
+            self._tunnel_process = None
+        self._tunnel_url = None
+        self.root.after(0, self._update_display)
 
     # ── Main-view canvas draw helpers ─────────────────────────────────────────
 
@@ -445,9 +742,9 @@ class LANpadLauncher:
         W, H = int(c["width"]), int(c["height"])
         rounded_rect(c, 0, 0, W, H, r=16, fill=self.BG2, outline=self.BORDER)
         cx, cy = W // 2, H // 2
-        c.create_text(cx, cy - 10, text="QR Code", font=(self.FU, 16, "bold"), fill=self.DIM)
-        c.create_text(cx, cy + 15, text="Start the server to generate",
-                      font=(self.FU, 12), fill=self.DIM)
+        c.create_text(cx, cy - 14, text="QR Code", font=(self.FU, 18, "bold"), fill=self.DIM)
+        c.create_text(cx, cy + 14, text="Start the server to generate",
+                      font=(self.FU, 13), fill=self.DIM)
 
     def _draw_qr_active(self, img: Image.Image):
         c = self._qr_cv
@@ -461,22 +758,44 @@ class LANpadLauncher:
         c = self._ip_cv
         c.delete("all")
         W = int(c["width"])
-        rounded_rect(c, 0, 2, W, 32, r=10, fill=self.BG2, outline=self.BORDER)
-        c.create_text(W // 2, 17, text=self._ip_text,
-                      font=(self.FM, 12), fill=self.WHITE if active else self.DIM)
+        H = int(c["height"])
+        rounded_rect(c, 0, 2, W, H - 2, r=10, fill=self.BG2, outline=self.BORDER)
+
+        text = self._ip_text
+        color = self.WHITE if active else self.DIM
+
+        # For very long URLs (tunnel links), show on two lines
+        if len(text) > 38:
+            # Split at the natural domain/path boundary for readability
+            mid = len(text) // 2
+            # Find a good split point around the middle (prefer split after '/')
+            best = mid
+            for i in range(mid - 8, mid + 12):
+                if 0 < i < len(text) and text[i] in ('/', '-', '.'):
+                    best = i + 1
+                    break
+            line1 = text[:best]
+            line2 = text[best:]
+            c.create_text(W // 2, 16, text=line1,
+                          font=(self.FM, 11), fill=color, anchor="center")
+            c.create_text(W // 2, 34, text=line2,
+                          font=(self.FM, 11), fill=color, anchor="center")
+        else:
+            c.create_text(W // 2, H // 2, text=text,
+                          font=(self.FM, 13), fill=color, anchor="center")
 
     def _draw_main_btn(self, active: bool):
         c = self._btn_cv
         c.delete("all")
         W = int(c["width"])
         if active:
-            rounded_rect(c, 0, 1, W, 51, r=12, fill=self.RED, outline="")
-            c.create_text(W // 2, 26, text="Stop Server",
-                          fill=self.WHITE, font=(self.FU, 16, "bold"))
+            rounded_rect(c, 0, 1, W, 55, r=12, fill=self.RED, outline="")
+            c.create_text(W // 2, 28, text="Stop Server",
+                          fill=self.WHITE, font=(self.FU, 17, "bold"))
         else:
-            rounded_rect(c, 0, 1, W, 51, r=12, fill=self.GREEN, outline="")
-            c.create_text(W // 2, 26, text="Start Server",
-                          fill=self.WHITE, font=(self.FU, 16, "bold"))
+            rounded_rect(c, 0, 1, W, 55, r=12, fill=self.GREEN, outline="")
+            c.create_text(W // 2, 28, text="Start Server",
+                          fill=self.WHITE, font=(self.FU, 17, "bold"))
         c.bind("<Button-1>", lambda e: self.toggle_server())
         c.config(cursor="hand2")
 
@@ -777,17 +1096,17 @@ class LANpadLauncher:
                 ips.append(ip)
         return ips
 
-    def update_qr_code(self, ip: str):
+    def update_qr_code(self, url: str):
         def _fetch():
             try:
                 # Build the QR locally (offline-friendly) – the local
                 # ``qrcode`` library is bundled with the Windows build.
-                img = _generate_qr_image(f"http://{ip}:8000", size=200)
+                img = _generate_qr_image(url, size=220)
                 img = ImageOps.expand(img, border=10, fill="white")
-                img = img.resize((186, 186), Image.Resampling.LANCZOS)
+                img = img.resize((210, 210), Image.Resampling.LANCZOS)
                 self.root.after(0, self._draw_qr_active, img)
-            except Exception:
-                pass
+            except Exception as qr_err:
+                print(f"[lanpad] QR generation failed: {qr_err}")
         import threading
         threading.Thread(target=_fetch, daemon=True).start()
 
@@ -839,6 +1158,9 @@ class LANpadLauncher:
         cv, tid = self._info_cards["State"]
         cv.itemconfig(tid, text="Live", fill=self.GREEN)
 
+        # Start background SSH tunnel fallback
+        self.start_tunnel()
+
         ip = self.get_local_ip()
         # If we detected more than one LAN IP, show the primary one
         # in the pill but log all candidates so the user can debug
@@ -847,9 +1169,9 @@ class LANpadLauncher:
         if len(all_ips) > 1:
             print(f"[lanpad] Detected LAN IPs: {all_ips}")
             print(f"[lanpad] Using primary: {ip}")
-        self._ip_text = f"http://{ip}:8000"
-        self._draw_ip(True)
-        self.root.after(200, lambda: self.update_qr_code(ip))
+        
+        self._draw_tabs()
+        self._update_display()
         if self.root.state() != "withdrawn":
             self.root.after(100, self.show_window)
         # If the user has multiple network interfaces, draw a small
@@ -871,6 +1193,7 @@ class LANpadLauncher:
                 pass
 
     def stop_server(self):
+        self.stop_tunnel()
         if self.process == "EXTERNAL":
             try:
                 urllib.request.urlopen("http://127.0.0.1:8000/shutdown", timeout=1)
@@ -903,6 +1226,7 @@ class LANpadLauncher:
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
         self._draw_qr_empty()
+        self._draw_tabs()
         if self.root.state() != "withdrawn":
             self.root.after(100, self.show_window)
 
@@ -1129,6 +1453,7 @@ rm -f "{download_path}"
         threading.Thread(target=_download_and_install, daemon=True).start()
 
     def on_quit(self, *args):
+        self.stop_tunnel()
         # Handle Command+Q by killing the entire app (parent menubar + self)
         try:
             import os, signal
@@ -1141,101 +1466,7 @@ rm -f "{download_path}"
         # The user requested that clicking the cross ('X') should hide the dashboard and let the app run in the background.
         self.root.withdraw()
 
-    def check_disclaimer(self):
-        settings_path = os.path.expanduser("~/.lanpad_settings.json")
-        accepted = False
-        if os.path.exists(settings_path):
-            try:
-                with open(settings_path, "r") as f:
-                    data = json.load(f)
-                    accepted = data.get("disclaimer_accepted", False)
-            except Exception:
-                pass
-        
-        if accepted:
-            return
 
-        # Show beautiful Tkinter Toplevel Disclaimer Dialog
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Disclaimer")
-        dialog.geometry("360x300")
-        dialog.configure(bg=self.BG)
-        dialog.resizable(False, False)
-        dialog.transient(self.root)
-        dialog.grab_set()
-
-        # Center dialog relative to main launcher window
-        self.root.update_idletasks()
-        rx = self.root.winfo_x()
-        ry = self.root.winfo_y()
-        dialog.geometry(f"360x300+{rx+20}+{ry+150}")
-
-        # Remove window decorations on macOS/Windows if possible, or just style it
-        dialog.configure(padx=16, pady=16)
-
-        title_lbl = tk.Label(dialog, text="Terms of Service & Disclaimer", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE)
-        title_lbl.pack(anchor="w", pady=(0, 12))
-
-        desc_text = (
-            "LANpad is a productivity utility designed for automation and local clipboard sync. "
-            "By checking the box below, you agree to use this software in compliance with your "
-            "educational institution's rules and academic integrity policies.\n\n"
-            "The developers assume no liability for misuse."
-        )
-        desc_lbl = tk.Label(dialog, text=desc_text, font=(self.FU, 10), bg=self.BG, fg=self.DIM, justify="left", wraplength=320)
-        desc_lbl.pack(anchor="w", pady=(0, 20))
-
-        # Checkbox variable
-        var = tk.BooleanVar(value=False)
-
-        def toggle_btn():
-            if var.get():
-                agree_btn.config(state="normal", bg="#48BB78", activebackground="#38A169")
-            else:
-                agree_btn.config(state="disabled", bg=self.BG2, activebackground=self.BG2)
-
-        cb = tk.Checkbutton(
-            dialog, 
-            text="I agree that LANpad is a productivity utility and I will use it in compliance with my institution's rules.",
-            variable=var, 
-            onvalue=True, 
-            offvalue=False,
-            bg=self.BG, 
-            fg=self.WHITE,
-            activebackground=self.BG, 
-            activeforeground=self.WHITE,
-            selectcolor=self.BG,
-            font=(self.FU, 9),
-            justify="left",
-            wraplength=300,
-            command=toggle_btn
-        )
-        cb.pack(anchor="w", pady=(0, 20))
-
-        def on_agree():
-            try:
-                with open(settings_path, "w") as f:
-                    json.dump({"disclaimer_accepted": True}, f)
-            except Exception:
-                pass
-            dialog.destroy()
-
-        agree_btn = tk.Button(
-            dialog,
-            text="Agree & Continue",
-            font=(self.FU, 11, "bold"),
-            bg=self.BG2,
-            fg=self.WHITE,
-            activeforeground=self.WHITE,
-            activebackground=self.BG2,
-            bd=0,
-            highlightthickness=0,
-            padx=16,
-            pady=8,
-            state="disabled",
-            command=on_agree
-        )
-        agree_btn.pack(fill="x", side="bottom")
 
 
 

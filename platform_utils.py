@@ -53,7 +53,7 @@ def user_data_dir() -> str:
     return os.path.expanduser("~/.lanpad")
 
 
-VERSION = "1.5.1"
+VERSION = "1.5.5"
 
 
 

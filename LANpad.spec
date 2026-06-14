@@ -84,8 +84,8 @@ app = BUNDLE(
     icon='LANpad.icns',
     bundle_identifier='com.lanpad.macos',
     info_plist={
-        'CFBundleShortVersionString': '1.5.0',
-        'CFBundleVersion': '1.5.0',
+        'CFBundleShortVersionString': '1.5.5',
+        'CFBundleVersion': '1.5.5',
         'NSHighResolutionCapable': True,
         'CFBundleURLTypes': [
             {
