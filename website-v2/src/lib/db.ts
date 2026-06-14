@@ -137,6 +137,33 @@ export async function initDb() {
     await client.query(`
       ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS edits TEXT DEFAULT '[]';
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_downloads (
+        id SERIAL PRIMARY KEY,
+        platform TEXT NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_heartbeats (
+        id SERIAL PRIMARY KEY,
+        uuid TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        app_version TEXT NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_telemetry_events (
+        id SERIAL PRIMARY KEY,
+        uuid TEXT NOT NULL,
+        event TEXT NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
@@ -790,4 +817,105 @@ export async function writeRule(examType: string, rule?: string, sessionLimit?: 
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
   }
+}
+
+export async function logDownload(platform: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("INSERT INTO vit_downloads (platform) VALUES ($1)", [platform]);
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+    let data: any = { downloads: [], heartbeats: [], events: [] };
+    if (fs.existsSync(filePath)) {
+      try { data = JSON.parse(fs.readFileSync(filePath, "utf8")); } catch (e) {}
+    }
+    if (!data.downloads) data.downloads = [];
+    data.downloads.push({ platform, timestamp: new Date().toISOString() });
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  }
+}
+
+export async function logHeartbeat(uuid: string, platform: string, appVersion: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("INSERT INTO vit_heartbeats (uuid, platform, app_version) VALUES ($1, $2, $3)", [uuid, platform, appVersion]);
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+    let data: any = { downloads: [], heartbeats: [], events: [] };
+    if (fs.existsSync(filePath)) {
+      try { data = JSON.parse(fs.readFileSync(filePath, "utf8")); } catch (e) {}
+    }
+    if (!data.heartbeats) data.heartbeats = [];
+    data.heartbeats.push({ uuid, platform, appVersion, timestamp: new Date().toISOString() });
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  }
+}
+
+export async function logTelemetryEvent(uuid: string, event: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("INSERT INTO vit_telemetry_events (uuid, event) VALUES ($1, $2)", [uuid, event]);
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+    let data: any = { downloads: [], heartbeats: [], events: [] };
+    if (fs.existsSync(filePath)) {
+      try { data = JSON.parse(fs.readFileSync(filePath, "utf8")); } catch (e) {}
+    }
+    if (!data.events) data.events = [];
+    data.events.push({ uuid, event, timestamp: new Date().toISOString() });
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  }
+}
+
+export async function getTelemetryMetrics(): Promise<any> {
+  let downloads: any[] = [];
+  let heartbeats: any[] = [];
+  let events: any[] = [];
+
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const dlRes = await client.query("SELECT * FROM vit_downloads");
+      downloads = dlRes.rows;
+      const hbRes = await client.query("SELECT * FROM vit_heartbeats");
+      heartbeats = hbRes.rows.map(r => ({ ...r, appVersion: r.app_version }));
+      const evRes = await client.query("SELECT * FROM vit_telemetry_events");
+      events = evRes.rows;
+    } catch (e) {
+      console.error("Error reading telemetry from Postgres:", e);
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+    if (fs.existsSync(filePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        downloads = data.downloads || [];
+        heartbeats = data.heartbeats || [];
+        events = data.events || [];
+      } catch (e) {}
+    }
+  }
+
+  return { downloads, heartbeats, events };
 }
