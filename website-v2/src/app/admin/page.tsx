@@ -7,7 +7,7 @@ import {
   Calendar, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare,
-  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck
+  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch
 } from "lucide-react";
 import Link from "next/link";
 
@@ -183,9 +183,43 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "versioning"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
+
+  // ─── Subscriptions & Monetization ───
+  const [subscriptions, setSubscriptions] = useState([
+    { id: "TXN_001", email: "student1@vitap.ac.in", plan: "Monthly Pass", amount: "₹99", status: "success", date: "2026-06-14 10:15" },
+    { id: "TXN_002", email: "student2@vitap.ac.in", plan: "Yearly Pass", amount: "₹499", status: "success", date: "2026-06-14 09:30" },
+    { id: "TXN_003", email: "student3@vitstudent.ac.in", plan: "Monthly Pass", amount: "₹99", status: "failed", date: "2026-06-13 18:45" },
+    { id: "TXN_004", email: "student4@vit.ac.in", plan: "Semester Pass", amount: "₹249", status: "success", date: "2026-06-13 14:20" },
+  ]);
+
+  const [promoCodes, setPromoCodes] = useState([
+    { code: "VITAP50", discount: "50%", usage: 42, status: "active" },
+    { code: "FREEWEEK", discount: "100%", usage: 118, status: "active" },
+    { code: "WELCOME10", discount: "20%", usage: 5, status: "expired" },
+  ]);
+
+  const [newPromoCode, setNewPromoCode] = useState("");
+  const [newPromoDiscount, setNewPromoDiscount] = useState("50%");
+
+  // ─── Version & Telemetry ───
+  const [appVersionData, setAppVersionData] = useState({
+    version: "1.5.1",
+    windowsUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad_setup.exe",
+    macUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad.dmg",
+    forceUpdate: false
+  });
+
+  const [savingVersion, setSavingVersion] = useState(false);
+
+  const [telemetry, setTelemetry] = useState({
+    activePairings: 34,
+    avgLatency: "24ms",
+    flashPasteCount: 1540,
+    typeModeCount: 890
+  });
 
   // ─── Command Palette ───
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -897,10 +931,13 @@ export default function GlidePassAdmin() {
       { name: "Go to Roles & Policies", action: () => { setView("rbac"); setCmdOpen(false); } },
       { name: "Go to Analytics", action: () => { setView("analytics"); setCmdOpen(false); } },
       { name: "Go to VIT-AP Codes", action: () => { setView("vitcodes"); setCmdOpen(false); } },
+      { name: "Go to Contributors", action: () => { setView("contributors"); setCmdOpen(false); } },
       { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
       { name: "Go to Diagnostics", action: () => { setView("system"); setCmdOpen(false); } },
       { name: "Go to Audit Trail", action: () => { setView("security"); setCmdOpen(false); } },
       { name: "Go to Settings", action: () => { setView("settings"); setCmdOpen(false); } },
+      { name: "Go to Subscriptions & Licensing", action: () => { setView("subscriptions"); setCmdOpen(false); } },
+      { name: "Go to Version Manager", action: () => { setView("versioning"); setCmdOpen(false); } },
       { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
       { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
       { name: "Sign Out", action: () => { handleLogout(); setCmdOpen(false); } },
@@ -1111,6 +1148,7 @@ export default function GlidePassAdmin() {
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Subscriptions" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                   ].map(group => (
                     <div key={group.label} className="space-y-1">
                       {sidebarOpen && <span className="text-[9px] uppercase font-bold px-3 block mb-2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{group.label}</span>}
@@ -2498,6 +2536,198 @@ export default function GlidePassAdmin() {
                           <button type="submit" className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-[0.98] transition-all" style={{ background: P.blue }}>Update Password</button>
                         </div>
                       </form>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ SUBSCRIPTIONS & LICENSING (MONETIZATION) ═══ */}
+                  {view === "subscriptions" && (
+                    <motion.div key="subs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Subscriptions & Licenses</h2>
+                          <p className="text-xs text-white/60">Monitor transactions, manage promo codes, and tweak plan settings</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Transaction History Logs */}
+                        <div className="lg:col-span-8 rounded-[28px] border overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className="px-6 py-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Recent Transactions</h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  {["Transaction ID", "User Email", "Plan", "Amount", "Status", "Date"].map(h => (
+                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {subscriptions.map(s => (
+                                  <tr key={s.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-mono font-bold" style={{ color: P.blue }}>{s.id}</td>
+                                    <td className="p-4">{s.email}</td>
+                                    <td className="p-4">{s.plan}</td>
+                                    <td className="p-4 font-bold">{s.amount}</td>
+                                    <td className="p-4">
+                                      <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border"
+                                        style={{
+                                          background: s.status === "success" ? `${P.blue}15` : `${P.error}15`,
+                                          color: s.status === "success" ? P.blue : P.error,
+                                          borderColor: s.status === "success" ? `${P.blue}30` : `${P.error}30`
+                                        }}>
+                                        {s.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.date}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Promo Codes Manager */}
+                        <div className="lg:col-span-4 space-y-6">
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Generate Promo Code</h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Coupon Code</label>
+                                <input type="text" value={newPromoCode} onChange={e => setNewPromoCode(e.target.value.toUpperCase())} placeholder="e.g. VITAP50"
+                                  className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} />
+                              </div>
+                              <div>
+                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Discount Percent</label>
+                                <select value={newPromoDiscount} onChange={e => setNewPromoDiscount(e.target.value)}
+                                  className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                                  <option value="20%">20%</option>
+                                  <option value="50%">50%</option>
+                                  <option value="100%">100% (Free Pass)</option>
+                                </select>
+                              </div>
+                              <button onClick={() => {
+                                if (!newPromoCode.trim()) return showToast("error", "Code is required.");
+                                setPromoCodes(prev => [{ code: newPromoCode.trim(), discount: newPromoDiscount, usage: 0, status: "active" }, ...prev]);
+                                setNewPromoCode("");
+                                showToast("success", "Promo code created successfully.");
+                              }} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                                Create Promo Code
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Coupons</h3>
+                            <div className="space-y-3">
+                              {promoCodes.map(c => (
+                                <div key={c.code} className="flex justify-between items-center p-3 rounded-xl border"
+                                  style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.5)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                  <div>
+                                    <p className="text-xs font-mono font-bold">{c.code}</p>
+                                    <p className="text-[9px] uppercase font-bold" style={{ color: P.blue }}>{c.discount} Off • {c.usage} Uses</p>
+                                  </div>
+                                  <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border"
+                                    style={{
+                                      background: c.status === "active" ? `${P.blue}15` : `${P.error}15`,
+                                      color: c.status === "active" ? P.blue : P.error,
+                                      borderColor: c.status === "active" ? `${P.blue}25` : `${P.error}25`
+                                    }}>
+                                    {c.status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ VERSION MANAGER ═══ */}
+                  {view === "versioning" && (
+                    <motion.div key="vers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Update App Version (version.json)</h3>
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Target Version</label>
+                            <input type="text" value={appVersionData.version} onChange={e => setAppVersionData(prev => ({ ...prev, version: e.target.value }))}
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Windows Package URL</label>
+                            <input type="text" value={appVersionData.windowsUrl} onChange={e => setAppVersionData(prev => ({ ...prev, windowsUrl: e.target.value }))}
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>macOS Bundle URL</label>
+                            <input type="text" value={appVersionData.macUrl} onChange={e => setAppVersionData(prev => ({ ...prev, macUrl: e.target.value }))}
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <label className="flex items-center justify-between cursor-pointer pt-2">
+                            <span className="text-xs font-bold">Enforce Mandatory Upgrade (Force Update)</span>
+                            <input type="checkbox" checked={appVersionData.forceUpdate} onChange={e => setAppVersionData(prev => ({ ...prev, forceUpdate: e.target.checked }))} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
+                          </label>
+                          <div className="flex justify-end pt-4">
+                            <button onClick={async () => {
+                              setSavingVersion(true);
+                              try {
+                                const res = await fetch("/api/ota", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    file: "downloads/version.json",
+                                    content: JSON.stringify({
+                                      version: appVersionData.version,
+                                      windows_url: appVersionData.windowsUrl,
+                                      mac_url: appVersionData.macUrl,
+                                      force_update: appVersionData.forceUpdate
+                                    }, null, 2)
+                                  })
+                                });
+                                if (!res.ok) throw new Error("Failed to save version configuration.");
+                                showToast("success", "Version manifest updated successfully.");
+                              } catch (e: any) {
+                                showToast("error", e.message);
+                              } finally {
+                                setSavingVersion(false);
+                              }
+                            }} disabled={savingVersion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                              {savingVersion ? "Updating..." : "Push Version Update"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* General OTA / Client settings information */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Automatic Telemetry Status</h3>
+                        <div className="space-y-4 py-2 text-xs font-mono">
+                          {[
+                            { k: "Active Phone Pairings", v: `${telemetry.activePairings} devices` },
+                            { k: "Average Client Latency", v: telemetry.avgLatency },
+                            { k: "Total Flash Paste Triggers", v: `${telemetry.flashPasteCount} runs` },
+                            { k: "Total Type Mode Triggers", v: `${telemetry.typeModeCount} runs` }
+                          ].map((r, i) => (
+                            <div key={i} className="flex justify-between pb-2" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                              <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.k}</span>
+                              <span className="font-bold text-white">{r.v}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </motion.div>
                   )}
 
