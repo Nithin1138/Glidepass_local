@@ -1333,18 +1333,27 @@ class LANpadLauncher:
         monetization_enabled = False
         import urllib.request
         import json
+        import concurrent.futures
         
-        # Query local first, then production
         urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
-        for base_url in urls:
+        
+        def check_status(base_url):
             try:
                 req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
                 with safe_urlopen(req, timeout=5) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
-                    monetization_enabled = data.get("monetization_enabled", False)
-                    break
+                    return True, data.get("monetization_enabled", False)
             except Exception as e:
                 print(f"[monetization] Status fetch failed on {base_url}: {e}")
+            return False, False
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {executor.submit(check_status, url): url for url in urls}
+            for future in concurrent.futures.as_completed(futures):
+                success, enabled = future.result()
+                if success:
+                    monetization_enabled = enabled
+                    break
             
         if not monetization_enabled:
             self.show_view("main")
@@ -1381,10 +1390,12 @@ class LANpadLauncher:
     def verify_key_online(self, key):
         import urllib.request
         import json
+        import concurrent.futures
+
         payload = json.dumps({"key": key}).encode("utf-8")
-        
         urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
-        for url in urls:
+        
+        def check_url(url):
             try:
                 req = urllib.request.Request(
                     url,
@@ -1398,21 +1409,46 @@ class LANpadLauncher:
                         return True, res.get("tier", "Basic"), res.get("expires_at", "2099-12-31T23:59:59Z")
             except Exception as e:
                 print(f"[monetization] Verify online error on {url}: {e}")
+            return False, "Basic", None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {executor.submit(check_url, url): url for url in urls}
+            for future in concurrent.futures.as_completed(futures):
+                success, tier, expires_at = future.result()
+                if success:
+                    # Cancel the other if possible, though ThreadPoolExecutor doesn't natively kill running threads
+                    return True, tier, expires_at
+                    
         return False, "Basic", None
 
     def start_license_loop(self):
         self.root.after(3600000, self.periodic_license_check)
         
     def periodic_license_check(self):
-        try:
-            import urllib.request
-            import json
-            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
-            with safe_urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                monetization_enabled = data.get("monetization_enabled", False)
-        except Exception:
-            monetization_enabled = False
+        import urllib.request
+        import json
+        import concurrent.futures
+
+        monetization_enabled = False
+        urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+        
+        def check_status(base_url):
+            try:
+                req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                with safe_urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    return True, data.get("monetization_enabled", False)
+            except Exception as e:
+                pass
+            return False, False
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {executor.submit(check_status, url): url for url in urls}
+            for future in concurrent.futures.as_completed(futures):
+                success, enabled = future.result()
+                if success:
+                    monetization_enabled = enabled
+                    break
             
         if monetization_enabled:
             license_path = os.path.expanduser("~/.lanpad_license.json")
