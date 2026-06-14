@@ -7,7 +7,8 @@
       "subtitle": "Perfect for exam weeks",
       "price": "₹39",
       "allow_refill": true,
-      "max_sessions": 0
+      "max_sessions": 0,
+      "allow_inject": 0
     },
     {
       "tier": "Pro",

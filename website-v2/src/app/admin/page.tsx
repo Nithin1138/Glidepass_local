@@ -5141,6 +5141,7 @@ export default function GlidePassAdmin() {
                               />
                             </label>
                           </div>
+                        </div>
 
                         {/* Matrix Control for Plans */}
                         <div className="col-span-1 lg:col-span-2 rounded-[28px] border relative overflow-hidden mt-6"
@@ -5213,19 +5214,40 @@ export default function GlidePassAdmin() {
                                     <tr key={toggle.key}>
                                       <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>
                                       {monetizationSettings.plans.map((plan: any, planIdx: number) => (
-                                        <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                          <input 
-                                            type="number" min="-1" max="999"
-                                            value={plan[toggle.key] === false ? -1 : (plan[toggle.key] === true ? 0 : (plan[toggle.key] ?? 0))}
-                                            onChange={e => {
-                                              const updatedPlans = [...monetizationSettings.plans];
-                                              let val = parseInt(e.target.value);
-                                              if (isNaN(val)) val = 0;
-                                              updatedPlans[planIdx][toggle.key] = val;
-                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                            }} 
-                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg} ${plan[toggle.key] === false || plan[toggle.key] === -1 ? 'opacity-50 text-red-500' : ''}`} 
-                                          />
+                                        <td key={plan.tier} className="p-2 border-b text-center align-middle" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                          <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>On</span>
+                                              <input 
+                                                type="checkbox"
+                                                checked={plan[toggle.key] !== false && plan[toggle.key] !== -1}
+                                                onChange={e => {
+                                                  const updatedPlans = [...monetizationSettings.plans];
+                                                  updatedPlans[planIdx][toggle.key] = e.target.checked ? 0 : -1;
+                                                  handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                                }}
+                                                className="w-3.5 h-3.5 rounded shrink-0 cursor-pointer"
+                                                style={{ accentColor: P.blue }}
+                                              />
+                                            </div>
+                                            {(plan[toggle.key] !== false && plan[toggle.key] !== -1) && (
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Limit</span>
+                                                <input 
+                                                  type="number" min="0" max="999"
+                                                  value={plan[toggle.key] === true ? 0 : (plan[toggle.key] ?? 0)}
+                                                  onChange={e => {
+                                                    const updatedPlans = [...monetizationSettings.plans];
+                                                    let val = parseInt(e.target.value);
+                                                    if (isNaN(val) || val < 0) val = 0;
+                                                    updatedPlans[planIdx][toggle.key] = val;
+                                                    handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                                  }} 
+                                                  className={`w-12 text-[10px] text-center rounded px-1 py-0.5 border focus:outline-none ${inputBg}`} 
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
                                         </td>
                                       ))}
                                     </tr>
