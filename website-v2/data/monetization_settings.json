@@ -1,29 +1,35 @@
 {
-  "monetization_enabled": false,
+  "monetization_enabled": true,
   "plans": [
     {
       "tier": "Basic",
       "title": "Week Pass",
       "subtitle": "Perfect for exam weeks",
-      "price": "₹39"
+      "price": "₹39",
+      "allow_refill": false
     },
     {
       "tier": "Pro",
       "title": "Monthly Pass",
       "subtitle": "Consistent connectivity",
-      "price": "₹99"
+      "price": "₹99",
+      "allow_refill": false,
+      "allow_typing": false,
+      "allow_typing_mode": false
     },
     {
       "tier": "Max",
       "title": "Sem Pass",
       "subtitle": "Semester companion",
-      "price": "₹299"
+      "price": "₹299",
+      "allow_refill": false
     },
     {
       "tier": "Ultra",
       "title": "Yearly Pass",
       "subtitle": "Year-round connectivity",
-      "price": "₹499"
+      "price": "₹499",
+      "allow_refill": false
     }
   ]
 }

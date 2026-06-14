@@ -167,25 +167,28 @@ def get_cloud_limits(tier):
         except Exception:
             pass
 
-    # Default fallback limits if no internet or failed
+    # Base limits (fully restrictive, Admin must override via cloud)
     limits = {
-        "max_sessions": 1 if tier == "Basic" else 2,
+        "max_sessions": 0,
         "max_vitcodes": 0,
-        "allow_live_sync": True,
-        "allow_typing": True,
-        "allow_typing_mode": True if tier in ["Max", "Ultra", "DEVELOPER"] else False,
-        "allow_inject": True,
-        "allow_raw": True,
-        "allow_select_copy": True,
-        "allow_fetch": True,
-        "allow_refill": True,
-        "allow_vitcode": True
+        "allow_live_sync": False,
+        "allow_typing": False,
+        "allow_typing_mode": False,
+        "allow_inject": False,
+        "allow_raw": False,
+        "allow_select_copy": False,
+        "allow_fetch": False,
+        "allow_refill": False,
+        "allow_vitcode": False
     }
 
+    # Unlock everything for DEVELOPER or if monetization is completely disabled
     if tier == "DEVELOPER" or not CLOUD_LIMITS_CACHE or not CLOUD_LIMITS_CACHE.get("monetization_enabled", False):
-        limits["max_sessions"] = 999
-        limits["max_vitcodes"] = 999
-        limits["allow_typing_mode"] = True
+        for key in limits:
+            if isinstance(limits[key], bool):
+                limits[key] = True
+            else:
+                limits[key] = 999
         return limits
 
     # Find the tier in the cloud plans
