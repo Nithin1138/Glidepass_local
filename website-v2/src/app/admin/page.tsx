@@ -1861,6 +1861,19 @@ export default function GlidePassAdmin() {
       showToast("error", "The Master Admin credentials cannot be randomized.");
       return;
     }
+    
+    // Check if name is already a 6-digit number (credentials already generated)
+    const isAlreadyGenerated = /^\d{6}$/.test(user.name);
+    if (isAlreadyGenerated) {
+      const existingUser = user.name;
+      const existingPass = user.password || "check";
+      navigator.clipboard.writeText(`Username: ${existingUser}\nPassword: ${existingPass}`).then(() => {
+        showToast("success", "Credentials copied to clipboard!");
+      });
+      alert(`Existing Credentials for ${user.email}:\n\nUsername: ${existingUser}\nPassword: ${existingPass}\n\n(Copied to clipboard)`);
+      return;
+    }
+
     const genUser = Math.floor(100000 + Math.random() * 900000).toString();
     const genPass = Math.random().toString(36).substring(2, 8).toUpperCase();
     
@@ -2856,8 +2869,8 @@ export default function GlidePassAdmin() {
                                 <td className="p-4">
                                   {u.email !== "veeranithin9@gmail.com" ? (
                                     <button onClick={() => handleGenerateCredentials(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                      style={{ background: `${P.blue}15`, borderColor: `${P.blue}25`, color: P.blue }}>
-                                      Generate
+                                      style={{ background: /^\d{6}$/.test(u.name) ? "transparent" : `${P.blue}15`, borderColor: /^\d{6}$/.test(u.name) ? dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" : `${P.blue}25`, color: /^\d{6}$/.test(u.name) ? dk ? `${P.sky}80` : `${P.black}60` : P.blue }}>
+                                      {/^\d{6}$/.test(u.name) ? "Show" : "Generate"}
                                     </button>
                                   ) : (
                                     <span className="text-[10px] opacity-40">Fixed</span>
