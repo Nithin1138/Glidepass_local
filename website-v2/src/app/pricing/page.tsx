@@ -27,6 +27,7 @@ export default function PricingPage() {
   const plans = [
     {
       name: "Week Pass",
+      appTier: "Basic",
       price: "₹39",
       period: "per week",
       description: "Perfect for quick test-prep and exam weeks.",
@@ -43,6 +44,7 @@ export default function PricingPage() {
     },
     {
       name: "Monthly Pass",
+      appTier: "Pro",
       price: "₹99",
       period: "per month",
       description: "For consistent, hassle-free campus connectivity.",
@@ -59,6 +61,7 @@ export default function PricingPage() {
     },
     {
       name: "Sem Pass",
+      appTier: "Max",
       price: "₹299",
       period: "per semester",
       description: "The ultimate academic semester companion. Unmatched value.",
@@ -75,6 +78,7 @@ export default function PricingPage() {
     },
     {
       name: "Yearly Pass",
+      appTier: "Ultra",
       price: "₹499",
       period: "per year",
       description: "Full year-round connectivity and unlimited access.",
@@ -219,9 +223,12 @@ export default function PricingPage() {
                   </div>
 
                   {/* Plan Name */}
-                  <h3 className="text-xl font-bold tracking-tight mb-2 text-[#FAFAFA]">
+                  <h3 className="text-xl font-bold tracking-tight text-[#FAFAFA]">
                     {plan.name}
                   </h3>
+                  <div className="text-[10px] font-mono text-[#C7EEFF]/60 mb-3 mt-0.5 uppercase tracking-wider">
+                    App Tier: {plan.appTier}
+                  </div>
 
                   {/* Description */}
                   <p className="text-xs text-[#A0AEC0] mb-6 h-10">
