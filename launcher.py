@@ -322,12 +322,12 @@ class LANpadLauncher:
                     pass
         except Exception as e:
             # Never let an icon failure crash the app.
-            print(f"[lanpad] icon setup: {e}")
+            pass
 
     def _pill_button(self, parent, text, fg, fill, cmd=None, side="right"):
         """Draw a pill-shaped label button on a Canvas widget."""
         _mac = sys.platform == "darwin"
-        tw = len(text) * (7 if _mac else 8) + (30 if _mac else 36)
+        tw = len(text) * (7 if _mac else 10) + (30 if _mac else 40)
         cv = tk.Canvas(parent, width=tw, height=28, bg=self.BG, highlightthickness=0)
         cv.pack(side=side, padx=18, pady=(24, 0))
         rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline="")
@@ -387,28 +387,29 @@ class LANpadLauncher:
             self._main_logo_img = self._main_logo_img.resize((51, 36), Image.Resampling.LANCZOS)
             self._main_logo_tk = ImageTk.PhotoImage(self._main_logo_img)
             logo_lbl = tk.Label(title_frame, image=self._main_logo_tk, bg=self.BG, bd=0, highlightthickness=0)
-            logo_lbl.pack(side="left")
+            logo_lbl.pack(side="left", anchor="center")
             padx_text = 10 if _mac else 18
         except Exception as e:
             padx_text = 0
 
         tk.Label(title_frame, text="LANpad", font=(self.FD, 28, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w", bd=0, highlightthickness=0).pack(side="left", padx=(padx_text, 0))
+                 bg=self.BG, fg=self.WHITE, anchor="w", bd=0, highlightthickness=0).pack(side="left", padx=(padx_text, 0), anchor="center")
         tk.Label(v,
                  text="Bridge your devices locally.",
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
                  anchor="w", justify="left", bd=0, highlightthickness=0).place(x=24, y=136 + yo * 1.5)
 
         # Tab selector frame
+        tab_h = 40 if _mac else 46
         self._tab_frame = tk.Frame(v, bg=self.BG)
-        self._tab_frame.place(x=24, y=184 + yo * 2, width=W - 48, height=42)
+        self._tab_frame.place(x=24, y=184 + yo * 2, width=W - 48, height=tab_h + 2)
         
         # Local Tab
-        self._tab_local = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=40, bg=self.BG, highlightthickness=0)
+        self._tab_local = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=tab_h, bg=self.BG, highlightthickness=0)
         self._tab_local.pack(side="left", padx=(0, 4))
         
         # Tunnel Tab
-        self._tab_tunnel = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=40, bg=self.BG, highlightthickness=0)
+        self._tab_tunnel = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=tab_h, bg=self.BG, highlightthickness=0)
         self._tab_tunnel.pack(side="left")
 
         def click_local(e):
@@ -474,13 +475,15 @@ class LANpadLauncher:
         c_local.delete("all")
         w_l = int(c_local["width"])
         h_l = int(c_local["height"])
+        _mac = sys.platform == "darwin"
+        text_y_offset = 0 if _mac else 1
         
         if self._active_tab == "local":
             rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG2, outline=self.GREEN)
-            c_local.create_text(w_l // 2, h_l // 2, text="Local (Home Wi-Fi)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Local (Home Wi-Fi)", fill=self.WHITE, font=(self.FU, 12, "bold"))
         else:
             rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG, outline="#222222")
-            c_local.create_text(w_l // 2, h_l // 2, text="Local (Home Wi-Fi)", fill=self.DIM, font=(self.FU, 12))
+            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Local (Home Wi-Fi)", fill=self.DIM, font=(self.FU, 12))
             
         # Tunnel tab
         c_tunnel = self._tab_tunnel
@@ -490,10 +493,10 @@ class LANpadLauncher:
         
         if self._active_tab == "tunnel":
             rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG2, outline=self.GREEN)
-            c_tunnel.create_text(w_t // 2, h_t // 2, text="College (Tunnel)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="College (Tunnel)", fill=self.WHITE, font=(self.FU, 12, "bold"))
         else:
             rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG, outline="#222222")
-            c_tunnel.create_text(w_t // 2, h_t // 2, text="College (Tunnel)", fill=self.DIM, font=(self.FU, 12))
+            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="College (Tunnel)", fill=self.DIM, font=(self.FU, 12))
 
     def _draw_qr_loading(self):
         c = self._qr_cv
@@ -852,7 +855,8 @@ class LANpadLauncher:
             ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'LANpad'"),
             ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
-        cw, ch = (W - 44) // 2, 125
+        cw = (W - 44) // 2
+        ch = 125 if _mac else 135
         grid_top = 135 + yo
         for i, (num, icon, title, desc) in enumerate(steps):
             col, row = i % 2, i // 2
@@ -865,18 +869,19 @@ class LANpadLauncher:
             cv.create_text(cw - 12, 14, text=num,
                            font=(self.FM, 9, "bold"), fill=self.DIM, anchor="e")
             # Icon
-            cv.create_text(15, 28, text=icon, font=(self.FU, 18), anchor="w")
+            cv.create_text(15, 26, text=icon, font=(self.FU, 18), anchor="w")
             # Title
-            cv.create_text(15, 52, text=title,
+            cv.create_text(15, 48, text=title,
                            font=(self.FU, 11, "bold"), fill=self.WHITE, anchor="w")
             # Description (wrapping)
             if i == 3:
                 # Highlight "Copied!"
-                cv.create_text(15, 70, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
-                cv.create_text(74, 70, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
-                cv.create_text(15, 86, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
+                cv.create_text(15, 66, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
+                padx_copied = 55 if _mac else 66
+                cv.create_text(15 + padx_copied, 66, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
+                cv.create_text(15, 82, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
             else:
-                cv.create_text(15, 70, text=desc,
+                cv.create_text(15, 66, text=desc,
                                font=(self.FU, 9), fill=self.DIM,
                                anchor="nw", width=cw - 22)
 
