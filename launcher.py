@@ -1353,10 +1353,10 @@ class LANpadLauncher:
             success, enabled = future.result()
             if success:
                 monetization_enabled = enabled
-                executor.shutdown(wait=False, cancel_futures=True)
+                executor.shutdown(wait=False)
                 break
         else:
-            executor.shutdown(wait=False, cancel_futures=True)
+            executor.shutdown(wait=False)
             
         if not monetization_enabled:
             self.show_view("main")
@@ -1419,10 +1419,10 @@ class LANpadLauncher:
         for future in concurrent.futures.as_completed(futures):
             success, tier, expires_at = future.result()
             if success:
-                executor.shutdown(wait=False, cancel_futures=True)
+                executor.shutdown(wait=False)
                 return True, tier, expires_at
                 
-        executor.shutdown(wait=False, cancel_futures=True)
+        executor.shutdown(wait=False)
         return False, "Basic", None
 
     def start_license_loop(self):
@@ -1452,10 +1452,10 @@ class LANpadLauncher:
             success, enabled = future.result()
             if success:
                 monetization_enabled = enabled
-                executor.shutdown(wait=False, cancel_futures=True)
+                executor.shutdown(wait=False)
                 break
         else:
-            executor.shutdown(wait=False, cancel_futures=True)
+            executor.shutdown(wait=False)
             
         if monetization_enabled:
             license_path = os.path.expanduser("~/.lanpad_license.json")
