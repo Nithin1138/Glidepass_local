@@ -717,6 +717,11 @@ class LANpadLauncher:
 
             cloudflared_bin = _get_cloudflared_bin()
 
+            kwargs = {}
+            if sys.platform == "win32":
+                kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+
+
             # ── Cloudflare Quick Tunnel ──────────────────────────────────────────
             if cloudflared_bin:
                 try:
@@ -725,8 +730,10 @@ class LANpadLauncher:
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
+                        stdin=subprocess.DEVNULL,
                         text=True,
                         bufsize=1,
+                        **kwargs
                     )
                     self._tunnel_process = proc
                     url_found = False
@@ -765,14 +772,16 @@ class LANpadLauncher:
             # ── Pinggy SSH fallback ──
             if not self._tunnel_url:
                 try:
-                    cmd = ["ssh", "-tt", "-p", "443", "-o", "StrictHostKeyChecking=no",
-                           "-o", "ConnectTimeout=10", "-R", "80:localhost:8000", "a.pinggy.io"]
+                    cmd = ["ssh", "-p", "443", "-o", "StrictHostKeyChecking=no",
+                           "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-R", "80:localhost:8000", "a.pinggy.io"]
                     proc = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
+                        stdin=subprocess.DEVNULL,
                         text=True,
-                        bufsize=1
+                        bufsize=1,
+                        **kwargs
                     )
                     self._tunnel_process = proc
                     accumulated = ""
