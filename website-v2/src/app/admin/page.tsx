@@ -1389,9 +1389,21 @@ export default function GlidePassAdmin() {
         }, 1000);
         return () => clearInterval(interval);
       }
-      if (view === "vitcodes" || view === "dashboard" || view === "contributors") {
+      if (view === "dashboard") {
         fetchVitCodes();
-        // Start polling for real-time sync (every 1 second, quiet mode)
+        fetchTelemetry();
+        fetchDiagnostics();
+        fetchAuditLogs();
+        const interval = setInterval(() => {
+          fetchVitCodes(true);
+          fetchTelemetry();
+          fetchDiagnostics();
+          fetchAuditLogs();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+      if (view === "vitcodes" || view === "contributors") {
+        fetchVitCodes();
         const interval = setInterval(() => {
           fetchVitCodes(true);
         }, 1000);
@@ -1873,95 +1885,197 @@ export default function GlidePassAdmin() {
                   {/* ═══ DASHBOARD ═══ */}
                   {view === "dashboard" && (
                     <motion.div key="dash" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
-                      <div>
-                        <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide">Executive Overview</h2>
-                        <p className="text-xs mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System health, sync metrics, and real-time activity</p>
+                      {/* Header with Ticking Clock */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Executive Overview</h2>
+                          <p className="text-xs mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System health, sync metrics, and real-time activity</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing time..."}</span>
+                        </div>
                       </div>
 
                       {/* KPI Cards */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                          { title: "Host Sync", val: "99.8%", label: "Active connections", live: true },
-                          { title: "Total Questions", val: String(totalQ), label: "VIT exam items cached", live: false },
-                          { title: "Avg Latency", val: "38ms", label: "Outbound WebSockets", live: true },
-                          { title: "Sessions", val: String(vitSessions.length), label: "Active instances", live: false },
+                          { 
+                            title: "Database Sync", 
+                            val: diagnosticsData?.database?.status?.includes("Connected") ? "ONLINE" : "OFFLINE", 
+                            label: diagnosticsData?.database?.status || "Checking status...", 
+                            live: diagnosticsData?.database?.status?.includes("Connected"),
+                            color: diagnosticsData?.database?.status?.includes("Connected") ? "#10B981" : P.error
+                          },
+                          { title: "Total Questions", val: String(diagnosticsData?.database?.questionsCount ?? totalQ), label: "VIT exam items cached", live: false, color: P.blue },
+                          { 
+                            title: "Avg Latency", 
+                            val: diagnosticsData?.database?.latency !== undefined ? `${diagnosticsData.database.latency}ms` : "--", 
+                            label: "Outbound queries response", 
+                            live: true, 
+                            color: !diagnosticsData ? P.blue :
+                                   diagnosticsData.database.latency < 50 ? "#10B981" : 
+                                   diagnosticsData.database.latency < 200 ? "#F59E0B" : P.error
+                          },
+                          { title: "Active Sessions", val: String(diagnosticsData?.database?.sessionsCount ?? vitSessions.length), label: "Active study folders", live: false, color: P.blue },
                         ].map((c, i) => (
                           <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                             <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                             <div className="flex justify-between items-start mb-3">
                               <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
-                              {c.live && <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: P.blue }} />}
+                              {c.live && <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: c.color }} />}
                             </div>
-                            <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black">{c.val}</h3>
-                            <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
+                            <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black" style={{ color: c.color }}>{c.val}</h3>
+                            <span className="text-[10px] mt-1.5 block overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
                           </div>
                         ))}
                       </div>
 
                       {/* Chart + Events */}
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Dynamic Telemetry Graph */}
                         <div className="lg:col-span-8 p-6 rounded-[28px] border relative overflow-hidden min-h-[350px]"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                           <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                           <div className="flex justify-between items-center pb-4 mb-6" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>User Engagement</h3>
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Usage Engagement (Copies & Injections)</h3>
                             <div className="flex items-center gap-1.5 text-[10px] p-1 rounded-xl border font-mono" style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)" }}>
-                              <span className="px-2.5 py-1.5 font-bold rounded-lg" style={{ background: `${P.blue}15`, color: P.blue }}>Daily</span>
-                              <span className="px-2.5 py-1.5 cursor-pointer" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Weekly</span>
-                              <span className="px-2.5 py-1.5 cursor-pointer" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Monthly</span>
+                              <span className="px-2.5 py-1.5 font-bold rounded-lg" style={{ background: `${P.blue}15`, color: P.blue }}>Last 7 Days</span>
                             </div>
                           </div>
                           <div className="w-full h-44 relative">
-                            <svg className="w-full h-full" viewBox="0 0 500 150">
-                              <defs>
-                                <linearGradient id="gl" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" stopColor={P.blue} />
-                                  <stop offset="50%" stopColor={P.sky} />
-                                  <stop offset="100%" stopColor={P.blue} />
-                                </linearGradient>
-                                <linearGradient id="gf" x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor={P.blue} stopOpacity="0.2" />
-                                  <stop offset="100%" stopColor={P.blue} stopOpacity="0" />
-                                </linearGradient>
-                              </defs>
-                              <line x1="0" y1="30" x2="500" y2="30" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
-                              <line x1="0" y1="75" x2="500" y2="75" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
-                              <line x1="0" y1="120" x2="500" y2="120" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
-                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20 L 500 150 L 0 150 Z" fill="url(#gf)" />
-                              <path d="M0 130 Q 80 120, 150 60 T 300 90 T 450 40 T 500 20" fill="none" stroke="url(#gl)" strokeWidth="3.5" strokeLinecap="round" />
-                            </svg>
+                            {(() => {
+                              const usageData = analytics.usageVolumeData || [];
+                              const maxVal = Math.max(...usageData.map(d => d.copies + d.injections), 5) || 5;
+                              const points = usageData.map((d, index) => {
+                                const x = (index / Math.max(usageData.length - 1, 1)) * 500;
+                                const y = 130 - ((d.copies + d.injections) / maxVal) * 110;
+                                return { x, y, ...d };
+                              });
+
+                              const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+                              const areaD = points.length ? `${pathD} L ${points[points.length - 1].x} 150 L ${points[0].x} 150 Z` : "";
+
+                              return (
+                                <svg className="w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none">
+                                  <defs>
+                                    <linearGradient id="gl" x1="0%" y1="0%" x2="100%" y2="0%">
+                                      <stop offset="0%" stopColor={P.blue} />
+                                      <stop offset="50%" stopColor={P.sky} stopOpacity="0.8" />
+                                      <stop offset="100%" stopColor={P.blue} />
+                                    </linearGradient>
+                                    <linearGradient id="gf" x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor={P.blue} stopOpacity="0.25" />
+                                      <stop offset="100%" stopColor={P.blue} stopOpacity="0" />
+                                    </linearGradient>
+                                  </defs>
+                                  <line x1="0" y1="20" x2="500" y2="20" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                                  <line x1="0" y1="75" x2="500" y2="75" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                                  <line x1="0" y1="130" x2="500" y2="130" stroke={dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.04)"} strokeWidth="1" />
+                                  
+                                  {points.length > 0 && (
+                                    <>
+                                      <path d={areaD} fill="url(#gf)" />
+                                      <path d={pathD} fill="none" stroke="url(#gl)" strokeWidth="3" strokeLinecap="round" />
+                                      {points.map((p, i) => (
+                                        <g key={i}>
+                                          <circle cx={p.x} cy={p.y} r="4" fill={dk ? P.white : P.blue} stroke={dk ? P.blue : P.white} strokeWidth="1.5" />
+                                          <text x={p.x} y={p.y - 8} fontSize="7" fontFamily="var(--font-mono)" fill={dk ? `${P.sky}70` : `${P.black}60`} textAnchor="middle">
+                                            {p.copies + p.injections}
+                                          </text>
+                                        </g>
+                                      ))}
+                                    </>
+                                  )}
+                                </svg>
+                              );
+                            })()}
                           </div>
                           <div className="flex justify-between items-center text-[10px] font-mono mt-4 pt-3" style={{ color: dk ? `${P.sky}60` : `${P.black}40`, borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                            <span>00:00</span><span>12:00 (Peak)</span><span>23:59</span>
+                            {analytics.usageVolumeData?.map((d, idx) => (
+                              <span key={idx}>{d.date}</span>
+                            )) || <span>No volume data</span>}
                           </div>
                         </div>
 
-                        <div className="lg:col-span-4 p-6 rounded-[28px] border relative overflow-hidden min-h-[350px] flex flex-col"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <div className="flex justify-between items-center pb-4 mb-4" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System Events</h3>
-                            <button onClick={() => fetchVitCodes()} className="p-1 rounded-lg hover:opacity-70 transition-colors" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                              <RefreshCw size={12} />
-                            </button>
-                          </div>
-                          <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-                            {secLogs.slice(0, 4).map(log => (
-                              <div key={log.id} className="flex justify-between items-start gap-4 text-xs">
-                                <div className="space-y-0.5">
-                                  <span className="font-bold block leading-tight">{log.event}</span>
-                                  <span className="text-[10px] font-mono block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatLocalTime(log.timestamp)} • {log.ip}</span>
-                                </div>
-                                <span className="text-[9px] px-2 py-0.5 font-bold rounded-lg font-mono tracking-wider uppercase shrink-0 border"
-                                  style={{
-                                    background: log.status === "success" ? `${P.blue}15` : log.status === "failed" ? `${P.error}15` : `${P.sky}20`,
-                                    color: log.status === "success" ? P.blue : log.status === "failed" ? P.error : dk ? P.sky : P.black,
-                                    borderColor: log.status === "success" ? `${P.blue}30` : log.status === "failed" ? `${P.error}30` : `${P.sky}30`,
-                                  }}>{log.status}</span>
+                        {/* Telemetry Overview & DAU/WAU/MAU */}
+                        <div className="lg:col-span-4 space-y-6 flex flex-col">
+                          {/* Live Activity Metrics */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden flex-1 flex flex-col justify-between"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Telemetry Metrics</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4 py-2">
+                              <div className="p-3 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(255,255,255,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                <span className="text-[9px] uppercase font-mono tracking-wider block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>DAU (Daily Active)</span>
+                                <span className="text-xl font-bold font-[family-name:var(--font-outfit)]">{analytics.dau ?? 0}</span>
                               </div>
-                            ))}
+                              <div className="p-3 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(255,255,255,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                <span className="text-[9px] uppercase font-mono tracking-wider block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>WAU (Weekly Active)</span>
+                                <span className="text-xl font-bold font-[family-name:var(--font-outfit)]">{analytics.wau ?? 0}</span>
+                              </div>
+                              <div className="p-3 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(255,255,255,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                <span className="text-[9px] uppercase font-mono tracking-wider block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>MAU (Monthly Active)</span>
+                                <span className="text-xl font-bold font-[family-name:var(--font-outfit)]">{analytics.mau ?? 0}</span>
+                              </div>
+                              <div className="p-3 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(255,255,255,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                <span className="text-[9px] uppercase font-mono tracking-wider block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Total Downloads</span>
+                                <span className="text-xl font-bold font-[family-name:var(--font-outfit)]">{analytics.totalDownloads ?? 0}</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2.5 pt-4 border-t text-xs font-mono" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <div className="flex justify-between">
+                                <span style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Total Code Copies</span>
+                                <span className="font-bold text-emerald-500">{analytics.totalCopies ?? 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Total Injections</span>
+                                <span className="font-bold" style={{ color: P.blue }}>{analytics.totalInjections ?? 0}</span>
+                              </div>
+                            </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* System Events log list */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <div className="flex justify-between items-center pb-4 mb-4" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            <Activity size={12} style={{ color: P.blue }} /> Real-Time Security Audit & Session Log
+                          </h3>
+                          <button onClick={() => { fetchVitCodes(); fetchAuditLogs(); }} className="p-1 rounded-lg hover:opacity-70 transition-colors" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                            <RefreshCw size={12} className={loadingAudit ? "animate-spin" : ""} />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-48 pr-1">
+                          {secLogs.slice(0, 6).map(log => (
+                            <div key={log.id} className="p-3.5 rounded-2xl border flex justify-between items-start gap-4 text-xs transition-all hover:bg-neutral-500/5"
+                              style={{ background: dk ? "rgba(5,5,5,0.20)" : "rgba(250,250,250,0.50)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                              <div className="space-y-1">
+                                <span className="font-bold block leading-tight" style={{ color: dk ? P.white : P.black }}>{log.event}</span>
+                                <span className="text-[10px] font-mono block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                  {formatLocalTime(log.timestamp)} • IP: {log.ip} • User: {log.user}
+                                </span>
+                              </div>
+                              <span className="text-[9px] px-2 py-0.5 font-bold rounded-lg font-mono tracking-wider uppercase shrink-0 border"
+                                style={{
+                                  background: log.status === "success" ? `${P.blue}15` : log.status === "failed" ? `${P.error}15` : `${P.sky}20`,
+                                  color: log.status === "success" ? P.blue : log.status === "failed" ? P.error : dk ? P.sky : P.black,
+                                  borderColor: log.status === "success" ? `${P.blue}30` : log.status === "failed" ? `${P.error}30` : `${P.sky}30`,
+                                }}>{log.status}</span>
+                            </div>
+                          ))}
+                          {secLogs.length === 0 && (
+                            <div className="col-span-2 text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                              No audit logs recorded.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
