@@ -550,7 +550,6 @@ const Features = () => {
 
 const SetupGuide = () => {
   const { dk } = useTheme();
-  const [method, setMethod] = useState<"device" | "extension">("device");
 
   const deviceSteps = [
     {
@@ -573,29 +572,6 @@ const SetupGuide = () => {
     }
   ];
 
-  const extensionSteps = [
-    {
-      step: "01",
-      title: "Run Backend",
-      desc: "Keep the backend app running on your laptop for the secure tunnel.",
-      icon: <Monitor size={20} />
-    },
-    {
-      step: "02",
-      title: "Pin Extension",
-      desc: "Open Chrome, click the LANpad icon, and grab your session link.",
-      icon: <Globe size={20} />
-    },
-    {
-      step: "03",
-      title: "Start Syncing",
-      desc: "Open the link on your phone browser and start moving text instantly.",
-      icon: <Zap size={20} />
-    }
-  ];
-
-  const activeSteps = method === "device" ? deviceSteps : extensionSteps;
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8">
       <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
@@ -603,74 +579,26 @@ const SetupGuide = () => {
           <h3 className="text-4xl font-black font-outfit tracking-tighter uppercase mb-2">Setup Guide</h3>
           <p className={`${dk ? "text-white" : "text-black"}/30 text-sm font-medium font-inter`}>Follow the steps below to initialize your link.</p>
         </div>
-
-        {/* Enhanced Tab Switcher */}
-        <div className={`flex p-1 bg-white/[0.02] border border-white/[0.08] rounded-2xl relative backdrop-blur-md shadow-2xl`}>
-          <motion.div
-            layoutId="activeTab"
-            animate={{ x: method === "device" ? 0 : "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-white rounded-[14px] shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-          />
-          <button
-            onClick={() => setMethod("device")}
-            className={`relative z-10 px-8 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-500 ${method === "device" ? "text-black" : "text-white/30 hover:text-white/60"}`}
-          >
-            In-Device
-          </button>
-          <button
-            onClick={() => setMethod("extension")}
-            className={`relative z-10 px-8 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-500 ${method === "extension" ? "text-black" : "text-white/30 hover:text-white/60"}`}
-          >
-            With Extension
-          </button>
-        </div>
       </div>
 
       <div className="relative min-h-[280px]">
-        {method === "device" && (
-          <div className={`absolute top-12 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500/20 via-sky-500/20 to-transparent hidden md:block`} />
-        )}
+        <div className={`absolute top-12 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500/20 via-sky-500/20 to-transparent hidden md:block`} />
 
-        <AnimatePresence mode="wait">
-          {method === "device" ? (
-            <motion.div
-              key="device"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16"
-            >
-              {deviceSteps.map((s, i) => (
-                <div key={i} className="relative">
-                  <div className={`w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-black text-xs mb-8 relative z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)]`}>
-                    {s.step}
-                  </div>
-                  <h4 className="text-xl font-bold mb-4 font-outfit tracking-tight flex items-center gap-3">
-                    {s.title}
-                  </h4>
-                  <p className={`text-sm ${dk ? "text-white" : "text-black"}/40 leading-relaxed font-inter`}>
-                    {s.desc}
-                  </p>
-                </div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="extension"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="flex flex-col items-center justify-center pt-8 pb-20 text-center"
-            >
-              <div className={`w-20 h-20 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-8 animate-pulse`}>
-                <Globe size={40} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
+          {deviceSteps.map((s, i) => (
+            <div key={i} className="relative">
+              <div className={`w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-black text-xs mb-8 relative z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)]`}>
+                {s.step}
               </div>
-              <h4 className={`text-2xl font-black font-outfit uppercase tracking-tighter mb-4 ${dk ? "text-white" : "text-black"}`}>Thank you for your interest!</h4>
-              <p className={`${dk ? "text-white" : "text-black"}/40 max-w-sm font-medium font-inter`}>The Chrome extension is currently under development and is **coming soon.** Stay tuned for the release!</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <h4 className="text-xl font-bold mb-4 font-outfit tracking-tight flex items-center gap-3">
+                {s.title}
+              </h4>
+              <p className={`text-sm ${dk ? "text-white" : "text-black"}/40 leading-relaxed font-inter`}>
+                {s.desc}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
