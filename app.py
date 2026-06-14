@@ -309,15 +309,17 @@ async def get_api_vitcodes():
 
     urls = []
     if custom_url:
-        urls.append(custom_url.rstrip("/") + "/api/vitcodes")
-    urls.append("http://localhost:3000/api/vitcodes")
+      urls.append(custom_url.rstrip("/") + "/api/vitcodes")
     urls.append("https://lanpad.vercel.app/api/vitcodes")
+    urls.append("http://localhost:3000/api/vitcodes")
 
     async def fetch_one(client, url):
         try:
             r = await client.get(url, timeout=2.0)
             if r.status_code == 200:
-                return r.json()
+                data = r.json()
+                if isinstance(data, list) and len(data) > 0:
+                    return data
         except Exception:
             pass
         return None
@@ -328,6 +330,19 @@ async def get_api_vitcodes():
             res = await task
             if res is not None:
                 return res
+
+    # Fallback: if all lists were empty, try to return any successful response (even if empty)
+    try:
+        async with httpx.AsyncClient() as client:
+            for url in urls:
+                try:
+                    r = await client.get(url, timeout=2.0)
+                    if r.status_code == 200:
+                        return r.json()
+                except Exception:
+                    pass
+    except Exception:
+        pass
     return []
 
 
