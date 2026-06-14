@@ -143,7 +143,10 @@ export default function GlidePassAdmin() {
 
   const dk = resolvedTheme === "dark";
 
-  // ─── Auth ───
+  // ─── Profile & Auth States ───
+  const [adminName, setAdminName] = useState("Nithin");
+  const [adminAvatar, setAdminAvatar] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80");
+
   const [isAuth, setIsAuth] = useState(false);
   const [userIn, setUserIn] = useState("");
   const [passIn, setPassIn] = useState("");
@@ -155,6 +158,12 @@ export default function GlidePassAdmin() {
   // Load stored password (for change-password feature)
   const [storedPassword, setStoredPassword] = useState("check");
 
+  // 2-Step Verification states
+  const [isTwoStepGate, setIsTwoStepGate] = useState(false);
+  const [otpIn, setOtpIn] = useState<string[]>(Array(6).fill(""));
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [isTwoStepEnabled, setIsTwoStepEnabled] = useState(false);
+
   useEffect(() => {
     const logged = localStorage.getItem("glidepass-admin-logged");
     if (logged === "true") setIsAuth(true);
@@ -162,19 +171,48 @@ export default function GlidePassAdmin() {
     if (hist) setLoginHistory(JSON.parse(hist));
     const sp = localStorage.getItem("glidepass-admin-pw");
     if (sp) setStoredPassword(sp);
+
+    // Load admin profile info
+    const sn = localStorage.getItem("glidepass-admin-name");
+    if (sn) setAdminName(sn);
+    const sa = localStorage.getItem("glidepass-admin-avatar");
+    if (sa) setAdminAvatar(sa);
+
+    // Load 2-Step Verification enabled state
+    const tfa = localStorage.getItem("glidepass-2fa-enabled");
+    if (tfa === "true") setIsTwoStepEnabled(true);
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = userIn.trim() === "Nithin" && passIn === storedPassword;
-    const entry = { time: new Date().toLocaleString(), success: ok };
-    const updated = [entry, ...loginHistory].slice(0, 10);
-    setLoginHistory(updated);
-    localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
+    const ok = userIn.trim() === adminName && passIn === storedPassword;
     if (ok) {
+      if (isTwoStepEnabled) {
+        // Trigger 2-Step verification
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedOtp(otp);
+        setIsTwoStepGate(true);
+        // Display OTP to the user for testing/demo purposes
+        setTimeout(() => {
+          showToast("success", `Verification Code sent: ${otp}`);
+        }, 1000);
+
+        // Log OTP generation
+        fetch("/api/admin/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "2FA Verification Code Generated", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
+        }).catch(() => {});
+        return;
+      }
+
+      const entry = { time: new Date().toLocaleString(), success: ok };
+      const updated = [entry, ...loginHistory].slice(0, 10);
+      setLoginHistory(updated);
+      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
       setIsAuth(true);
       if (remember) localStorage.setItem("glidepass-admin-logged", "true");
-      showToast("success", "Access granted. Welcome back, Nithin.");
+      showToast("success", `Access granted. Welcome back, ${adminName}.`);
       // Log successful login
       fetch("/api/admin/audit", {
         method: "POST",
@@ -182,6 +220,10 @@ export default function GlidePassAdmin() {
         body: JSON.stringify({ event: "Admin Session Started", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
       }).catch(() => {});
     } else {
+      const entry = { time: new Date().toLocaleString(), success: ok };
+      const updated = [entry, ...loginHistory].slice(0, 10);
+      setLoginHistory(updated);
+      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
       setLoginAttempts(p => p + 1);
       showToast("error", "Invalid credentials. Access denied.");
       // Log failed login
@@ -189,6 +231,35 @@ export default function GlidePassAdmin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event: "Failed Auth Attempt", username: userIn.trim() || "Unknown", ip: "127.0.0.1", status: "failed" })
+      }).catch(() => {});
+    }
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const entered = otpIn.join("");
+    if (entered === generatedOtp) {
+      const entry = { time: new Date().toLocaleString(), success: true };
+      const updated = [entry, ...loginHistory].slice(0, 10);
+      setLoginHistory(updated);
+      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
+      setIsAuth(true);
+      setIsTwoStepGate(false);
+      setOtpIn(Array(6).fill(""));
+      if (remember) localStorage.setItem("glidepass-admin-logged", "true");
+      showToast("success", `Access granted. Welcome back, ${adminName}.`);
+
+      fetch("/api/admin/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "Admin Session Started (2FA)", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
+      }).catch(() => {});
+    } else {
+      showToast("error", "Incorrect 2-Step Verification Code.");
+      fetch("/api/admin/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "2FA Code Verification Failed", username: userIn.trim(), ip: "127.0.0.1", status: "failed" })
       }).catch(() => {});
     }
   };
@@ -1781,13 +1852,17 @@ export default function GlidePassAdmin() {
   };
 
   // ─── Profile ───
-  const [adminName, setAdminName] = useState("Nithin");
-  const [adminAvatar, setAdminAvatar] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80");
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
 
-  const handleUpdateProfile = (e: React.FormEvent) => { e.preventDefault(); showToast("success", "Profile updated."); };
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminName.trim()) return showToast("error", "Name cannot be empty.");
+    localStorage.setItem("glidepass-admin-name", adminName.trim());
+    localStorage.setItem("glidepass-admin-avatar", adminAvatar.trim());
+    showToast("success", "Profile updated successfully.");
+  };
 
   const handleChangePw = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1910,45 +1985,105 @@ export default function GlidePassAdmin() {
                   <p className={txt3} style={{ fontSize: 12 }}>Administrative credentials required</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="w-full space-y-4 text-left">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Username</label>
-                    <div className="relative">
-                      <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
-                      <input
-                        type="text" value={userIn} onChange={e => setUserIn(e.target.value)} placeholder="Nithin" required
-                        className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
-                      />
+                {isTwoStepGate ? (
+                  <form onSubmit={handleVerifyOtp} className="w-full space-y-6 text-center">
+                    <p className="text-xs text-left" style={{ color: dk ? `${P.sky}90` : `${P.black}80` }}>
+                      Enter the 6-digit verification code sent to your authenticator app or device.
+                    </p>
+                    <div className="flex justify-between gap-2">
+                      {otpIn.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          id={`otp-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          value={digit}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const newOtp = [...otpIn];
+                            newOtp[idx] = val.slice(-1);
+                            setOtpIn(newOtp);
+                            if (val && idx < 5) {
+                              const nextInput = document.getElementById(`otp-${idx + 1}`);
+                              if (nextInput) nextInput.focus();
+                            }
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === "Backspace" && !otpIn[idx] && idx > 0) {
+                              const prevInput = document.getElementById(`otp-${idx - 1}`);
+                              if (prevInput) {
+                                prevInput.focus();
+                                const newOtp = [...otpIn];
+                                newOtp[idx - 1] = "";
+                                setOtpIn(newOtp);
+                              }
+                            }
+                          }}
+                          className={`w-12 h-12 text-center text-lg font-bold rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
+                        />
+                      ))}
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Access Key</label>
-                    <div className="relative">
-                      <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
-                      <input
-                        type={showPass ? "text" : "password"} value={passIn} onChange={e => setPassIn(e.target.value)} placeholder="••••" required
-                        className={`w-full text-xs rounded-xl pl-10 pr-11 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
-                      />
-                      <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                        {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                    
+                    <button
+                      type="submit"
+                      className="w-full py-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                      style={{ background: P.blue }}
+                    >
+                      <Unlock size={14} /> Verify & Log In
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsTwoStepGate(false);
+                        setOtpIn(Array(6).fill(""));
+                      }}
+                      className="text-xs font-bold" style={{ color: dk ? P.sky : P.blue }}
+                    >
+                      Back to Sign In
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleLogin} className="w-full space-y-4 text-left">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Username</label>
+                      <div className="relative">
+                        <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
+                        <input
+                          type="text" value={userIn} onChange={e => setUserIn(e.target.value)} placeholder="Nithin" required
+                          className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 pt-1">
-                    <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="rounded w-3.5 h-3.5" style={{ accentColor: P.blue }} />
-                    <span className="text-[11px]" style={{ color: dk ? `${P.sky}90` : `${P.black}80` }}>Remember session</span>
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Access Key</label>
+                      <div className="relative">
+                        <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
+                        <input
+                          type={showPass ? "text" : "password"} value={passIn} onChange={e => setPassIn(e.target.value)} placeholder="••••" required
+                          className={`w-full text-xs rounded-xl pl-10 pr-11 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
+                        />
+                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                          {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
-                    style={{ background: P.blue }}
-                  >
-                    <Unlock size={14} /> Authenticate
-                  </button>
-                </form>
+                    <div className="flex items-center gap-2 pt-1">
+                      <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="rounded w-3.5 h-3.5" style={{ accentColor: P.blue }} />
+                      <span className="text-[11px]" style={{ color: dk ? `${P.sky}90` : `${P.black}80` }}>Remember session</span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                      style={{ background: P.blue }}
+                    >
+                      <Unlock size={14} /> Authenticate
+                    </button>
+                  </form>
+                )}
 
                 {loginHistory.length > 0 && (
                   <div className="w-full pt-4 text-left" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)"}` }}>
@@ -4031,6 +4166,16 @@ export default function GlidePassAdmin() {
                           <label className="text-[9px] uppercase font-bold tracking-wider block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Admin Name</label>
                           <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)}
                             className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2.5 py-1">
+                          <input type="checkbox" id="2fa-checkbox" checked={isTwoStepEnabled} onChange={e => {
+                            setIsTwoStepEnabled(e.target.checked);
+                            localStorage.setItem("glidepass-2fa-enabled", e.target.checked ? "true" : "false");
+                            showToast("success", e.target.checked ? "2-Step Verification enabled." : "2-Step Verification disabled.");
+                          }} className="w-4 h-4 rounded cursor-pointer transition-all" style={{ accentColor: P.blue }} />
+                          <label htmlFor="2fa-checkbox" className="text-xs font-semibold cursor-pointer select-none" style={{ color: dk ? P.white : P.black }}>
+                            Enable 2-Step Verification
+                          </label>
                         </div>
                         <div className="flex justify-end">
                           <button type="submit" className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-[0.98] transition-all" style={{ background: P.blue }}>Update Profile</button>
