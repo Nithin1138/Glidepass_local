@@ -207,8 +207,13 @@ export async function initDb() {
         activity TEXT,
         joined_date TEXT NOT NULL,
         active_devices INTEGER DEFAULT 0,
-        premium BOOLEAN DEFAULT false
+        premium BOOLEAN DEFAULT false,
+        password TEXT DEFAULT 'check'
       );
+    `);
+
+    await client.query(`
+      ALTER TABLE vit_users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'check';
     `);
 
     await client.query(`
@@ -253,11 +258,11 @@ export async function initDb() {
     const usersCountRes = await client.query("SELECT COUNT(*) FROM vit_users");
     if (parseInt(usersCountRes.rows[0].count, 10) === 0) {
       await client.query(`
-        INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium) VALUES
-        ('1', 'Nithin Kumar', 'nithin@vitap.ac.in', 'Super Admin', 'active', true, 'Active 2m ago', '2026-01-10', 2, true),
-        ('2', 'Sarah Connor', 'sarah@vitap.ac.in', 'Developer', 'active', true, 'Active 4h ago', '2026-02-15', 1, true),
-        ('3', 'Alex Mercer', 'mercer@vitap.ac.in', 'Auditor', 'suspended', false, 'Banned 2d ago', '2026-03-01', 0, false),
-        ('4', 'David Lightman', 'david.23bce@vitap.ac.in', 'Contributor', 'pending', false, 'Registered 1h ago', '2026-06-12', 3, false);
+        INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password) VALUES
+        ('1', 'Nithin Kumar', 'nithin@vitap.ac.in', 'Super Admin', 'active', true, 'Active 2m ago', '2026-01-10', 2, true, 'check'),
+        ('2', 'Sarah Connor', 'sarah@vitap.ac.in', 'Developer', 'active', true, 'Active 4h ago', '2026-02-15', 1, true, 'check'),
+        ('3', 'Alex Mercer', 'mercer@vitap.ac.in', 'Auditor', 'suspended', false, 'Banned 2d ago', '2026-03-01', 0, false, 'check'),
+        ('4', 'David Lightman', 'david.23bce@vitap.ac.in', 'Contributor', 'pending', false, 'Registered 1h ago', '2026-06-12', 3, false, 'check');
       `);
     }
 
@@ -1352,7 +1357,7 @@ async function writeUsersRbac(data: { users: any[], rbac: any }) {
 export async function getDbUsers(): Promise<any[]> {
   if (pool) {
     try {
-      const res = await pool.query('SELECT id, name, email, role, status, verified, activity, joined_date as "joinedDate", active_devices as "activeDevices", premium FROM vit_users ORDER BY id ASC');
+      const res = await pool.query('SELECT id, name, email, role, status, verified, activity, joined_date as "joinedDate", active_devices as "activeDevices", premium, password FROM vit_users ORDER BY id ASC');
       return res.rows;
     } catch (e) {
       console.error(e);
@@ -1386,8 +1391,8 @@ export async function getDbRbac(): Promise<any> {
 export async function updateDbUser(user: any): Promise<void> {
   if (pool) {
     await pool.query(
-      "INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role, status = EXCLUDED.status, verified = EXCLUDED.verified, activity = EXCLUDED.activity, joined_date = EXCLUDED.joined_date, active_devices = EXCLUDED.active_devices, premium = EXCLUDED.premium",
-      [user.id, user.name, user.email, user.role, user.status, user.verified, user.activity, user.joinedDate, user.activeDevices, user.premium]
+      "INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role, status = EXCLUDED.status, verified = EXCLUDED.verified, activity = EXCLUDED.activity, joined_date = EXCLUDED.joined_date, active_devices = EXCLUDED.active_devices, premium = EXCLUDED.premium, password = EXCLUDED.password",
+      [user.id, user.name, user.email, user.role, user.status, user.verified, user.activity, user.joinedDate, user.activeDevices, user.premium, user.password || 'check']
     );
   } else {
     const data = await readUsersRbac();

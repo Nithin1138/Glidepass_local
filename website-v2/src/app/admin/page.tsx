@@ -104,6 +104,7 @@ interface UserRecord {
   joinedDate: string;
   activeDevices: number;
   premium: boolean;
+  password?: string;
 }
 
 interface SecurityLog {
@@ -164,6 +165,8 @@ export default function GlidePassAdmin() {
   const [generatedOtp, setGeneratedOtp] = useState("");
   const [isTwoStepEnabled, setIsTwoStepEnabled] = useState(false);
 
+  const [currentUser, setCurrentUser] = useState<UserRecord | null>(null);
+
   useEffect(() => {
     const logged = localStorage.getItem("glidepass-admin-logged");
     if (logged === "true") setIsAuth(true);
@@ -171,6 +174,11 @@ export default function GlidePassAdmin() {
     if (hist) setLoginHistory(JSON.parse(hist));
     const sp = localStorage.getItem("glidepass-admin-pw");
     if (sp) setStoredPassword(sp);
+
+    const savedUser = localStorage.getItem("glidepass-current-user");
+    if (savedUser) {
+      try { setCurrentUser(JSON.parse(savedUser)); } catch (e) {}
+    }
 
     // Load admin profile info
     const sn = localStorage.getItem("glidepass-admin-name");
@@ -183,55 +191,62 @@ export default function GlidePassAdmin() {
     if (tfa === "true") setIsTwoStepEnabled(true);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = userIn.trim() === adminName && passIn === storedPassword;
-    if (ok) {
-      if (isTwoStepEnabled) {
-        // Trigger 2-Step verification
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedOtp(otp);
-        setIsTwoStepGate(true);
-        // Display OTP to the user for testing/demo purposes
-        setTimeout(() => {
-          showToast("success", `Verification Code sent: ${otp}`);
-        }, 1000);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: userIn.trim(), password: passIn })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const loggedUser = data.user;
 
-        // Log OTP generation
+        if (isTwoStepEnabled) {
+          // Trigger 2-Step verification
+          const otp = Math.floor(100000 + Math.random() * 900000).toString();
+          setGeneratedOtp(otp);
+          setIsTwoStepGate(true);
+          // Display OTP to the user for testing/demo purposes
+          setTimeout(() => {
+            showToast("success", `Verification Code sent: ${otp}`);
+          }, 1000);
+
+          // Log OTP generation
+          fetch("/api/admin/audit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ event: "2FA Verification Code Generated", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
+          }).catch(() => {});
+          return;
+        }
+
+        // Save session
+        setCurrentUser(loggedUser);
+        localStorage.setItem("glidepass-current-user", JSON.stringify(loggedUser));
+        setIsAuth(true);
+        if (remember) localStorage.setItem("glidepass-admin-logged", "true");
+        showToast("success", `Access granted. Welcome back, ${loggedUser.name}.`);
+        
+        // Log successful login
         fetch("/api/admin/audit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ event: "2FA Verification Code Generated", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
+          body: JSON.stringify({ event: "Admin Session Started", username: loggedUser.name, ip: "127.0.0.1", status: "success" })
         }).catch(() => {});
-        return;
+      } else {
+        setLoginAttempts(p => p + 1);
+        showToast("error", data.error || "Invalid credentials. Access denied.");
+        // Log failed login
+        fetch("/api/admin/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "Failed Auth Attempt", username: userIn.trim() || "Unknown", ip: "127.0.0.1", status: "failed" })
+        }).catch(() => {});
       }
-
-      const entry = { time: new Date().toLocaleString(), success: ok };
-      const updated = [entry, ...loginHistory].slice(0, 10);
-      setLoginHistory(updated);
-      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
-      setIsAuth(true);
-      if (remember) localStorage.setItem("glidepass-admin-logged", "true");
-      showToast("success", `Access granted. Welcome back, ${adminName}.`);
-      // Log successful login
-      fetch("/api/admin/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "Admin Session Started", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
-      }).catch(() => {});
-    } else {
-      const entry = { time: new Date().toLocaleString(), success: ok };
-      const updated = [entry, ...loginHistory].slice(0, 10);
-      setLoginHistory(updated);
-      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
-      setLoginAttempts(p => p + 1);
-      showToast("error", "Invalid credentials. Access denied.");
-      // Log failed login
-      fetch("/api/admin/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "Failed Auth Attempt", username: userIn.trim() || "Unknown", ip: "127.0.0.1", status: "failed" })
-      }).catch(() => {});
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to log in.");
     }
   };
 
@@ -239,21 +254,30 @@ export default function GlidePassAdmin() {
     e.preventDefault();
     const entered = otpIn.join("");
     if (entered === generatedOtp) {
-      const entry = { time: new Date().toLocaleString(), success: true };
-      const updated = [entry, ...loginHistory].slice(0, 10);
-      setLoginHistory(updated);
-      localStorage.setItem("glidepass-login-history", JSON.stringify(updated));
-      setIsAuth(true);
-      setIsTwoStepGate(false);
-      setOtpIn(Array(6).fill(""));
-      if (remember) localStorage.setItem("glidepass-admin-logged", "true");
-      showToast("success", `Access granted. Welcome back, ${adminName}.`);
-
-      fetch("/api/admin/audit", {
+      fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "Admin Session Started (2FA)", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
-      }).catch(() => {});
+        body: JSON.stringify({ username: userIn.trim(), password: passIn })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const loggedUser = data.user;
+          setCurrentUser(loggedUser);
+          localStorage.setItem("glidepass-current-user", JSON.stringify(loggedUser));
+          setIsAuth(true);
+          setIsTwoStepGate(false);
+          setOtpIn(Array(6).fill(""));
+          if (remember) localStorage.setItem("glidepass-admin-logged", "true");
+          showToast("success", `Access granted. Welcome back, ${loggedUser.name}.`);
+
+          fetch("/api/admin/audit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ event: "Admin Session Started (2FA)", username: loggedUser.name, ip: "127.0.0.1", status: "success" })
+          }).catch(() => {});
+        }
+      });
     } else {
       showToast("error", "Incorrect 2-Step Verification Code.");
       fetch("/api/admin/audit", {
@@ -269,11 +293,11 @@ export default function GlidePassAdmin() {
     fetch("/api/admin/audit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "Admin Session Terminated", username: adminName, ip: "127.0.0.1", status: "success" })
+      body: JSON.stringify({ event: "Admin Session Terminated", username: currentUser?.name || adminName, ip: "127.0.0.1", status: "success" })
     }).catch(() => {});
     setIsAuth(false);
+    setCurrentUser(null);
     localStorage.removeItem("glidepass-admin-logged");
-    setUserIn("");
     setPassIn("");
     showToast("success", "Session terminated.");
   };
@@ -315,6 +339,7 @@ export default function GlidePassAdmin() {
   // Add User states
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("Contributor");
   const [newUserVerified, setNewUserVerified] = useState(false);
   const [newUserPremium, setNewUserPremium] = useState(false);
@@ -1601,7 +1626,8 @@ export default function GlidePassAdmin() {
       activity: "Registered just now",
       joinedDate: new Date().toISOString().split("T")[0],
       activeDevices: 0,
-      premium: newUserPremium
+      premium: newUserPremium,
+      password: newUserPassword.trim() || "check"
     };
 
     try {
@@ -1614,6 +1640,7 @@ export default function GlidePassAdmin() {
         setUsers(prev => [...prev, newUser]);
         setNewUserName("");
         setNewUserEmail("");
+        setNewUserPassword("");
         setNewUserRole("Contributor");
         setNewUserVerified(false);
         setNewUserPremium(false);
@@ -1914,6 +1941,28 @@ export default function GlidePassAdmin() {
       }
     } catch (e) {}
   };
+
+  const hasPermission = (key: string): boolean => {
+    const role = currentUser?.role || "Super Admin";
+    const perms = rbac[role];
+    if (!perms) return true;
+
+    if (key === "dashboard" || key === "profile") return true;
+    if (key === "analytics") return !!perms.analytics;
+    if (key === "users") return !!perms.users;
+    if (key === "rbac") return !!perms.rbac;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
+    if (key === "system") return !!perms.system;
+    if (key === "security") return !!perms.security;
+    if (key === "subscriptions" || key === "settings") return !!perms.settings;
+    return true;
+  };
+
+  useEffect(() => {
+    if (isAuth && view && !hasPermission(view)) {
+      setView("dashboard");
+    }
+  }, [view, currentUser, rbac]);
 
   const formatLocalTime = (isoString: string) => {
     try {
@@ -2261,7 +2310,13 @@ export default function GlidePassAdmin() {
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Subscriptions" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                  ].map(group => (
+                  ]
+                  .map(group => ({
+                    ...group,
+                    items: group.items.filter(item => hasPermission(item.key))
+                  }))
+                  .filter(group => group.items.length > 0)
+                  .map(group => (
                     <div key={group.label} className="space-y-1">
                       {sidebarOpen && <span className="text-[9px] uppercase font-bold px-3 block mb-2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{group.label}</span>}
                       {group.items.map(item => {
@@ -2274,8 +2329,8 @@ export default function GlidePassAdmin() {
                               color: active ? "white" : dk ? `${P.sky}CC` : `${P.black}AA`,
                               boxShadow: active ? `0 8px 16px rgba(0,119,192,0.2)` : "none",
                             }}>
-                            <item.icon size={14} />
-                            {sidebarOpen && <span>{item.name}</span>}
+                              <item.icon size={14} />
+                              {sidebarOpen && <span>{item.name}</span>}
                           </button>
                         );
                       })}
@@ -2287,11 +2342,11 @@ export default function GlidePassAdmin() {
               {/* Profile footer */}
               <div className="p-4 space-y-2" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
                 <button onClick={() => { setView("profile"); setShowBin(false); }} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
-                  <img src={adminAvatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border shadow-md shrink-0" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
+                  <img src={currentUser?.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=0077C0&color=fff` : adminAvatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border shadow-md shrink-0" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
                   {sidebarOpen && (
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold truncate">{adminName}</span>
-                      <span className="text-[9px] truncate" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Administrator</span>
+                      <span className="text-xs font-bold truncate">{currentUser?.name || adminName}</span>
+                      <span className="text-[9px] truncate" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>{currentUser?.role || "Super Admin"}</span>
                     </div>
                   )}
                 </button>
@@ -2586,7 +2641,7 @@ export default function GlidePassAdmin() {
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                         <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: P.blue }}>Create / Add User</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                           <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Full Name</label>
                             <input type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nithin Kumar" required
@@ -2595,6 +2650,11 @@ export default function GlidePassAdmin() {
                           <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Email address</label>
                             <input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="nithin@vitap.ac.in" required
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Password</label>
+                            <input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="••••" required
                               className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
                           </div>
                           <div className="space-y-1">
