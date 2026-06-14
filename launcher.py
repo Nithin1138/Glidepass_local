@@ -1214,41 +1214,52 @@ class LANpadLauncher:
                 self.lock_status_lbl.config(text="Please enter an activation key", fg=self.RED)
                 return
             self.lock_status_lbl.config(text="Verifying activation key...", fg=self.DIM)
+            self.key_entry.config(state="disabled")
+            btn_cv.unbind("<ButtonRelease-1>")
             self.root.update()
             
-            success, tier, expires_at = self.verify_key_online(key)
-            if success:
-                days_left = calculate_days_left(expires_at)
-                license_path = os.path.expanduser("~/.lanpad_license.json")
-                
-                # Check for downgrade
-                try:
-                    if os.path.exists(license_path):
-                        import json
-                        with open(license_path, "r", encoding="utf-8") as f:
-                            old_lic = json.load(f)
-                        old_tier = old_lic.get("tier", "Basic").upper()
-                        old_expires = old_lic.get("expires_at", "")
-                        if calculate_days_left(old_expires) > 0:
-                            ranks = {"BASIC": 1, "PRO": 2, "MAX": 3, "ULTRA": 4}
-                            if ranks.get(tier.upper(), 0) < ranks.get(old_tier, 0):
-                                self.lock_status_lbl.config(text=f"Cannot downgrade active {old_tier} plan to {tier.upper()}", fg=self.RED)
-                                return
-                except Exception as e:
-                    print(f"[monetization] Downgrade check error: {e}")
+            def _verify_task():
+                success, tier, expires_at = self.verify_key_online(key)
+                self.root.after(0, lambda: _handle_result(success, tier, expires_at))
 
-                try:
-                    import json
-                    with open(license_path, "w", encoding="utf-8") as f:
-                        json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
-                except Exception as e:
-                    print(f"[monetization] Error saving license: {e}")
-                
-                self.show_success_overlay(tier, days_left)
-            else:
-                self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
-                entry_frame.config(highlightbackground=self.RED)
-                self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
+            def _handle_result(success, tier, expires_at):
+                self.key_entry.config(state="normal")
+                btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
+                if success:
+                    days_left = calculate_days_left(expires_at)
+                    license_path = os.path.expanduser("~/.lanpad_license.json")
+                    
+                    # Check for downgrade
+                    try:
+                        if os.path.exists(license_path):
+                            import json
+                            with open(license_path, "r", encoding="utf-8") as f:
+                                old_lic = json.load(f)
+                            old_tier = old_lic.get("tier", "Basic").upper()
+                            old_expires = old_lic.get("expires_at", "")
+                            if calculate_days_left(old_expires) > 0:
+                                ranks = {"BASIC": 1, "PRO": 2, "MAX": 3, "ULTRA": 4}
+                                if ranks.get(tier.upper(), 0) < ranks.get(old_tier, 0):
+                                    self.lock_status_lbl.config(text=f"Cannot downgrade active {old_tier} plan to {tier.upper()}", fg=self.RED)
+                                    return
+                    except Exception as e:
+                        print(f"[monetization] Downgrade check error: {e}")
+
+                    try:
+                        import json
+                        with open(license_path, "w", encoding="utf-8") as f:
+                            json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                    except Exception as e:
+                        print(f"[monetization] Error saving license: {e}")
+                    
+                    self.show_success_overlay(tier, days_left)
+                else:
+                    self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
+                    entry_frame.config(highlightbackground=self.RED)
+                    self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
+
+            import threading
+            threading.Thread(target=_verify_task, daemon=True).start()
 
         # Activate Button on Canvas (styled custom button)
         btn_cv = tk.Canvas(v, width=W - 96, height=48, bg="#0D0D10", highlightthickness=0)
@@ -1872,12 +1883,14 @@ del "%~f0"
                     except Exception:
                         pass
                     sh_content = f"""#!/bin/bash
+exec > /tmp/lanpad_update.log 2>&1
 while kill -0 {mypid} 2>/dev/null; do
     sleep 0.5
 done
 mkdir -p /tmp/LANpad_Mount_Update
 hdiutil attach "{download_path}" -mountpoint /tmp/LANpad_Mount_Update -nobrowse -quiet
 if [ -d "/tmp/LANpad_Mount_Update/LANpad.app" ]; then
+    rm -rf /Applications/LANpad.app
     cp -R /tmp/LANpad_Mount_Update/LANpad.app /Applications/
     hdiutil detach /tmp/LANpad_Mount_Update -quiet
     xattr -cr /Applications/LANpad.app 2>/dev/null
