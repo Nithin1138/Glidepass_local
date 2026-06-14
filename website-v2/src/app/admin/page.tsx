@@ -317,7 +317,8 @@ export default function GlidePassAdmin() {
     version: "1.5.1",
     windowsUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad_setup.exe",
     macUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad.dmg",
-    forceUpdate: false
+    forceUpdate: false,
+    changelog: "• Performance improvements\n• Core stability enhancements"
   });
 
   const [savingVersion, setSavingVersion] = useState(false);
@@ -1470,6 +1471,7 @@ export default function GlidePassAdmin() {
         fetchAuditLogs();
         fetchMonetization();
         fetchUsersRbac();
+        fetchAppVersion();
         const interval = setInterval(() => {
           fetchVitCodes(true);
           fetchTelemetry();
@@ -1477,6 +1479,7 @@ export default function GlidePassAdmin() {
           fetchAuditLogs();
           fetchMonetization();
           fetchUsersRbac();
+          fetchAppVersion();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1498,6 +1501,13 @@ export default function GlidePassAdmin() {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+      if (view === "versioning") {
+        fetchAppVersion();
+        const interval = setInterval(() => {
+          fetchAppVersion();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1821,6 +1831,22 @@ export default function GlidePassAdmin() {
         const data = await res.json();
         if (data.users) setUsers(data.users);
         if (data.rbac) setRbac(data.rbac);
+      }
+    } catch (e) {}
+  };
+
+  const fetchAppVersion = async () => {
+    try {
+      const res = await fetch("/api/ota?file=downloads/version.json");
+      if (res.ok) {
+        const data = await res.json();
+        setAppVersionData({
+          version: data.version || "1.5.1",
+          windowsUrl: data.windows_url || "",
+          macUrl: data.mac_url || "",
+          forceUpdate: !!data.force_update,
+          changelog: data.changelog || ""
+        });
       }
     } catch (e) {}
   };
@@ -4499,80 +4525,120 @@ export default function GlidePassAdmin() {
                   )}
 
                   {/* ═══ VERSION MANAGER ═══ */}
+                  {/* ═══ VERSION MANAGER ═══ */}
                   {view === "versioning" && (
-                    <motion.div key="vers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                        <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Update App Version (version.json)</h3>
-                        <div className="space-y-4">
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Target Version</label>
-                            <input type="text" value={appVersionData.version} onChange={e => setAppVersionData(prev => ({ ...prev, version: e.target.value }))}
-                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Windows Package URL</label>
-                            <input type="text" value={appVersionData.windowsUrl} onChange={e => setAppVersionData(prev => ({ ...prev, windowsUrl: e.target.value }))}
-                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>macOS Bundle URL</label>
-                            <input type="text" value={appVersionData.macUrl} onChange={e => setAppVersionData(prev => ({ ...prev, macUrl: e.target.value }))}
-                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
-                          </div>
-                          <label className="flex items-center justify-between cursor-pointer pt-2">
-                            <span className="text-xs font-bold">Enforce Mandatory Upgrade (Force Update)</span>
-                            <input type="checkbox" checked={appVersionData.forceUpdate} onChange={e => setAppVersionData(prev => ({ ...prev, forceUpdate: e.target.checked }))} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
-                          </label>
-                          <div className="flex justify-end pt-4">
-                            <button onClick={async () => {
-                              setSavingVersion(true);
-                              try {
-                                const res = await fetch("/api/ota", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({
-                                    file: "downloads/version.json",
-                                    content: JSON.stringify({
-                                      version: appVersionData.version,
-                                      windows_url: appVersionData.windowsUrl,
-                                      mac_url: appVersionData.macUrl,
-                                      force_update: appVersionData.forceUpdate
-                                    }, null, 2)
-                                  })
-                                });
-                                if (!res.ok) throw new Error("Failed to save version configuration.");
-                                showToast("success", "Version manifest updated successfully.");
-                              } catch (e: any) {
-                                showToast("error", e.message);
-                              } finally {
-                                setSavingVersion(false);
-                              }
-                            }} disabled={savingVersion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
-                              {savingVersion ? "Updating..." : "Push Version Update"}
-                            </button>
-                          </div>
+                    <motion.div key="vers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      {/* Header with Ticking Clock */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Version Manager</h2>
+                          <p className="text-xs text-white/60">Configure OTA updates, package download locations, and mandatory upgrades</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <span className="w-2 h-2 rounded-full bg-[#0077C0] animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing time..."}</span>
                         </div>
                       </div>
 
-                      {/* General OTA / Client settings information */}
-                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                        <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Automatic Telemetry Status</h3>
-                        <div className="space-y-4 py-2 text-xs font-mono">
-                          {[
-                            { k: "Active Phone Pairings", v: `${telemetry.activePairings} devices` },
-                            { k: "Average Client Latency", v: telemetry.avgLatency },
-                            { k: "Total Flash Paste Triggers", v: `${telemetry.flashPasteCount} runs` },
-                            { k: "Total Type Mode Triggers", v: `${telemetry.typeModeCount} runs` }
-                          ].map((r, i) => (
-                            <div key={i} className="flex justify-between pb-2" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                              <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.k}</span>
-                              <span className="font-bold text-white">{r.v}</span>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Column 1: Config Form */}
+                        <div className="lg:col-span-2 p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Update App Version (version.json)</h3>
+                          <div className="space-y-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Target Version</label>
+                              <input type="text" value={appVersionData.version} onChange={e => setAppVersionData(prev => ({ ...prev, version: e.target.value }))}
+                                className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
                             </div>
-                          ))}
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Windows Package URL</label>
+                              <input type="text" value={appVersionData.windowsUrl} onChange={e => setAppVersionData(prev => ({ ...prev, windowsUrl: e.target.value }))}
+                                className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>macOS Bundle URL</label>
+                              <input type="text" value={appVersionData.macUrl} onChange={e => setAppVersionData(prev => ({ ...prev, macUrl: e.target.value }))}
+                                className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Changelog / Release Notes</label>
+                              <textarea value={appVersionData.changelog} onChange={e => setAppVersionData(prev => ({ ...prev, changelog: e.target.value }))}
+                                rows={4} className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none font-sans ${inputBg}`} placeholder="Describe the updates in this version..." />
+                            </div>
+                            <label className="flex items-center justify-between cursor-pointer pt-2">
+                              <span className="text-xs font-bold">Enforce Mandatory Upgrade (Force Update)</span>
+                              <input type="checkbox" checked={appVersionData.forceUpdate} onChange={e => setAppVersionData(prev => ({ ...prev, forceUpdate: e.target.checked }))} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
+                            </label>
+                            <div className="flex justify-end pt-4">
+                              <button onClick={async () => {
+                                setSavingVersion(true);
+                                try {
+                                  const res = await fetch("/api/ota", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      file: "downloads/version.json",
+                                      content: JSON.stringify({
+                                        version: appVersionData.version,
+                                        windows_url: appVersionData.windowsUrl,
+                                        mac_url: appVersionData.macUrl,
+                                        force_update: appVersionData.forceUpdate,
+                                        changelog: appVersionData.changelog
+                                      }, null, 2)
+                                    })
+                                  });
+                                  if (!res.ok) throw new Error("Failed to save version configuration.");
+                                  showToast("success", "Version manifest updated successfully.");
+                                } catch (e: any) {
+                                  showToast("error", e.message);
+                                } finally {
+                                  setSavingVersion(false);
+                                }
+                              }} disabled={savingVersion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                                {savingVersion ? "Updating..." : "Push Version Update"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Column 2: Live JSON Manifest Preview & Telemetry */}
+                        <div className="space-y-8 lg:col-span-1">
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Live version.json</h3>
+                            <div className={`p-4 rounded-xl border font-mono text-[10px] overflow-auto max-h-[200px] ${inputBg}`} style={{ color: dk ? `${P.sky}90` : `${P.black}80` }}>
+                              <pre>{JSON.stringify({
+                                version: appVersionData.version,
+                                windows_url: appVersionData.windowsUrl,
+                                mac_url: appVersionData.macUrl,
+                                force_update: appVersionData.forceUpdate,
+                                changelog: appVersionData.changelog
+                              }, null, 2)}</pre>
+                            </div>
+                          </div>
+
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Automatic Telemetry</h3>
+                            <div className="space-y-4 py-2 text-xs font-mono">
+                              {[
+                                { k: "Active Phone Pairings", v: `${telemetry.activePairings} devices` },
+                                { k: "Average Client Latency", v: telemetry.avgLatency },
+                                { k: "Total Flash Paste Triggers", v: `${telemetry.flashPasteCount} runs` },
+                                { k: "Total Type Mode Triggers", v: `${telemetry.typeModeCount} runs` }
+                              ].map((r, i) => (
+                                <div key={i} className="flex justify-between pb-2" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.k}</span>
+                                  <span className="font-bold text-white">{r.v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
