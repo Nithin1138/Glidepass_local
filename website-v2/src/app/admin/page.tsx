@@ -7,7 +7,7 @@ import {
   Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail,
-  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch
+  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders
 } from "lucide-react";
 import Link from "next/link";
 
@@ -313,7 +313,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "versioning"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -1526,7 +1526,7 @@ export default function GlidePassAdmin() {
         }, 1000);
         return () => clearInterval(interval);
       }
-      if (view === "subscriptions") {
+      if (view === "subscriptions" || view === "plans") {
         fetchMonetization();
         const interval = setInterval(() => {
           fetchMonetization();
@@ -2084,7 +2084,7 @@ export default function GlidePassAdmin() {
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security") return !!perms.security;
-    if (key === "subscriptions" || key === "settings") return !!perms.settings;
+    if (key === "subscriptions" || key === "plans" || key === "settings") return !!perms.settings;
     return true;
   };
 
@@ -2222,6 +2222,7 @@ export default function GlidePassAdmin() {
       { name: "Go to Audit Trail", action: () => { setView("security"); setCmdOpen(false); } },
       { name: "Go to Settings", action: () => { setView("settings"); setCmdOpen(false); } },
       { name: "Go to Subscriptions & Licensing", action: () => { setView("subscriptions"); setCmdOpen(false); } },
+      { name: "Go to Plans Config & Keys", action: () => { setView("plans"); setCmdOpen(false); } },
       { name: "Go to Version Manager", action: () => { setView("versioning"); setCmdOpen(false); } },
       { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
       { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
@@ -2504,7 +2505,7 @@ export default function GlidePassAdmin() {
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Subscriptions" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -4842,6 +4843,24 @@ export default function GlidePassAdmin() {
                               )}
                             </div>
                           </div>
+                        </div>
+                      </div>
+
+                    </motion.div>
+                  )}
+
+                  {view === "plans" && (
+                    <motion.div key="plans" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      {/* Header with Ticking Clock */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Plans & Keys</h2>
+                          <p className="text-xs text-white/60">Configure global monetization switch, license tiers, and generate activation keys</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing time..."}</span>
                         </div>
                       </div>
 
