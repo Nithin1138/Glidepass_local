@@ -711,7 +711,8 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
                   borderHover: "group-hover/card:border-amber-500/40",
                   iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
-                  href: undefined,
+                  href: "/api/download?platform=mac",
+                  secondaryLabel: "Copy Install Cmd",
                   topLineColor: "via-amber-500/40"
                 },
                 {
@@ -720,7 +721,7 @@ export default function Home() {
                   label: "Download EXE",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                   commandLabel: "Or install via PowerShell:",
-                  href: "/downloads/LANpad_Windows.zip",
+                  href: "/api/download?platform=windows",
                   version: "v1.5.7",
                   supported: "Windows 10/11",
                   size: "38.2 MB",

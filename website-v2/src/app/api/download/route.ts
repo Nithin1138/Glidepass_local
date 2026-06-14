@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 
   // 2. Fetch the target download links from downloads/version.json if it exists, otherwise use fallback urls
   let downloadUrl = platform === "windows"
-    ? "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad_setup.exe"
-    : "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad.dmg";
+    ? "/downloads/LANpad_Windows.zip"
+    : "/downloads/LANpad_macOS.dmg";
 
   try {
     const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";

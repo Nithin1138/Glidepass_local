@@ -1492,7 +1492,13 @@ export default function GlidePassAdmin() {
   useEffect(() => {
     if (isAuth) {
       if (view === "ota") fetchTemplate(selectedFile);
-      if (view === "analytics") fetchTelemetry();
+      if (view === "analytics") {
+        fetchTelemetry();
+        const interval = setInterval(() => {
+          fetchTelemetry();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
       if (view === "security") {
         fetchAuditLogs();
         const interval = setInterval(() => {
