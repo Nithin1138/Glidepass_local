@@ -705,12 +705,10 @@
 
         if (backBtn) {
             backBtn.addEventListener('click', () => {
-                if (document.referrer.includes('/vitcodes')) {
-                    window.location.href = '/vitcodes';
-                } else if (window.history.length > 1) {
+                if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/';
+                    window.location.href = '/vitcodes';
                 }
             });
         }
@@ -718,12 +716,10 @@
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
                 resetSession();
-                if (document.referrer.includes('/vitcodes')) {
-                    window.location.href = '/vitcodes';
-                } else if (window.history.length > 1) {
+                if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/';
+                    window.location.href = '/vitcodes';
                 }
             }
         });
