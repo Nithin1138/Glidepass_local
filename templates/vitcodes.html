@@ -572,7 +572,7 @@
         // Initialize history state on page load
         function initHistoryState() {
             if (!history.state) {
-                history.replaceState({ view: 'overview', subView: 'types', examType: null, sessionId: null }, '');
+                history.replaceState({ view: 'overview', subView: 'types', examType: null, sessionId: null }, '', window.location.pathname);
             }
         }
 
@@ -744,7 +744,7 @@
             refreshIcons();
 
             if (push) {
-                history.pushState({ view: 'detail', subView: 'sessions', examType: currentExamType, sessionId: sessionId }, '');
+                history.pushState({ view: 'detail', subView: 'sessions', examType: currentExamType, sessionId: sessionId }, '', '#codes');
             }
         }
 
@@ -753,7 +753,7 @@
             const sessions = allSessions.filter(s => s.examType === type);
             renderSessions(sessions);
             if (push) {
-                history.pushState({ view: 'overview', subView: 'sessions', examType: type, sessionId: null }, '');
+                history.pushState({ view: 'overview', subView: 'sessions', examType: type, sessionId: null }, '', '#sessions');
             }
         }
 
