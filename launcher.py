@@ -1410,8 +1410,20 @@ class LANpadLauncher:
 
                 self.root.after(0, lambda: lbl.config(text="Applying update..."))
 
+                # Clean up tunnel process before quitting
+                try:
+                    self.stop_tunnel()
+                except Exception:
+                    pass
+
                 mypid = os.getpid()
                 if is_windows():
+                    # Terminate parent menu bar helper process if any
+                    try:
+                        import signal
+                        os.kill(os.getppid(), signal.SIGTERM)
+                    except Exception:
+                        pass
                     install_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "LANpad")
                     bat_content = f"""@echo off
 taskkill /F /PID {mypid} >nul 2>&1
@@ -1428,6 +1440,12 @@ del "%~f0"
                     os._exit(0)
 
                 elif is_mac():
+                    # Terminate parent menu bar helper process if any
+                    try:
+                        import signal
+                        os.kill(os.getppid(), signal.SIGTERM)
+                    except Exception:
+                        pass
                     sh_content = f"""#!/bin/bash
 while kill -0 {mypid} 2>/dev/null; do
     sleep 0.5

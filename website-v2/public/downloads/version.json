@@ -1,6 +1,6 @@
 {
-  "version": "1.5.6",
+  "version": "1.5.7",
   "windows_url": "https://lanpad.vercel.app/downloads/LANpad_Windows.zip",
   "mac_url": "https://lanpad.vercel.app/downloads/LANpad_macOS.dmg",
-  "changelog": "v1.5.6 - Fixed: Windows UI layout overlapping, clumsy text/logo spacing, Segoe UI and Consolas fonts integration."
+  "changelog": "v1.5.7 - Fixed: Auto-updater now shuts down menubar helper and background processes cleanly before applying update."
 }
