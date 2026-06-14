@@ -264,6 +264,14 @@ export async function initDb() {
         ('3', 'Alex Mercer', 'mercer@vitap.ac.in', 'Auditor', 'suspended', false, 'Banned 2d ago', '2026-03-01', 0, false, 'check'),
         ('4', 'David Lightman', 'david.23bce@vitap.ac.in', 'Contributor', 'pending', false, 'Registered 1h ago', '2026-06-12', 3, false, 'check');
       `);
+    } else {
+      // Force update user 1 to ADMIN MASTER and Veera Nithin
+      await client.query(`
+        INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password)
+        VALUES ('1', 'Veera Nithin', 'veeranithin9@gmail.com', 'ADMIN MASTER', 'active', true, 'Active 2m ago', '2026-01-10', 2, true, 'check')
+        ON CONFLICT (id)
+        DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role;
+      `);
     }
 
     const rbacCountRes = await client.query("SELECT COUNT(*) FROM vit_rbac");
@@ -278,6 +286,14 @@ export async function initDb() {
       for (const [role, perms] of Object.entries(defaultRbac)) {
         await client.query("INSERT INTO vit_rbac (role, permissions) VALUES ($1, $2)", [role, JSON.stringify(perms)]);
       }
+    } else {
+      const adminMasterPerms = { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true };
+      await client.query(`
+        INSERT INTO vit_rbac (role, permissions)
+        VALUES ('ADMIN MASTER', $1)
+        ON CONFLICT (role)
+        DO UPDATE SET permissions = EXCLUDED.permissions;
+      `, [JSON.stringify(adminMasterPerms)]);
     }
     
     isDbInitialized = true;
