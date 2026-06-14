@@ -768,37 +768,23 @@ export default function Home() {
               <p className={`${dk ? "text-white" : "text-black"}/30 max-w-lg mx-auto font-medium text-base font-inter`}>Download the backend for your OS and install the extension to start your local sync tunnel.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {[
-                {
-                  title: "Chrome Extension",
-                  icon: <Globe size={28} />,
-                  label: "Add to Chrome",
-                  version: "v1.4.2",
-                  size: "2.1 MB",
-                  theme: "amber",
-                  gradient: "from-amber-500/30 to-transparent",
-                  btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
-                  borderHover: "group-hover/card:border-amber-500/40",
-                  iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
-                  installCommand: undefined,
-                  href: undefined,
-                  topLineColor: "via-amber-500/40"
-                },
                 {
                   title: "macOS Backend",
                   icon: <Monitor size={28} />,
                   label: "Copy Install Cmd",
                   installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
                   version: "v1.5.7",
+                  supported: "macOS 12.0+",
                   size: "95.7 MB",
-                  theme: "rose",
-                  gradient: "from-rose-500/30 to-transparent",
-                  btnGradient: "hover:bg-gradient-to-r hover:from-rose-600 hover:to-rose-400",
-                  borderHover: "group-hover/card:border-rose-500/40",
-                  iconGlow: "group-hover/card:text-rose-400 group-hover/card:border-rose-500/30 group-hover/card:bg-rose-500/10",
+                  theme: "amber",
+                  gradient: "from-amber-500/30 to-transparent",
+                  btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
+                  borderHover: "group-hover/card:border-amber-500/40",
+                  iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
                   href: undefined,
-                  topLineColor: "via-rose-500/40"
+                  topLineColor: "via-amber-500/40"
                 },
                 {
                   title: "Windows Backend",
@@ -806,9 +792,9 @@ export default function Home() {
                   label: "Copy Install Cmd",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                   version: "v1.5.7",
+                  supported: "Windows 10/11",
                   size: "38.2 MB",
                   theme: "indigo",
-
                   gradient: "from-indigo-500/30 to-transparent",
                   btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                   borderHover: "group-hover/card:border-indigo-500/40",
@@ -852,6 +838,7 @@ export default function Home() {
                       </div>
                       <div className="text-right">
                         <div className={`text-[10px] font-black uppercase tracking-widest ${dk ? "text-white" : "text-black"}/60 mb-1`}>{d.version}</div>
+                        <div className={`text-[9px] font-mono uppercase tracking-widest ${dk ? "text-white" : "text-black"}/40 mb-1`}>{d.supported}</div>
                         <div className={`text-[9px] font-mono uppercase tracking-widest ${dk ? "text-white" : "text-black"}/20`}>{d.size}</div>
                       </div>
                     </div>
