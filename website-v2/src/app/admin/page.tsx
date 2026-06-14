@@ -69,6 +69,19 @@ interface Question {
   isDeleted?: boolean;
   isLocked?: boolean;
   edits?: any[];
+  tags?: string[];
+}
+
+interface PendingEdit {
+  id: string;
+  questionId: string;
+  questionTitle: string;
+  originalCode: string;
+  contributedCode: string;
+  language: string;
+  contributorEmail: string;
+  reason: string;
+  timestamp: string;
 }
 
 interface VitCode {
@@ -88,6 +101,9 @@ interface UserRecord {
   status: "active" | "suspended" | "pending";
   verified: boolean;
   activity: string;
+  joinedDate: string;
+  activeDevices: number;
+  premium: boolean;
 }
 
 interface SecurityLog {
@@ -249,6 +265,49 @@ export default function GlidePassAdmin() {
     { id: "3", title: "Rate-Limit Alert", desc: "Host sync exceeded 1,200 req/min threshold.", type: "info" as const, time: "3h ago" },
   ]);
 
+  // ─── Content Moderation Approval Queue & Tags ───
+  const [showApprovalQueue, setShowApprovalQueue] = useState(false);
+  const [spamFilterActive, setSpamFilterActive] = useState(true);
+  const [newQTags, setNewQTags] = useState("");
+  const [pinnedExamType, setPinnedExamType] = useState("NERD");
+
+  const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([
+    {
+      id: "edit_1",
+      questionId: "q_1781179083355",
+      questionTitle: "1st",
+      originalCode: `import java.util.*;\nclass Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine();\n        int first = -1, second = -1;\n        for (int i = 0; i < s.length(); i++) {\n            int count = 0;\n            for (int j = 0; j < s.length(); j++) {\n                if (s.charAt(i) == s.charAt(j))\n                    count++;\n            }\n            if (count == 1) {\n                if (first == -1)\n                    first = i;\n                else {\n                    second = i;\n                    break;\n                }\n            }\n        }\n        if (first != -1 && second != -1) {\n            System.out.println(first + " - " + s.charAt(first));\n            System.out.println(second + " - " + s.charAt(second));\n        } else {\n            System.out.print("-1");\n        }\n    }\n}`,
+      contributedCode: `import java.util.*;\nclass Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine();\n        int first = -1, second = -1;\n        // Optimized O(N) frequency array search\n        int[] freq = new int[256];\n        for (char c : s.toCharArray()) {\n            freq[c]++;\n        }\n        for (int i = 0; i < s.length(); i++) {\n            if (freq[s.charAt(i)] == 1) {\n                if (first == -1) {\n                    first = i;\n                } else {\n                    second = i;\n                    break;\n                }\n            }\n        }\n        if (first != -1 && second != -1) {\n            System.out.println(first + " - " + s.charAt(first));\n            System.out.println(second + " - " + s.charAt(second));\n        } else {\n            System.out.print("-1");\n        }\n    }\n}`,
+      language: "java",
+      contributorEmail: "srivatsav.23bce1042@vitap.ac.in",
+      reason: "Optimize time complexity from O(N^2) to O(N) using frequency array.",
+      timestamp: "2026-06-14 11:20"
+    },
+    {
+      id: "edit_2",
+      questionId: "q_test_1781339939765",
+      questionTitle: "Test Question",
+      originalCode: "console.log('hello');",
+      contributedCode: "console.log('hello world!');",
+      language: "javascript",
+      contributorEmail: "spam_bot@badguy.com",
+      reason: "fsafasfa sfasfas fsa (automated/garbage test)",
+      timestamp: "2026-06-14 11:45"
+    }
+  ]);
+
+  const [referralStats] = useState([
+    { code: "VITAP50", email: "student.referral@vitap.ac.in", count: 42 },
+    { code: "FREEWEEK", email: "free.week@vitstudent.ac.in", count: 118 },
+    { code: "REWARD_PASS", email: "contributor.vip@vitap.ac.in", count: 24 }
+  ]);
+
+  const [freeTierLimits, setFreeTierLimits] = useState({
+    dailyCopyLimit: 3,
+    maxDevices: 2,
+    allowBypassRateLimit: false
+  });
+
   // ─── Toast ───
   const [toast, setToast] = useState<{ type: "success" | "error" | null; msg: string }>({ type: null, msg: "" });
   const showToast = (type: "success" | "error", msg: string) => {
@@ -257,13 +316,13 @@ export default function GlidePassAdmin() {
   };
 
   // ─── OTA ───
-  const [selectedFile, setSelectedFile] = useState<"index.html" | "center.html">("center.html");
+  const [selectedFile, setSelectedFile] = useState<"index.html" | "center.html" | "vitcodes.html">("center.html");
   const [otaContent, setOtaContent] = useState("");
   const [loadingOta, setLoadingOta] = useState(true);
   const [savingOta, setSavingOta] = useState(false);
   const [usingCustom, setUsingCustom] = useState(false);
 
-  const fetchTemplate = async (f: "index.html" | "center.html") => {
+  const fetchTemplate = async (f: "index.html" | "center.html" | "vitcodes.html") => {
     setLoadingOta(true);
     try {
       const res = await fetch(`/api/ota?file=${f}`);
@@ -317,6 +376,169 @@ export default function GlidePassAdmin() {
     } finally {
       setLoadingOta(false);
     }
+  };
+
+  const renderDiff = (orig: string, cont: string) => {
+    const origLines = orig.split("\n");
+    const contLines = cont.split("\n");
+    const maxLines = Math.max(origLines.length, contLines.length);
+    const diffRows = [];
+    for (let i = 0; i < maxLines; i++) {
+      const oLine = origLines[i] !== undefined ? origLines[i] : "";
+      const cLine = contLines[i] !== undefined ? contLines[i] : "";
+      diffRows.push({
+        lineNo: i + 1,
+        original: oLine,
+        contributed: cLine,
+        isDifferent: oLine !== cLine
+      });
+    }
+    return diffRows;
+  };
+
+  const handleApproveEdit = async (edit: PendingEdit) => {
+    setVitSessions(prev => prev.map(s => {
+      const hasQ = s.questions?.some(q => q.id === edit.questionId);
+      if (hasQ) {
+        return {
+          ...s,
+          questions: s.questions.map(q => {
+            if (q.id === edit.questionId) {
+              return {
+                ...q,
+                code: edit.contributedCode,
+                comment: edit.reason,
+                contributorEmail: edit.contributorEmail,
+                edits: [...(q.edits || []), {
+                  editorEmail: edit.contributorEmail,
+                  reason: edit.reason,
+                  timestamp: Date.now()
+                }]
+              };
+            }
+            return q;
+          })
+        };
+      }
+      return s;
+    }));
+
+    try {
+      const origQ = vitSessions.flatMap(s => s.questions || []).find(q => q.id === edit.questionId);
+      if (origQ) {
+        const updatedQ = {
+          ...origQ,
+          code: edit.contributedCode,
+          comment: edit.reason,
+          contributorEmail: edit.contributorEmail,
+          edits: [...(origQ.edits || []), {
+            editorEmail: edit.contributorEmail,
+            reason: edit.reason,
+            timestamp: Date.now()
+          }]
+        };
+        const res = await fetch("/api/vitcodes/question", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: updatedQ, editorEmail: edit.contributorEmail })
+        });
+        if (!res.ok) throw new Error("Failed to save approved edit");
+        showToast("success", `Edit approved and merged into database successfully.`);
+      }
+    } catch (e: any) {
+      showToast("error", "Error saving approved edit: " + e.message);
+    }
+    setPendingEdits(prev => prev.filter(x => x.id !== edit.id));
+  };
+
+  const handleRejectEdit = (edit: PendingEdit) => {
+    const msg = prompt("Optional rejection message for contributor:", "This contribution contains formatting errors or is incorrect.");
+    if (msg === null) return;
+    setPendingEdits(prev => prev.filter(x => x.id !== edit.id));
+    showToast("success", `Contribution rejected. Message sent: "${msg || 'None'}"`);
+  };
+
+  const handleRequestClarification = (edit: PendingEdit) => {
+    const msg = prompt("Ask contributor to clarify their changes:", "Please explain why this change is necessary or provide test cases.");
+    if (!msg) return;
+    showToast("success", `Clarification request sent to ${edit.contributorEmail}`);
+  };
+
+  const handleBulkImport = (fileContent: string, fileType: "json" | "csv") => {
+    try {
+      let importedQuestions: Omit<Question, "id">[] = [];
+      if (fileType === "json") {
+        const parsed = JSON.parse(fileContent);
+        if (!Array.isArray(parsed)) throw new Error("JSON must be an array of questions.");
+        importedQuestions = parsed.map(item => ({
+          title: String(item.title || "").trim(),
+          code: String(item.code || "").trim(),
+          language: String(item.language || "cpp").trim(),
+          comment: String(item.comment || "").trim(),
+          tags: Array.isArray(item.tags) ? item.tags : []
+        }));
+      } else {
+        const lines = fileContent.split("\n");
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const parts = lines[i].split(",");
+          if (parts.length >= 2) {
+            importedQuestions.push({
+              title: parts[0].replace(/^["']|["']$/g, '').trim(),
+              code: parts[1].replace(/^["']|["']$/g, '').replace(/\\n/g, '\n').trim(),
+              language: (parts[2] || "cpp").replace(/^["']|["']$/g, '').trim(),
+              comment: (parts[3] || "").replace(/^["']|["']$/g, '').trim(),
+              tags: parts[4] ? parts[4].replace(/^["']|["']$/g, '').split(";").map(t => t.trim()) : []
+            });
+          }
+        }
+      }
+      
+      if (importedQuestions.length === 0) {
+        showToast("error", "No valid questions found in file.");
+        return;
+      }
+      
+      importedQuestions.forEach(async (iq) => {
+        const newQ: Question = {
+          id: "q_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+          ...iq
+        };
+        setVitSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+            return { ...s, questions: [...s.questions, newQ] };
+          }
+          return s;
+        }));
+        
+        const currentSession = vitSessions.find(s => s.id === activeSessionId);
+        await fetch("/api/vitcodes/question", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: activeSessionId,
+            question: newQ,
+            session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
+          })
+         });
+      });
+      showToast("success", `Bulk imported ${importedQuestions.length} questions successfully.`);
+    } catch (e: any) {
+      showToast("error", "Failed to parse import: " + e.message);
+    }
+  };
+
+  const handleToggleActiveExamType = async (type: string) => {
+    const nextVal = pinnedExamType === type ? "" : type;
+    setPinnedExamType(nextVal);
+    try {
+      await fetch("/api/vitcodes/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examType: "ACTIVE_PINNED_EXAM", rule: nextVal })
+      });
+      showToast("success", nextVal ? `Pinned ${nextVal} to Home hero screen.` : "Unpinned exam type from Home screen.");
+    } catch (e) {}
   };
 
   // ─── VIT Codes ───
@@ -572,7 +794,8 @@ export default function GlidePassAdmin() {
     if (!activeSessionId) return;
     if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
     
-    const newQ: Question = { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment };
+    const parsedTags = newQTags.split(",").map(t => t.trim()).filter(t => t.startsWith("#") || t.length > 0).map(t => t.startsWith("#") ? t : `#${t}`);
+    const newQ: Question = { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment, tags: parsedTags };
     
     // Optimistic
     setVitSessions(prev => prev.map(s => {
@@ -584,6 +807,7 @@ export default function GlidePassAdmin() {
     setQTitle("");
     setQCode("");
     setQComment("");
+    setNewQTags("");
 
     const currentSession = vitSessions.find(s => s.id === activeSessionId);
 
@@ -840,10 +1064,10 @@ export default function GlidePassAdmin() {
 
   // ─── Users ───
   const [users, setUsers] = useState<UserRecord[]>([
-    { id: "1", name: "Nithin Kumar", email: "nithin@glidepass.app", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago" },
-    { id: "2", name: "Sarah Connor", email: "sarah@resist.org", role: "Developer", status: "active", verified: true, activity: "Active 4h ago" },
-    { id: "3", name: "Alex Mercer", email: "mercer@gentek.com", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago" },
-    { id: "4", name: "David Lightman", email: "wopr@falken.mil", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago" },
+    { id: "1", name: "Nithin Kumar", email: "nithin@vitap.ac.in", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true },
+    { id: "2", name: "Sarah Connor", email: "sarah@vitap.ac.in", role: "Developer", status: "active", verified: true, activity: "Active 4h ago", joinedDate: "2026-02-15", activeDevices: 1, premium: true },
+    { id: "3", name: "Alex Mercer", email: "mercer@vitap.ac.in", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago", joinedDate: "2026-03-01", activeDevices: 0, premium: false },
+    { id: "4", name: "David Lightman", email: "david.23bce@vitap.ac.in", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago", joinedDate: "2026-06-12", activeDevices: 3, premium: false },
   ]);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
@@ -858,6 +1082,8 @@ export default function GlidePassAdmin() {
 
   const toggleVerify = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, verified: !u.verified } : u)); showToast("success", "Verification toggled."); };
   const toggleBan = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u)); showToast("success", "User status updated."); };
+  const handleUpdateRole = (id: string, role: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, role } : u)); showToast("success", `Role updated to ${role}.`); };
+  const handleTogglePremium = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, premium: !u.premium } : u)); showToast("success", "Premium license status updated."); };
 
   const exportCSV = () => {
     const hdr = ["ID", "Name", "Email", "Role", "Status", "Verified"];
@@ -1635,6 +1861,116 @@ export default function GlidePassAdmin() {
                               )
                             )}
                           </motion.div>
+                        ) : showApprovalQueue ? (
+                          <motion.div key="vit-approval" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
+                            {/* Back Button & Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                              <div>
+                                <button onClick={() => setShowApprovalQueue(false)} className="flex items-center gap-1.5 text-xs font-bold hover:opacity-70 transition-colors mb-2" style={{ color: P.blue }}>
+                                  <ArrowLeft size={14} /> Back to Sessions
+                                </button>
+                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">VIT CODES APPROVAL QUEUE</h2>
+                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Review and merge student contributed code snippet optimizations</p>
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+                                <span>Spam Filter Guard</span>
+                                <input type="checkbox" checked={spamFilterActive} onChange={e => setSpamFilterActive(e.target.checked)} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
+                              </label>
+                            </div>
+
+                            {/* List of Edits */}
+                            {(() => {
+                              const filteredEdits = pendingEdits.filter(edit => {
+                                if (spamFilterActive && (edit.contributorEmail.includes("spam") || edit.reason.includes("garbage") || edit.contributedCode.length < 5)) {
+                                  return false;
+                                }
+                                return true;
+                              });
+
+                              if (filteredEdits.length === 0) {
+                                return (
+                                  <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                    <CheckCircle size={32} className="mx-auto mb-3 opacity-30 text-green-400" />
+                                    <p className="text-xs">All contributions reviewed. Queue is empty!</p>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="space-y-8">
+                                  {filteredEdits.map(edit => {
+                                    const diffRows = renderDiff(edit.originalCode, edit.contributedCode);
+                                    return (
+                                      <div key={edit.id} className="p-6 rounded-[28px] border space-y-4"
+                                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                        
+                                        {/* Edit Info */}
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                          <div>
+                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                              <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider bg-[#0077C0]/15 text-[#0077C0] border border-[#0077C0]/30">{edit.language}</span>
+                                              <span className="text-xs font-bold">Question: {edit.questionTitle}</span>
+                                            </div>
+                                            <p className="text-xs font-medium text-amber-500">Reason: {edit.reason}</p>
+                                            <p className="text-[10px] font-mono opacity-60">Submitted by: {edit.contributorEmail} at {edit.timestamp}</p>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button onClick={() => handleApproveEdit(edit)} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
+                                              <Check size={13} /> Approve (Merge)
+                                            </button>
+                                            <button onClick={() => handleRequestClarification(edit)} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
+                                              <Info size={13} /> Clarify
+                                            </button>
+                                            <button onClick={() => handleRejectEdit(edit)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
+                                              <X size={13} /> Reject
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Diff Side-by-Side Viewer */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          {/* Original */}
+                                          <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-red-400 flex items-center gap-1"><X size={12} /> Original Code</h4>
+                                            <div className="rounded-xl overflow-auto max-h-80 border" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                              <table className="w-full font-mono text-[10px] text-left border-collapse" style={{ background: "#0d1117" }}>
+                                                <tbody>
+                                                  {diffRows.map(row => (
+                                                    <tr key={row.lineNo} className={row.isDifferent ? "bg-red-950/35 text-red-300" : "text-gray-400"}>
+                                                      <td className="p-1 px-2 border-r border-gray-800 text-right select-none text-gray-600 w-8">{row.lineNo}</td>
+                                                      <td className="p-1 px-3 whitespace-pre">{row.original}</td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+
+                                          {/* Contributed */}
+                                          <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Check size={12} /> Contributed Code</h4>
+                                            <div className="rounded-xl overflow-auto max-h-80 border" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                              <table className="w-full font-mono text-[10px] text-left border-collapse" style={{ background: "#0d1117" }}>
+                                                <tbody>
+                                                  {diffRows.map(row => (
+                                                    <tr key={row.lineNo} className={row.isDifferent ? "bg-green-950/35 text-green-300" : "text-gray-400"}>
+                                                      <td className="p-1 px-2 border-r border-gray-800 text-right select-none text-gray-600 w-8">{row.lineNo}</td>
+                                                      <td className="p-1 px-3 whitespace-pre">{row.contributed}</td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </motion.div>
                         ) : !vitDetailView ? (
                           <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
                             {/* Header */}
@@ -1776,10 +2112,17 @@ export default function GlidePassAdmin() {
                                       </select>
                                     </div>
                                   </div>
-                                  <div>
-                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
-                                    <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
-                                      className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
+                                      <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
+                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Tags (Comma separated, e.g. #midterm2026, #da1)</label>
+                                      <input type="text" value={newQTags} onChange={e => setNewQTags(e.target.value)} placeholder="e.g. #midterm2026, #da1"
+                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                                    </div>
                                   </div>
                                   <div className="flex flex-col h-64">
                                     <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
@@ -1787,7 +2130,34 @@ export default function GlidePassAdmin() {
                                       className="w-full flex-1 text-xs font-mono rounded-xl p-4 border focus:outline-none resize-none"
                                       style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
                                   </div>
-                                  <div className="flex justify-end">
+                                  <div className="flex justify-between items-center flex-wrap gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="file"
+                                        id="bulk-import-file"
+                                        accept=".json,.csv"
+                                        className="hidden"
+                                        onChange={e => {
+                                          const file = e.target.files?.[0];
+                                          if (!file) return;
+                                          const reader = new FileReader();
+                                          reader.onload = (event) => {
+                                            const content = event.target?.result as string;
+                                            const type = file.name.endsWith(".json") ? "json" : "csv";
+                                            handleBulkImport(content, type);
+                                          };
+                                          reader.readAsText(file);
+                                          e.target.value = ""; // reset input
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => document.getElementById("bulk-import-file")?.click()}
+                                        className="px-4 py-2.5 rounded-xl border text-xs font-bold transition-all hover:bg-white/5"
+                                        style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}
+                                      >
+                                        Bulk Import JSON/CSV
+                                      </button>
+                                    </div>
                                     <button onClick={handleAddQuestion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-[0.98] transition-all"
                                       style={{ background: P.blue }}><Plus size={13} /> Add Question</button>
                                   </div>
@@ -1811,6 +2181,9 @@ export default function GlidePassAdmin() {
                                         </div>
                                         <div className="flex items-center gap-3 shrink-0 ml-4">
                                           <span className="text-[9px] font-mono px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
+                                          {q.tags && q.tags.map(t => (
+                                            <span key={t} className="text-[8px] px-1.5 py-0.5 rounded border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{t}</span>
+                                          ))}
                                           <button onClick={e => { e.stopPropagation(); handleToggleQuestionLock(q.id, !!q.isLocked); }} className="p-1 rounded hover:opacity-70 transition-colors" style={{ color: q.isLocked ? P.blue : P.sky }} title={q.isLocked ? "Unlock code" : "Lock code"}>
                                             {q.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                                           </button>
@@ -2291,7 +2664,7 @@ export default function GlidePassAdmin() {
                             <Layout size={13} /> Choose File
                           </h2>
                           <div className="space-y-2">
-                            {(["center.html", "index.html"] as const).map(file => (
+                            {(["center.html", "index.html", "vitcodes.html"] as const).map(file => (
                               <button key={file} onClick={() => setSelectedFile(file)}
                                 className="w-full text-left p-4 rounded-2xl flex items-center gap-3.5 transition-all border"
                                 style={{
@@ -2300,11 +2673,13 @@ export default function GlidePassAdmin() {
                                   color: selectedFile === file ? P.blue : dk ? `${P.sky}CC` : `${P.black}AA`,
                                 }}>
                                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: selectedFile === file ? `${P.blue}15` : dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                                  {file === "center.html" ? <MonitorSmartphone size={16} /> : <FileCode size={16} />}
+                                  {file === "center.html" ? <MonitorSmartphone size={16} /> : file === "index.html" ? <FileCode size={16} /> : <Code size={16} />}
                                 </div>
                                 <div className="text-xs">
                                   <p className="font-bold">{file}</p>
-                                  <p className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{file === "center.html" ? "Mobile Command Center" : "Mobile Landing Page"}</p>
+                                  <p className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                    {file === "center.html" ? "Mobile Command Center" : file === "index.html" ? "Mobile Landing Page" : "VIT Exam Codes Page"}
+                                  </p>
                                 </div>
                               </button>
                             ))}
@@ -2656,6 +3031,91 @@ export default function GlidePassAdmin() {
                           </div>
                         </div>
                       </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+                        {/* Referral Statistics */}
+                        <div className="rounded-[28px] border overflow-hidden p-6 relative"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Referral Engine Statistics</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referral Code</th>
+                                  <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referrer Email</th>
+                                  <th className="p-3 text-[9px] uppercase font-bold text-right" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Signups Referred</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {referralStats.map((r, i) => (
+                                  <tr key={i} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-3 font-mono font-bold" style={{ color: P.blue }}>{r.code}</td>
+                                    <td className="p-3">{r.email}</td>
+                                    <td className="p-3 text-right font-mono font-bold" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.count}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Feature Gate Limits Switches */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Feature Gate Control Switches</h3>
+                          <div className="space-y-5">
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span>Daily Free Copy Limit</span>
+                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.dailyCopyLimit} copies</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="20"
+                                value={freeTierLimits.dailyCopyLimit}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, dailyCopyLimit: parseInt(e.target.value) }))}
+                                className="w-full"
+                                style={{ accentColor: P.blue }}
+                              />
+                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum code sync files basic users can pull per 24 hours.</p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span>Maximum Paired Devices</span>
+                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.maxDevices} devices</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="5"
+                                value={freeTierLimits.maxDevices}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, maxDevices: parseInt(e.target.value) }))}
+                                className="w-full"
+                                style={{ accentColor: P.blue }}
+                              />
+                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum concurrent mobile pairings allowed per user device node.</p>
+                            </div>
+
+                            <label className="flex items-center justify-between cursor-pointer pt-2">
+                              <div className="space-y-0.5">
+                                <span className="text-xs font-bold block">Rate-Limit Bypass Switch</span>
+                                <span className="text-[10px] block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Allow verified users to bypass global host network speed limitations.</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={freeTierLimits.allowBypassRateLimit}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, allowBypassRateLimit: e.target.checked }))}
+                                className="rounded-md w-4 h-4 shrink-0"
+                                style={{ accentColor: P.blue }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
 
@@ -2904,6 +3364,20 @@ export default function GlidePassAdmin() {
                                     onChange={e => handleUpdateSessionLimit(t, parseInt(e.target.value, 10) || 1)}
                                     className={`w-10 text-[10px] rounded-lg px-1 py-0.5 border focus:outline-none ${inputBg}`} 
                                   />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Pin:</span>
+                                  <button 
+                                    onClick={() => handleToggleActiveExamType(t)}
+                                    className="px-1.5 py-0.5 rounded text-[8px] font-bold border transition-all uppercase tracking-wider"
+                                    style={{ 
+                                      background: pinnedExamType === t ? `${P.blue}15` : "transparent",
+                                      borderColor: pinnedExamType === t ? `${P.blue}30` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+                                      color: pinnedExamType === t ? P.blue : dk ? `${P.sky}60` : `${P.black}40`
+                                    }}
+                                  >
+                                    {pinnedExamType === t ? "Pinned" : "Pin"}
+                                  </button>
                                 </div>
                               </div>
                             </div>

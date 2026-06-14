@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const file = searchParams.get("file");
 
-  if (!file || (file !== "index.html" && file !== "center.html")) {
-    return NextResponse.json({ error: "Invalid file parameter. Must be index.html or center.html" }, { status: 400 });
+  const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json"];
+  if (!file || !allowedFiles.includes(file)) {
+    return NextResponse.json({ error: "Invalid file parameter." }, { status: 400 });
   }
 
   try {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (fs.existsSync(customFilePath)) {
       const content = fs.readFileSync(customFilePath, "utf8");
       return new NextResponse(content, {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: { "Content-Type": file.endsWith(".json") ? "application/json; charset=utf-8" : "text/html; charset=utf-8" },
       });
     }
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (fs.existsSync(defaultFilePath)) {
       const content = fs.readFileSync(defaultFilePath, "utf8");
       return new NextResponse(content, {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: { "Content-Type": file.endsWith(".json") ? "application/json; charset=utf-8" : "text/html; charset=utf-8" },
       });
     }
 
@@ -49,8 +50,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { file, content } = body;
 
-    if (!file || (file !== "index.html" && file !== "center.html")) {
-      return NextResponse.json({ error: "Invalid file parameter. Must be index.html or center.html" }, { status: 400 });
+    const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json"];
+    if (!file || !allowedFiles.includes(file)) {
+      return NextResponse.json({ error: "Invalid file parameter." }, { status: 400 });
     }
 
     if (typeof content !== "string") {
