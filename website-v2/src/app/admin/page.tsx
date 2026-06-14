@@ -4957,93 +4957,6 @@ export default function GlidePassAdmin() {
                               ))}
                             </div>
                           </div>
-                          
-                          {/* Matrix Control for Plans */}
-                          <div className="lg:col-span-12 p-6 rounded-[28px] border relative overflow-hidden mt-6"
-                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                            <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Technical Controls Matrix</h3>
-                            <div className="overflow-x-auto pb-2">
-                              <table className="w-full text-left text-[11px]" style={{ minWidth: "600px" }}>
-                                <thead>
-                                  <tr>
-                                    <th className="p-2 border-b opacity-60 uppercase font-bold tracking-wider" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>Feature</th>
-                                    {monetizationSettings.plans.map(plan => (
-                                      <th key={plan.tier} className="p-2 border-b text-center font-bold uppercase tracking-wider" style={{ color: P.blue, borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>{plan.tier}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {/* Sessions */}
-                                  <tr>
-                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>Max Devices (0=unlmt)</td>
-                                    {monetizationSettings.plans.map((plan, planIdx) => (
-                                      <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                          <input 
-                                            type="number" min="0" max="999"
-                                            value={plan.max_sessions ?? 1}
-                                            onChange={e => {
-                                              const updatedPlans = [...monetizationSettings.plans];
-                                              updatedPlans[planIdx].max_sessions = parseInt(e.target.value) || 0;
-                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                            }}
-                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
-                                          />
-                                      </td>
-                                    ))}
-                                  </tr>
-                                  {/* VITCodes */}
-                                  <tr>
-                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>VITCode Limit (0=unlmt)</td>
-                                    {monetizationSettings.plans.map((plan, planIdx) => (
-                                      <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                          <input 
-                                            type="number" min="0" max="999"
-                                            value={plan.max_vitcodes ?? 0}
-                                            onChange={e => {
-                                              const updatedPlans = [...monetizationSettings.plans];
-                                              updatedPlans[planIdx].max_vitcodes = parseInt(e.target.value) || 0;
-                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                            }}
-                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
-                                          />
-                                      </td>
-                                    ))}
-                                  </tr>
-                                  {/* Toggles */}
-                                  {[
-                                    { key: 'allow_live_sync', label: 'Live Sync' },
-                                    { key: 'allow_typing', label: 'Normal Typing' },
-                                    { key: 'allow_typing_mode', label: 'Coding Typing' },
-                                    { key: 'allow_inject', label: 'Inject Mode' },
-                                    { key: 'allow_raw', label: 'Flash (Raw) Mode' },
-                                    { key: 'allow_select_copy', label: 'Select Copy' },
-                                    { key: 'allow_fetch', label: 'Fetch Paste' },
-                                    { key: 'allow_refill', label: 'Refill Action' },
-                                    { key: 'allow_vitcode', label: 'VITCodes Access' }
-                                  ].map((toggle) => (
-                                    <tr key={toggle.key}>
-                                      <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>
-                                      {monetizationSettings.plans.map((plan, planIdx) => (
-                                        <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                          <input 
-                                            type="checkbox" 
-                                            checked={plan[toggle.key] !== false} // Default to true if undefined
-                                            onChange={e => {
-                                              const updatedPlans = [...monetizationSettings.plans];
-                                              updatedPlans[planIdx][toggle.key] = e.target.checked;
-                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                            }} 
-                                            className="rounded-[4px] w-4 h-4 cursor-pointer" style={{ accentColor: P.blue }} 
-                                          />
-                                        </td>
-                                      ))}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
                         </div>
 
                         {/* License key generator */}
@@ -5171,6 +5084,99 @@ export default function GlidePassAdmin() {
                                 ))}
                               </tbody>
                             </table>
+                        </div>
+                        
+                        {/* Matrix Control for Plans */}
+                        <div className="rounded-[28px] border relative overflow-hidden mt-6"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="p-6">
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest mb-1" style={{ color: P.blue }}>Technical Controls Matrix</h3>
+                            <p className="text-[10px] mb-4" style={{ color: dk ? `${P.sky}70` : `${P.black}60` }}>
+                              Set limits for each feature. <strong>0</strong> = unlimited. <strong>-1</strong> = completely disabled. Any other number is the usage limit.
+                            </p>
+                            <div className="overflow-x-auto pb-2">
+                              <table className="w-full text-left text-[11px]" style={{ minWidth: "600px" }}>
+                                <thead>
+                                  <tr>
+                                    <th className="p-2 border-b opacity-60 uppercase font-bold tracking-wider" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>Feature</th>
+                                    {monetizationSettings.plans.map(plan => (
+                                      <th key={plan.tier} className="p-2 border-b text-center font-bold uppercase tracking-wider" style={{ color: P.blue, borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>{plan.tier}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {/* Sessions */}
+                                  <tr>
+                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>Max Devices</td>
+                                    {monetizationSettings.plans.map((plan, planIdx) => (
+                                      <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                          <input 
+                                            type="number" min="0" max="999"
+                                            value={plan.max_sessions ?? 0}
+                                            onChange={e => {
+                                              const updatedPlans = [...monetizationSettings.plans];
+                                              updatedPlans[planIdx].max_sessions = parseInt(e.target.value) || 0;
+                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                            }}
+                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
+                                          />
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  {/* VITCodes */}
+                                  <tr>
+                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>VITCode Session Limit</td>
+                                    {monetizationSettings.plans.map((plan, planIdx) => (
+                                      <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                          <input 
+                                            type="number" min="0" max="999"
+                                            value={plan.max_vitcodes ?? 0}
+                                            onChange={e => {
+                                              const updatedPlans = [...monetizationSettings.plans];
+                                              updatedPlans[planIdx].max_vitcodes = parseInt(e.target.value) || 0;
+                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                            }}
+                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
+                                          />
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  {/* Toggles */}
+                                  {[
+                                    { key: 'allow_live_sync', label: 'Live Sync Usage' },
+                                    { key: 'allow_typing', label: 'Normal Typing Usage' },
+                                    { key: 'allow_typing_mode', label: 'Coding Typing Usage' },
+                                    { key: 'allow_inject', label: 'Inject Mode Usage' },
+                                    { key: 'allow_raw', label: 'Flash (Raw) Mode Usage' },
+                                    { key: 'allow_select_copy', label: 'Select Copy Usage' },
+                                    { key: 'allow_fetch', label: 'Fetch Paste Usage' },
+                                    { key: 'allow_refill', label: 'Refill Action Usage' },
+                                    { key: 'allow_vitcode', label: 'VITCodes Access Usage' }
+                                  ].map((toggle) => (
+                                    <tr key={toggle.key}>
+                                      <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>
+                                      {monetizationSettings.plans.map((plan, planIdx) => (
+                                        <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                          <input 
+                                            type="number" min="-1" max="999"
+                                            value={plan[toggle.key] === false ? -1 : (plan[toggle.key] === true ? 0 : (plan[toggle.key] ?? 0))}
+                                            onChange={e => {
+                                              const updatedPlans = [...monetizationSettings.plans];
+                                              let val = parseInt(e.target.value);
+                                              if (isNaN(val)) val = 0;
+                                              updatedPlans[planIdx][toggle.key] = val;
+                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                            }} 
+                                            className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg} ${plan[toggle.key] === false || plan[toggle.key] === -1 ? 'opacity-50 text-red-500' : ''}`} 
+                                          />
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
 

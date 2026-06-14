@@ -167,28 +167,28 @@ def get_cloud_limits(tier):
         except Exception:
             pass
 
-    # Base limits (default to true/max, Admin can restrict via cloud)
+    # Base limits (default to 0=unlimited, Admin can restrict via cloud)
     limits = {
         "max_sessions": 999,
         "max_vitcodes": 999,
-        "allow_live_sync": True,
-        "allow_typing": True,
-        "allow_typing_mode": True,
-        "allow_inject": True,
-        "allow_raw": True,
-        "allow_select_copy": True,
-        "allow_fetch": True,
-        "allow_refill": True,
-        "allow_vitcode": True
+        "allow_live_sync": 0,
+        "allow_typing": 0,
+        "allow_typing_mode": 0,
+        "allow_inject": 0,
+        "allow_raw": 0,
+        "allow_select_copy": 0,
+        "allow_fetch": 0,
+        "allow_refill": 0,
+        "allow_vitcode": 0
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled
     if tier == "DEVELOPER" or not CLOUD_LIMITS_CACHE or not CLOUD_LIMITS_CACHE.get("monetization_enabled", False):
         for key in limits:
-            if isinstance(limits[key], bool):
-                limits[key] = True
-            else:
+            if key in ["max_sessions", "max_vitcodes"]:
                 limits[key] = 999
+            else:
+                limits[key] = 0 # 0 means unlimited
         return limits
 
     # Find the tier in the cloud plans
@@ -206,6 +206,55 @@ def get_cloud_limits(tier):
             break
 
     return limits
+
+
+def check_feature_usage(feature_key, feature_name):
+    """
+    Checks if a feature is allowed based on limit bounds.
+    If limited, increments usage and returns True if under limit.
+    Returns (True, None) if allowed, (False, error_msg) if blocked.
+    """
+    tier = get_license_tier()
+    limits = get_cloud_limits(tier)
+    
+    val = limits.get(feature_key, 0)
+    
+    # Backwards compatibility if cloud returns True/False
+    if isinstance(val, bool):
+        if not val:
+            return False, f"{feature_name} is disabled on your plan. Please upgrade."
+        val = 0
+        
+    if val == -1:
+        return False, f"{feature_name} is completely disabled on your current plan. Please upgrade to unlock."
+        
+    if val > 0:
+        # Check usage
+        path = _config_path()
+        config = {}
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+            except Exception:
+                pass
+                
+        usages = config.get("feature_usages", {})
+        used = usages.get(feature_key, 0)
+        
+        if used >= val:
+            return False, f"You have reached the usage limit ({val}) for {feature_name} on your current plan. Please upgrade to continue."
+            
+        # Increment usage
+        usages[feature_key] = used + 1
+        config["feature_usages"] = usages
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+        except Exception:
+            pass
+            
+    return True, None
 
 
 def fetch_ota_templates():
@@ -559,14 +608,58 @@ async def get_my_limits():
     """Endpoint for mobile UI to fetch its current feature limits."""
     tier = get_license_tier()
     limits = get_cloud_limits(tier)
-    return {"status": "success", "tier": tier, "limits": limits}
+    
+    # Read usages to compute effective boolean values
+    path = _config_path()
+    config = {}
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+        except Exception:
+            pass
+    usages = config.get("feature_usages", {})
+    
+    # Translate numeric limits to boolean values for older UI code, while providing usage data
+    frontend_limits = {}
+    for k, v in limits.items():
+        if k.startswith("allow_"):
+            # Ensure boolean fallback for backwards compatibility
+            if isinstance(v, bool):
+                frontend_limits[k] = v
+                frontend_limits[k + "_limit"] = 0
+            else:
+                # -1 = disabled
+                # 0 = unlimited
+                # >0 = limited (check if used < v)
+                frontend_limits[k] = (v != -1) and (v == 0 or usages.get(k, 0) < v)
+                frontend_limits[k + "_limit"] = v
+                
+            frontend_limits[k + "_used"] = usages.get(k, 0)
+        else:
+            frontend_limits[k] = v
+            
+    return {"status": "success", "tier": tier, "limits": frontend_limits}
+
+@app.post("/use_feature")
+async def api_use_feature(data: dict):
+    """Endpoint for frontend to increment usage of UI-only features."""
+    feature = data.get("feature")
+    name = data.get("name", feature)
+    if not feature:
+        return {"status": "error", "message": "Missing feature parameter"}
+        
+    allowed, err = check_feature_usage(feature, name)
+    if not allowed:
+        return {"status": "error", "message": err}
+    return {"status": "success"}
 
 @app.get("/copy")
 async def copy_from_laptop():
-    limits = get_cloud_limits(get_license_tier())
-    if not limits.get("allow_select_copy", True):
-        return {"status": "error", "message": "Your plan does not allow Select Copy."}
-        
+    tier = get_license_tier()
+    allowed, err = check_feature_usage("allow_select_copy", "Select Copy")
+    if not allowed:
+        return {"status": "error", "message": err}       
     global last_synced_text
     try:
         import pyautogui  # Lazy import – backend may run headless
@@ -594,10 +687,10 @@ async def copy_from_laptop():
 
 @app.get("/get_clipboard")
 async def get_clipboard():
-    limits = get_cloud_limits(get_license_tier())
-    if not limits.get("allow_fetch", True):
-        return {"status": "error", "message": "Your plan does not allow Fetch Paste."}
-        
+    # Security Check
+    allowed, err = check_feature_usage("allow_vitcode", "VITCodes Access")
+    if not allowed:
+        return {"status": "error", "message": err}       
     try:
         text = pyperclip.paste()
         return {"status": "success", "text": text}
@@ -852,27 +945,31 @@ async def paste(data: dict):
         except (ValueError, TypeError):
             wpm = 40
         
-        tier = get_license_tier()
-        limits = get_cloud_limits(tier)
-        
-        # Enforce basic WPM cap based on limits or hardcoded basic
-        if tier == "Basic" and wpm > 150:
-            wpm = 150
+        # Enforce basic WPM cap
+        if mode == "sync":
+            allowed, err = check_feature_usage("allow_live_sync", "Live Sync")
+            if not allowed:
+                return {"status": "error", "message": err}
+        if mode == "inject":
+            allowed, err = check_feature_usage("allow_inject", "Inject Mode")
+            if not allowed:
+                return {"status": "error", "message": err}
+        if mode == "flash":
+            allowed, err = check_feature_usage("allow_raw", "Flash (Raw) Mode")
+            if not allowed:
+                return {"status": "error", "message": err}
+        if mode == "typing":
+            is_coding = bool(data.get("is_coding", False))
+            if is_coding:
+                allowed, err = check_feature_usage("allow_typing_mode", "Coding Typing Mode")
+            else:
+                allowed, err = check_feature_usage("allow_typing", "Normal Typing Mode")
+            if not allowed:
+                return {"status": "error", "message": err}
             
         is_coding = bool(data.get("is_coding", False))
         
-        # Guard checking
-        if mode == "sync" and not limits.get("allow_live_sync", True):
-            return {"status": "error", "message": "Your plan does not allow Live Sync."}
-        if mode == "inject" and not limits.get("allow_inject", True):
-            return {"status": "error", "message": "Your plan does not allow Inject Mode."}
-        if mode == "flash" and not limits.get("allow_raw", True):
-            return {"status": "error", "message": "Your plan does not allow Flash (Raw) Mode."}
-        if mode == "type":
-            if is_coding and not limits.get("allow_typing_mode", True):
-                return {"status": "error", "message": "Your plan does not allow Coding Typing mode."}
-            if not is_coding and not limits.get("allow_typing", True):
-                return {"status": "error", "message": "Your plan does not allow Normal Typing mode."}
+        # Guard checking completed via check_feature_usage above
                 
     except Exception as e:
         return {"status": "error", "message": f"Data parsing error: {str(e)}"}

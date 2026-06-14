@@ -784,7 +784,22 @@
             }
         });
 
-        refillBtn.addEventListener('click', () => {
+        refillBtn.addEventListener('click', async () => {
+            if (cloudLimits && cloudLimits.allow_refill_limit > 0) {
+                try {
+                    let r = await fetch("/use_feature", { 
+                        method: "POST", 
+                        headers: {"Content-Type": "application/json"}, 
+                        body: JSON.stringify({feature: "allow_refill", name: "Refill"})
+                    });
+                    let res = await r.json();
+                    if (res.status === "error") {
+                        showToast(res.message);
+                        return;
+                    }
+                } catch(e) {}
+            }
+
             if (originalCodeText) {
                 remoteText.value = originalCodeText;
                 remoteText.dispatchEvent(new Event('input'));
