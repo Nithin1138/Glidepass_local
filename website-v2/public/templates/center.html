@@ -577,9 +577,12 @@
             <div class="command-center">
                 <header>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="top-label">
+                        <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
+                            <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
+                                <i data-lucide="arrow-left" size="16"></i>
+                            </button>
                             <i data-lucide="wifi" size="14"></i>
-                            <span>REMOTE COMMAND CENTER <span class="status-dot"></span></span>
+                            <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: bottom;">REMOTE COMMAND CENTER <span class="status-dot"></span></span>
                         </div>
                         <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
                             <i data-lucide="rotate-ccw" size="12"></i>
@@ -697,11 +700,87 @@
         let liveSync = false;
         let selectedWpm = 40;
         let originalCodeText = '';
+        let cloudLimits = null;
+
+        const backBtn = document.getElementById('back-btn');
+
+        // Fetch Limits on Load
+        async function fetchLimits() {
+            try {
+                const res = await fetch('/limits');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    cloudLimits = data.limits;
+                    applyLimits();
+                }
+            } catch (e) {
+                console.error("Failed to fetch limits", e);
+            }
+        }
+        
+        function applyLimits() {
+            if (!cloudLimits) return;
+            
+            // Refill
+            if (!cloudLimits.allow_refill) {
+                refillBtn.style.display = 'none';
+            }
+            
+            // Live Sync
+            if (!cloudLimits.allow_live_sync) {
+                liveSyncBtn.style.opacity = '0.4';
+                liveSyncBtn.style.pointerEvents = 'none';
+                liveSyncBtn.title = "Not available in your plan";
+            }
+            
+            // Mode Cards (Inject, Typing)
+            if (!cloudLimits.allow_inject) {
+                injectCard.style.opacity = '0.4';
+                injectCard.style.pointerEvents = 'none';
+            }
+            if (!cloudLimits.allow_typing && !cloudLimits.allow_typing_mode) {
+                typingCard.style.opacity = '0.4';
+                typingCard.style.pointerEvents = 'none';
+            } else if (!cloudLimits.allow_typing_mode) {
+                document.getElementById('is-coding-checkbox').disabled = true;
+                document.getElementById('is-coding-checkbox').parentElement.style.opacity = '0.5';
+            } else if (!cloudLimits.allow_typing) {
+                document.getElementById('is-coding-checkbox').checked = true;
+                document.getElementById('is-coding-checkbox').disabled = true;
+            }
+            
+            // Footer actions
+            if (!cloudLimits.allow_fetch) {
+                document.getElementById('fetch-btn').style.opacity = '0.4';
+                document.getElementById('fetch-btn').style.pointerEvents = 'none';
+            }
+            if (!cloudLimits.allow_select_copy) {
+                document.getElementById('select-copy-btn').style.opacity = '0.4';
+                document.getElementById('select-copy-btn').style.pointerEvents = 'none';
+            }
+        }
+
+        // Initialize limits
+        fetchLimits();
+
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/vitcodes';
+                }
+            });
+        }
 
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
                 resetSession();
-                window.location.href = '/';
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/vitcodes';
+                }
             }
         });
 
@@ -853,6 +932,11 @@
                 });
 
                 if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'error') {
+                        showToast(data.message || 'Error', 'error');
+                        return;
+                    }
                     showToast('Dispatched!');
 
                     if (mode === 'type') {
@@ -860,6 +944,9 @@
                     } else {
                         if (!liveSync) remoteText.value = '';
                     }
+                } else {
+                    const data = await response.json();
+                    showToast(data.message || data.error || 'Server Error', 'error');
                 }
             } catch (e) {
                 showToast('Error Connecting', 'error');
@@ -963,12 +1050,15 @@
 
         // Fetch Laptop Clipboard
         document.getElementById('fetch-btn').addEventListener('click', async () => {
+            if (cloudLimits && !cloudLimits.allow_fetch) return;
             try {
                 const response = await fetch('/get_clipboard');
                 const data = await response.json();
                 if (data.status === 'success') {
                     remoteText.value = data.text;
                     showToast('Fetched Clipboard!');
+                } else {
+                    showToast(data.message || 'Fetch Failed', 'error');
                 }
             } catch (e) {
                 showToast('Fetch Failed', 'error');
@@ -977,6 +1067,7 @@
 
         // Select Copy (Now Remote Capture from Laptop)
         document.getElementById('select-copy-btn').addEventListener('click', async () => {
+            if (cloudLimits && !cloudLimits.allow_select_copy) return;
             try {
                 const response = await fetch('/copy');
                 const data = await response.json();
@@ -1026,14 +1117,42 @@
         // Auto-fill from code query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const codeParam = urlParams.get('code');
+        const titleParam = urlParams.get('title');
+        const languageParam = urlParams.get('language');
+
         if (codeParam) {
             originalCodeText = codeParam;
             remoteText.value = codeParam;
             remoteText.dispatchEvent(new Event('input'));
         }
 
+        if (titleParam) {
+            let titleText = titleParam;
+            if (languageParam) {
+                titleText += ` (${languageParam})`;
+            }
+            const centerTitle = document.getElementById('center-title');
+            if (centerTitle) {
+                centerTitle.innerHTML = `${titleText} <span class="status-dot"></span>`;
+            }
+        }
+
         // Auto-enter if already linked (optional)
         // setTimeout(() => launchBtn.click(), 500); 
+
+        // Connect to active status websocket
+        function connectWebSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${proto}//${window.location.host}/ws/connect`;
+            const ws = new WebSocket(wsUrl);
+            ws.onclose = () => {
+                setTimeout(connectWebSocket, 3000);
+            };
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+        connectWebSocket();
     </script>
 </body>
 

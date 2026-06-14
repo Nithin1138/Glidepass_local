@@ -170,11 +170,21 @@ def get_cloud_limits(tier):
     # Default fallback limits if no internet or failed
     limits = {
         "max_sessions": 1 if tier == "Basic" else 2,
-        "allow_typing_mode": True if tier in ["Max", "Ultra", "DEVELOPER"] else False
+        "max_vitcodes": 0,
+        "allow_live_sync": True,
+        "allow_typing": True,
+        "allow_typing_mode": True if tier in ["Max", "Ultra", "DEVELOPER"] else False,
+        "allow_inject": True,
+        "allow_raw": True,
+        "allow_select_copy": True,
+        "allow_fetch": True,
+        "allow_refill": True,
+        "allow_vitcode": True
     }
 
     if tier == "DEVELOPER" or not CLOUD_LIMITS_CACHE or not CLOUD_LIMITS_CACHE.get("monetization_enabled", False):
         limits["max_sessions"] = 999
+        limits["max_vitcodes"] = 999
         limits["allow_typing_mode"] = True
         return limits
 
@@ -182,12 +192,14 @@ def get_cloud_limits(tier):
     for plan in CLOUD_LIMITS_CACHE.get("plans", []):
         if plan.get("tier") == tier:
             # Overwrite defaults with cloud config
-            limits["max_sessions"] = plan.get("max_sessions", limits["max_sessions"])
-            # If 0 is set, treat as unlimited (999)
+            for key in limits:
+                if key in plan:
+                    limits[key] = plan[key]
+            
+            # If 0 is set for max_sessions, treat as unlimited (999)
             if limits["max_sessions"] == 0:
                 limits["max_sessions"] = 999
                 
-            limits["allow_typing_mode"] = plan.get("allow_typing_mode", limits["allow_typing_mode"])
             break
 
     return limits
@@ -344,6 +356,10 @@ async def vitcodes_page():
 
 @app.get("/api/vitcodes")
 async def get_api_vitcodes():
+    limits = get_cloud_limits(get_license_tier())
+    if not limits.get("allow_vitcode", True):
+        return {"error": "Your plan does not allow VITCodes access."}
+
     config_path = os.path.expanduser("~/.lanpad/config.json")
     custom_url = None
     if os.path.exists(config_path):
@@ -535,8 +551,19 @@ def _check_mac_accessibility_and_prompt():
 
 # ── Clipboard / paste endpoints ───────────────────────────────────────────────
 
+@app.get("/limits")
+async def get_my_limits():
+    """Endpoint for mobile UI to fetch its current feature limits."""
+    tier = get_license_tier()
+    limits = get_cloud_limits(tier)
+    return {"status": "success", "tier": tier, "limits": limits}
+
 @app.get("/copy")
 async def copy_from_laptop():
+    limits = get_cloud_limits(get_license_tier())
+    if not limits.get("allow_select_copy", True):
+        return {"status": "error", "message": "Your plan does not allow Select Copy."}
+        
     global last_synced_text
     try:
         import pyautogui  # Lazy import – backend may run headless
@@ -564,6 +591,10 @@ async def copy_from_laptop():
 
 @app.get("/get_clipboard")
 async def get_clipboard():
+    limits = get_cloud_limits(get_license_tier())
+    if not limits.get("allow_fetch", True):
+        return {"status": "error", "message": "Your plan does not allow Fetch Paste."}
+        
     try:
         text = pyperclip.paste()
         return {"status": "success", "text": text}
@@ -818,14 +849,28 @@ async def paste(data: dict):
         except (ValueError, TypeError):
             wpm = 40
         
-        # Enforce basic WPM cap
-        try:
-            tier = get_license_tier()
-            if tier == "Basic" and wpm > 150:
-                wpm = 150
-        except Exception:
-            pass
+        tier = get_license_tier()
+        limits = get_cloud_limits(tier)
+        
+        # Enforce basic WPM cap based on limits or hardcoded basic
+        if tier == "Basic" and wpm > 150:
+            wpm = 150
+            
         is_coding = bool(data.get("is_coding", False))
+        
+        # Guard checking
+        if mode == "sync" and not limits.get("allow_live_sync", True):
+            return {"status": "error", "message": "Your plan does not allow Live Sync."}
+        if mode == "inject" and not limits.get("allow_inject", True):
+            return {"status": "error", "message": "Your plan does not allow Inject Mode."}
+        if mode == "flash" and not limits.get("allow_raw", True):
+            return {"status": "error", "message": "Your plan does not allow Flash (Raw) Mode."}
+        if mode == "type":
+            if is_coding and not limits.get("allow_typing_mode", True):
+                return {"status": "error", "message": "Your plan does not allow Coding Typing mode."}
+            if not is_coding and not limits.get("allow_typing", True):
+                return {"status": "error", "message": "Your plan does not allow Normal Typing mode."}
+                
     except Exception as e:
         return {"status": "error", "message": f"Data parsing error: {str(e)}"}
 
@@ -862,12 +907,8 @@ async def paste(data: dict):
         return {"status": "success"}
 
     elif mode == "type":
-        tier = get_license_tier()
-        limits = get_cloud_limits(tier)
+        # Note: Permission check already done at top of function
         
-        if is_coding and not limits.get("allow_typing_mode", False):
-            return {"status": "error", "message": f"{tier} tier does not have access to Code Typing mode. Please upgrade your license."}
-            
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
         threading.Thread(

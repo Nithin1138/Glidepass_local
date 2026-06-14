@@ -4957,7 +4957,7 @@ export default function GlidePassAdmin() {
                                       <label className="text-[9px] uppercase font-bold tracking-wider mb-2 block" style={{ color: P.blue }}>Technical Limits</label>
                                       <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                          <label className="text-[10px] font-bold opacity-80">Max Devices (0 = unlmt)</label>
+                                          <label className="text-[10px] font-bold opacity-80">Max Devices (0=unlmt)</label>
                                           <input 
                                             type="number" min="0" max="999"
                                             value={plan.max_sessions ?? 1}
@@ -4966,22 +4966,50 @@ export default function GlidePassAdmin() {
                                               updatedPlans[planIdx].max_sessions = parseInt(e.target.value) || 0;
                                               handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
                                             }}
-                                            className={`w-16 text-xs text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
+                                            className={`w-14 text-xs text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
                                           />
                                         </div>
-                                        <label className="flex items-center justify-between cursor-pointer">
-                                          <span className="text-[10px] font-bold opacity-80">Allow Typing Code Mode</span>
+                                        <div className="flex items-center justify-between">
+                                          <label className="text-[10px] font-bold opacity-80">VITCode Limit (0=unlmt)</label>
                                           <input 
-                                            type="checkbox" 
-                                            checked={!!plan.allow_typing_mode} 
+                                            type="number" min="0" max="999"
+                                            value={plan.max_vitcodes ?? 0}
                                             onChange={e => {
                                               const updatedPlans = [...monetizationSettings.plans];
-                                              updatedPlans[planIdx].allow_typing_mode = e.target.checked;
+                                              updatedPlans[planIdx].max_vitcodes = parseInt(e.target.value) || 0;
                                               handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                            }} 
-                                            className="rounded-md w-3.5 h-3.5" style={{ accentColor: P.blue }} 
+                                            }}
+                                            className={`w-14 text-xs text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
                                           />
-                                        </label>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-2 mt-2 border-t pt-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                                          {[
+                                            { key: 'allow_live_sync', label: 'Live Sync' },
+                                            { key: 'allow_typing', label: 'Normal Typing' },
+                                            { key: 'allow_typing_mode', label: 'Coding Typing' },
+                                            { key: 'allow_inject', label: 'Inject Mode' },
+                                            { key: 'allow_raw', label: 'Flash (Raw) Mode' },
+                                            { key: 'allow_select_copy', label: 'Select Copy' },
+                                            { key: 'allow_fetch', label: 'Fetch Paste' },
+                                            { key: 'allow_refill', label: 'Refill Action' },
+                                            { key: 'allow_vitcode', label: 'VITCodes Access' }
+                                          ].map((toggle) => (
+                                            <label key={toggle.key} className="flex items-center justify-between cursor-pointer">
+                                              <span className="text-[9px] font-bold opacity-70">{toggle.label}</span>
+                                              <input 
+                                                type="checkbox" 
+                                                checked={plan[toggle.key] !== false} // Default to true if undefined
+                                                onChange={e => {
+                                                  const updatedPlans = [...monetizationSettings.plans];
+                                                  updatedPlans[planIdx][toggle.key] = e.target.checked;
+                                                  handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                                }} 
+                                                className="rounded-[4px] w-3 h-3" style={{ accentColor: P.blue }} 
+                                              />
+                                            </label>
+                                          ))}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
