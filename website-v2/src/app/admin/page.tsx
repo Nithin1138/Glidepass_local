@@ -5084,10 +5084,66 @@ export default function GlidePassAdmin() {
                                 ))}
                               </tbody>
                             </table>
+                          </div>
                         </div>
                         
+                        {/* Feature Gate Limits Switches */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Feature Gate Control Switches</h3>
+                          <div className="space-y-5">
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span>Daily Free Copy Limit</span>
+                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.dailyCopyLimit} copies</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="20"
+                                value={freeTierLimits.dailyCopyLimit}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, dailyCopyLimit: parseInt(e.target.value) }))}
+                                className="w-full"
+                                style={{ accentColor: P.blue }}
+                              />
+                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum code sync files basic users can pull per 24 hours.</p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span>Maximum Paired Devices</span>
+                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.maxDevices} devices</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="5"
+                                value={freeTierLimits.maxDevices}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, maxDevices: parseInt(e.target.value) }))}
+                                className="w-full"
+                                style={{ accentColor: P.blue }}
+                              />
+                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum concurrent mobile pairings allowed per user device node.</p>
+                            </div>
+
+                            <label className="flex items-center justify-between cursor-pointer pt-2">
+                              <div className="space-y-0.5">
+                                <span className="text-xs font-bold block">Rate-Limit Bypass Switch</span>
+                                <span className="text-[10px] block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Allow verified users to bypass global host network speed limitations.</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={freeTierLimits.allowBypassRateLimit}
+                                onChange={e => setFreeTierLimits(prev => ({ ...prev, allowBypassRateLimit: e.target.checked }))}
+                                className="rounded-md w-4 h-4 shrink-0"
+                                style={{ accentColor: P.blue }}
+                              />
+                            </label>
+                          </div>
+
                         {/* Matrix Control for Plans */}
-                        <div className="rounded-[28px] border relative overflow-hidden mt-6"
+                        <div className="col-span-1 lg:col-span-2 rounded-[28px] border relative overflow-hidden mt-6"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                           <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                           <div className="p-6">
@@ -5180,60 +5236,6 @@ export default function GlidePassAdmin() {
                           </div>
                         </div>
 
-                        {/* Feature Gate Limits Switches */}
-                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Feature Gate Control Switches</h3>
-                          <div className="space-y-5">
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span>Daily Free Copy Limit</span>
-                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.dailyCopyLimit} copies</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="1"
-                                max="20"
-                                value={freeTierLimits.dailyCopyLimit}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, dailyCopyLimit: parseInt(e.target.value) }))}
-                                className="w-full"
-                                style={{ accentColor: P.blue }}
-                              />
-                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum code sync files basic users can pull per 24 hours.</p>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span>Maximum Paired Devices</span>
-                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.maxDevices} devices</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="1"
-                                max="5"
-                                value={freeTierLimits.maxDevices}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, maxDevices: parseInt(e.target.value) }))}
-                                className="w-full"
-                                style={{ accentColor: P.blue }}
-                              />
-                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum concurrent mobile pairings allowed per user device node.</p>
-                            </div>
-
-                            <label className="flex items-center justify-between cursor-pointer pt-2">
-                              <div className="space-y-0.5">
-                                <span className="text-xs font-bold block">Rate-Limit Bypass Switch</span>
-                                <span className="text-[10px] block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Allow verified users to bypass global host network speed limitations.</span>
-                              </div>
-                              <input
-                                type="checkbox"
-                                checked={freeTierLimits.allowBypassRateLimit}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, allowBypassRateLimit: e.target.checked }))}
-                                className="rounded-md w-4 h-4 shrink-0"
-                                style={{ accentColor: P.blue }}
-                              />
-                            </label>
-                          </div>
                         </div>
                       </div>
                     </motion.div>
