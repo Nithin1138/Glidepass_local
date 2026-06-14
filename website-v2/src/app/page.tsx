@@ -717,10 +717,10 @@ export default function Home() {
                 {
                   title: "Windows Backend",
                   icon: <Monitor size={28} />,
-                  label: "Download EXE",
+                  label: "Download ZIP",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                   commandLabel: "Or install via PowerShell:",
-                  href: "/downloads/LANpad-Windows.exe",
+                  href: "/downloads/LANpad_Windows.zip",
                   version: "v1.5.7",
                   supported: "Windows 10/11",
                   size: "38.2 MB",
@@ -817,7 +817,7 @@ export default function Home() {
                             className={`text-[9px] font-mono px-3 py-1.5 rounded-lg border ${dk ? "border-white/10 hover:border-white/30 text-white/60 bg-white/[0.02] hover:bg-white/[0.05]" : "border-black/10 hover:border-black/30 text-black/60 bg-black/[0.02] hover:bg-black/[0.05]"} transition-all duration-300 w-full text-center truncate`}
                             title="Click to copy command"
                           >
-                            {d.installCommand}
+                            Copy Install Cmd
                           </button>
                         </div>
                       )}
