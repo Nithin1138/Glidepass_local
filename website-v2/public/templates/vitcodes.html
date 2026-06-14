@@ -839,14 +839,16 @@
         }
 
         // Fetch Sessions
-        function loadSessions() {
+        function loadSessions(isSilent = false) {
             const grid = document.getElementById('sessions-grid');
-            grid.innerHTML = `
-                <div class="loader-wrap">
-                    <div class="spinner"></div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">Fetching latest sessions...</span>
-                </div>
-            `;
+            if (!isSilent) {
+                grid.innerHTML = `
+                    <div class="loader-wrap">
+                        <div class="spinner"></div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Fetching latest sessions...</span>
+                    </div>
+                `;
+            }
 
             fetch('/api/vitcodes')
                 .then(r => {
@@ -854,16 +856,30 @@
                     return r.json();
                 })
                 .then(data => {
-                    allSessions = data;
-                    initHistoryState();
-                    renderExamTypes();
+                    const changed = JSON.stringify(allSessions) !== JSON.stringify(data);
+                    if (changed || !isSilent) {
+                        allSessions = data;
+                        initHistoryState();
+                        if (currentView === 'overview') {
+                            if (currentSubView === 'types') {
+                                renderExamTypes();
+                            } else if (currentSubView === 'sessions') {
+                                const sessions = allSessions.filter(s => s.examType === currentExamType);
+                                renderSessions(sessions);
+                            }
+                        } else if (currentView === 'detail') {
+                            showDetail(currentSessionId, false);
+                        }
+                    }
                 })
                 .catch(err => {
-                    grid.innerHTML = `
-                        <div class="error-message">
-                            <span style="font-size: 0.85rem;">${err.message || 'Failed to load VIT-AP codes.'}</span>
-                        </div>
-                    `;
+                    if (!isSilent) {
+                        grid.innerHTML = `
+                            <div class="error-message">
+                                <span style="font-size: 0.85rem;">${err.message || 'Failed to load VIT-AP codes.'}</span>
+                            </div>
+                        `;
+                    }
                 });
         }
 
@@ -909,8 +925,12 @@
 
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
-            loadSessions();
+            loadSessions(false);
             refreshIcons();
+            // Real-time synchronization poller
+            setInterval(() => {
+                loadSessions(true);
+            }, 3000);
         });
 
         // Connect to active status websocket
