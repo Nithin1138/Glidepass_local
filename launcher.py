@@ -1098,7 +1098,7 @@ class LANpadLauncher:
             for base_url in urls:
                 try:
                     req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
-                    with safe_urlopen(req, timeout=1.5) as resp:
+                    with safe_urlopen(req, timeout=5) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         monetization_enabled = data.get("monetization_enabled", False)
                         break
@@ -1328,7 +1328,7 @@ class LANpadLauncher:
         for base_url in urls:
             try:
                 req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
-                with safe_urlopen(req, timeout=2) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     monetization_enabled = data.get("monetization_enabled", False)
                     break
