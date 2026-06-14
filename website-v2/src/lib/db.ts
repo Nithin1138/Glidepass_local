@@ -196,6 +196,28 @@ export async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        role TEXT NOT NULL,
+        status TEXT NOT NULL,
+        verified BOOLEAN DEFAULT false,
+        activity TEXT,
+        joined_date TEXT NOT NULL,
+        active_devices INTEGER DEFAULT 0,
+        premium BOOLEAN DEFAULT false
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_rbac (
+        role TEXT PRIMARY KEY,
+        permissions TEXT NOT NULL
+      );
+    `);
+
     const auditCountRes = await client.query("SELECT COUNT(*) FROM vit_audit_logs");
     if (parseInt(auditCountRes.rows[0].count, 10) === 0) {
       await client.query(`
@@ -226,6 +248,30 @@ export async function initDb() {
         ('FREEWEEK', '100%', 118, 'active'),
         ('WELCOME10', '20%', 5, 'expired');
       `);
+    }
+
+    const usersCountRes = await client.query("SELECT COUNT(*) FROM vit_users");
+    if (parseInt(usersCountRes.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium) VALUES
+        ('1', 'Nithin Kumar', 'nithin@vitap.ac.in', 'Super Admin', 'active', true, 'Active 2m ago', '2026-01-10', 2, true),
+        ('2', 'Sarah Connor', 'sarah@vitap.ac.in', 'Developer', 'active', true, 'Active 4h ago', '2026-02-15', 1, true),
+        ('3', 'Alex Mercer', 'mercer@vitap.ac.in', 'Auditor', 'suspended', false, 'Banned 2d ago', '2026-03-01', 0, false),
+        ('4', 'David Lightman', 'david.23bce@vitap.ac.in', 'Contributor', 'pending', false, 'Registered 1h ago', '2026-06-12', 3, false);
+      `);
+    }
+
+    const rbacCountRes = await client.query("SELECT COUNT(*) FROM vit_rbac");
+    if (parseInt(rbacCountRes.rows[0].count, 10) === 0) {
+      const defaultRbac = {
+        "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
+        Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
+        Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
+        Contributor: { users: false, rbac: false, analytics: false, content: true, system: false, security: false, settings: false },
+      };
+      for (const [role, perms] of Object.entries(defaultRbac)) {
+        await client.query("INSERT INTO vit_rbac (role, permissions) VALUES ($1, $2)", [role, JSON.stringify(perms)]);
+      }
     }
     
     isDbInitialized = true;
@@ -1255,5 +1301,110 @@ export async function deleteCoupon(code: string): Promise<void> {
     const data = await readMonetization();
     data.coupons = data.coupons.filter((c: any) => c.code !== code);
     await writeMonetization(data);
+  }
+}
+
+const getUsersJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "users_rbac.json");
+};
+
+async function readUsersRbac(): Promise<{ users: any[], rbac: any }> {
+  const filePath = getUsersJsonPath();
+  try {
+    if (!fs.existsSync(filePath)) {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const defaults = {
+        users: [
+          { id: "1", name: "Nithin Kumar", email: "nithin@vitap.ac.in", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true },
+          { id: "2", name: "Sarah Connor", email: "sarah@vitap.ac.in", role: "Developer", status: "active", verified: true, activity: "Active 4h ago", joinedDate: "2026-02-15", activeDevices: 1, premium: true },
+          { id: "3", name: "Alex Mercer", email: "mercer@vitap.ac.in", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago", joinedDate: "2026-03-01", activeDevices: 0, premium: false },
+          { id: "4", name: "David Lightman", email: "david.23bce@vitap.ac.in", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago", joinedDate: "2026-06-12", activeDevices: 3, premium: false },
+        ],
+        rbac: {
+          "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
+          Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
+          Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
+          Contributor: { users: false, rbac: false, analytics: false, content: true, system: false, security: false, settings: false },
+        }
+      };
+      fs.writeFileSync(filePath, JSON.stringify(defaults, null, 2), "utf8");
+      return defaults;
+    }
+    const data = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (e) {
+    return { users: [], rbac: {} };
+  }
+}
+
+async function writeUsersRbac(data: { users: any[], rbac: any }) {
+  const filePath = getUsersJsonPath();
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {}
+}
+
+export async function getDbUsers(): Promise<any[]> {
+  if (pool) {
+    try {
+      const res = await pool.query('SELECT id, name, email, role, status, verified, activity, joined_date as "joinedDate", active_devices as "activeDevices", premium FROM vit_users ORDER BY id ASC');
+      return res.rows;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  } else {
+    const data = await readUsersRbac();
+    return data.users;
+  }
+}
+
+export async function getDbRbac(): Promise<any> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM vit_rbac");
+      const rbac: any = {};
+      res.rows.forEach((row: any) => {
+        rbac[row.role] = JSON.parse(row.permissions);
+      });
+      return rbac;
+    } catch (e) {
+      console.error(e);
+      return {};
+    }
+  } else {
+    const data = await readUsersRbac();
+    return data.rbac;
+  }
+}
+
+export async function updateDbUser(user: any): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role, status = EXCLUDED.status, verified = EXCLUDED.verified, activity = EXCLUDED.activity, joined_date = EXCLUDED.joined_date, active_devices = EXCLUDED.active_devices, premium = EXCLUDED.premium",
+      [user.id, user.name, user.email, user.role, user.status, user.verified, user.activity, user.joinedDate, user.activeDevices, user.premium]
+    );
+  } else {
+    const data = await readUsersRbac();
+    data.users = data.users.map((u: any) => u.id === user.id ? user : u);
+    await writeUsersRbac(data);
+  }
+}
+
+export async function updateDbRbac(role: string, permissions: any): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_rbac (role, permissions) VALUES ($1, $2) ON CONFLICT (role) DO UPDATE SET permissions = EXCLUDED.permissions",
+      [role, JSON.stringify(permissions)]
+    );
+  } else {
+    const data = await readUsersRbac();
+    data.rbac[role] = permissions;
+    await writeUsersRbac(data);
   }
 }

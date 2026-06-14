@@ -1398,12 +1398,14 @@ export default function GlidePassAdmin() {
         fetchDiagnostics();
         fetchAuditLogs();
         fetchMonetization();
+        fetchUsersRbac();
         const interval = setInterval(() => {
           fetchVitCodes(true);
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
           fetchMonetization();
+          fetchUsersRbac();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1418,6 +1420,13 @@ export default function GlidePassAdmin() {
         fetchVitCodes();
         const interval = setInterval(() => {
           fetchVitCodes(true);
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+      if (view === "users" || view === "rbac") {
+        fetchUsersRbac();
+        const interval = setInterval(() => {
+          fetchUsersRbac();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1569,10 +1578,89 @@ export default function GlidePassAdmin() {
     }
   };
 
-  const toggleVerify = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, verified: !u.verified } : u)); showToast("success", "Verification toggled."); };
-  const toggleBan = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u)); showToast("success", "User status updated."); };
-  const handleUpdateRole = (id: string, role: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, role } : u)); showToast("success", `Role updated to ${role}.`); };
-  const handleTogglePremium = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, premium: !u.premium } : u)); showToast("success", "Premium license status updated."); };
+  const toggleVerify = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const updated: UserRecord = { ...user, verified: !user.verified };
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: updated })
+      });
+      if (res.ok) {
+        setUsers(p => p.map(u => u.id === id ? updated : u));
+        showToast("success", "Verification status updated in DB.");
+      } else {
+        showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
+  };
+
+  const toggleBan = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const updated: UserRecord = { ...user, status: user.status === "suspended" ? "active" : "suspended" };
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: updated })
+      });
+      if (res.ok) {
+        setUsers(p => p.map(u => u.id === id ? updated : u));
+        showToast("success", "User status updated in DB.");
+      } else {
+        showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
+  };
+
+  const handleUpdateRole = async (id: string, role: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const updated: UserRecord = { ...user, role };
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: updated })
+      });
+      if (res.ok) {
+        setUsers(p => p.map(u => u.id === id ? updated : u));
+        showToast("success", `Role updated to ${role} in DB.`);
+      } else {
+        showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
+  };
+
+  const handleTogglePremium = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const updated: UserRecord = { ...user, premium: !user.premium };
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: updated })
+      });
+      if (res.ok) {
+        setUsers(p => p.map(u => u.id === id ? updated : u));
+        showToast("success", "Premium license status updated in DB.");
+      } else {
+        showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
+  };
 
   const exportCSV = () => {
     const hdr = ["ID", "Name", "Email", "Role", "Status", "Verified"];
@@ -1595,9 +1683,23 @@ export default function GlidePassAdmin() {
     Contributor: { users: false, rbac: false, analytics: false, content: true, system: false, security: false, settings: false },
   });
 
-  const toggleRbac = (role: string, mod: string) => {
-    setRbac(p => ({ ...p, [role]: { ...p[role], [mod]: !p[role][mod] } }));
-    showToast("success", "Permission updated.");
+  const toggleRbac = async (role: string, mod: string) => {
+    const updatedPermissions = { ...rbac[role], [mod]: !rbac[role][mod] };
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "rbac", role, permissions: updatedPermissions })
+      });
+      if (res.ok) {
+        setRbac(p => ({ ...p, [role]: updatedPermissions }));
+        showToast("success", "Permission updated in DB.");
+      } else {
+        showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
   };
 
   const [secLogs, setSecLogs] = useState<SecurityLog[]>([]);
@@ -1637,6 +1739,17 @@ export default function GlidePassAdmin() {
         const data = await res.json();
         if (data.subscriptions) setSubscriptions(data.subscriptions);
         if (data.coupons) setPromoCodes(data.coupons);
+      }
+    } catch (e) {}
+  };
+
+  const fetchUsersRbac = async () => {
+    try {
+      const res = await fetch("/api/admin/users-rbac");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsers(data.users);
+        if (data.rbac) setRbac(data.rbac);
       }
     } catch (e) {}
   };
