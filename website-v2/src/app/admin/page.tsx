@@ -1434,6 +1434,52 @@ export default function GlidePassAdmin() {
     });
   }, [users, userSearch, userRoleFilter]);
 
+  // ─── Local Storage Persistence ───
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUsers = localStorage.getItem("glidepass_users");
+      if (savedUsers) {
+        try { setUsers(JSON.parse(savedUsers)); } catch (e) {}
+      }
+      const savedSubs = localStorage.getItem("glidepass_subscriptions");
+      if (savedSubs) {
+        try { setSubscriptions(JSON.parse(savedSubs)); } catch (e) {}
+      }
+      const savedPromo = localStorage.getItem("glidepass_promo_codes");
+      if (savedPromo) {
+        try { setPromoCodes(JSON.parse(savedPromo)); } catch (e) {}
+      }
+      const savedLimits = localStorage.getItem("glidepass_free_tier_limits");
+      if (savedLimits) {
+        try { setFreeTierLimits(JSON.parse(savedLimits)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("glidepass_users", JSON.stringify(users));
+    }
+  }, [users]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("glidepass_subscriptions", JSON.stringify(subscriptions));
+    }
+  }, [subscriptions]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("glidepass_promo_codes", JSON.stringify(promoCodes));
+    }
+  }, [promoCodes]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("glidepass_free_tier_limits", JSON.stringify(freeTierLimits));
+    }
+  }, [freeTierLimits]);
+
   const toggleVerify = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, verified: !u.verified } : u)); showToast("success", "Verification toggled."); };
   const toggleBan = (id: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u)); showToast("success", "User status updated."); };
   const handleUpdateRole = (id: string, role: string) => { setUsers(p => p.map(u => u.id === id ? { ...u, role } : u)); showToast("success", `Role updated to ${role}.`); };
