@@ -167,19 +167,19 @@ def get_cloud_limits(tier):
         except Exception:
             pass
 
-    # Base limits (fully restrictive, Admin must override via cloud)
+    # Base limits (default to true/max, Admin can restrict via cloud)
     limits = {
-        "max_sessions": 0,
-        "max_vitcodes": 0,
-        "allow_live_sync": False,
-        "allow_typing": False,
-        "allow_typing_mode": False,
-        "allow_inject": False,
-        "allow_raw": False,
-        "allow_select_copy": False,
-        "allow_fetch": False,
-        "allow_refill": False,
-        "allow_vitcode": False
+        "max_sessions": 999,
+        "max_vitcodes": 999,
+        "allow_live_sync": True,
+        "allow_typing": True,
+        "allow_typing_mode": True,
+        "allow_inject": True,
+        "allow_raw": True,
+        "allow_select_copy": True,
+        "allow_fetch": True,
+        "allow_refill": True,
+        "allow_vitcode": True
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled
