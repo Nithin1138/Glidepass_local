@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2,
-  Calendar, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
+  Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare,
   AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch
@@ -1348,6 +1348,16 @@ export default function GlidePassAdmin() {
     };
   }, [telemetryData]);
 
+  const [liveTime, setLiveTime] = useState("");
+  useEffect(() => {
+    const updateTime = () => {
+      setLiveTime(new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) + " — " + new Date().toLocaleTimeString("en-GB"));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchTelemetry = async () => {
     setLoadingTelemetry(true);
     try {
@@ -1369,6 +1379,13 @@ export default function GlidePassAdmin() {
         fetchAuditLogs();
         const interval = setInterval(() => {
           fetchAuditLogs();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+      if (view === "system") {
+        fetchDiagnostics();
+        const interval = setInterval(() => {
+          fetchDiagnostics();
         }, 1000);
         return () => clearInterval(interval);
       }
@@ -1433,9 +1450,23 @@ export default function GlidePassAdmin() {
     showToast("success", "Permission updated.");
   };
 
-  // ─── Security Logs ───
   const [secLogs, setSecLogs] = useState<SecurityLog[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+
+  const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+
+  const fetchDiagnostics = async () => {
+    setLoadingDiagnostics(true);
+    try {
+      const res = await fetch("/api/admin/diagnostics");
+      if (res.ok) {
+        const data = await res.json();
+        setDiagnosticsData(data);
+      }
+    } catch (e) {}
+    setLoadingDiagnostics(false);
+  };
 
   const fetchAuditLogs = async () => {
     setLoadingAudit(true);
@@ -3389,45 +3420,134 @@ export default function GlidePassAdmin() {
                   {/* ═══ DIAGNOSTICS ═══ */}
                   {view === "system" && (
                     <motion.div key="sys" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {[
-                        { title: "Host CPU Usky", icon: Cpu, pct: 25, label: "Thread pooling idle" },
-                        { title: "System RAM", icon: HardDrive, pct: 50, label: "1.2 GB cached resident" },
-                      ].map((g, i) => (
-                        <div key={i} className="p-6 rounded-[28px] border relative overflow-hidden"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                            <g.icon size={12} style={{ color: P.blue }} /> {g.title}
+                      {/* CARD 1: Real-time System Clock */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div>
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center justify-between" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            <span className="flex items-center gap-2">
+                              <Clock size={12} style={{ color: P.blue }} /> System Time
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-[9px] font-mono lowercase text-emerald-500 font-bold">sync active</span>
+                            </span>
                           </h3>
-                          <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                            <div className="relative w-32 h-32 flex items-center justify-center">
-                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke={dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)"} strokeWidth="8" />
-                                <circle cx="50" cy="50" r="40" fill="none" stroke={P.blue} strokeWidth="8"
-                                  strokeDasharray="251.2" strokeDashoffset={251.2 * (1 - g.pct / 100)} strokeLinecap="round" />
-                              </svg>
-                              <span className="absolute text-2xl font-black font-[family-name:var(--font-outfit)]">{g.pct}%</span>
-                            </div>
-                            <span className="text-xs font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{g.label}</span>
+                          <div className="py-6 flex flex-col justify-center items-center text-center">
+                            <span className="text-3xl font-black font-[family-name:var(--font-outfit)] tracking-tight" style={{ color: dk ? P.white : P.black }}>
+                              {liveTime.split(" — ")[1] || "00:00:00"}
+                            </span>
+                            <span className="text-xs font-medium mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                              {liveTime.split(" — ")[0] || "..."}
+                            </span>
                           </div>
                         </div>
-                      ))}
 
+                        <div className="space-y-4 py-4 text-xs font-mono border-t" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                          <div className="flex justify-between">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Process Uptime</span>
+                            <span style={{ color: P.blue }} className="font-bold">
+                              {diagnosticsData?.system?.uptime ? (() => {
+                                const sec = diagnosticsData.system.uptime;
+                                const h = Math.floor(sec / 3600);
+                                const m = Math.floor((sec % 3600) / 60);
+                                const s = Math.floor(sec % 60);
+                                return `${h}h ${m}m ${s}s`;
+                              })() : "0h 0m 0s"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>API Server Time</span>
+                            <span style={{ color: dk ? P.white : P.black }}>
+                              {diagnosticsData?.system?.serverTime ? new Date(diagnosticsData.system.serverTime).toLocaleTimeString("en-GB") : "--:--:--"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CARD 2: System Resources (RAM/Node) */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                          <Cpu size={12} style={{ color: P.blue }} /> System RAM
+                        </h3>
+                        <div className="flex flex-col items-center justify-center py-4 space-y-4">
+                          <div className="relative w-28 h-28 flex items-center justify-center">
+                            {(() => {
+                              const used = diagnosticsData?.system?.memoryHeapUsed || 0;
+                              const total = diagnosticsData?.system?.memoryHeapTotal || 1;
+                              const pct = Math.round((used / total) * 100) || 0;
+                              return (
+                                <>
+                                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke={dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)"} strokeWidth="8" />
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke={P.blue} strokeWidth="8"
+                                      strokeDasharray="251.2" strokeDashoffset={251.2 * (1 - pct / 100)} strokeLinecap="round" />
+                                  </svg>
+                                  <span className="absolute text-xl font-black font-[family-name:var(--font-outfit)]">{pct}%</span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                          <span className="text-xs font-mono text-center" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                            {diagnosticsData?.system?.memoryHeapUsed || 0} MB / {diagnosticsData?.system?.memoryHeapTotal || 0} MB Used
+                          </span>
+                        </div>
+                        <div className="space-y-2 pt-2 text-xs font-mono border-t" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                          <div className="flex justify-between py-1">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Node Version</span>
+                            <span style={{ color: dk ? P.white : P.black }}>{diagnosticsData?.system?.nodeVersion || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Platform / Arch</span>
+                            <span style={{ color: dk ? P.white : P.black }}>
+                              {diagnosticsData?.system?.platform && diagnosticsData?.system?.arch 
+                                ? `${diagnosticsData.system.platform} / ${diagnosticsData.system.arch}` 
+                                : "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CARD 3: Database Status & Stats */}
                       <div className="p-6 rounded-[28px] border relative overflow-hidden"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                         <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center gap-2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
                           <Database size={12} style={{ color: P.blue }} /> Database Status
                         </h3>
-                        <div className="space-y-4 py-4 text-xs font-mono">
-                          {[
-                            { k: "Connection Engine", v: "PostgreSQL Live", c: P.blue },
-                            { k: "Session Buffer Pool", v: "Active", c: dk ? P.white : P.black },
-                            { k: "Total Transactions", v: "2,450 commits", c: P.blue },
-                          ].map((r, i) => (
-                            <div key={i} className="flex justify-between pb-2" style={{ borderBottom: i < 2 ? `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` : "none" }}>
-                              <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.k}</span>
-                              <span style={{ color: r.c }}>{r.v}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-3 py-2 text-xs font-mono">
+                          <div className="flex justify-between pb-2" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Connection Status</span>
+                            <span style={{ color: diagnosticsData?.database?.status?.includes("Error") ? P.error : P.blue }} className="font-bold text-right max-w-[60%] overflow-hidden text-ellipsis whitespace-nowrap">
+                              {diagnosticsData?.database?.status || "Connecting..."}
+                            </span>
+                          </div>
+                          <div className="flex justify-between pb-2" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Query Latency</span>
+                            <span className="font-bold" style={{
+                              color: !diagnosticsData ? (dk ? P.white : P.black) :
+                                     diagnosticsData.database.latency < 50 ? "#10B981" : 
+                                     diagnosticsData.database.latency < 200 ? "#F59E0B" : P.error
+                            }}>
+                              {diagnosticsData?.database?.latency !== undefined ? `${diagnosticsData.database.latency} ms` : "--"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between pb-1">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Total Sessions</span>
+                            <span style={{ color: dk ? P.white : P.black }} className="font-bold">{diagnosticsData?.database?.sessionsCount ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between pb-1">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Total Questions</span>
+                            <span style={{ color: dk ? P.white : P.black }} className="font-bold">{diagnosticsData?.database?.questionsCount ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between pb-1">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Heartbeat Pins</span>
+                            <span style={{ color: dk ? P.white : P.black }} className="font-bold">{diagnosticsData?.database?.heartbeatsCount ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Client Downloads</span>
+                            <span style={{ color: dk ? P.white : P.black }} className="font-bold">{diagnosticsData?.database?.downloadsCount ?? 0}</span>
+                          </div>
                         </div>
                       </div>
                     </motion.div>

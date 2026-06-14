@@ -1021,3 +1021,68 @@ export async function getAuditLogs(): Promise<any[]> {
     return [];
   }
 }
+
+export async function getDiagnosticsData(): Promise<any> {
+  const isPostgres = !!process.env.DATABASE_URL;
+  let dbStatus = "Disconnected";
+  let dbLatency = 0;
+  let sessionsCount = 0;
+  let questionsCount = 0;
+  let heartbeatsCount = 0;
+  let downloadsCount = 0;
+
+  const start = Date.now();
+  if (pool) {
+    try {
+      const client = await pool.connect();
+      await client.query("SELECT NOW()");
+      dbLatency = Date.now() - start;
+      dbStatus = "Connected (PostgreSQL Live)";
+
+      const sRes = await client.query("SELECT COUNT(*) FROM vit_sessions");
+      sessionsCount = parseInt(sRes.rows[0].count, 10);
+
+      const qRes = await client.query("SELECT COUNT(*) FROM vit_questions");
+      questionsCount = parseInt(qRes.rows[0].count, 10);
+
+      const hRes = await client.query("SELECT COUNT(*) FROM vit_heartbeats");
+      heartbeatsCount = parseInt(hRes.rows[0].count, 10);
+
+      const dRes = await client.query("SELECT COUNT(*) FROM vit_downloads");
+      downloadsCount = parseInt(dRes.rows[0].count, 10);
+
+      client.release();
+    } catch (e: any) {
+      dbStatus = `Error: ${e.message}`;
+    }
+  } else {
+    dbStatus = "Connected (Local JSON Database)";
+    try {
+      const codes = await readCodes(true);
+      sessionsCount = codes.length;
+      questionsCount = codes.reduce((a, s) => a + (s.questions?.length || 0), 0);
+    } catch (e) {}
+  }
+
+  const memory = process.memoryUsage();
+
+  return {
+    database: {
+      status: dbStatus,
+      latency: dbLatency,
+      sessionsCount,
+      questionsCount,
+      heartbeatsCount,
+      downloadsCount
+    },
+    system: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      uptime: process.uptime(),
+      memoryHeapUsed: Math.round(memory.heapUsed / 1024 / 1024),
+      memoryHeapTotal: Math.round(memory.heapTotal / 1024 / 1024),
+      serverTime: new Date().toISOString()
+    }
+  };
+}
