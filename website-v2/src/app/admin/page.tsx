@@ -237,6 +237,9 @@ export default function GlidePassAdmin() {
 
   const [newPromoCode, setNewPromoCode] = useState("");
   const [newPromoDiscount, setNewPromoDiscount] = useState("50%");
+  const [newTxnEmail, setNewTxnEmail] = useState("");
+  const [newTxnPlan, setNewTxnPlan] = useState("Monthly Pass");
+  const [newTxnAmount, setNewTxnAmount] = useState("₹99");
 
   // ─── Version & Telemetry ───
   const [appVersionData, setAppVersionData] = useState({
@@ -3811,52 +3814,148 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ SUBSCRIPTIONS & LICENSING (MONETIZATION) ═══ */}
                   {view === "subscriptions" && (
-                    <motion.div key="subs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="subs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      {/* Header with Ticking Clock */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Subscriptions & Licenses</h2>
                           <p className="text-xs text-white/60">Monitor transactions, manage promo codes, and tweak plan settings</p>
                         </div>
+                        <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing time..."}</span>
+                        </div>
+                      </div>
+
+                      {/* Monetization KPI Cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[
+                          { 
+                            title: "Total Revenue", 
+                            val: `₹${subscriptions.filter(s => s.status === "success").reduce((acc, curr) => acc + parseInt(curr.amount.replace(/[^\d]/g, "") || "0"), 0)}`, 
+                            label: "From successful passes", 
+                            color: "#10B981" 
+                          },
+                          { title: "Total Transactions", val: String(subscriptions.length), label: "Logged payment events", color: P.blue },
+                          { 
+                            title: "Success Rate", 
+                            val: `${subscriptions.length > 0 ? Math.round((subscriptions.filter(s => s.status === "success").length / subscriptions.length) * 100) : 100}%`, 
+                            label: "Payment gateway health", 
+                            color: P.blue 
+                          },
+                          { title: "Active Coupons", val: String(promoCodes.filter(c => c.status === "active").length), label: "Running promotions", color: P.blue },
+                        ].map((c, i) => (
+                          <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
+                            </div>
+                            <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black" style={{ color: c.color }}>{c.val}</h3>
+                            <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
+                          </div>
+                        ))}
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         {/* Transaction History Logs */}
-                        <div className="lg:col-span-8 rounded-[28px] border overflow-hidden"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                          <div className="px-6 py-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Recent Transactions</h3>
-                          </div>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                  {["Transaction ID", "User Email", "Plan", "Amount", "Status", "Date"].map(h => (
-                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {subscriptions.map(s => (
-                                  <tr key={s.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                    <td className="p-4 font-mono font-bold" style={{ color: P.blue }}>{s.id}</td>
-                                    <td className="p-4">{s.email}</td>
-                                    <td className="p-4">{s.plan}</td>
-                                    <td className="p-4 font-bold">{s.amount}</td>
-                                    <td className="p-4">
-                                      <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border"
-                                        style={{
-                                          background: s.status === "success" ? `${P.blue}15` : `${P.error}15`,
-                                          color: s.status === "success" ? P.blue : P.error,
-                                          borderColor: s.status === "success" ? `${P.blue}30` : `${P.error}30`
-                                        }}>
-                                        {s.status}
-                                      </span>
-                                    </td>
-                                    <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.date}</td>
+                        <div className="lg:col-span-8 space-y-8">
+                          <div className="rounded-[28px] border overflow-hidden"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Recent Transactions</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                    {["Transaction ID", "User Email", "Plan", "Amount", "Status", "Date", "Actions"].map(h => (
+                                      <th key={h} className={`p-4 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                    ))}
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody>
+                                  {subscriptions.map(s => (
+                                    <tr key={s.id} className="text-xs animate-fadeIn" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 font-mono font-bold" style={{ color: P.blue }}>{s.id}</td>
+                                      <td className="p-4 font-semibold">{s.email}</td>
+                                      <td className="p-4">{s.plan}</td>
+                                      <td className="p-4 font-bold">{s.amount}</td>
+                                      <td className="p-4">
+                                        <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border"
+                                          style={{
+                                            background: s.status === "success" ? `${P.blue}15` : `${P.error}15`,
+                                            color: s.status === "success" ? P.blue : P.error,
+                                            borderColor: s.status === "success" ? `${P.blue}30` : `${P.error}30`
+                                          }}>
+                                          {s.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.date}</td>
+                                      <td className="p-4 text-right pr-6">
+                                        <button onClick={() => {
+                                          setSubscriptions(prev => prev.filter(t => t.id !== s.id));
+                                          showToast("success", "Transaction log removed.");
+                                        }} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Delete Log">
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {subscriptions.length === 0 && (
+                                    <tr>
+                                      <td colSpan={7} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                        No subscription transactions recorded.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Record Transaction Form */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Record Manual Transaction</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                              <div>
+                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Student Email</label>
+                                <input type="email" value={newTxnEmail} onChange={e => setNewTxnEmail(e.target.value)} placeholder="student@vitstudent.ac.in"
+                                  className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} />
+                              </div>
+                              <div>
+                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Select Plan</label>
+                                <select value={newTxnPlan} onChange={e => {
+                                  setNewTxnPlan(e.target.value);
+                                  if (e.target.value === "Monthly Pass") setNewTxnAmount("₹99");
+                                  else if (e.target.value === "Semester Pass") setNewTxnAmount("₹249");
+                                  else setNewTxnAmount("₹499");
+                                }} className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                                  <option value="Monthly Pass">Monthly Pass (₹99)</option>
+                                  <option value="Semester Pass">Semester Pass (₹249)</option>
+                                  <option value="Yearly Pass">Yearly Pass (₹499)</option>
+                                </select>
+                              </div>
+                              <button onClick={() => {
+                                if (!newTxnEmail.trim()) return showToast("error", "Email is required.");
+                                const newTxn = {
+                                  id: `TXN_${Math.floor(1000 + Math.random() * 9000)}`,
+                                  email: newTxnEmail.trim(),
+                                  plan: newTxnPlan,
+                                  amount: newTxnAmount,
+                                  status: "success",
+                                  date: new Date().toISOString().replace("T", " ").substring(0, 16)
+                                };
+                                setSubscriptions(prev => [newTxn, ...prev]);
+                                setNewTxnEmail("");
+                                showToast("success", "Transaction recorded successfully.");
+                              }} className="py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                                Log Transaction
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -3896,24 +3995,40 @@ export default function GlidePassAdmin() {
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                             <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                             <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Coupons</h3>
-                            <div className="space-y-3">
+                            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                               {promoCodes.map(c => (
-                                <div key={c.code} className="flex justify-between items-center p-3 rounded-xl border"
+                                <div key={c.code} className="flex justify-between items-center p-3 rounded-xl border transition-all hover:bg-neutral-500/5"
                                   style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.5)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                                   <div>
                                     <p className="text-xs font-mono font-bold">{c.code}</p>
                                     <p className="text-[9px] uppercase font-bold" style={{ color: P.blue }}>{c.discount} Off • {c.usage} Uses</p>
                                   </div>
-                                  <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border"
-                                    style={{
-                                      background: c.status === "active" ? `${P.blue}15` : `${P.error}15`,
-                                      color: c.status === "active" ? P.blue : P.error,
-                                      borderColor: c.status === "active" ? `${P.blue}25` : `${P.error}25`
-                                    }}>
-                                    {c.status}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <button onClick={() => {
+                                      setPromoCodes(prev => prev.map(item => item.code === c.code ? { ...item, status: item.status === "active" ? "expired" : "active" } : item));
+                                      showToast("success", `Coupon status changed to ${c.status === "active" ? "expired" : "active"}`);
+                                    }} className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border hover:opacity-75 transition-all"
+                                      style={{
+                                        background: c.status === "active" ? `${P.blue}15` : `${P.error}15`,
+                                        color: c.status === "active" ? P.blue : P.error,
+                                        borderColor: c.status === "active" ? `${P.blue}25` : `${P.error}25`
+                                      }}>
+                                      {c.status}
+                                    </button>
+                                    <button onClick={() => {
+                                      setPromoCodes(prev => prev.filter(item => item.code !== c.code));
+                                      showToast("success", "Coupon code deleted.");
+                                    }} className="p-1 rounded text-red-500 hover:bg-red-500/10 transition-colors" title="Delete Coupon">
+                                      <Trash2 size={11} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
+                              {promoCodes.length === 0 && (
+                                <div className="text-center py-4 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                  No coupons created.
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
