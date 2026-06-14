@@ -1028,6 +1028,63 @@ export default function GlidePassAdmin() {
     return vitSessions.filter(s => !s.isDeleted).flatMap(s => (s.questions || []).filter(q => !q.isDeleted).map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType })));
   }, [vitSessions]);
 
+  const contributorStats = useMemo(() => {
+    return contributors.map(c => {
+      const parsed = parseVitEmail(c.email);
+      const name = c.name || parsed.name;
+      const regno = c.regno || parsed.regno;
+      const college = c.college || parsed.college;
+      const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
+      
+      let editsCount = 0;
+      vitSessions.forEach(s => {
+        if (!s.isDeleted && s.questions) {
+          s.questions.forEach(q => {
+            if (!q.isDeleted && q.edits) {
+              q.edits.forEach(edit => {
+                if (edit.editorEmail === c.email) {
+                  editsCount++;
+                }
+              });
+            }
+          });
+        }
+      });
+
+      const points = (codes.length * 10) + (editsCount * 5);
+      
+      let tier = "Active Member";
+      let tierColor = "rgba(148, 163, 184, 0.15)";
+      let tierText = "#94A3B8";
+      if (points >= 100) {
+        tier = "Elite Contributor";
+        tierColor = "rgba(168, 85, 247, 0.15)";
+        tierText = "#A855F7";
+      } else if (points >= 50) {
+        tier = "Master Coder";
+        tierColor = "rgba(0, 119, 192, 0.15)";
+        tierText = "#0077C0";
+      } else if (points >= 20) {
+        tier = "Rising Star";
+        tierColor = "rgba(16, 185, 129, 0.15)";
+        tierText = "#10B981";
+      }
+
+      return {
+        ...c,
+        name,
+        regno,
+        college,
+        codesCount: codes.length,
+        editsCount,
+        points,
+        tier,
+        tierColor,
+        tierText
+      };
+    }).sort((a, b) => b.points - a.points);
+  }, [contributors, contributorCodes, vitSessions]);
+
   const filteredSessions = useMemo(() => {
     const active = vitSessions.filter(s => !s.isDeleted);
     if (examTypeFilter === "all") return active;
@@ -1192,6 +1249,80 @@ export default function GlidePassAdmin() {
       return Math.round((retainedCount / eligibleUsers.length) * 100);
     };
 
+    // 7. Active LAN Pairings / Connections Map
+    const activePairingsList = heartbeatsList.map((hb: any, idx: number) => {
+      let hash = 0;
+      const uid = hb.uuid || "default";
+      for (let i = 0; i < uid.length; i++) {
+        hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const lastOctet = Math.abs(hash % 254) + 1;
+      const ip = `10.251.103.${lastOctet}`;
+      return {
+        id: String(idx),
+        ip,
+        uuid: uid.substring(0, 8) + "...",
+        platform: hb.platform,
+        status: (Date.now() - new Date(hb.timestamp).getTime()) < 15 * 60 * 1000 ? "active" : "idle",
+        lastActive: new Date(hb.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+    }).slice(0, 8);
+
+    // 8. Usage Volume per Day (last 7 days)
+    const usageDaily: Record<string, { date: string; copies: number; injections: number; requests: number }> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * oneDayMs);
+      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      usageDaily[dateStr] = { date: dateStr, copies: 0, injections: 0, requests: 0 };
+    }
+
+    let totalCopies = 0;
+    let totalInjections = 0;
+    const targetSiteCounts: Record<string, number> = {
+      HackerRank: 0,
+      CodeChef: 0,
+      LeetCode: 0,
+      Moodle: 0,
+      Other: 0
+    };
+
+    eventsList.forEach((ev: any) => {
+      const d = new Date(ev.timestamp);
+      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const parts = ev.event.split(":");
+      const action = parts[0];
+      const site = parts[1] || "Other";
+
+      if (usageDaily[dateStr]) {
+        if (action === "copy") usageDaily[dateStr].copies++;
+        else if (action === "inject") usageDaily[dateStr].injections++;
+      }
+
+      if (action === "copy") {
+        totalCopies++;
+        if (targetSiteCounts[site] !== undefined) targetSiteCounts[site]++;
+        else targetSiteCounts.Other++;
+      } else if (action === "inject") {
+        totalInjections++;
+        if (targetSiteCounts[site] !== undefined) targetSiteCounts[site]++;
+        else targetSiteCounts.Other++;
+      }
+    });
+
+    heartbeatsList.forEach((hb: any) => {
+      const d = new Date(hb.timestamp);
+      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      if (usageDaily[dateStr]) {
+        usageDaily[dateStr].requests++;
+      }
+    });
+
+    const targetSites = Object.entries(targetSiteCounts).map(([name, count]) => ({
+      name,
+      count,
+      pct: Math.round((count / (totalCopies + totalInjections || 1)) * 100)
+    })).sort((a, b) => b.count - a.count);
+
     return {
       totalDownloads,
       windowsDownloads,
@@ -1203,6 +1334,11 @@ export default function GlidePassAdmin() {
       maxHeatmapVal,
       versionAdoption,
       frequencyStats,
+      activePairingsList,
+      usageVolumeData: Object.values(usageDaily),
+      targetSites,
+      totalCopies,
+      totalInjections,
       retention: {
         day1: getRetentionForDay(1),
         day3: getRetentionForDay(3),
@@ -2083,6 +2219,99 @@ export default function GlidePassAdmin() {
                           )}
                         </div>
                       </div>
+
+                      {/* Active Connections Map, Usage Volume, and Target Site Tracking */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Active Connections Map */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4" style={{ color: P.blue }}>Active LAN Pairing Nodes</h3>
+                          
+                          {analytics.activePairingsList.length === 0 ? (
+                            <div className="text-center py-12 text-xs" style={{ color: dk ? `${P.sky}40` : `${P.black}40` }}>No active pairings detected over local network</div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between text-[10px] uppercase font-extrabold tracking-widest opacity-60 pb-2 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                <span>Pairing Node</span>
+                                <span>Status</span>
+                              </div>
+                              <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                                {analytics.activePairingsList.map((pairing: any) => (
+                                  <div key={pairing.id} className="flex items-center justify-between text-xs font-mono">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: pairing.status === "active" ? "#10B981" : "#94A3B8" }} />
+                                      <span>{pairing.ip}</span>
+                                      <span className="text-[9px] px-1 py-0.2 rounded uppercase font-bold" style={{ background: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>{pairing.platform}</span>
+                                    </div>
+                                    <span style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{pairing.status === "active" ? "Connected" : `Idle (${pairing.lastActive})`}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Usage Volume Charts (Daily copy/inject volume) */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-6" style={{ color: P.blue }}>Daily Usage Volume (Last 7 Days)</h3>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-3">
+                              {analytics.usageVolumeData.map((d: any, idx: number) => {
+                                const total = d.copies + d.injections + d.requests;
+                                const maxVal = Math.max(...analytics.usageVolumeData.map((x: any) => x.copies + x.injections + x.requests)) || 1;
+                                
+                                return (
+                                  <div key={idx} className="flex items-center gap-3">
+                                    <span className="w-14 text-[10px] font-bold font-mono opacity-70">{d.date}</span>
+                                    <div className="flex-1 flex gap-0.5 h-3 rounded bg-white/5 overflow-hidden">
+                                      {d.copies > 0 && (
+                                        <div title={`${d.copies} copies`} className="h-full bg-blue-500 transition-all" style={{ width: `${(d.copies / maxVal) * 100}%` }} />
+                                      )}
+                                      {d.injections > 0 && (
+                                        <div title={`${d.injections} injections`} className="h-full bg-emerald-500 transition-all" style={{ width: `${(d.injections / maxVal) * 100}%` }} />
+                                      )}
+                                      {d.requests > 0 && (
+                                        <div title={`${d.requests} check-ins`} className="h-full bg-amber-500 transition-all" style={{ width: `${(d.requests / maxVal) * 100}%` }} />
+                                      )}
+                                    </div>
+                                    <span className="w-8 text-right text-[10px] font-mono font-bold" style={{ color: P.blue }}>{total}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex gap-4 justify-center text-[8px] font-bold uppercase tracking-wider pt-2 border-t" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-blue-500" /> Copies</div>
+                              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-emerald-500" /> Injections</div>
+                              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-amber-500" /> Check-ins</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* HackerRank / Target Site Tracking */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-6" style={{ color: P.blue }}>Target Platform Share</h3>
+                          
+                          <div className="space-y-4">
+                            {analytics.targetSites.map((site: any) => (
+                              <div key={site.name} className="space-y-1">
+                                <div className="flex justify-between text-xs font-semibold">
+                                  <span>{site.name}</span>
+                                  <span className="font-mono">{site.pct}% ({site.count})</span>
+                                </div>
+                                <div className="h-2 rounded-full overflow-hidden border" style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                  <div className="h-full rounded-full transition-all" style={{ width: `${site.pct}%`, background: `linear-gradient(90deg, ${P.blue}, ${P.sky})` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
 
@@ -2743,41 +2972,104 @@ export default function GlidePassAdmin() {
                       {loadingContributors ? (
                         <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} /></div>
                       ) : !selectedContributor ? (
-                        <div className="grid grid-cols-1 gap-4">
-                          {contributors.map(c => {
-                            const parsed = parseVitEmail(c.email);
-                            const name = c.name || parsed.name;
-                            const regno = c.regno || parsed.regno;
-                            const college = c.college || parsed.college;
-                            const codes = contributorCodes.filter(q => q.contributorEmail === c.email);
-                            
-                            return (
-                              <div key={c.email} onClick={() => setSelectedContributor(c.email)} className="p-5 rounded-[24px] border cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase text-lg" style={{ background: `${P.blue}15`, color: P.blue }}>
-                                    {name[0] || "?"}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <h3 className="text-sm font-bold uppercase">{name}</h3>
-                                      <span className="text-[8px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{college}</span>
+                        <div className="space-y-8">
+                          {/* Top 3 Podium */}
+                          {contributorStats.length > 0 && (
+                            <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                              style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                              <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                              <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-8 text-center" style={{ color: P.blue }}>Contributor Leaderboard Podium</h3>
+                              
+                              <div className="flex flex-col sm:flex-row items-end justify-center gap-6 sm:gap-10 pb-4">
+                                {/* Rank 2 */}
+                                {contributorStats[1] && (
+                                  <div className="flex flex-col items-center order-2 sm:order-1">
+                                    <div className="w-14 h-14 rounded-full border-2 border-slate-400 flex items-center justify-center font-black text-lg bg-slate-900 text-slate-300 relative shadow-lg">
+                                      {contributorStats[1].name[0]}
+                                      <span className="absolute -bottom-2 bg-slate-400 text-black font-extrabold text-[9px] px-2 py-0.5 rounded-full uppercase">#2</span>
                                     </div>
-                                    <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email} • {regno}</p>
+                                    <span className="text-xs font-black uppercase mt-3">{contributorStats[1].name}</span>
+                                    <span className="text-[9px] font-mono opacity-60 mt-0.5">{contributorStats[1].points} pts</span>
+                                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded mt-1.5" style={{ backgroundColor: contributorStats[1].tierColor, color: contributorStats[1].tierText }}>{contributorStats[1].tier}</span>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-6 w-full md:w-auto">
-                                  <div className="text-left md:text-right flex-1 md:flex-none">
-                                    <p className="text-xs font-bold" style={{ color: P.blue }}>{codes.length} Codes</p>
-                                    <p className="text-[10px] font-mono uppercase" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>Contributed</p>
+                                )}
+
+                                {/* Rank 1 (Center / Tallest) */}
+                                {contributorStats[0] && (
+                                  <div className="flex flex-col items-center order-1 sm:order-2 -translate-y-2">
+                                    <div className="w-18 h-18 rounded-full border-2 border-yellow-400 flex items-center justify-center font-black text-xl bg-yellow-950/20 text-yellow-400 relative shadow-xl shadow-yellow-500/10">
+                                      <Sparkles size={16} className="absolute -top-4 text-yellow-400 animate-bounce" />
+                                      {contributorStats[0].name[0]}
+                                      <span className="absolute -bottom-2 bg-yellow-400 text-black font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase">#1</span>
+                                    </div>
+                                    <span className="text-sm font-black uppercase mt-4 text-yellow-400">{contributorStats[0].name}</span>
+                                    <span className="text-[10px] font-mono opacity-80 mt-0.5">{contributorStats[0].points} pts</span>
+                                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded mt-2" style={{ backgroundColor: contributorStats[0].tierColor, color: contributorStats[0].tierText }}>{contributorStats[0].tier}</span>
                                   </div>
-                                  <button onClick={(e) => { e.stopPropagation(); toggleContributorStatus(c.email, c.status); }} className="px-4 py-2 rounded-lg text-xs font-bold transition-all border" style={{ background: c.status === "active" ? `${P.error}15` : `${P.blue}15`, color: c.status === "active" ? P.error : P.blue, borderColor: c.status === "active" ? `${P.error}30` : `${P.blue}30` }}>
-                                    {c.status === "active" ? "Block Access" : "Activate Access"}
-                                  </button>
-                                </div>
+                                )}
+
+                                {/* Rank 3 */}
+                                {contributorStats[2] && (
+                                  <div className="flex flex-col items-center order-3">
+                                    <div className="w-12 h-12 rounded-full border-2 border-amber-600 flex items-center justify-center font-black text-md bg-amber-950/25 text-amber-500 relative shadow-lg">
+                                      {contributorStats[2].name[0]}
+                                      <span className="absolute -bottom-2 bg-amber-600 text-black font-extrabold text-[8px] px-1.5 py-0.5 rounded-full uppercase">#3</span>
+                                    </div>
+                                    <span className="text-xs font-black uppercase mt-3">{contributorStats[2].name}</span>
+                                    <span className="text-[9px] font-mono opacity-60 mt-0.5">{contributorStats[2].points} pts</span>
+                                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded mt-1.5" style={{ backgroundColor: contributorStats[2].tierColor, color: contributorStats[2].tierText }}>{contributorStats[2].tier}</span>
+                                  </div>
+                                )}
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
+
+                          {/* Leaderboard Table / Rankings */}
+                          <div className="space-y-4">
+                            <h3 className="text-xs font-extrabold tracking-wider uppercase opacity-60">All Contributors</h3>
+                            <div className="grid grid-cols-1 gap-4">
+                              {contributorStats.map((c, rankIdx) => (
+                                <div key={c.email} onClick={() => setSelectedContributor(c.email)} className="p-5 rounded-[24px] border cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                  
+                                  <div className="flex items-center gap-4">
+                                    {/* Rank number badge */}
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black font-mono text-sm border"
+                                      style={{
+                                        background: rankIdx === 0 ? "rgba(234, 179, 8, 0.15)" : rankIdx === 1 ? "rgba(148, 163, 184, 0.15)" : rankIdx === 2 ? "rgba(217, 119, 6, 0.15)" : "transparent",
+                                        color: rankIdx === 0 ? "#EAB308" : rankIdx === 1 ? "#94A3B8" : rankIdx === 2 ? "#D97706" : "inherit",
+                                        borderColor: rankIdx === 0 ? "rgba(234, 179, 8, 0.3)" : rankIdx === 1 ? "rgba(148, 163, 184, 0.3)" : rankIdx === 2 ? "rgba(217, 119, 6, 0.3)" : "rgba(199,238,255,0.08)",
+                                      }}>
+                                      {rankIdx + 1}
+                                    </div>
+
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase text-lg" style={{ background: `${P.blue}15`, color: P.blue }}>
+                                      {c.name[0] || "?"}
+                                    </div>
+
+                                    <div>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-sm font-bold uppercase">{c.name}</h3>
+                                        <span className="text-[8px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{c.college}</span>
+                                        <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ backgroundColor: c.tierColor, color: c.tierText }}>{c.tier}</span>
+                                      </div>
+                                      <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.email} • {c.regno}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-6 w-full md:w-auto">
+                                    <div className="text-left md:text-right flex-1 md:flex-none">
+                                      <p className="text-xs font-bold" style={{ color: P.blue }}>{c.points} Points</p>
+                                      <p className="text-[9px] font-mono uppercase" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.codesCount} Codes • {c.editsCount} Edits</p>
+                                    </div>
+                                    <button onClick={(e) => { e.stopPropagation(); toggleContributorStatus(c.email, c.status); }} className="px-4 py-2 rounded-lg text-xs font-bold transition-all border" style={{ background: c.status === "active" ? `${P.error}15` : `${P.blue}15`, color: c.status === "active" ? P.error : P.blue, borderColor: c.status === "active" ? `${P.error}30` : `${P.blue}30` }}>
+                                      {c.status === "active" ? "Block Access" : "Activate Access"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-6">
