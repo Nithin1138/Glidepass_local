@@ -24,12 +24,23 @@ Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
 Remove-Item -Path $TempZip -Force
 
 # 4. Create Desktop Shortcut
-Write-Host "✨ Creating Desktop Shortcut..." -ForegroundColor Cyan
-$WshShell = New-Object -ComObject WScript.Shell
-$ShortcutPath = "$env:USERPROFILE\Desktop\LANpad.lnk"
-$Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-$Shortcut.TargetPath = "$InstallDir\LANpad\LANpad.exe"
-$Shortcut.WorkingDirectory = "$InstallDir\LANpad"
-$Shortcut.Save()
-
-Write-Host "✅ Installed successfully! Double-click the LANpad icon on your Desktop to start." -ForegroundColor Green
+try {
+    Write-Host "✨ Creating Desktop Shortcut..." -ForegroundColor Cyan
+    $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
+    if (-not $DesktopPath -or -not (Test-Path $DesktopPath)) {
+        $DesktopPath = "$env:USERPROFILE\Desktop"
+    }
+    if (Test-Path $DesktopPath) {
+        $WshShell = New-Object -ComObject WScript.Shell
+        $ShortcutPath = Join-Path $DesktopPath "LANpad.lnk"
+        $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+        $Shortcut.TargetPath = "$InstallDir\LANpad\LANpad.exe"
+        $Shortcut.WorkingDirectory = "$InstallDir\LANpad"
+        $Shortcut.Save()
+        Write-Host "✅ Installed successfully! Double-click the LANpad icon on your Desktop to start." -ForegroundColor Green
+    } else {
+        Write-Warning "Could not locate Desktop folder. LANpad is installed at $InstallDir\LANpad\LANpad.exe"
+    }
+} catch {
+    Write-Warning "Unable to create Desktop shortcut: $_. You can run LANpad directly from $InstallDir\LANpad\LANpad.exe"
+}
