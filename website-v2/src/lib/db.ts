@@ -1396,6 +1396,16 @@ export async function updateDbUser(user: any): Promise<void> {
   }
 }
 
+export async function deleteDbUser(id: string): Promise<void> {
+  if (pool) {
+    await pool.query("DELETE FROM vit_users WHERE id = $1", [id]);
+  } else {
+    const data = await readUsersRbac();
+    data.users = data.users.filter((u: any) => u.id !== id);
+    await writeUsersRbac(data);
+  }
+}
+
 export async function updateDbRbac(role: string, permissions: any): Promise<void> {
   if (pool) {
     await pool.query(

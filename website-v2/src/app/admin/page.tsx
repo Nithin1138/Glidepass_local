@@ -1626,6 +1626,23 @@ export default function GlidePassAdmin() {
     }
   };
 
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    try {
+      const res = await fetch(`/api/admin/users-rbac?id=${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== id));
+        showToast("success", "User deleted from DB.");
+      } else {
+        showToast("error", "Failed to delete user.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to delete user.");
+    }
+  };
+
   const handleDeleteTxn = async (id: string) => {
     try {
       await fetch(`/api/admin/monetization?type=subscription&id=${id}`, { method: "DELETE" });
@@ -2652,10 +2669,14 @@ export default function GlidePassAdmin() {
                                   <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{u.role}</span>
                                 </td>
                                 <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.activity}</td>
-                                <td className="p-4 pr-6 text-right">
+                                <td className="p-4 pr-6 text-right flex justify-end gap-2">
                                   <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
                                     style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
                                     {u.status === "suspended" ? "Unsuspend" : "Suspend"}
+                                  </button>
+                                  <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                    style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
+                                    Delete
                                   </button>
                                 </td>
                               </tr>

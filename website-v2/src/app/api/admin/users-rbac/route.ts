@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDbUsers, getDbRbac, updateDbUser, updateDbRbac } from "@/lib/db";
+import { getDbUsers, getDbRbac, updateDbUser, updateDbRbac, deleteDbUser } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,20 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing user ID parameter" }, { status: 400 });
+    }
+    await deleteDbUser(id);
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
