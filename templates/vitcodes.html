@@ -682,7 +682,7 @@
                         <span class="contributor-name" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace; text-align: left; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             ${q.contributorName ? `Contributed by: <strong style="color: #ffffff;">${q.contributorName}</strong>` : ''}
                         </span>
-                        <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" style="margin: 0; padding: 4px 8px; font-size: 0.58rem; width: auto; text-transform: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                        <button class="dispatch-btn" data-code="${encodeURIComponent(q.code)}" data-title="${encodeURIComponent(q.title)}" data-language="${encodeURIComponent(q.language)}" style="margin: 0; padding: 4px 8px; font-size: 0.58rem; width: auto; text-transform: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                             ${getIcon('send-10')}
                             <span>Command Center</span>
                         </button>
@@ -733,7 +733,9 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const code = decodeURIComponent(btn.getAttribute('data-code'));
-                    window.location.href = `/center?code=${encodeURIComponent(code)}`;
+                    const title = btn.getAttribute('data-title') || '';
+                    const language = btn.getAttribute('data-language') || '';
+                    window.location.href = `/center?code=${encodeURIComponent(code)}&title=${title}&language=${language}`;
                 });
             });
 

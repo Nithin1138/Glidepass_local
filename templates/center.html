@@ -577,9 +577,12 @@
             <div class="command-center">
                 <header>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="top-label">
+                        <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
+                            <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
+                                <i data-lucide="arrow-left" size="16"></i>
+                            </button>
                             <i data-lucide="wifi" size="14"></i>
-                            <span>REMOTE COMMAND CENTER <span class="status-dot"></span></span>
+                            <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: bottom;">REMOTE COMMAND CENTER <span class="status-dot"></span></span>
                         </div>
                         <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
                             <i data-lucide="rotate-ccw" size="12"></i>
@@ -698,10 +701,30 @@
         let selectedWpm = 40;
         let originalCodeText = '';
 
+        const backBtn = document.getElementById('back-btn');
+
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                if (document.referrer.includes('/vitcodes')) {
+                    window.location.href = '/vitcodes';
+                } else if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/';
+                }
+            });
+        }
+
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
                 resetSession();
-                window.location.href = '/';
+                if (document.referrer.includes('/vitcodes')) {
+                    window.location.href = '/vitcodes';
+                } else if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/';
+                }
             }
         });
 
@@ -1026,10 +1049,24 @@
         // Auto-fill from code query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const codeParam = urlParams.get('code');
+        const titleParam = urlParams.get('title');
+        const languageParam = urlParams.get('language');
+
         if (codeParam) {
             originalCodeText = codeParam;
             remoteText.value = codeParam;
             remoteText.dispatchEvent(new Event('input'));
+        }
+
+        if (titleParam) {
+            let titleText = titleParam;
+            if (languageParam) {
+                titleText += ` (${languageParam})`;
+            }
+            const centerTitle = document.getElementById('center-title');
+            if (centerTitle) {
+                centerTitle.innerHTML = `${titleText} <span class="status-dot"></span>`;
+            }
         }
 
         // Auto-enter if already linked (optional)
