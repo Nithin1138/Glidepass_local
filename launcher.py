@@ -108,6 +108,38 @@ def blend_hex(c1: str, c2: str, t: float) -> str:
             f"{int(b1*t + b2*(1-t)):02x}")
 
 
+def safe_urlopen(url_or_req, timeout=4):
+    import urllib.request
+    import ssl
+    try:
+        ctx = ssl._create_unverified_context()
+        return urllib.request.urlopen(url_or_req, timeout=timeout, context=ctx)
+    except Exception:
+        return urllib.request.urlopen(url_or_req, timeout=timeout)
+
+
+def calculate_days_left(expires_at_str):
+    try:
+        from datetime import datetime, timezone
+        s = expires_at_str.replace("Z", "+00:00")
+        if "." in s:
+            base, tz = s.split("+") if "+" in s else (s, "00:00")
+            base_parts = base.split(".")
+            sec = base_parts[0]
+            ms = base_parts[1][:6]
+            s = f"{sec}.{ms}+{tz}"
+        expiry_dt = datetime.fromisoformat(s)
+        now_dt = datetime.now(timezone.utc)
+        delta = expiry_dt - now_dt
+        days = delta.days
+        if delta.total_seconds() > 0 and days == 0:
+            return 1
+        return max(0, days)
+    except Exception as e:
+        print(f"Error calculating days left: {e}")
+        return 30
+
+
 # ── QR code generation ───────────────────────────────────────────────────────
 
 def _generate_qr_image(data: str, size: int = 200):
@@ -1052,10 +1084,24 @@ class LANpadLauncher:
     def _build_lock(self):
         v = self.lock_view
         W, H = 400, 760
+        _mac = sys.platform == "darwin"
         
-        # Logo placeholder
+        # 1. Base Canvas for background gradient & card drawing
+        self.lock_cv = tk.Canvas(v, width=W, height=H, bg="#050505", highlightthickness=0)
+        self.lock_cv.place(x=0, y=0)
+        
+        # Top Ambient glow (concentric semi-circles)
+        for r in range(160, 0, -20):
+            c = blend_hex("#0077C0", "#050505", r / 160 * 0.15)
+            self.lock_cv.create_oval(200 - r, -100 - r, 200 + r, -100 + r, fill=c, outline="")
+            
+        # Draw glassmorphic card container
+        card_x1, card_y1, card_x2, card_y2 = 24, 70, 376, 680
+        rounded_rect(self.lock_cv, card_x1, card_y1, card_x2, card_y2, r=24, fill="#0D0D10", outline="#1F1F24")
+        
+        # Logo placeholder inside card
         logo_y = 120
-        self._lock_logo_cv = tk.Canvas(v, width=80, height=80, bg=self.BG, highlightthickness=0)
+        self._lock_logo_cv = tk.Canvas(v, width=80, height=80, bg="#0D0D10", highlightthickness=0)
         self._lock_logo_cv.place(x=160, y=logo_y)
         
         try:
@@ -1064,26 +1110,29 @@ class LANpadLauncher:
             self._lock_logo_tk = ImageTk.PhotoImage(logo_img)
             self._lock_logo_cv.create_image(40, 40, image=self._lock_logo_tk)
         except Exception:
-            self._lock_logo_cv.create_text(40, 40, text="🔒", fill=self.WHITE, font=(self.FD, 32, "bold"))
+            self._lock_logo_cv.create_text(40, 40, text="🔒", fill=self.WHITE, font=(self.FD, 36, "bold"))
             
         # Title
-        title_lbl = tk.Label(v, text="LANpad Activation", fg=self.WHITE, bg=self.BG, font=(self.FD, 22, "bold"))
+        title_lbl = tk.Label(v, text="LANpad Activation", fg=self.WHITE, bg="#0D0D10", font=(self.FD, 22, "bold"))
         title_lbl.place(x=24, y=logo_y + 110, width=W - 48)
         
         # Subtitle
-        sub_lbl = tk.Label(v, text="Bypass campus peer-to-peer restrictions and\nAP Isolation instantly.", fg=self.DIM, bg=self.BG, font=(self.FU, 12))
+        sub_lbl = tk.Label(v, text="Bypass campus peer-to-peer restrictions and\nAP Isolation instantly.", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 12))
         sub_lbl.place(x=24, y=logo_y + 155, width=W - 48)
         
         # Key Input Label
-        key_lbl = tk.Label(v, text="ACTIVATION KEY", fg=self.DIM, bg=self.BG, font=(self.FU, 9, "bold"))
+        key_lbl = tk.Label(v, text="ACTIVATION KEY", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 9, "bold"))
         key_lbl.place(x=48, y=logo_y + 230)
         
-        # Input Entry
-        self.key_entry = tk.Entry(v, bg=self.BG2, fg=self.WHITE, insertbackground=self.WHITE, font=(self.FM, 12), highlightthickness=1, highlightbackground=self.BORDER, highlightcolor=self.AMBER, bd=0)
-        self.key_entry.place(x=48, y=logo_y + 255, width=W - 96, height=42)
+        # Input Entry Background wrapper
+        entry_frame = tk.Frame(v, bg="#16161A", bd=0, highlightthickness=1, highlightbackground="#2A2A30", highlightcolor="#0077C0")
+        entry_frame.place(x=48, y=logo_y + 255, width=W - 96, height=44)
+        
+        self.key_entry = tk.Entry(entry_frame, bg="#16161A", fg=self.WHITE, insertbackground=self.WHITE, font=(self.FM, 11), bd=0, highlightthickness=0)
+        self.key_entry.place(x=12, y=10, width=W - 120, height=24)
         
         # Status Label
-        self.lock_status_lbl = tk.Label(v, text="", fg=self.RED, bg=self.BG, font=(self.FU, 10))
+        self.lock_status_lbl = tk.Label(v, text="", fg=self.RED, bg="#0D0D10", font=(self.FU, 10))
         self.lock_status_lbl.place(x=24, y=logo_y + 310, width=W - 48)
         
         # Action Handler
@@ -1095,43 +1144,107 @@ class LANpadLauncher:
             self.lock_status_lbl.config(text="Verifying activation key...", fg=self.DIM)
             self.root.update()
             
-            success, tier = self.verify_key_online(key)
+            success, tier, expires_at = self.verify_key_online(key)
             if success:
-                self.lock_status_lbl.config(text="Activation successful!", fg=self.GREEN)
+                days_left = calculate_days_left(expires_at)
                 license_path = os.path.expanduser("~/.lanpad_license.json")
                 try:
                     import json
                     with open(license_path, "w", encoding="utf-8") as f:
-                        json.dump({"key": key, "tier": tier, "last_checked": time.time()}, f)
+                        json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
                 except Exception:
                     pass
-                self.root.after(1000, lambda: self.show_view("main"))
+                
+                self.show_success_overlay(tier, days_left)
             else:
                 self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
+                entry_frame.config(highlightbackground=self.RED)
+                self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
 
-        # Button
-        act_btn = tk.Button(v, text="ACTIVATE LANPAD", bg=self.AMBER, fg=self.BG, font=(self.FU, 11, "bold"), bd=0, highlightthickness=0, command=do_activation, cursor="hand2")
-        act_btn.place(x=48, y=logo_y + 350, width=W - 96, height=46)
+        # Activate Button on Canvas (styled custom button)
+        btn_cv = tk.Canvas(v, width=W - 96, height=48, bg="#0D0D10", highlightthickness=0)
+        btn_cv.place(x=48, y=logo_y + 350)
+        
+        def draw_btn_state(state="normal"):
+            btn_cv.delete("all")
+            if state == "hover":
+                rounded_rect(btn_cv, 0, 0, W - 96, 48, r=24, fill="#0088DD", outline="")
+            elif state == "press":
+                rounded_rect(btn_cv, 0, 0, W - 96, 48, r=24, fill="#0066AA", outline="")
+            else:
+                rounded_rect(btn_cv, 0, 0, W - 96, 48, r=24, fill="#0077C0", outline="")
+            btn_cv.create_text((W - 96) // 2, 24, text="ACTIVATE LANPAD", fill="white", font=(self.FU, 11, "bold"))
+
+        draw_btn_state()
+        btn_cv.bind("<Enter>", lambda e: draw_btn_state("hover"))
+        btn_cv.bind("<Leave>", lambda e: draw_btn_state("normal"))
+        btn_cv.bind("<Button-1>", lambda e: draw_btn_state("press"))
+        btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
+        btn_cv.config(cursor="hand2")
         
         # Web Link
         def open_pricing():
             import webbrowser
             webbrowser.open("https://lanpad.vercel.app/pricing")
             
-        get_btn = tk.Button(v, text="Get Activation Key", fg=self.DIM, activeforeground=self.WHITE, bg=self.BG, activebackground=self.BG, font=(self.FU, 11, "underline"), bd=0, highlightthickness=0, command=open_pricing, cursor="hand2")
-        get_btn.place(x=48, y=logo_y + 410, width=W - 96, height=30)
+        get_btn = tk.Button(v, text="Get Activation Key", fg="#8A8A93", activeforeground=self.WHITE, bg="#0D0D10", activebackground="#0D0D10", font=(self.FU, 11, "underline"), bd=0, highlightthickness=0, command=open_pricing, cursor="hand2")
+        get_btn.place(x=48, y=logo_y + 415, width=W - 96, height=30)
+
+    def show_success_overlay(self, tier, days_left):
+        self.key_entry.config(state="disabled")
+        W, H = 400, 760
+        overlay = tk.Canvas(self.lock_view, width=W - 48, height=600, bg="#0D0D10", highlightthickness=0)
+        overlay.place(x=24, y=75)
+        
+        for r in range(100, 0, -20):
+            c = blend_hex("#10B981", "#0D0D10", r / 100 * 0.12)
+            overlay.create_oval(176 - r, 180 - r, 176 + r, 180 + r, fill=c, outline="")
+            
+        overlay.create_text(176, 180, text="✓", fill="#10B981", font=(self.FD, 48, "bold"))
+        overlay.create_text(176, 280, text="Activation Successful!", fill=self.WHITE, font=(self.FD, 20, "bold"))
+        
+        tier_label = f"License Tier: {tier.upper()}"
+        days_label = f"Pass Validity: {days_left} Days Remaining" if days_left > 0 else "Pass Validity: Expiring Today"
+        
+        overlay.create_text(176, 330, text=tier_label, fill="#0077C0", font=(self.FU, 12, "bold"))
+        overlay.create_text(176, 360, text=days_label, fill="#8A8A93", font=(self.FU, 12))
+        overlay.create_text(176, 420, text="Launching LANpad...", fill=self.DIM, font=(self.FU, 10, "italic"))
+        
+        progress_bar = overlay.create_rectangle(48, 460, 48, 464, fill="#10B981", outline="")
+        overlay.create_rectangle(48, 460, 304, 464, outline="#1F1F24", width=1)
+        
+        steps = 50
+        duration = 1500
+        step_time = duration // steps
+        
+        def update_progress(step):
+            if step <= steps:
+                x_end = 48 + int((304 - 48) * (step / steps))
+                overlay.coords(progress_bar, 48, 460, x_end, 464)
+                self.root.after(step_time, lambda: update_progress(step + 1))
+            else:
+                self.show_view("main")
+                overlay.destroy()
+                self.key_entry.config(state="normal")
+                
+        update_progress(0)
 
     def check_monetization_status(self):
-        try:
-            import urllib.request
-            import json
-            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                monetization_enabled = data.get("monetization_enabled", False)
-        except Exception as e:
-            print(f"[monetization] Status fetch failed: {e}. Defaulting to OFF.")
-            monetization_enabled = False
+        monetization_enabled = False
+        import urllib.request
+        import json
+        
+        # Query local first, then production
+        urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+        for base_url in urls:
+            try:
+                req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                with safe_urlopen(req, timeout=2) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    monetization_enabled = data.get("monetization_enabled", False)
+                    break
+            except Exception as e:
+                print(f"[monetization] Status fetch failed on {base_url}: {e}")
             
         if not monetization_enabled:
             self.show_view("main")
@@ -1153,11 +1266,11 @@ class LANpadLauncher:
                     self.show_view("main")
                     return
                     
-                success, new_tier = self.verify_key_online(key)
+                success, new_tier, expires_at = self.verify_key_online(key)
                 if success:
                     print(f"[monetization] Key verified online ({new_tier}).")
                     with open(license_path, "w", encoding="utf-8") as f:
-                        json.dump({"key": key, "tier": new_tier, "last_checked": time.time()}, f)
+                        json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
                     self.show_view("main")
                     return
             except Exception as e:

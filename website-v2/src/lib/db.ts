@@ -1529,25 +1529,31 @@ export async function setMonetizationSettings(settings: any): Promise<void> {
 }
 
 export async function verifyLicenseKey(key: string): Promise<any> {
+  const cleanKey = key.trim().toUpperCase();
   if (pool) {
-    await initDb();
-    const res = await pool.query("SELECT * FROM vit_licenses WHERE key = $1", [key]);
-    if (res.rows.length > 0) {
-      const lic = res.rows[0];
-      const expiry = new Date(lic.expires_at).getTime();
-      const now = Date.now();
-      if (now < expiry) {
-        return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+    try {
+      await initDb();
+      const res = await pool.query("SELECT * FROM vit_licenses WHERE UPPER(key) = $1", [cleanKey]);
+      if (res.rows.length > 0) {
+        const lic = res.rows[0];
+        const expiry = new Date(lic.expires_at).getTime();
+        const now = Date.now();
+        if (now < expiry) {
+          return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+        }
       }
+      return { valid: false };
+    } catch (e) {
+      console.error("DB verifyLicenseKey error, falling back to JSON:", e);
     }
-    return { valid: false };
   }
   const filePath = getLicensesJsonPath();
   if (fs.existsSync(filePath)) {
     try {
       const licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      if (licenses[key]) {
-        const lic = licenses[key];
+      const matchingKey = Object.keys(licenses).find(k => k.trim().toUpperCase() === cleanKey);
+      if (matchingKey) {
+        const lic = licenses[matchingKey];
         const expiry = new Date(lic.expires_at).getTime();
         const now = Date.now();
         if (now < expiry) {
