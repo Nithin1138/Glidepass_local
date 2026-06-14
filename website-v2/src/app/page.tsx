@@ -717,7 +717,7 @@ export default function Home() {
                 {
                   title: "Windows Backend",
                   icon: <Monitor size={28} />,
-                  label: "Download ZIP",
+                  label: "Download EXE",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                   commandLabel: "Or install via PowerShell:",
                   href: "/downloads/LANpad_Windows.zip",
