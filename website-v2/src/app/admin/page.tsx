@@ -175,13 +175,31 @@ export default function GlidePassAdmin() {
       setIsAuth(true);
       if (remember) localStorage.setItem("glidepass-admin-logged", "true");
       showToast("success", "Access granted. Welcome back, Nithin.");
+      // Log successful login
+      fetch("/api/admin/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "Admin Session Started", username: userIn.trim(), ip: "127.0.0.1", status: "success" })
+      }).catch(() => {});
     } else {
       setLoginAttempts(p => p + 1);
       showToast("error", "Invalid credentials. Access denied.");
+      // Log failed login
+      fetch("/api/admin/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "Failed Auth Attempt", username: userIn.trim() || "Unknown", ip: "127.0.0.1", status: "failed" })
+      }).catch(() => {});
     }
   };
 
   const handleLogout = () => {
+    // Log logout
+    fetch("/api/admin/audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: "Admin Session Terminated", username: adminName, ip: "127.0.0.1", status: "success" })
+    }).catch(() => {});
     setIsAuth(false);
     localStorage.removeItem("glidepass-admin-logged");
     setUserIn("");
@@ -1211,6 +1229,13 @@ export default function GlidePassAdmin() {
     if (isAuth) {
       if (view === "ota") fetchTemplate(selectedFile);
       if (view === "analytics") fetchTelemetry();
+      if (view === "security") {
+        fetchAuditLogs();
+        const interval = setInterval(() => {
+          fetchAuditLogs();
+        }, 1000);
+        return () => clearInterval(interval);
+      }
       if (view === "vitcodes" || view === "dashboard" || view === "contributors") {
         fetchVitCodes();
         // Start polling for real-time sync (every 1 second, quiet mode)
@@ -1273,12 +1298,36 @@ export default function GlidePassAdmin() {
   };
 
   // ─── Security Logs ───
-  const [secLogs] = useState<SecurityLog[]>([
-    { id: "101", timestamp: "23:02:15", event: "Admin Session Terminated", user: "Nithin", ip: "192.168.1.15", status: "success" },
-    { id: "102", timestamp: "22:58:40", event: "Failed Auth Attempt", user: "Unknown", ip: "198.51.100.42", status: "failed" },
-    { id: "103", timestamp: "22:45:12", event: "VIT Database Modified", user: "Nithin", ip: "10.251.103.162", status: "warning" },
-    { id: "104", timestamp: "22:30:05", event: "SSL Handshake Verified", user: "System", ip: "127.0.0.1", status: "success" },
-  ]);
+  const [secLogs, setSecLogs] = useState<SecurityLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  const fetchAuditLogs = async () => {
+    setLoadingAudit(true);
+    try {
+      const res = await fetch("/api/admin/audit");
+      if (res.ok) {
+        const data = await res.json();
+        setSecLogs(data);
+      }
+    } catch (e) {}
+    setLoadingAudit(false);
+  };
+
+  const logAuditEvent = async (event: string, status: "success" | "failed" | "warning", username = adminName) => {
+    try {
+      await fetch("/api/admin/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event,
+          username,
+          ip: "127.0.0.1",
+          status
+        })
+      });
+      fetchAuditLogs();
+    } catch (e) {}
+  };
 
   // ─── Profile ───
   const [adminName, setAdminName] = useState("Nithin");

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readRules, writeRule } from "@/lib/db";
+import { readRules, writeRule, logAudit } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +23,10 @@ export async function POST(request: NextRequest) {
     }
 
     await writeRule(examType, rule, sessionLimit);
+    await logAudit(`Exam Settings Modified for ${examType}: limit=${sessionLimit}`, "Nithin", "127.0.0.1", "success");
     return NextResponse.json({ success: true, message: "Settings saved successfully" });
   } catch (error: any) {
+    await logAudit("Failed Exam Settings Modification", "Nithin", "127.0.0.1", "failed");
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

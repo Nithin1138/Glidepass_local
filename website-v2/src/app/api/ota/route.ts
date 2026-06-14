@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { logAudit } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -68,9 +69,11 @@ export async function POST(request: NextRequest) {
     }
 
     fs.writeFileSync(filePath, content, "utf8");
+    await logAudit(`OTA Template Modified: ${file}`, "Nithin", "127.0.0.1", "success");
 
     return NextResponse.json({ success: true, message: `Successfully updated ${file}` });
   } catch (error: any) {
+    await logAudit("Failed OTA Template Modification", "Nithin", "127.0.0.1", "failed");
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

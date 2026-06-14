@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { restoreSession, restoreQuestion } from "@/lib/db";
+import { restoreSession, restoreQuestion, logAudit } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid type. Must be 'session' or 'question'" }, { status: 400 });
     }
 
+    await logAudit(`Restored ${type === 'session' ? 'Session' : 'Question'} ID: ${id}`, "Nithin", "127.0.0.1", "success");
     return NextResponse.json({ success: true, message: `${type === 'session' ? 'Session' : 'Question'} restored successfully` });
   } catch (error: any) {
+    await logAudit("Failed Restore Operation", "Nithin", "127.0.0.1", "failed");
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
