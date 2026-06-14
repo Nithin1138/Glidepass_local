@@ -259,7 +259,7 @@ export async function initDb() {
     if (parseInt(usersCountRes.rows[0].count, 10) === 0) {
       await client.query(`
         INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password) VALUES
-        ('1', 'Nithin Kumar', 'nithin@vitap.ac.in', 'Super Admin', 'active', true, 'Active 2m ago', '2026-01-10', 2, true, 'check'),
+        ('1', 'Veera Nithin', 'veeranithin9@gmail.com', 'ADMIN MASTER', 'active', true, 'Active 2m ago', '2026-01-10', 2, true, 'check'),
         ('2', 'Sarah Connor', 'sarah@vitap.ac.in', 'Developer', 'active', true, 'Active 4h ago', '2026-02-15', 1, true, 'check'),
         ('3', 'Alex Mercer', 'mercer@vitap.ac.in', 'Auditor', 'suspended', false, 'Banned 2d ago', '2026-03-01', 0, false, 'check'),
         ('4', 'David Lightman', 'david.23bce@vitap.ac.in', 'Contributor', 'pending', false, 'Registered 1h ago', '2026-06-12', 3, false, 'check');
@@ -269,6 +269,7 @@ export async function initDb() {
     const rbacCountRes = await client.query("SELECT COUNT(*) FROM vit_rbac");
     if (parseInt(rbacCountRes.rows[0].count, 10) === 0) {
       const defaultRbac = {
+        "ADMIN MASTER": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
         "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
         Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
         Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
@@ -1323,12 +1324,13 @@ async function readUsersRbac(): Promise<{ users: any[], rbac: any }> {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const defaults = {
         users: [
-          { id: "1", name: "Nithin Kumar", email: "nithin@vitap.ac.in", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true },
-          { id: "2", name: "Sarah Connor", email: "sarah@vitap.ac.in", role: "Developer", status: "active", verified: true, activity: "Active 4h ago", joinedDate: "2026-02-15", activeDevices: 1, premium: true },
-          { id: "3", name: "Alex Mercer", email: "mercer@vitap.ac.in", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago", joinedDate: "2026-03-01", activeDevices: 0, premium: false },
-          { id: "4", name: "David Lightman", email: "david.23bce@vitap.ac.in", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago", joinedDate: "2026-06-12", activeDevices: 3, premium: false },
+          { id: "1", name: "Veera Nithin", email: "veeranithin9@gmail.com", role: "ADMIN MASTER", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true, password: "check" },
+          { id: "2", name: "Sarah Connor", email: "sarah@vitap.ac.in", role: "Developer", status: "active", verified: true, activity: "Active 4h ago", joinedDate: "2026-02-15", activeDevices: 1, premium: true, password: "check" },
+          { id: "3", name: "Alex Mercer", email: "mercer@vitap.ac.in", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago", joinedDate: "2026-03-01", activeDevices: 0, premium: false, password: "check" },
+          { id: "4", name: "David Lightman", email: "david.23bce@vitap.ac.in", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago", joinedDate: "2026-06-12", activeDevices: 3, premium: false, password: "check" },
         ],
         rbac: {
+          "ADMIN MASTER": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
           "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
           Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
           Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },

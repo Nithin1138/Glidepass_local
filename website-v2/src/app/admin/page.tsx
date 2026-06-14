@@ -6,7 +6,7 @@ import {
   ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2,
   Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
-  Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare,
+  Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail,
   AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch
 } from "lucide-react";
 import Link from "next/link";
@@ -145,11 +145,12 @@ export default function GlidePassAdmin() {
   const dk = resolvedTheme === "dark";
 
   // ─── Profile & Auth States ───
-  const [adminName, setAdminName] = useState("Nithin");
+  const [adminName, setAdminName] = useState("Veera Nithin");
   const [adminAvatar, setAdminAvatar] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80");
 
   const [isAuth, setIsAuth] = useState(false);
   const [userIn, setUserIn] = useState("");
+  const [emailIn, setEmailIn] = useState("");
   const [passIn, setPassIn] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -197,7 +198,7 @@ export default function GlidePassAdmin() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: userIn.trim(), password: passIn })
+        body: JSON.stringify({ username: userIn.trim(), email: emailIn.trim(), password: passIn })
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -257,7 +258,7 @@ export default function GlidePassAdmin() {
       fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: userIn.trim(), password: passIn })
+        body: JSON.stringify({ username: userIn.trim(), email: emailIn.trim(), password: passIn })
       })
       .then(res => res.json())
       .then(data => {
@@ -1549,7 +1550,7 @@ export default function GlidePassAdmin() {
 
   // ─── Users ───
   const [users, setUsers] = useState<UserRecord[]>([
-    { id: "1", name: "Nithin Kumar", email: "nithin@vitap.ac.in", role: "Super Admin", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true },
+    { id: "1", name: "Veera Nithin", email: "veeranithin9@gmail.com", role: "ADMIN MASTER", status: "active", verified: true, activity: "Active 2m ago", joinedDate: "2026-01-10", activeDevices: 2, premium: true },
     { id: "2", name: "Sarah Connor", email: "sarah@vitap.ac.in", role: "Developer", status: "active", verified: true, activity: "Active 4h ago", joinedDate: "2026-02-15", activeDevices: 1, premium: true },
     { id: "3", name: "Alex Mercer", email: "mercer@vitap.ac.in", role: "Auditor", status: "suspended", verified: false, activity: "Banned 2d ago", joinedDate: "2026-03-01", activeDevices: 0, premium: false },
     { id: "4", name: "David Lightman", email: "david.23bce@vitap.ac.in", role: "Contributor", status: "pending", verified: false, activity: "Registered 1h ago", joinedDate: "2026-06-12", activeDevices: 3, premium: false },
@@ -1654,6 +1655,11 @@ export default function GlidePassAdmin() {
   };
 
   const handleDeleteUser = async (id: string) => {
+    const userToDelete = users.find(u => u.id === id);
+    if (userToDelete?.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin profile cannot be deleted.");
+      return;
+    }
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
       const res = await fetch(`/api/admin/users-rbac?id=${id}`, {
@@ -1753,6 +1759,10 @@ export default function GlidePassAdmin() {
   const toggleVerify = async (id: string) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
+    if (user.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin status cannot be modified.");
+      return;
+    }
     const updated: UserRecord = { ...user, verified: !user.verified };
     try {
       const res = await fetch("/api/admin/users-rbac", {
@@ -1774,6 +1784,10 @@ export default function GlidePassAdmin() {
   const toggleBan = async (id: string) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
+    if (user.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin status cannot be modified.");
+      return;
+    }
     const updated: UserRecord = { ...user, status: user.status === "suspended" ? "active" : "suspended" };
     try {
       const res = await fetch("/api/admin/users-rbac", {
@@ -1795,6 +1809,10 @@ export default function GlidePassAdmin() {
   const handleUpdateRole = async (id: string, role: string) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
+    if (user.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin role cannot be changed.");
+      return;
+    }
     const updated: UserRecord = { ...user, role };
     try {
       const res = await fetch("/api/admin/users-rbac", {
@@ -1816,6 +1834,10 @@ export default function GlidePassAdmin() {
   const handleTogglePremium = async (id: string) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
+    if (user.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin profile cannot be modified.");
+      return;
+    }
     const updated: UserRecord = { ...user, premium: !user.premium };
     try {
       const res = await fetch("/api/admin/users-rbac", {
@@ -1828,6 +1850,42 @@ export default function GlidePassAdmin() {
         showToast("success", "Premium license status updated in DB.");
       } else {
         showToast("error", "Failed to update database.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to update database.");
+    }
+  };
+
+  const handleGenerateCredentials = async (user: UserRecord) => {
+    if (user.email === "veeranithin9@gmail.com") {
+      showToast("error", "The Master Admin credentials cannot be randomized.");
+      return;
+    }
+    const genUser = Math.floor(100000 + Math.random() * 900000).toString();
+    const genPass = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    const updated: UserRecord = {
+      ...user,
+      name: genUser,
+      password: genPass
+    };
+    
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: updated })
+      });
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === user.id ? updated : u));
+        navigator.clipboard.writeText(`Username: ${genUser}\nPassword: ${genPass}`).then(() => {
+          showToast("success", "Credentials generated and copied to clipboard!");
+        }).catch(() => {
+          showToast("success", "Credentials generated successfully.");
+        });
+        alert(`Credentials generated for ${user.email}:\n\nUsername: ${genUser}\nPassword: ${genPass}\n\n(Copied to clipboard)`);
+      } else {
+        showToast("error", "Failed to update credentials in database.");
       }
     } catch (e) {
       showToast("error", "Failed to update database.");
@@ -1849,6 +1907,7 @@ export default function GlidePassAdmin() {
 
   // ─── RBAC ───
   const [rbac, setRbac] = useState<Record<string, Record<string, boolean>>>({
+    "ADMIN MASTER": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
     "Super Admin": { users: true, rbac: true, analytics: true, content: true, system: true, security: true, settings: true },
     Developer: { users: false, rbac: false, analytics: true, content: true, system: true, security: false, settings: false },
     Auditor: { users: true, rbac: false, analytics: true, content: false, system: false, security: true, settings: false },
@@ -1943,7 +2002,7 @@ export default function GlidePassAdmin() {
   };
 
   const hasPermission = (key: string): boolean => {
-    const role = currentUser?.role || "Super Admin";
+    const role = currentUser?.role || "ADMIN MASTER";
     const perms = rbac[role];
     if (!perms) return true;
 
@@ -1995,19 +2054,73 @@ export default function GlidePassAdmin() {
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminName.trim()) return showToast("error", "Name cannot be empty.");
+    
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        name: adminName.trim()
+      };
+      
+      try {
+        const res = await fetch("/api/admin/users-rbac", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "user", data: updatedUser })
+        });
+        if (res.ok) {
+          setCurrentUser(updatedUser);
+          localStorage.setItem("glidepass-current-user", JSON.stringify(updatedUser));
+        } else {
+          showToast("error", "Failed to update profile in database.");
+          return;
+        }
+      } catch (err) {
+        showToast("error", "Error saving profile to database.");
+        return;
+      }
+    }
+    
     localStorage.setItem("glidepass-admin-name", adminName.trim());
     localStorage.setItem("glidepass-admin-avatar", adminAvatar.trim());
     showToast("success", "Profile updated successfully.");
   };
 
-  const handleChangePw = (e: React.FormEvent) => {
+  const handleChangePw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!curPw || !newPw || !confirmPw) return showToast("error", "Fill all fields.");
-    if (curPw !== storedPassword) return showToast("error", "Current password incorrect.");
+    
+    const currentPassword = currentUser?.password || storedPassword;
+    if (curPw !== currentPassword) return showToast("error", "Current password incorrect.");
     if (newPw !== confirmPw) return showToast("error", "Passwords don't match.");
+    
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        password: newPw
+      };
+      
+      try {
+        const res = await fetch("/api/admin/users-rbac", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "user", data: updatedUser })
+        });
+        if (res.ok) {
+          setCurrentUser(updatedUser);
+          localStorage.setItem("glidepass-current-user", JSON.stringify(updatedUser));
+        } else {
+          showToast("error", "Failed to update password in database.");
+          return;
+        }
+      } catch (err) {
+        showToast("error", "Error saving password to database.");
+        return;
+      }
+    }
+    
     setStoredPassword(newPw);
     localStorage.setItem("glidepass-admin-pw", newPw);
     showToast("success", "Password updated.");
@@ -2190,6 +2303,17 @@ export default function GlidePassAdmin() {
                         <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
                         <input
                           type="text" value={userIn} onChange={e => setUserIn(e.target.value)} placeholder="Nithin" required
+                          className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest" style={{ color: dk ? P.sky : P.blue }}>Email Address</label>
+                      <div className="relative">
+                        <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }} />
+                        <input
+                          type="email" value={emailIn} onChange={e => setEmailIn(e.target.value)} placeholder="veeranithin9@gmail.com" required
                           className={`w-full text-xs rounded-xl pl-10 pr-4 py-3.5 border focus:outline-none focus:ring-2 focus:ring-[#0077C0]/30 transition-all ${inputBg}`}
                         />
                       </div>
@@ -2708,7 +2832,7 @@ export default function GlidePassAdmin() {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                              {["Verified", "Name", "Email", "Role", "Activity", "Actions"].map(h => (
+                              {["Verified", "Name", "Email", "Role", "Activity", "Credentials", "Actions"].map(h => (
                                 <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Verified" ? "pl-6" : ""}`}
                                   style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
                               ))}
@@ -2729,6 +2853,16 @@ export default function GlidePassAdmin() {
                                   <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{u.role}</span>
                                 </td>
                                 <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.activity}</td>
+                                <td className="p-4">
+                                  {u.email !== "veeranithin9@gmail.com" ? (
+                                    <button onClick={() => handleGenerateCredentials(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                      style={{ background: `${P.blue}15`, borderColor: `${P.blue}25`, color: P.blue }}>
+                                      Generate
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] opacity-40">Fixed</span>
+                                  )}
+                                </td>
                                 <td className="p-4 pr-6 text-right flex justify-end gap-2">
                                   <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
                                     style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
@@ -4390,6 +4524,11 @@ export default function GlidePassAdmin() {
                           <label className="text-[9px] uppercase font-bold tracking-wider block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Admin Name</label>
                           <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)}
                             className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] uppercase font-bold tracking-wider block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Email Address (Fixed)</label>
+                          <input type="email" value={currentUser?.email || "veeranithin9@gmail.com"} readOnly disabled
+                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none opacity-60 cursor-not-allowed ${inputBg}`} />
                         </div>
                         <div className="flex items-center gap-2.5 py-1">
                           <input type="checkbox" id="2fa-checkbox" checked={isTwoStepEnabled} onChange={e => {
