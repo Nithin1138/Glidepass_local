@@ -312,6 +312,13 @@ export default function GlidePassAdmin() {
   const [newTxnPlan, setNewTxnPlan] = useState("Monthly Pass");
   const [newTxnAmount, setNewTxnAmount] = useState("₹99");
 
+  // Add User states
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserRole, setNewUserRole] = useState("Contributor");
+  const [newUserVerified, setNewUserVerified] = useState(false);
+  const [newUserPremium, setNewUserPremium] = useState(false);
+
   // ─── Version & Telemetry ───
   const [appVersionData, setAppVersionData] = useState({
     version: "1.5.1",
@@ -1579,6 +1586,46 @@ export default function GlidePassAdmin() {
     }
   }, [freeTierLimits]);
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      return showToast("error", "Name and email are required.");
+    }
+    const newUser: UserRecord = {
+      id: String(users.length + 1),
+      name: newUserName.trim(),
+      email: newUserEmail.trim(),
+      role: newUserRole,
+      status: "active",
+      verified: newUserVerified,
+      activity: "Registered just now",
+      joinedDate: new Date().toISOString().split("T")[0],
+      activeDevices: 0,
+      premium: newUserPremium
+    };
+
+    try {
+      const res = await fetch("/api/admin/users-rbac", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "user", data: newUser })
+      });
+      if (res.ok) {
+        setUsers(prev => [...prev, newUser]);
+        setNewUserName("");
+        setNewUserEmail("");
+        setNewUserRole("Contributor");
+        setNewUserVerified(false);
+        setNewUserPremium(false);
+        showToast("success", "User created and saved to DB.");
+      } else {
+        showToast("error", "Failed to save user to DB.");
+      }
+    } catch (e) {
+      showToast("error", "Failed to save user to DB.");
+    }
+  };
+
   const handleDeleteTxn = async (id: string) => {
     try {
       await fetch(`/api/admin/monetization?type=subscription&id=${id}`, { method: "DELETE" });
@@ -2517,6 +2564,50 @@ export default function GlidePassAdmin() {
                         </button>
                       </div>
 
+                      {/* Add User Form Card */}
+                      <form onSubmit={handleCreateUser} className="p-5 rounded-[24px] border relative overflow-hidden space-y-4"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: P.blue }}>Create / Add User</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Full Name</label>
+                            <input type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nithin Kumar" required
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Email address</label>
+                            <input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="nithin@vitap.ac.in" required
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Assign Role</label>
+                            <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)}
+                              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`}>
+                              <option value="Super Admin">Super Admin</option>
+                              <option value="Developer">Developer</option>
+                              <option value="Auditor">Auditor</option>
+                              <option value="Contributor">Contributor</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-5 pt-4">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" checked={newUserVerified} onChange={e => setNewUserVerified(e.target.checked)} className="rounded w-3.5 h-3.5" style={{ accentColor: P.blue }} />
+                              <span className="text-xs font-semibold">Verified</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" checked={newUserPremium} onChange={e => setNewUserPremium(e.target.checked)} className="rounded w-3.5 h-3.5" style={{ accentColor: P.blue }} />
+                              <span className="text-xs font-semibold">Premium</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <button type="submit" className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                            Add User Account
+                          </button>
+                        </div>
+                      </form>
+
                       <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className="relative w-full md:w-80">
@@ -2578,10 +2669,36 @@ export default function GlidePassAdmin() {
                   {/* ═══ RBAC ═══ */}
                   {view === "rbac" && (
                     <motion.div key="rbac" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Roles & Policy Matrix</h2>
-                        <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Configure role-based access controls across system modules</p>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Roles & Policy Matrix</h2>
+                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Configure role-based access controls across system modules</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <span className="w-2 h-2 rounded-full bg-[#0077C0] animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing time..."}</span>
+                        </div>
                       </div>
+
+                      {/* Explanation Card */}
+                      <div className="p-5 rounded-[24px] border space-y-3"
+                        style={{ background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.40)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: P.blue }}>About Roles & Policies (RBAC)</h4>
+                        <p className="text-xs leading-relaxed" style={{ color: dk ? `${P.sky}80` : `${P.black}70` }}>
+                          Role-Based Access Control (RBAC) enables you to assign fine-grained permissions to system modules. Toggling permission squares below modifies policy rules in the database instantly.
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px] font-mono">
+                          <div><b style={{ color: P.blue }}>• users</b>: Account directory management</div>
+                          <div><b style={{ color: P.blue }}>• rbac</b>: Policy editing authorization</div>
+                          <div><b style={{ color: P.blue }}>• analytics</b>: Usage heartbeats & graphs</div>
+                          <div><b style={{ color: P.blue }}>• content</b>: VitCodes, Rules & OTA updates</div>
+                          <div><b style={{ color: P.blue }}>• system</b>: Diagnostics & database metrics</div>
+                          <div><b style={{ color: P.blue }}>• security</b>: Audit trails & session management</div>
+                          <div><b style={{ color: P.blue }}>• settings</b>: Global configuration switches</div>
+                        </div>
+                      </div>
+
                       <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <table className="w-full text-left border-collapse">
                           <thead>
