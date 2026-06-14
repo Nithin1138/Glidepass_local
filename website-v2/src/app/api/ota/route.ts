@@ -31,8 +31,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fall back to default template in public/templates/
-    const defaultFilePath = path.join(process.cwd(), "public", "templates", file);
+    // Fall back to default template
+    let defaultFilePath;
+    if (file === "downloads/version.json") {
+      defaultFilePath = path.join(process.cwd(), "public", "downloads", "version.json");
+    } else {
+      defaultFilePath = path.join(process.cwd(), "public", "templates", file);
+    }
+    
     if (fs.existsSync(defaultFilePath)) {
       const content = fs.readFileSync(defaultFilePath, "utf8");
       return new NextResponse(content, {
