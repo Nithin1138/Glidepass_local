@@ -4951,6 +4951,39 @@ export default function GlidePassAdmin() {
                                         className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
                                       />
                                     </div>
+                                    
+                                    {/* Technical Limits */}
+                                    <div className="pt-2 border-t mt-2" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-2 block" style={{ color: P.blue }}>Technical Limits</label>
+                                      <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                          <label className="text-[10px] font-bold opacity-80">Max Devices (0 = unlmt)</label>
+                                          <input 
+                                            type="number" min="0" max="999"
+                                            value={plan.max_sessions ?? 1}
+                                            onChange={e => {
+                                              const updatedPlans = [...monetizationSettings.plans];
+                                              updatedPlans[planIdx].max_sessions = parseInt(e.target.value) || 0;
+                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                            }}
+                                            className={`w-16 text-xs text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
+                                          />
+                                        </div>
+                                        <label className="flex items-center justify-between cursor-pointer">
+                                          <span className="text-[10px] font-bold opacity-80">Allow Typing Code Mode</span>
+                                          <input 
+                                            type="checkbox" 
+                                            checked={!!plan.allow_typing_mode} 
+                                            onChange={e => {
+                                              const updatedPlans = [...monetizationSettings.plans];
+                                              updatedPlans[planIdx].allow_typing_mode = e.target.checked;
+                                              handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                            }} 
+                                            className="rounded-md w-3.5 h-3.5" style={{ accentColor: P.blue }} 
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               ))}

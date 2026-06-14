@@ -145,6 +145,53 @@ def get_license_tier():
             pass
     return "Basic" 
 
+CLOUD_LIMITS_CACHE = None
+
+def get_cloud_limits(tier):
+    global CLOUD_LIMITS_CACHE
+    import time
+    
+    # Refresh cache every 60 seconds
+    if CLOUD_LIMITS_CACHE is None or time.time() - CLOUD_LIMITS_CACHE.get("timestamp", 0) > 60:
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                CLOUD_LIMITS_CACHE = {
+                    "timestamp": time.time(),
+                    "monetization_enabled": data.get("monetization_enabled", False),
+                    "plans": data.get("plans", [])
+                }
+        except Exception:
+            pass
+
+    # Default fallback limits if no internet or failed
+    limits = {
+        "max_sessions": 1 if tier == "Basic" else 2,
+        "allow_typing_mode": True if tier in ["Max", "Ultra", "DEVELOPER"] else False
+    }
+
+    if tier == "DEVELOPER" or not CLOUD_LIMITS_CACHE or not CLOUD_LIMITS_CACHE.get("monetization_enabled", False):
+        limits["max_sessions"] = 999
+        limits["allow_typing_mode"] = True
+        return limits
+
+    # Find the tier in the cloud plans
+    for plan in CLOUD_LIMITS_CACHE.get("plans", []):
+        if plan.get("tier") == tier:
+            # Overwrite defaults with cloud config
+            limits["max_sessions"] = plan.get("max_sessions", limits["max_sessions"])
+            # If 0 is set, treat as unlimited (999)
+            if limits["max_sessions"] == 0:
+                limits["max_sessions"] = 999
+                
+            limits["allow_typing_mode"] = plan.get("allow_typing_mode", limits["allow_typing_mode"])
+            break
+
+    return limits
+
 
 def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
@@ -710,11 +757,8 @@ def perform_typing(text, wpm, is_coding=False):
 @app.websocket("/ws/connect")
 async def websocket_endpoint(websocket: WebSocket):
     tier = get_license_tier()
-    max_sessions = 999
-    if tier == "Basic":
-        max_sessions = 1
-    elif tier == "Pro":
-        max_sessions = 2
+    limits = get_cloud_limits(tier)
+    max_sessions = limits.get("max_sessions", 1)
         
     if len(active_connections) >= max_sessions:
         await websocket.accept()
@@ -818,6 +862,12 @@ async def paste(data: dict):
         return {"status": "success"}
 
     elif mode == "type":
+        tier = get_license_tier()
+        limits = get_cloud_limits(tier)
+        
+        if is_coding and not limits.get("allow_typing_mode", False):
+            return {"status": "error", "message": f"{tier} tier does not have access to Code Typing mode. Please upgrade your license."}
+            
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
         threading.Thread(
