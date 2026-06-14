@@ -7,7 +7,9 @@ import json
 from launcher import LANpadLauncher
 
 def run_test():
-    print(f"Starting LANpad Update Tester (Current Version: {platform_utils.VERSION})...")
+    # Force the local version to be lower than the server's version so it always triggers an update prompt
+    platform_utils.VERSION = "1.5.6"
+    print(f"Starting LANpad Update Tester (Current Mocked Version: {platform_utils.VERSION})...")
     root = tk.Tk()
     
     print("Initializing Launcher GUI...")

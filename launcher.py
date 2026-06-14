@@ -112,11 +112,14 @@ def blend_hex(c1: str, c2: str, t: float) -> str:
 def safe_urlopen(url_or_req, timeout=4):
     import urllib.request
     import ssl
+    import urllib.error
     try:
         ctx = ssl._create_unverified_context()
         return urllib.request.urlopen(url_or_req, timeout=timeout, context=ctx)
-    except Exception:
-        return urllib.request.urlopen(url_or_req, timeout=timeout)
+    except urllib.error.URLError as e:
+        if "CERTIFICATE_VERIFY_FAILED" in str(e):
+            return urllib.request.urlopen(url_or_req, timeout=timeout)
+        raise
 
 
 def calculate_days_left(expires_at_str):
@@ -1378,7 +1381,7 @@ class LANpadLauncher:
                     headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
                     method="POST"
                 )
-                with safe_urlopen(req, timeout=2) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     if res.get("valid", False):
                         return True, res.get("tier", "Basic"), res.get("expires_at", "2099-12-31T23:59:59Z")
@@ -1394,7 +1397,7 @@ class LANpadLauncher:
             import urllib.request
             import json
             req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with safe_urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 monetization_enabled = data.get("monetization_enabled", False)
         except Exception:

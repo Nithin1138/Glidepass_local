@@ -1,5 +1,5 @@
 {
-  "monetization_enabled": false,
+  "monetization_enabled": true,
   "plans": [
     {
       "tier": "Basic",
