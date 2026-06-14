@@ -1449,6 +1449,16 @@ export default function GlidePassAdmin() {
     setLoadingAudit(false);
   };
 
+  const formatLocalTime = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return isoString;
+      return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (e) {
+      return isoString;
+    }
+  };
+
   const logAuditEvent = async (event: string, status: "success" | "failed" | "warning", username = adminName) => {
     try {
       await fetch("/api/admin/audit", {
@@ -1910,7 +1920,7 @@ export default function GlidePassAdmin() {
                               <div key={log.id} className="flex justify-between items-start gap-4 text-xs">
                                 <div className="space-y-0.5">
                                   <span className="font-bold block leading-tight">{log.event}</span>
-                                  <span className="text-[10px] font-mono block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{log.timestamp} • {log.ip}</span>
+                                  <span className="text-[10px] font-mono block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatLocalTime(log.timestamp)} • {log.ip}</span>
                                 </div>
                                 <span className="text-[9px] px-2 py-0.5 font-bold rounded-lg font-mono tracking-wider uppercase shrink-0 border"
                                   style={{
@@ -3444,7 +3454,7 @@ export default function GlidePassAdmin() {
                             {secLogs.map(l => (
                               <tr key={l.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                 <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.id}</td>
-                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{l.timestamp}</td>
+                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{formatLocalTime(l.timestamp)}</td>
                                 <td className="p-4 font-bold">{l.event}</td>
                                 <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{l.user}</td>
                                 <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.ip}</td>

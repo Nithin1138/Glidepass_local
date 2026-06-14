@@ -986,7 +986,7 @@ export async function getAuditLogs(): Promise<any[]> {
         user: r.username,
         ip: r.ip,
         status: r.status,
-        timestamp: new Date(r.timestamp).toLocaleTimeString("en-GB")
+        timestamp: new Date(r.timestamp).toISOString()
       }));
     } catch (e) {
       console.error("Error reading audit logs:", e);
@@ -1003,10 +1003,7 @@ export async function getAuditLogs(): Promise<any[]> {
         { id: "103", timestamp: new Date(Date.now() - 10800000).toISOString(), event: "VIT Database Modified", user: "Nithin", ip: "10.251.103.162", status: "warning" },
         { id: "104", timestamp: new Date(Date.now() - 14400000).toISOString(), event: "SSL Handshake Verified", user: "System", ip: "127.0.0.1", status: "success" },
       ];
-      return defaultLogs.map(l => ({
-        ...l,
-        timestamp: new Date(l.timestamp).toLocaleTimeString("en-GB")
-      }));
+      return defaultLogs;
     }
     try {
       const logs = JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -1017,7 +1014,7 @@ export async function getAuditLogs(): Promise<any[]> {
           user: l.user || l.username,
           ip: l.ip,
           status: l.status,
-          timestamp: new Date(l.timestamp).toLocaleTimeString("en-GB")
+          timestamp: l.timestamp ? new Date(l.timestamp).toISOString() : new Date().toISOString()
         }));
       }
     } catch (e) {}
