@@ -717,8 +717,10 @@ export default function Home() {
                 {
                   title: "Windows Backend",
                   icon: <Monitor size={28} />,
-                  label: "Copy Install Cmd",
+                  label: "Download EXE",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
+                  commandLabel: "Or install via PowerShell:",
+                  href: "/downloads/LANpad-Windows.exe",
                   version: "v1.5.7",
                   supported: "Windows 10/11",
                   size: "38.2 MB",
@@ -727,11 +729,10 @@ export default function Home() {
                   btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
                   borderHover: "group-hover/card:border-indigo-500/40",
                   iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
-                  href: undefined,
                   topLineColor: "via-indigo-500/40"
                 }
 
-              ].map((d, i) => (
+              ].map((d: any, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -805,16 +806,16 @@ export default function Home() {
                       {d.installCommand && d.href && (
                         <div className="mt-4 flex flex-col items-center gap-1">
                           <span className={`text-[9px] font-mono ${dk ? "text-white/40" : "text-black/40"}`}>
-                            If Gatekeeper blocks the app, run:
+                            {d.commandLabel || "If Gatekeeper blocks the app, run:"}
                           </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               navigator.clipboard.writeText(d.installCommand);
-                              alert("Command copied! Run it in Terminal to authorize LANpad.");
+                              alert("Command copied!");
                             }}
                             className={`text-[9px] font-mono px-3 py-1.5 rounded-lg border ${dk ? "border-white/10 hover:border-white/30 text-white/60 bg-white/[0.02] hover:bg-white/[0.05]" : "border-black/10 hover:border-black/30 text-black/60 bg-black/[0.02] hover:bg-black/[0.05]"} transition-all duration-300 w-full text-center truncate`}
-                            title="Click to copy bypass command"
+                            title="Click to copy command"
                           >
                             {d.installCommand}
                           </button>
