@@ -1248,6 +1248,14 @@ export default function GlidePassAdmin() {
               {/* Content Area */}
               <div className="flex-1 p-8 max-w-[1600px] w-full mx-auto space-y-8">
                 <AnimatePresence mode="wait">
+                  <motion.div
+                    key={view}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full"
+                  >
 
                   {/* ═══ DASHBOARD ═══ */}
                   {view === "dashboard" && (
@@ -2731,6 +2739,7 @@ export default function GlidePassAdmin() {
                     </motion.div>
                   )}
 
+                  </motion.div>
                 </AnimatePresence>
               </div>
             </div>
