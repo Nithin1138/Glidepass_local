@@ -1347,13 +1347,16 @@ class LANpadLauncher:
                 print(f"[monetization] Status fetch failed on {base_url}: {e}")
             return False, False
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {executor.submit(check_status, url): url for url in urls}
-            for future in concurrent.futures.as_completed(futures):
-                success, enabled = future.result()
-                if success:
-                    monetization_enabled = enabled
-                    break
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        futures = {executor.submit(check_status, url): url for url in urls}
+        for future in concurrent.futures.as_completed(futures):
+            success, enabled = future.result()
+            if success:
+                monetization_enabled = enabled
+                executor.shutdown(wait=False, cancel_futures=True)
+                break
+        else:
+            executor.shutdown(wait=False, cancel_futures=True)
             
         if not monetization_enabled:
             self.show_view("main")
@@ -1411,14 +1414,15 @@ class LANpadLauncher:
                 print(f"[monetization] Verify online error on {url}: {e}")
             return False, "Basic", None
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {executor.submit(check_url, url): url for url in urls}
-            for future in concurrent.futures.as_completed(futures):
-                success, tier, expires_at = future.result()
-                if success:
-                    # Cancel the other if possible, though ThreadPoolExecutor doesn't natively kill running threads
-                    return True, tier, expires_at
-                    
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        futures = {executor.submit(check_url, url): url for url in urls}
+        for future in concurrent.futures.as_completed(futures):
+            success, tier, expires_at = future.result()
+            if success:
+                executor.shutdown(wait=False, cancel_futures=True)
+                return True, tier, expires_at
+                
+        executor.shutdown(wait=False, cancel_futures=True)
         return False, "Basic", None
 
     def start_license_loop(self):
@@ -1442,13 +1446,16 @@ class LANpadLauncher:
                 pass
             return False, False
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {executor.submit(check_status, url): url for url in urls}
-            for future in concurrent.futures.as_completed(futures):
-                success, enabled = future.result()
-                if success:
-                    monetization_enabled = enabled
-                    break
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        futures = {executor.submit(check_status, url): url for url in urls}
+        for future in concurrent.futures.as_completed(futures):
+            success, enabled = future.result()
+            if success:
+                monetization_enabled = enabled
+                executor.shutdown(wait=False, cancel_futures=True)
+                break
+        else:
+            executor.shutdown(wait=False, cancel_futures=True)
             
         if monetization_enabled:
             license_path = os.path.expanduser("~/.lanpad_license.json")
