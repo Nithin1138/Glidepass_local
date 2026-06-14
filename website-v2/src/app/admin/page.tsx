@@ -1872,7 +1872,7 @@ export default function GlidePassAdmin() {
 
             {/* ─── Sidebar ─── */}
             <aside
-              className={`border-r shrink-0 flex flex-col justify-between transition-all duration-300 backdrop-blur-3xl fixed md:sticky top-0 h-screen z-40 md:z-30 ${
+              className={`border-r shrink-0 flex flex-col justify-between transition-all duration-300 backdrop-blur-3xl fixed top-0 bottom-0 left-0 h-screen z-40 ${
                 sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 w-64 md:w-20"
               }`}
               style={{
@@ -1880,7 +1880,7 @@ export default function GlidePassAdmin() {
                 borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
               }}
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
                 {/* Logo */}
                 <div className="h-20 px-6 flex items-center justify-between" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
                   {sidebarOpen ? (
@@ -1965,7 +1965,7 @@ export default function GlidePassAdmin() {
             </aside>
 
             {/* ─── Main Content ─── */}
-            <div className="flex-1 flex flex-col min-w-0 max-w-full">
+            <div className={`flex-1 flex flex-col min-w-0 max-w-full transition-all duration-300 ${sidebarOpen ? "md:pl-64" : "md:pl-20"}`}>
               {/* Top Header */}
               <header
                 className="h-20 border-b flex items-center justify-between px-4 md:px-8 backdrop-blur-3xl sticky top-0 z-20"

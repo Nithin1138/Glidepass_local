@@ -1,0 +1,48 @@
+{
+  "subscriptions": [
+    {
+      "id": "TXN_001",
+      "email": "student1@vitap.ac.in",
+      "plan": "Monthly Pass",
+      "amount": "₹99",
+      "status": "success",
+      "date": "2026-06-14 10:15"
+    },
+    {
+      "id": "TXN_002",
+      "email": "student2@vitap.ac.in",
+      "plan": "Yearly Pass",
+      "amount": "₹499",
+      "status": "success",
+      "date": "2026-06-14 09:30"
+    },
+    {
+      "id": "TXN_004",
+      "email": "student4@vit.ac.in",
+      "plan": "Semester Pass",
+      "amount": "₹249",
+      "status": "success",
+      "date": "2026-06-13 14:20"
+    }
+  ],
+  "coupons": [
+    {
+      "code": "VITAP50",
+      "discount": "50%",
+      "usage": 42,
+      "status": "active"
+    },
+    {
+      "code": "FREEWEEK",
+      "discount": "100%",
+      "usage": 118,
+      "status": "active"
+    },
+    {
+      "code": "WELCOME10",
+      "discount": "20%",
+      "usage": 5,
+      "status": "active"
+    }
+  ]
+}
