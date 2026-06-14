@@ -224,11 +224,11 @@ class LANpadLauncher:
         self.DIM    = "#A0AEC0" # Cool grey for muted text
         self.BORDER = "#121212" # Blackish grey
 
-        # Fonts (SF Pro on macOS, Helvetica Neue elsewhere)
+        # Fonts (SF Pro on macOS, Segoe UI / Consolas on Windows)
         _mac = sys.platform == "darwin"
-        self.FD = "SF Pro Display" if _mac else "Helvetica Neue"   # display
-        self.FU = "SF Pro Text"    if _mac else "Helvetica Neue"   # UI
-        self.FM = "SF Mono"        if _mac else "Courier New"      # mono
+        self.FD = "SF Pro Display" if _mac else "Segoe UI"   # display
+        self.FU = "SF Pro Text"    if _mac else "Segoe UI"   # UI
+        self.FM = "SF Mono"        if _mac else "Consolas"   # mono
 
         # Animation state
         self._dot_tick  = 0
@@ -326,7 +326,8 @@ class LANpadLauncher:
 
     def _pill_button(self, parent, text, fg, fill, cmd=None, side="right"):
         """Draw a pill-shaped label button on a Canvas widget."""
-        tw = len(text) * 7 + 30
+        _mac = sys.platform == "darwin"
+        tw = len(text) * (7 if _mac else 8) + (30 if _mac else 36)
         cv = tk.Canvas(parent, width=tw, height=28, bg=self.BG, highlightthickness=0)
         cv.pack(side=side, padx=18, pady=(24, 0))
         rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline="")
@@ -344,6 +345,8 @@ class LANpadLauncher:
     def _build_main(self):
         v  = self.main_view
         W  = 400
+        _mac = sys.platform == "darwin"
+        yo = 0 if _mac else 12  # Y-offset for Windows spacing
 
         # Flat background
         bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
@@ -358,24 +361,24 @@ class LANpadLauncher:
 
         # ── Status row ───────────────────────────────────────────────────────
         sr = tk.Frame(v, bg=self.BG)
-        sr.place(x=24, y=68)
+        sr.place(x=24, y=68 + (0 if _mac else 4))
         self._dot_cv = tk.Canvas(sr, width=8, height=8, bg=self.BG, highlightthickness=0)
         self._dot_cv.pack(side="left")
         self._dot_id = self._dot_cv.create_oval(1, 1, 7, 7, fill=self.DIM, outline="")
         self._status_lbl = tk.Label(sr, text="Awaiting Sync",
                                     font=(self.FU, 10, "bold"),
-                                    bg=self.BG, fg=self.DIM)
+                                    bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0)
         self._status_lbl.pack(side="left", padx=(8, 0))
 
         # Connected Devices Status Label (placed on the right side)
         self._conn_lbl = tk.Label(v, text="0 Connected",
                                   font=(self.FU, 10, "bold"),
-                                  bg=self.BG, fg=self.DIM, anchor="e")
-        self._conn_lbl.place(x=376, y=68, anchor="ne")
+                                  bg=self.BG, fg=self.DIM, anchor="e", bd=0, highlightthickness=0)
+        self._conn_lbl.place(x=376, y=68 + (0 if _mac else 4), anchor="ne")
 
         # ── Hero text ────────────────────────────────────────────────────────
         title_frame = tk.Frame(v, bg=self.BG)
-        title_frame.place(x=24, y=96)
+        title_frame.place(x=24, y=96 + yo)
 
         try:
             self._main_logo_img = Image.open(resource_path("logo.png"))
@@ -383,22 +386,22 @@ class LANpadLauncher:
             # Desired height: 36 -> Width: 51
             self._main_logo_img = self._main_logo_img.resize((51, 36), Image.Resampling.LANCZOS)
             self._main_logo_tk = ImageTk.PhotoImage(self._main_logo_img)
-            logo_lbl = tk.Label(title_frame, image=self._main_logo_tk, bg=self.BG)
+            logo_lbl = tk.Label(title_frame, image=self._main_logo_tk, bg=self.BG, bd=0, highlightthickness=0)
             logo_lbl.pack(side="left")
-            padx_text = 10
+            padx_text = 10 if _mac else 18
         except Exception as e:
             padx_text = 0
 
         tk.Label(title_frame, text="LANpad", font=(self.FD, 28, "bold"),
-                 bg=self.BG, fg=self.WHITE, anchor="w").pack(side="left", padx=(padx_text, 0))
+                 bg=self.BG, fg=self.WHITE, anchor="w", bd=0, highlightthickness=0).pack(side="left", padx=(padx_text, 0))
         tk.Label(v,
                  text="Bridge your devices locally.",
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
-                 anchor="w", justify="left").place(x=24, y=136)
+                 anchor="w", justify="left", bd=0, highlightthickness=0).place(x=24, y=136 + yo * 1.5)
 
         # Tab selector frame
         self._tab_frame = tk.Frame(v, bg=self.BG)
-        self._tab_frame.place(x=24, y=184, width=W - 48, height=42)
+        self._tab_frame.place(x=24, y=184 + yo * 2, width=W - 48, height=42)
         
         # Local Tab
         self._tab_local = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=40, bg=self.BG, highlightthickness=0)
@@ -428,20 +431,20 @@ class LANpadLauncher:
         # ── QR card ──────────────────────────────────────────────────────────
         self._qr_cv = tk.Canvas(v, width=W - 48, height=240,
                                  bg=self.BG, highlightthickness=0)
-        self._qr_cv.place(x=24, y=234)
+        self._qr_cv.place(x=24, y=234 + yo * 2.2)
         self._draw_qr_empty()
         self._draw_tabs()
 
         # ── IP pill ──────────────────────────────────────────────────────────
         self._ip_cv = tk.Canvas(v, width=W - 48, height=50,
                                  bg=self.BG, highlightthickness=0)
-        self._ip_cv.place(x=24, y=482)
+        self._ip_cv.place(x=24, y=482 + yo * 2.2)
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
 
         # ── Info row (Port / Protocol / State) ───────────────────────────────
         cw = (W - 48 - 12) // 3
-        info_y = 542
+        info_y = 542 + yo * 2.5
         info_specs = [("Port", "8000"), ("Protocol", "HTTP"), ("State", "Off")]
         self._info_cards = {}
         for i, (lbl, default) in enumerate(info_specs):
@@ -457,13 +460,13 @@ class LANpadLauncher:
         # ── Action button ────────────────────────────────────────────────────
         self._btn_cv = tk.Canvas(v, width=W - 48, height=58,
                                   bg=self.BG, highlightthickness=0)
-        self._btn_cv.place(x=24, y=626)
+        self._btn_cv.place(x=24, y=626 + yo * 2.5)
         self._draw_main_btn(active=False)
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
-                 font=(self.FU, 9), bg=self.BG, fg=self.DIM).place(
-                 x=0, y=726, relwidth=1, anchor="nw")
+                 font=(self.FU, 9), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).place(
+                 x=0, y=726 + yo * 2.2, relwidth=1, anchor="nw")
 
     def _draw_tabs(self):
         # Local tab
@@ -810,6 +813,8 @@ class LANpadLauncher:
     def _build_bypass(self):
         v = self.bypass_view
         W = 400
+        _mac = sys.platform == "darwin"
+        yo = 0 if _mac else 12  # Y-offset for Windows spacing
 
         # Flat background
         bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
@@ -823,7 +828,7 @@ class LANpadLauncher:
 
         # ── Header: shield icon + title + badge ──────────────────────────────
         hdr = tk.Frame(v, bg=self.BG)
-        hdr.place(x=18, y=58, width=W - 36)
+        hdr.place(x=18, y=58 + yo, width=W - 36)
 
         # Shield icon tile
         ic = tk.Canvas(hdr, width=48, height=48, bg=self.BG, highlightthickness=0)
@@ -835,9 +840,9 @@ class LANpadLauncher:
         ti = tk.Frame(hdr, bg=self.BG)
         ti.pack(side="left", padx=12)
         tk.Label(ti, text="LANpad Master",
-                 font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE).pack(anchor="w")
+                 font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE, bd=0, highlightthickness=0).pack(anchor="w")
         tk.Label(ti, text="Neutralize restrictions in seconds",
-                 font=(self.FU, 10), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(2, 0))
+                 font=(self.FU, 10), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).pack(anchor="w", pady=(2, 0))
 
 
         # ── Step cards  2 × 2 grid ───────────────────────────────────────────
@@ -848,7 +853,7 @@ class LANpadLauncher:
             ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
         ]
         cw, ch = (W - 44) // 2, 125
-        grid_top = 135
+        grid_top = 135 + yo
         for i, (num, icon, title, desc) in enumerate(steps):
             col, row = i % 2, i // 2
             x = 18 + col * (cw + 8)
