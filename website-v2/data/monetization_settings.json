@@ -8,7 +8,8 @@
       "price": "₹39",
       "allow_refill": true,
       "max_sessions": 0,
-      "allow_inject": 0
+      "allow_inject": 0,
+      "allow_live_sync": 0
     },
     {
       "tier": "Pro",

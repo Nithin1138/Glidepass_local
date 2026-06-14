@@ -5257,8 +5257,6 @@ export default function GlidePassAdmin() {
                             </div>
                           </div>
                         </div>
-
-                        </div>
                       </div>
                     </motion.div>
                   )}
