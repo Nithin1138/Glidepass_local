@@ -1,5 +1,5 @@
 {
-  "monetization_enabled": true,
+  "monetization_enabled": false,
   "plans": [
     {
       "tier": "Basic",
@@ -9,7 +9,8 @@
       "allow_refill": true,
       "max_sessions": 0,
       "allow_inject": 0,
-      "allow_live_sync": 0
+      "allow_live_sync": 0,
+      "validity_days": 7
     },
     {
       "tier": "Pro",
@@ -25,14 +26,16 @@
       "title": "Sem Pass",
       "subtitle": "Semester companion",
       "price": "₹299",
-      "allow_refill": true
+      "allow_refill": true,
+      "validity_days": 160
     },
     {
       "tier": "Ultra",
       "title": "Yearly Pass",
       "subtitle": "Year-round connectivity",
       "price": "₹499",
-      "allow_refill": true
+      "allow_refill": true,
+      "validity_days": 300
     }
   ]
 }

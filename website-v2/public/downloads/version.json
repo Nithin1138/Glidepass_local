@@ -1,6 +1,6 @@
 {
-  "version": "1.5.7",
+  "version": "1.5.8",
   "windows_url": "https://lanpad.vercel.app/downloads/LANpad.exe",
   "mac_url": "https://lanpad.vercel.app/downloads/LANpad_macOS.dmg",
-  "changelog": "v1.5.7 - Fixed: Auto-updater now shuts down menubar helper and background processes cleanly before applying update."
+  "changelog": "v1.5.8 - Admin: Added plan validity duration config, relocated Referral Stats to monetization page, removed Feature Gate Controls, reordered Activation Keys table."
 }

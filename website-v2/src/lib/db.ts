@@ -1506,10 +1506,10 @@ export async function getMonetizationSettings(): Promise<any> {
   return {
     monetization_enabled: false,
     plans: [
-      { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39" },
-      { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99" },
-      { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299" },
-      { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499" }
+      { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
+      { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
+      { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
+      { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
     ]
   };
 }

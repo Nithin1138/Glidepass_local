@@ -357,9 +357,9 @@ export default function GlidePassAdmin() {
 
   // ─── Version & Telemetry ───
   const [appVersionData, setAppVersionData] = useState({
-    version: "1.5.1",
-    windowsUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad_setup.exe",
-    macUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.1/LANpad.dmg",
+    version: "1.5.8",
+    windowsUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.8/LANpad_setup.exe",
+    macUrl: "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.5.8/LANpad.dmg",
     forceUpdate: false,
     changelog: "• Performance improvements\n• Core stability enhancements"
   });
@@ -2064,7 +2064,7 @@ export default function GlidePassAdmin() {
       if (res.ok) {
         const data = await res.json();
         setAppVersionData({
-          version: data.version || "1.5.1",
+          version: data.version || "1.5.8",
           windowsUrl: data.windows_url || "",
           macUrl: data.mac_url || "",
           forceUpdate: !!data.force_update,
@@ -4848,6 +4848,33 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
+                      {/* Referral Engine Statistics */}
+                      <div className="rounded-[28px] border overflow-hidden p-6 relative mt-8"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Referral Engine Statistics</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referral Code</th>
+                                <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referrer Email</th>
+                                <th className="p-3 text-[9px] uppercase font-bold text-right" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Signups Referred</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {referralStats.map((r, i) => (
+                                <tr key={i} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-3 font-mono font-bold" style={{ color: P.blue }}>{r.code}</td>
+                                  <td className="p-3">{r.email}</td>
+                                  <td className="p-3 text-right font-mono font-bold" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.count}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
                     </motion.div>
                   )}
 
@@ -4951,6 +4978,30 @@ export default function GlidePassAdmin() {
                                         className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
                                       />
                                     </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Validity (Days)</label>
+                                      <div className="flex items-center gap-2">
+                                        <input 
+                                          type="number" 
+                                          min="1"
+                                          value={plan.validity_days ?? 30} 
+                                          onChange={e => {
+                                            const updatedPlans = [...monetizationSettings.plans];
+                                            updatedPlans[planIdx].validity_days = parseInt(e.target.value) || 30;
+                                            handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                          }}
+                                          className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
+                                        />
+                                        <span className="text-[9px] font-mono whitespace-nowrap shrink-0" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                          {(() => {
+                                            const d = plan.validity_days ?? 30;
+                                            if (d >= 365) return `≈ ${Math.round(d / 365)}yr`;
+                                            if (d >= 30) return `≈ ${Math.round(d / 30)}mo`;
+                                            return `${d}d`;
+                                          })()}
+                                        </span>
+                                      </div>
+                                    </div>
                                     
                                   </div>
                                 </div>
@@ -5009,139 +5060,8 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
-                      {/* ═══ ACTIVE LICENSES TABLE ═══ */}
-                      <div className="rounded-[28px] border overflow-hidden"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Activation Keys</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                {["Activation Key", "Owner Email", "License Tier", "Expires At", "Created At", "Actions"].map(h => (
-                                  <th key={h} className={`p-4 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {licenses.map(lic => (
-                                <tr key={lic.key} className="text-xs animate-fadeIn" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                  <td className="p-4 font-mono font-bold" style={{ color: P.sky }}>{lic.key}</td>
-                                  <td className="p-4 font-semibold">{lic.email}</td>
-                                  <td className="p-4">
-                                    <span className="text-[9px] font-bold uppercase px-2.5 py-0.5 rounded bg-[#0077C0]/15 text-[#C7EEFF]">
-                                      {lic.tier}
-                                    </span>
-                                  </td>
-                                  <td className="p-4 font-mono text-[10px]" style={{ color: P.white }}>
-                                    {new Date(lic.expires_at).toLocaleString()}
-                                  </td>
-                                  <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                    {new Date(lic.created_at || Date.now()).toLocaleString()}
-                                  </td>
-                                  <td className="p-4 text-right pr-6">
-                                    <button onClick={() => handleDeleteLicense(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Revoke Key">
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                              {licenses.length === 0 && (
-                                <tr>
-                                  <td colSpan={6} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
-                                    No active activation keys found.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-                        {/* Referral Statistics */}
-                        <div className="rounded-[28px] border overflow-hidden p-6 relative"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Referral Engine Statistics</h3>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                  <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referral Code</th>
-                                  <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referrer Email</th>
-                                  <th className="p-3 text-[9px] uppercase font-bold text-right" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Signups Referred</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {referralStats.map((r, i) => (
-                                  <tr key={i} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                    <td className="p-3 font-mono font-bold" style={{ color: P.blue }}>{r.code}</td>
-                                    <td className="p-3">{r.email}</td>
-                                    <td className="p-3 text-right font-mono font-bold" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.count}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                        
-                        {/* Feature Gate Limits Switches */}
-                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Feature Gate Control Switches</h3>
-                          <div className="space-y-5">
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span>Daily Free Copy Limit</span>
-                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.dailyCopyLimit} copies</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="1"
-                                max="20"
-                                value={freeTierLimits.dailyCopyLimit}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, dailyCopyLimit: parseInt(e.target.value) }))}
-                                className="w-full"
-                                style={{ accentColor: P.blue }}
-                              />
-                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum code sync files basic users can pull per 24 hours.</p>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span>Maximum Paired Devices</span>
-                                <span className="font-mono text-xs" style={{ color: P.blue }}>{freeTierLimits.maxDevices} devices</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="1"
-                                max="5"
-                                value={freeTierLimits.maxDevices}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, maxDevices: parseInt(e.target.value) }))}
-                                className="w-full"
-                                style={{ accentColor: P.blue }}
-                              />
-                              <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Maximum concurrent mobile pairings allowed per user device node.</p>
-                            </div>
-
-                            <label className="flex items-center justify-between cursor-pointer pt-2">
-                              <div className="space-y-0.5">
-                                <span className="text-xs font-bold block">Rate-Limit Bypass Switch</span>
-                                <span className="text-[10px] block" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>Allow verified users to bypass global host network speed limitations.</span>
-                              </div>
-                              <input
-                                type="checkbox"
-                                checked={freeTierLimits.allowBypassRateLimit}
-                                onChange={e => setFreeTierLimits(prev => ({ ...prev, allowBypassRateLimit: e.target.checked }))}
-                                className="rounded-md w-4 h-4 shrink-0"
-                                style={{ accentColor: P.blue }}
-                              />
-                            </label>
-                          </div>
-                        </div>
 
                         {/* Matrix Control for Plans */}
                         <div className="col-span-1 lg:col-span-2 rounded-[28px] border relative overflow-hidden mt-6"
@@ -5258,6 +5178,57 @@ export default function GlidePassAdmin() {
                           </div>
                         </div>
                       </div>
+
+                      {/* ═══ ACTIVE LICENSES TABLE ═══ */}
+                      <div className="rounded-[28px] border overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Activation Keys</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Activation Key", "Owner Email", "License Tier", "Expires At", "Created At", "Actions"].map(h => (
+                                  <th key={h} className={`p-4 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {licenses.map(lic => (
+                                <tr key={lic.key} className="text-xs animate-fadeIn" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 font-mono font-bold" style={{ color: P.sky }}>{lic.key}</td>
+                                  <td className="p-4 font-semibold">{lic.email}</td>
+                                  <td className="p-4">
+                                    <span className="text-[9px] font-bold uppercase px-2.5 py-0.5 rounded bg-[#0077C0]/15 text-[#C7EEFF]">
+                                      {lic.tier}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-mono text-[10px]" style={{ color: P.white }}>
+                                    {new Date(lic.expires_at).toLocaleString()}
+                                  </td>
+                                  <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                    {new Date(lic.created_at || Date.now()).toLocaleString()}
+                                  </td>
+                                  <td className="p-4 text-right pr-6">
+                                    <button onClick={() => handleDeleteLicense(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Revoke Key">
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                              {licenses.length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                    No active activation keys found.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
                     </motion.div>
                   )}
 
