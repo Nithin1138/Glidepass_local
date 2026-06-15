@@ -144,10 +144,13 @@ class AppController:
 
         # 2. No running dashboard found – launch a fresh one.
         try:
+            kwargs = {}
+            if sys.platform.startswith("win"):
+                kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW (suppress console flash)
             if getattr(sys, 'frozen', False):
-                subprocess.Popen([sys.executable, "--gui"])
+                subprocess.Popen([sys.executable, "--gui"], **kwargs)
             else:
-                subprocess.Popen([sys.executable, sys.argv[0], "--gui"])
+                subprocess.Popen([sys.executable, sys.argv[0], "--gui"], **kwargs)
         except Exception as e:
             with open("gui_launch_error.txt", "a") as f:
                 f.write(f"Launch error: {str(e)}\n")
@@ -228,8 +231,22 @@ if __name__ == "__main__":
         except Exception:
             pass
 
-    # Handle GUI mode vs Anchor mode
-    if "--gui" in sys.argv:
+    # Handle GUI mode vs Native Host vs Anchor mode
+    is_chrome_host = False
+    for arg in sys.argv:
+        if arg.startswith("chrome-extension://"):
+            is_chrome_host = True
+            break
+
+    if is_chrome_host:
+        try:
+            import native_host
+            native_host.main()
+        except Exception as e:
+            with open("native_host_crash.txt", "w") as f:
+                f.write(traceback.format_exc())
+            sys.exit(1)
+    elif "--gui" in sys.argv:
         try:
             from launcher import run_launcher
             run_launcher()

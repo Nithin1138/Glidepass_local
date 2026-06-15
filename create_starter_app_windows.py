@@ -108,10 +108,38 @@ def main() -> int:
         print("This script only runs on Windows.  On macOS use create_starter_app.py.")
         return 1
 
-    bat_path = write_bat_starter()
+    project = _project_dir()
+    exe_path = None
+    exe_options = [
+        os.path.join(project, "dist", "LANpad", "LANpad.exe"),
+        os.path.join(project, "dist", "LANpad.exe"),
+        os.path.join(project, "LANpad.exe"),
+    ]
+    for opt in exe_options:
+        if os.path.exists(opt):
+            exe_path = opt
+            break
+
     try:
-        register_windows_protocol(bat_path)
-        verify_registration()
+        import winreg
+        if exe_path:
+            print(f"⭐ Found compiled executable: {exe_path}. Registering directly to avoid console flash!")
+            # 1. HKCU\Software\Classes\lanpad
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH) as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "URL:LANpad Protocol")
+                winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+            # 2. HKCU\Software\Classes\lanpad\DefaultIcon
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH + r"\DefaultIcon") as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, f'"{exe_path}",0')
+            # 3. HKCU\Software\Classes\lanpad\shell\open\command
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH + r"\shell\open\command") as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, f'"{exe_path}" "%1"')
+            print(f"✅ Registered {PROTOCOL}:// → {exe_path}")
+            verify_registration()
+        else:
+            bat_path = write_bat_starter()
+            register_windows_protocol(bat_path)
+            verify_registration()
     except ImportError:
         print("❌ The 'winreg' module is missing.  Run on Windows.")
         return 1

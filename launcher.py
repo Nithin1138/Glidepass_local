@@ -2468,8 +2468,11 @@ rm -f "{download_path}"
         self.root.destroy()
 
     def on_closing(self):
-        # The user requested that clicking the cross ('X') should hide the dashboard and let the app run in the background.
-        self.root.withdraw()
+        if is_windows():
+            self.on_quit()
+        else:
+            # On macOS, clicking the cross ('X') hides the dashboard and lets the app run in the background.
+            self.root.withdraw()
 
 
 

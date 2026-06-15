@@ -96,12 +96,24 @@ def _write_mac_bridge(extension_id: str) -> str:
 
 
 def _write_windows_bridge(extension_id: str) -> str:
-    """Generate a ``native_host_wrapper.bat`` next to ``native_host.py``.
+    """Detect a compiled LANpad.exe or generate a ``native_host_wrapper.bat`` next to ``native_host.py``.
 
     Chromium requires the ``path`` field in the manifest to point to
     an ``.exe`` or a ``.bat`` – it can NOT point to a ``.py`` directly.
     """
     project = os.path.dirname(os.path.abspath(__file__))
+    
+    # If a compiled LANpad.exe exists, point Chrome directly to it to avoid console blinks!
+    exe_options = [
+        os.path.join(project, "dist", "LANpad", "LANpad.exe"),
+        os.path.join(project, "dist", "LANpad.exe"),
+        os.path.join(project, "LANpad.exe"),
+    ]
+    for opt in exe_options:
+        if os.path.exists(opt):
+            print(f"⭐ Found compiled executable: {opt}. Registering directly to avoid console flash!")
+            return opt
+
     bridge  = os.path.join(project, "native_host_wrapper.bat")
 
     # We rely on the pre-generated native_host_wrapper.bat (which this
