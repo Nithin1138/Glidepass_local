@@ -4,26 +4,23 @@ $ErrorActionPreference = 'Stop'
 Write-Host "🚀 Installing LANpad for Windows..." -ForegroundColor Green
 
 # Define paths
-$DownloadUrl = "https://lanpad.vercel.app/downloads/LANpad_Windows.zip"
-$TempZip = "$env:TEMP\LANpad_Windows.zip"
+$DownloadUrl = "https://lanpad.vercel.app/downloads/LANpad.exe"
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
+$ExePath = Join-Path $InstallDir "LANpad.exe"
 
-# 1. Download the zip
-Write-Host "📥 Downloading LANpad bundle..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $DownloadUrl -OutFile $TempZip -UseBasicParsing
-
-# 2. Extract files
-Write-Host "📦 Extracting files to $InstallDir..." -ForegroundColor Cyan
+# 1. Download the exe directly
+Write-Host "📥 Downloading LANpad executable..." -ForegroundColor Cyan
 if (Test-Path $InstallDir) {
-    Remove-Item -Path $InstallDir -Recurse -Force
+    # Force stop any running LANpad processes so we can overwrite
+    Get-Process -Name "LANpad" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 1
+} else {
+    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
-New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
 
-# 3. Clean up zip
-Remove-Item -Path $TempZip -Force
+Invoke-WebRequest -Uri $DownloadUrl -OutFile $ExePath -UseBasicParsing
 
-# 4. Create Desktop Shortcut
+# 2. Create Desktop Shortcut
 try {
     Write-Host "✨ Creating Desktop Shortcut..." -ForegroundColor Cyan
     $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
@@ -34,13 +31,13 @@ try {
         $WshShell = New-Object -ComObject WScript.Shell
         $ShortcutPath = Join-Path $DesktopPath "LANpad.lnk"
         $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-        $Shortcut.TargetPath = "$InstallDir\LANpad\LANpad.exe"
-        $Shortcut.WorkingDirectory = "$InstallDir\LANpad"
+        $Shortcut.TargetPath = $ExePath
+        $Shortcut.WorkingDirectory = $InstallDir
         $Shortcut.Save()
         Write-Host "✅ Installed successfully! Double-click the LANpad icon on your Desktop to start." -ForegroundColor Green
     } else {
-        Write-Warning "Could not locate Desktop folder. LANpad is installed at $InstallDir\LANpad\LANpad.exe"
+        Write-Warning "Could not locate Desktop folder. LANpad is installed at $ExePath"
     }
 } catch {
-    Write-Warning "Unable to create Desktop shortcut: $_. You can run LANpad directly from $InstallDir\LANpad\LANpad.exe"
+    Write-Warning "Unable to create Desktop shortcut: $_. You can run LANpad directly from $ExePath"
 }
