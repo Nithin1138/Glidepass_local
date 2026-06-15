@@ -1386,7 +1386,7 @@ class LANpadLauncher:
                 def reply_callback(success, error):
                     q.put(success)
                     
-                context.evaluatePolicy_localizedReason_reply_(2, "LANpad wants to display your activation key.", reply_callback)
+                context.evaluatePolicy_localizedReason_reply_(2, "show your activation key", reply_callback)
                 
                 # Wait for authentication result (blocks cleanly until OS prompt returns)
                 success = q.get()
@@ -1408,7 +1408,7 @@ class LANpadLauncher:
     def _authenticate_applescript_fallback(self):
         try:
             import subprocess
-            cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges with prompt "LANpad wants to display your activation key."']
+            cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges with prompt "LANpad wants to show your activation key."']
             subprocess.run(cmd, check=True, capture_output=True)
             return True
         except Exception as e:
