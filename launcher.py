@@ -885,49 +885,17 @@ class LANpadLauncher:
                     import threading as _thr
                     reader = _thr.Thread(target=_read_lines, daemon=True)
                     reader.start()
-                    reader.join(timeout=30)
+                    reader.join(timeout=45)
 
                     if not url_found: raise Exception("Cloudflare Tunnel timed out")
                 except Exception as e:
-                    print(f"\n[lanpad] Cloudflare Tunnel failed: {e}. Falling back to Pinggy...")
+                    print(f"\n[lanpad] Cloudflare Tunnel failed: {e}")
                     self.stop_tunnel()
             else:
-                print("[lanpad] cloudflared unavailable — using Pinggy (SSH) tunnel...")
+                print("[lanpad] cloudflared unavailable")
+                self.stop_tunnel()
 
-            # ── Pinggy SSH fallback ──
-            if not self._tunnel_url:
-                try:
-                    cmd = ["ssh", "-p", "443", "-o", "StrictHostKeyChecking=no",
-                           "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-R", "80:localhost:8000", "a.pinggy.io"]
-                    proc = subprocess.Popen(
-                        cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        stdin=subprocess.DEVNULL,
-                        text=True,
-                        bufsize=1,
-                        **kwargs
-                    )
-                    self._tunnel_process = proc
-                    accumulated = ""
-                    while True:
-                        if not self._tunnel_process: break
-                        char = proc.stdout.read(1)
-                        if not char: break
-                        accumulated += char
-                        cleaned = re.sub(r"[\s\r\n\│]+", "", accumulated)
-                        match = re.search(r"https://[a-zA-Z0-9\-\.]*pinggy[a-zA-Z0-9\-\.]*(?:net|link|io)", cleaned)
-                        if match:
-                            raw_url = match.group(0)
-                            print(f"\n[lanpad] Pinggy HTTPS URL found: {raw_url}")
-                            self._tunnel_url = shorten_url(raw_url)
-                            print(f"[lanpad] Shortened URL: {self._tunnel_url}")
-                            self.gui_queue.put(self._update_display)
-                            url_found = True
-                            break
-                except Exception as p_err:
-                    print(f"\n[lanpad] Pinggy fallback failed: {p_err}")
-                    self.stop_tunnel()
+
 
         import threading
         threading.Thread(target=_run, daemon=True).start()
