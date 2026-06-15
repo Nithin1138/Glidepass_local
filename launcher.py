@@ -1337,7 +1337,7 @@ class LANpadLauncher:
         if sys.platform == "darwin":
             try:
                 import subprocess
-                cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges prompt "LANpad wants to display your activation key."']
+                cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges with prompt "LANpad wants to display your activation key."']
                 subprocess.run(cmd, check=True, capture_output=True)
                 return True
             except Exception:
