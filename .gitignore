@@ -44,6 +44,7 @@ dist/
 *.dmg
 *.zip
 !website-v2/public/downloads/*.dmg
+!website-v2/public/downloads/*.zip
 LANpad.app/
 tmp.dmg
 .vercel
