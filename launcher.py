@@ -14,6 +14,7 @@ import io
 import ssl
 import json
 import time
+import queue
 
 try:
     import certifi
@@ -270,6 +271,11 @@ class LANpadLauncher:
         self._dot_tick  = 0
         self._server_on = False
 
+        # Thread-safe GUI queue
+        self.gui_queue = queue.Queue()
+        self.process_gui_queue()
+        self.update_in_progress = False
+
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
         self.bypass_view = tk.Frame(root, bg=self.BG)
@@ -293,6 +299,18 @@ class LANpadLauncher:
         
         self.root.after(2000, self.check_for_updates)
         self._poll_tunnel()
+
+    def process_gui_queue(self):
+        try:
+            while True:
+                fn = self.gui_queue.get_nowait()
+                try:
+                    fn()
+                except Exception as e:
+                    print(f"[gui] Queue execution error: {e}")
+        except queue.Empty:
+            pass
+        self.root.after(50, self.process_gui_queue)
 
     # ── Shared drawing utilities ──────────────────────────────────────────────
 
@@ -754,7 +772,7 @@ class LANpadLauncher:
                                     print(f"\n[lanpad] Cloudflare URL: {raw_url}")
                                     self._tunnel_url = shorten_url(raw_url)
                                     print(f"[lanpad] Tunnel ready: {self._tunnel_url}")
-                                    self.root.after(0, self._update_display)
+                                    self.gui_queue.put(self._update_display)
                                     url_found = True
                                     return
                         except Exception as _e:
@@ -794,13 +812,13 @@ class LANpadLauncher:
                         if not char: break
                         accumulated += char
                         cleaned = re.sub(r"[\s\r\n\│]+", "", accumulated)
-                        match = re.search(r"https://[a-zA-Z0-9\-]+\.a\.pinggy\.(io|link)", cleaned)
+                        match = re.search(r"https://[a-zA-Z0-9\-\.]*pinggy[a-zA-Z0-9\-\.]*(?:net|link|io)", cleaned)
                         if match:
                             raw_url = match.group(0)
                             print(f"\n[lanpad] Pinggy HTTPS URL found: {raw_url}")
                             self._tunnel_url = shorten_url(raw_url)
                             print(f"[lanpad] Shortened URL: {self._tunnel_url}")
-                            self.root.after(0, self._update_display)
+                            self.gui_queue.put(self._update_display)
                             url_found = True
                             break
                 except Exception as p_err:
@@ -823,7 +841,7 @@ class LANpadLauncher:
                     pass
             self._tunnel_process = None
         self._tunnel_url = None
-        self.root.after(0, self._update_display)
+        self.gui_queue.put(self._update_display)
 
     # ── Main-view canvas draw helpers ─────────────────────────────────────────
 
@@ -1098,7 +1116,7 @@ class LANpadLauncher:
             for base_url in urls:
                 try:
                     req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
-                    with safe_urlopen(req, timeout=5) as resp:
+                    with safe_urlopen(req, timeout=3) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         monetization_enabled = data.get("monetization_enabled", False)
                         break
@@ -1125,7 +1143,7 @@ class LANpadLauncher:
                 except Exception:
                     self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
 
-            self.root.after(0, _update_ui)
+            self.gui_queue.put(_update_ui)
             
         import threading
         threading.Thread(target=_task, daemon=True).start()
@@ -1218,45 +1236,69 @@ class LANpadLauncher:
             btn_cv.unbind("<ButtonRelease-1>")
             self.root.update()
             
+            log_dir = os.path.expanduser("~/.lanpad")
+            os.makedirs(log_dir, exist_ok=True)
+            log_path = os.path.join(log_dir, "activation_debug.log")
+
             def _verify_task():
-                success, tier, expires_at = self.verify_key_online(key)
-                self.root.after(0, lambda: _handle_result(success, tier, expires_at))
+                try:
+                    success, tier, expires_at = self.verify_key_online(key)
+                    self.gui_queue.put(lambda: _handle_result(success, tier, expires_at))
+                except Exception as e:
+                    import traceback
+                    with open(log_path, "a") as f:
+                        f.write(f"Exception in _verify_task: {e}\n")
+                        traceback.print_exc(file=f)
+                    self.gui_queue.put(lambda: _handle_result(False, "Basic", None))
 
             def _handle_result(success, tier, expires_at):
-                self.key_entry.config(state="normal")
-                btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
-                if success:
-                    days_left = calculate_days_left(expires_at)
-                    license_path = os.path.expanduser("~/.lanpad_license.json")
-                    
-                    # Check for downgrade
-                    try:
-                        if os.path.exists(license_path):
-                            import json
-                            with open(license_path, "r", encoding="utf-8") as f:
-                                old_lic = json.load(f)
-                            old_tier = old_lic.get("tier", "Basic").upper()
-                            old_expires = old_lic.get("expires_at", "")
-                            if calculate_days_left(old_expires) > 0:
-                                ranks = {"BASIC": 1, "PRO": 2, "MAX": 3, "ULTRA": 4}
-                                if ranks.get(tier.upper(), 0) < ranks.get(old_tier, 0):
-                                    self.lock_status_lbl.config(text=f"Cannot downgrade active {old_tier} plan to {tier.upper()}", fg=self.RED)
-                                    return
-                    except Exception as e:
-                        print(f"[monetization] Downgrade check error: {e}")
+                try:
+                    self.key_entry.config(state="normal")
+                    btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
+                    if success:
+                        days_left = calculate_days_left(expires_at)
+                        license_path = os.path.expanduser("~/.lanpad_license.json")
+                        
+                        # Check for downgrade
+                        try:
+                            if os.path.exists(license_path):
+                                import json
+                                with open(license_path, "r", encoding="utf-8") as f:
+                                    old_lic = json.load(f)
+                                old_tier = old_lic.get("tier", "Basic").upper()
+                                old_expires = old_lic.get("expires_at", "")
+                                if calculate_days_left(old_expires) > 0:
+                                    ranks = {"BASIC": 1, "PRO": 2, "MAX": 3, "ULTRA": 4}
+                                    if ranks.get(tier.upper(), 0) < ranks.get(old_tier, 0):
+                                        self.lock_status_lbl.config(text=f"Cannot downgrade active {old_tier} plan to {tier.upper()}", fg=self.RED)
+                                        return
+                        except Exception as e:
+                            print(f"[monetization] Downgrade check error: {e}")
 
+                        try:
+                            import json
+                            with open(license_path, "w", encoding="utf-8") as f:
+                                json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                        except Exception as e:
+                            print(f"[monetization] Error saving license: {e}")
+                        
+                        self.show_success_overlay(tier, days_left)
+                    else:
+                        self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
+                        entry_frame.config(highlightbackground=self.RED)
+                        self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
+                except Exception as e:
+                    import traceback
+                    with open(log_path, "a") as f:
+                        f.write(f"Exception in _handle_result: {e}\n")
+                        traceback.print_exc(file=f)
+                    # Attempt to recover UI interaction
                     try:
-                        import json
-                        with open(license_path, "w", encoding="utf-8") as f:
-                            json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
-                    except Exception as e:
-                        print(f"[monetization] Error saving license: {e}")
-                    
-                    self.show_success_overlay(tier, days_left)
-                else:
-                    self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
-                    entry_frame.config(highlightbackground=self.RED)
-                    self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
+                        self.key_entry.config(state="normal")
+                        btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
+                        self.lock_status_lbl.config(text=f"Error verifying key: {e}", fg=self.RED)
+                    except Exception:
+                        pass
 
             import threading
             threading.Thread(target=_verify_task, daemon=True).start()
@@ -1330,75 +1372,71 @@ class LANpadLauncher:
         update_progress(0)
 
     def check_monetization_status(self):
-        monetization_enabled = False
-        import urllib.request
-        import json
-        import concurrent.futures
+        import threading
         
-        urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
-        
-        def check_status(base_url):
+        def _thread_task():
             try:
-                req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
-                with safe_urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    return True, data.get("monetization_enabled", False)
-            except Exception as e:
-                print(f"[monetization] Status fetch failed on {base_url}: {e}")
-            return False, False
-
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-        futures = {executor.submit(check_status, url): url for url in urls}
-        for future in concurrent.futures.as_completed(futures):
-            success, enabled = future.result()
-            if success:
-                monetization_enabled = enabled
-                executor.shutdown(wait=False)
-                break
-        else:
-            executor.shutdown(wait=False)
-            
-        if not monetization_enabled:
-            self.show_view("main")
-            return
-            
-        license_path = os.path.expanduser("~/.lanpad_license.json")
-        if os.path.exists(license_path):
-            try:
+                monetization_enabled = False
+                import urllib.request
                 import json
-                with open(license_path, "r", encoding="utf-8") as f:
-                    lic = json.load(f)
-                key = lic.get("key")
-                tier = lic.get("tier")
-                last_checked = lic.get("last_checked", 0)
                 
-                # Trust key offline if checked within 24 hours
-                if time.time() - last_checked < 86400:
-                    print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
-                    self.show_view("main")
+                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                
+                for base_url in urls:
+                    try:
+                        req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                        with safe_urlopen(req, timeout=3) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            monetization_enabled = data.get("monetization_enabled", False)
+                            break
+                    except Exception as e:
+                        print(f"[monetization] Status fetch failed on {base_url}: {e}")
+                    
+                if not monetization_enabled:
+                    self.gui_queue.put(lambda: self.show_view("main"))
                     return
                     
-                success, new_tier, expires_at = self.verify_key_online(key)
-                if success:
-                    print(f"[monetization] Key verified online ({new_tier}).")
-                    with open(license_path, "w", encoding="utf-8") as f:
-                        json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
-                    self.show_view("main")
-                    return
+                license_path = os.path.expanduser("~/.lanpad_license.json")
+                if os.path.exists(license_path):
+                    try:
+                        import json
+                        with open(license_path, "r", encoding="utf-8") as f:
+                            lic = json.load(f)
+                        key = lic.get("key")
+                        tier = lic.get("tier")
+                        last_checked = lic.get("last_checked", 0)
+                        
+                        # Trust key offline if checked within 24 hours
+                        if time.time() - last_checked < 86400:
+                            print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
+                            self.gui_queue.put(lambda: self.show_view("main"))
+                            return
+                            
+                        success, new_tier, expires_at = self.verify_key_online(key)
+                        if success:
+                            print(f"[monetization] Key verified online ({new_tier}).")
+                            with open(license_path, "w", encoding="utf-8") as f:
+                                json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                            self.gui_queue.put(lambda: self.show_view("main"))
+                            return
+                    except Exception as e:
+                        print(f"[monetization] License check error: {e}")
+                        
+                self.gui_queue.put(lambda: self.show_view("lock"))
             except Exception as e:
-                print(f"[monetization] License check error: {e}")
-                
-        self.show_view("lock")
+                print(f"[monetization] Error in status thread: {e}")
+                self.gui_queue.put(lambda: self.show_view("lock"))
+
+        threading.Thread(target=_thread_task, daemon=True).start()
 
     def verify_key_online(self, key):
         import urllib.request
         import json
-        import concurrent.futures
 
         payload = json.dumps({"key": key}).encode("utf-8")
         urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
         
-        def check_url(url):
+        for url in urls:
             try:
                 req = urllib.request.Request(
                     url,
@@ -1406,84 +1444,70 @@ class LANpadLauncher:
                     headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
                     method="POST"
                 )
-                with safe_urlopen(req, timeout=5) as resp:
+                with safe_urlopen(req, timeout=3) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     if res.get("valid", False):
                         return True, res.get("tier", "Basic"), res.get("expires_at", "2099-12-31T23:59:59Z")
             except Exception as e:
                 print(f"[monetization] Verify online error on {url}: {e}")
-            return False, "Basic", None
-
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-        futures = {executor.submit(check_url, url): url for url in urls}
-        for future in concurrent.futures.as_completed(futures):
-            success, tier, expires_at = future.result()
-            if success:
-                executor.shutdown(wait=False)
-                return True, tier, expires_at
                 
-        executor.shutdown(wait=False)
         return False, "Basic", None
 
     def start_license_loop(self):
         self.root.after(3600000, self.periodic_license_check)
         
     def periodic_license_check(self):
-        import urllib.request
-        import json
-        import concurrent.futures
-
-        monetization_enabled = False
-        urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+        import threading
         
-        def check_status(base_url):
+        def _thread_task():
             try:
-                req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
-                with safe_urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    return True, data.get("monetization_enabled", False)
-            except Exception as e:
-                pass
-            return False, False
+                import urllib.request
+                import json
 
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-        futures = {executor.submit(check_status, url): url for url in urls}
-        for future in concurrent.futures.as_completed(futures):
-            success, enabled = future.result()
-            if success:
-                monetization_enabled = enabled
-                executor.shutdown(wait=False)
-                break
-        else:
-            executor.shutdown(wait=False)
-            
-        if monetization_enabled:
-            license_path = os.path.expanduser("~/.lanpad_license.json")
-            if os.path.exists(license_path):
-                try:
-                    import json
-                    with open(license_path, "r", encoding="utf-8") as f:
-                        lic = json.load(f)
-                    key = lic.get("key")
-                    
-                    success, tier, expires_at = self.verify_key_online(key)
-                    if success:
-                        with open(license_path, "w", encoding="utf-8") as f:
-                            json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
-                    else:
-                        print("[monetization] Key expired or invalid. Locking app.")
-                        try:
-                            os.remove(license_path)
-                        except Exception as e:
-                            print(f"[monetization] Error locking app: {e}")
-                        self.show_view("lock")
-                except Exception as e:
-                    print(f"[monetization] Periodic check load error: {e}")
-                    self.show_view("lock")
-            else:
-                self.show_view("lock")
+                monetization_enabled = False
+                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
                 
-        self.root.after(3600000, self.periodic_license_check)
+                for base_url in urls:
+                    try:
+                        req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                        with safe_urlopen(req, timeout=3) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            monetization_enabled = data.get("monetization_enabled", False)
+                            break
+                    except Exception as e:
+                        pass
+                    
+                if monetization_enabled:
+                    license_path = os.path.expanduser("~/.lanpad_license.json")
+                    if os.path.exists(license_path):
+                        try:
+                            import json
+                            with open(license_path, "r", encoding="utf-8") as f:
+                                lic = json.load(f)
+                            key = lic.get("key")
+                            
+                            success, tier, expires_at = self.verify_key_online(key)
+                            if success:
+                                with open(license_path, "w", encoding="utf-8") as f:
+                                    json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                            else:
+                                print("[monetization] Key expired or invalid. Locking app.")
+                                try:
+                                    os.remove(license_path)
+                                except Exception as e:
+                                    print(f"[monetization] Error locking app: {e}")
+                                self.gui_queue.put(lambda: self.show_view("lock"))
+                        except Exception as e:
+                            pass
+                    else:
+                        self.gui_queue.put(lambda: self.show_view("lock"))
+            except Exception as e:
+                print(f"[monetization] Error in periodic check thread: {e}")
+            
+            # Re-schedule next periodic check on main thread
+            self.gui_queue.put(lambda: self.root.after(3600000, self.periodic_license_check))
+
+        threading.Thread(target=_thread_task, daemon=True).start()
 
     # ── Network helpers ───────────────────────────────────────────────────────
 
@@ -1790,6 +1814,8 @@ class LANpadLauncher:
 
     def check_for_updates(self):
         """Check for updates in a background thread."""
+        if getattr(self, "update_in_progress", False):
+            return
         def _thread():
             try:
                 import json
@@ -1813,7 +1839,7 @@ class LANpadLauncher:
 
                 try:
                     if v_tuple(online_version) > v_tuple(local_version):
-                        self.root.after(0, lambda: self.prompt_update(online_version, data))
+                        self.gui_queue.put(lambda: self.prompt_update(online_version, data))
                 except Exception:
                     pass
             except Exception as e:
@@ -1823,6 +1849,10 @@ class LANpadLauncher:
 
     def prompt_update(self, version, data):
         """Prompt user to update."""
+        if getattr(self, "update_in_progress", False):
+            return
+        self.update_in_progress = True
+        
         ans = messagebox.askyesno(
             "Update Available",
             f"A new version of LANpad (v{version}) is available.\n\n"
@@ -1832,6 +1862,8 @@ class LANpadLauncher:
         )
         if ans:
             self.apply_update(version, data)
+        else:
+            self.update_in_progress = False
 
     def apply_update(self, version, data):
         """Download and install the update."""

@@ -55,8 +55,7 @@ def run_test():
     # Patch the method
     app.check_for_updates = local_check_for_updates
     
-    print("Triggering real update check against local server in 1 second...")
-    root.after(1000, app.check_for_updates)
+    print("Starting Tkinter main loop (automatic check will run in 2 seconds)...")
     
     root.mainloop()
 
