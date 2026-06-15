@@ -891,15 +891,14 @@ class LANpadLauncher:
             else:
                 print("[lanpad] cloudflared unavailable — falling back to localtunnel...")
 
-            # ── localtunnel fallback ──
+            # ── localhost.run fallback ──
             if not self._tunnel_url and (forced_tunnel is None or forced_tunnel == "localtunnel"):
                 try:
-                    lt_cmd = ["npx", "localtunnel", "--port", "8000"]
-                    if sys.platform == "win32":
-                        lt_cmd = ["npx.cmd", "localtunnel", "--port", "8000"]
+                    # Run localhost.run SSH command
+                    ssh_cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", "-R", "80:localhost:8000", "nokey@localhost.run"]
                     
                     proc = subprocess.Popen(
-                        lt_cmd,
+                        ssh_cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         stdin=subprocess.DEVNULL,
@@ -911,32 +910,36 @@ class LANpadLauncher:
                     url_found = False
                     
                     import threading
-                    def _read_lt():
+                    def _read_lhr():
                         nonlocal url_found
                         try:
                             for line in proc.stdout:
                                 if not self._tunnel_process: break
                                 sys.stdout.write(line)
                                 sys.stdout.flush()
-                                match = re.search(r"https://[a-zA-Z0-9\-]+\.localtunnel\.me", line)
+                                # Match https://*.lhr.life or https://*.localhost.run
+                                match = re.search(r"https://[a-zA-Z0-9\-]+\.lhr\.life", line)
+                                if not match:
+                                    match = re.search(r"https://[a-zA-Z0-9\-]+\.localhost\.run", line)
+                                    
                                 if match:
                                     raw_url = match.group(0)
-                                    print(f"\n[lanpad] localtunnel URL: {raw_url}")
+                                    print(f"\n[lanpad] localhost.run URL: {raw_url}")
                                     self._tunnel_url = raw_url
                                     self.gui_queue.put(self._update_display)
                                     url_found = True
                                     break
                         except Exception as _e:
-                            print(f"[lanpad] localtunnel read error: {_e}")
+                            print(f"[lanpad] localhost.run read error: {_e}")
                             
-                    lt_reader = threading.Thread(target=_read_lt, daemon=True)
-                    lt_reader.start()
-                    lt_reader.join(timeout=8)
+                    lhr_reader = threading.Thread(target=_read_lhr, daemon=True)
+                    lhr_reader.start()
+                    lhr_reader.join(timeout=8)
                     
                     if not url_found:
-                        raise Exception("localtunnel timed out")
-                except Exception as lt_err:
-                    print(f"[lanpad] localtunnel failed: {lt_err}. Falling back to bore...")
+                        raise Exception("localhost.run timed out")
+                except Exception as lhr_err:
+                    print(f"[lanpad] localhost.run failed: {lhr_err}. Falling back to bore...")
                     self.stop_tunnel()
 
             # ── bore fallback ──
