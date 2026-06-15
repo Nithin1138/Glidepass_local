@@ -142,7 +142,24 @@ def get_license_tier():
         try:
             with open(license_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data.get("tier", "Basic")
+                # Expiry check
+                expires_at = data.get("expires_at")
+                is_valid = True
+                if expires_at:
+                    from datetime import datetime, timezone
+                    s = expires_at.replace("Z", "+00:00")
+                    if "." in s:
+                        base, tz = s.split("+") if "+" in s else (s, "00:00")
+                        base_parts = base.split(".")
+                        sec = base_parts[0]
+                        ms = base_parts[1][:6]
+                        s = f"{sec}.{ms}+{tz}"
+                    expiry_dt = datetime.fromisoformat(s)
+                    now_dt = datetime.now(timezone.utc)
+                    if expiry_dt <= now_dt:
+                        is_valid = False
+                if is_valid:
+                    return data.get("tier", "Basic")
         except Exception:
             pass
 

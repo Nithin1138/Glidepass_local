@@ -1354,8 +1354,30 @@ class LANpadLauncher:
                 if os.path.exists(license_path):
                     with open(license_path, "r", encoding="utf-8") as f:
                         lic = json.load(f)
-                    tier = lic.get("tier", "Basic").upper()
-                    self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
+                    expires_at = lic.get("expires_at")
+                    is_expired = False
+                    if expires_at:
+                        from datetime import datetime, timezone
+                        s = expires_at.replace("Z", "+00:00")
+                        if "." in s:
+                            base, tz = s.split("+") if "+" in s else (s, "00:00")
+                            base_parts = base.split(".")
+                            sec = base_parts[0]
+                            ms = base_parts[1][:6]
+                            s = f"{sec}.{ms}+{tz}"
+                        expiry_dt = datetime.fromisoformat(s)
+                        now_dt = datetime.now(timezone.utc)
+                        if expiry_dt <= now_dt:
+                            is_expired = True
+
+                    if not is_expired:
+                        tier = lic.get("tier", "Basic").upper()
+                        self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
+                    else:
+                        if self.free_enabled:
+                            self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+                        else:
+                            self._plan_lbl.config(text="Plan: BASIC  •  Upgrade")
                 else:
                     if self.free_enabled:
                         self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
@@ -1405,8 +1427,30 @@ class LANpadLauncher:
                     if os.path.exists(license_path):
                         with open(license_path, "r", encoding="utf-8") as f:
                             lic = json.load(f)
-                        tier = lic.get("tier", "Basic").upper()
-                        self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
+                        expires_at = lic.get("expires_at")
+                        is_expired = False
+                        if expires_at:
+                            from datetime import datetime, timezone
+                            s = expires_at.replace("Z", "+00:00")
+                            if "." in s:
+                                base, tz = s.split("+") if "+" in s else (s, "00:00")
+                                base_parts = base.split(".")
+                                sec = base_parts[0]
+                                ms = base_parts[1][:6]
+                                s = f"{sec}.{ms}+{tz}"
+                            expiry_dt = datetime.fromisoformat(s)
+                            now_dt = datetime.now(timezone.utc)
+                            if expiry_dt <= now_dt:
+                                is_expired = True
+
+                        if not is_expired:
+                            tier = lic.get("tier", "Basic").upper()
+                            self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
+                        else:
+                            if free_enabled:
+                                self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+                            else:
+                                self._plan_lbl.config(text="Plan: BASIC  •  Upgrade")
                     else:
                         if free_enabled:
                             self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
@@ -1933,19 +1977,55 @@ class LANpadLauncher:
                         tier = lic.get("tier")
                         last_checked = lic.get("last_checked", 0)
                         
-                        # Trust key offline if checked within 24 hours
-                        if time.time() - last_checked < 86400:
-                            print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
-                            self.gui_queue.put(lambda: self.show_view("main"))
-                            return
-                            
-                        success, new_tier, expires_at = self.verify_key_online(key)
-                        if success:
-                            print(f"[monetization] Key verified online ({new_tier}).")
-                            with open(license_path, "w", encoding="utf-8") as f:
-                                json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
-                            self.gui_queue.put(lambda: self.show_view("main"))
-                            return
+                        expires_at = lic.get("expires_at")
+                        is_expired = False
+                        if expires_at:
+                            from datetime import datetime, timezone
+                            s = expires_at.replace("Z", "+00:00")
+                            if "." in s:
+                                base, tz = s.split("+") if "+" in s else (s, "00:00")
+                                base_parts = base.split(".")
+                                sec = base_parts[0]
+                                ms = base_parts[1][:6]
+                                s = f"{sec}.{ms}+{tz}"
+                            expiry_dt = datetime.fromisoformat(s)
+                            now_dt = datetime.now(timezone.utc)
+                            if expiry_dt <= now_dt:
+                                is_expired = True
+
+                        if is_expired:
+                            print("[monetization] License expired. Removing cached file.")
+                            try: os.remove(license_path)
+                            except Exception: pass
+                        else:
+                            # Trust key offline if checked within 24 hours
+                            if time.time() - last_checked < 86400:
+                                print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
+                                self.gui_queue.put(lambda: self.show_view("main"))
+                                return
+                                
+                            success, new_tier, expires_at = self.verify_key_online(key)
+                            if success:
+                                from datetime import datetime, timezone
+                                s = expires_at.replace("Z", "+00:00")
+                                if "." in s:
+                                    base, tz = s.split("+") if "+" in s else (s, "00:00")
+                                    base_parts = base.split(".")
+                                    sec = base_parts[0]
+                                    ms = base_parts[1][:6]
+                                    s = f"{sec}.{ms}+{tz}"
+                                expiry_dt = datetime.fromisoformat(s)
+                                now_dt = datetime.now(timezone.utc)
+                                if expiry_dt > now_dt:
+                                    print(f"[monetization] Key verified online ({new_tier}).")
+                                    with open(license_path, "w", encoding="utf-8") as f:
+                                        json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                    self.gui_queue.put(lambda: self.show_view("main"))
+                                    return
+                                else:
+                                    print("[monetization] Online verification shows key is expired.")
+                                    try: os.remove(license_path)
+                                    except Exception: pass
                     except Exception as e:
                         print(f"[monetization] License check error: {e}")
                         
@@ -2026,8 +2106,26 @@ class LANpadLauncher:
                             
                             success, tier, expires_at = self.verify_key_online(key)
                             if success:
-                                with open(license_path, "w", encoding="utf-8") as f:
-                                    json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                # Double check expiry
+                                from datetime import datetime, timezone
+                                s = expires_at.replace("Z", "+00:00")
+                                if "." in s:
+                                    base, tz = s.split("+") if "+" in s else (s, "00:00")
+                                    base_parts = base.split(".")
+                                    sec = base_parts[0]
+                                    ms = base_parts[1][:6]
+                                    s = f"{sec}.{ms}+{tz}"
+                                expiry_dt = datetime.fromisoformat(s)
+                                now_dt = datetime.now(timezone.utc)
+                                if expiry_dt > now_dt:
+                                    with open(license_path, "w", encoding="utf-8") as f:
+                                        json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                else:
+                                    print("[monetization] Key expired. Locking app.")
+                                    try: os.remove(license_path)
+                                    except Exception: pass
+                                    if not free_enabled:
+                                        self.gui_queue.put(lambda: self.show_view("lock"))
                             else:
                                 print("[monetization] Key expired or invalid. Locking app.")
                                 try:
