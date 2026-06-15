@@ -2270,8 +2270,9 @@ class LANpadLauncher:
                     bat_content = f"""@echo off
 taskkill /F /PID {mypid} >nul 2>&1
 timeout /t 2 /nobreak >nul
-powershell -Command "Expand-Archive -Path '{download_path}' -DestinationPath '{install_dir}' -Force"
-start "" "{install_dir}\\LANpad\\LANpad.exe"
+if not exist "{install_dir}" mkdir "{install_dir}"
+copy /Y "{download_path}" "{install_dir}\\LANpad.exe" >nul 2>&1
+start "" "{install_dir}\\LANpad.exe"
 del "%~f0"
 """
                     bat_path = os.path.join(temp_dir, "lanpad_update.bat")
