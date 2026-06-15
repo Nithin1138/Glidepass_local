@@ -343,6 +343,7 @@ export default function GlidePassAdmin() {
   const [newLicenseEmail, setNewLicenseEmail] = useState("");
   const [newLicenseTier, setNewLicenseTier] = useState("Basic");
   const [newLicenseDuration, setNewLicenseDuration] = useState("30");
+  const [newLicenseDurationUnit, setNewLicenseDurationUnit] = useState<"days" | "hours" | "mins">("days");
   const [newTxnEmail, setNewTxnEmail] = useState("");
   const [newTxnPlan, setNewTxnPlan] = useState("Monthly Pass");
   const [newTxnAmount, setNewTxnAmount] = useState("₹99");
@@ -2025,7 +2026,8 @@ export default function GlidePassAdmin() {
           data: {
             tier: newLicenseTier,
             email: newLicenseEmail,
-            durationDays: parseInt(newLicenseDuration) || 30
+            duration: parseFloat(newLicenseDuration) || 30,
+            unit: newLicenseDurationUnit
           }
         })
       });
@@ -5044,14 +5046,25 @@ export default function GlidePassAdmin() {
                               </select>
                             </div>
                             <div>
-                              <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity Duration (Days)</label>
-                              <input 
-                                type="number" 
-                                value={newLicenseDuration} 
-                                onChange={e => setNewLicenseDuration(e.target.value)} 
-                                placeholder="30"
-                                className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
-                              />
+                              <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity Duration</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="number" 
+                                  value={newLicenseDuration} 
+                                  onChange={e => setNewLicenseDuration(e.target.value)} 
+                                  placeholder="30"
+                                  className={`w-2/3 text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
+                                />
+                                <select
+                                  value={newLicenseDurationUnit}
+                                  onChange={e => setNewLicenseDurationUnit(e.target.value as any)}
+                                  className={`w-1/3 text-xs rounded-xl px-2 py-2 border focus:outline-none ${inputBg}`}
+                                >
+                                  <option value="days">Days</option>
+                                  <option value="hours">Hours</option>
+                                  <option value="mins">Mins</option>
+                                </select>
+                              </div>
                             </div>
                             <button onClick={handleGenerateLicense} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
                               Create Activation Key

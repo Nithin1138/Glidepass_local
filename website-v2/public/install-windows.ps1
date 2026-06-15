@@ -2,6 +2,14 @@
 $ErrorActionPreference = 'Stop'
 
 Write-Host "🚀 Installing LANpad for Windows..." -ForegroundColor Green
+Write-Host ""
+Write-Host "⚠️  LEGAL DISCLAIMER:" -ForegroundColor Yellow
+Write-Host "LANpad is provided AS IS without warranty of any kind." -ForegroundColor Yellow
+Write-Host "The developers, contributors, and founders assume NO liability or responsibility" -ForegroundColor Yellow
+Write-Host "for any misuse of this tool, including academic misconduct, policy violations," -ForegroundColor Yellow
+Write-Host "data security issues, or system disruption." -ForegroundColor Yellow
+Write-Host "By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
+Write-Host ""
 
 # Define paths
 $DownloadUrl = "https://lanpad.vercel.app/downloads/LANpad.exe"

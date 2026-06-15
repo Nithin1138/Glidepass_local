@@ -906,6 +906,12 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Legal Disclaimer */}
+            <div className={`mt-12 p-6 rounded-2xl border text-[11px] leading-relaxed font-inter transition-all duration-300 ${dk ? "bg-white/[0.01] border-white/[0.04] text-white/40" : "bg-black/[0.01] border-black/[0.04] text-black/50"}`}>
+              <p className="font-bold uppercase tracking-wider mb-2 text-amber-500">Legal Disclaimer</p>
+              LANpad is provided as an open-source productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
+            </div>
+
             {/* Bottom Bar */}
             <div className={`pt-12 border-t border-white/[0.03] flex flex-col md:flex-row justify-between items-center gap-8`}>
               <div className="flex items-center gap-6">
@@ -913,7 +919,7 @@ export default function Home() {
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">All Systems Operational</span>
                 </div>
-                <span className={`text-[10px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-widest`}>v1.4.2-stable</span>
+                <span className={`text-[10px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-widest`}>v1.5.8-stable</span>
               </div>
               <p className={`text-[10px] ${dk ? "text-white" : "text-black"}/10 font-mono tracking-widest`}>© 2026 LANPAD. ALL RIGHTS RESERVED.</p>
             </div>

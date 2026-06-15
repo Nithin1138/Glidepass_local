@@ -34,8 +34,15 @@ export async function POST(req: NextRequest) {
       await setMonetizationSettings(data);
       return NextResponse.json({ success: true });
     } else if (type === "license") {
-      const { tier, email, durationDays } = data;
-      const key = await generateLicenseKey(tier, email, durationDays || 30);
+      const { tier, email, duration, unit } = data;
+      // Convert duration based on unit (days, hours, mins) to a fractional number of days
+      let durationDays = parseFloat(duration) || 30;
+      if (unit === "hours") {
+        durationDays = durationDays / 24;
+      } else if (unit === "mins") {
+        durationDays = durationDays / 1440;
+      }
+      const key = await generateLicenseKey(tier, email, durationDays);
       return NextResponse.json({ success: true, key });
     } else {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });

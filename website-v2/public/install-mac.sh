@@ -1,5 +1,13 @@
 #!/bin/bash
 echo "🚀 Installing LANpad for macOS..."
+echo ""
+echo "⚠️  LEGAL DISCLAIMER:"
+echo "LANpad is provided AS IS without warranty of any kind."
+echo "The developers, contributors, and founders assume NO liability or responsibility"
+echo "for any misuse of this tool, including academic misconduct, policy violations,"
+echo "data security issues, or system disruption."
+echo "By continuing, you agree that you use this software at your own risk."
+echo ""
 
 # Production download URL for the packaged DMG installer
 DOWNLOAD_URL="https://lanpad.vercel.app/downloads/LANpad_macOS.dmg"
