@@ -883,9 +883,7 @@ class LANpadLauncher:
             # ── localtunnel fallback ──
             if not self._tunnel_url:
                 try:
-                    # Run npx localtunnel on port 8000
                     lt_cmd = ["npx", "localtunnel", "--port", "8000"]
-                    # For Windows compatibility
                     if sys.platform == "win32":
                         lt_cmd = ["npx.cmd", "localtunnel", "--port", "8000"]
                     
@@ -899,8 +897,10 @@ class LANpadLauncher:
                         **kwargs
                     )
                     self._tunnel_process = proc
+                    url_found = False
                     
                     def _read_lt():
+                        nonlocal url_found
                         try:
                             for line in proc.stdout:
                                 if not self._tunnel_process: break
@@ -912,16 +912,116 @@ class LANpadLauncher:
                                     print(f"\n[lanpad] localtunnel URL: {raw_url}")
                                     self._tunnel_url = raw_url
                                     self.gui_queue.put(self._update_display)
+                                    url_found = True
                                     break
                         except Exception as _e:
                             print(f"[lanpad] localtunnel read error: {_e}")
                             
-                    _thr.Thread(target=_read_lt, daemon=True).start()
+                    lt_reader = _thr.Thread(target=_read_lt, daemon=True)
+                    lt_reader.start()
+                    lt_reader.join(timeout=8)
+                    
+                    if not url_found:
+                        raise Exception("localtunnel timed out")
                 except Exception as lt_err:
-                    print(f"[lanpad] localtunnel failed to start: {lt_err}")
+                    print(f"[lanpad] localtunnel failed: {lt_err}. Falling back to bore...")
                     self.stop_tunnel()
 
+            # ── bore fallback ──
+            if not self._tunnel_url:
+                try:
+                    # Check if bore is on system path
+                    import shutil
+                    bore_bin = shutil.which("bore")
+                    if not bore_bin:
+                        # Fallback to local ~/.lanpad/bore binary location
+                        cache_dir = os.path.expanduser("~/.lanpad")
+                        bore_bin = os.path.join(cache_dir, "bore.exe" if sys.platform.startswith("win") else "bore")
+                        
+                        if not (os.path.isfile(bore_bin) and os.access(bore_bin, os.X_OK)):
+                            # Need to download bore binary dynamically
+                            print("[lanpad] Downloading bore binary (one-time setup)...")
+                            self.root.after(0, lambda: self._show_tunnel_status("Downloading bore binary…"))
+                            machine = platform.machine().lower()
+                            is_win = sys.platform.startswith("win")
+                            is_mac = sys.platform.startswith("darwin")
+                            
+                            # Determine correct release binary URL from ekzhang/bore GitHub releases
+                            # URL format: https://github.com/ekzhang/bore/releases/download/v0.5.2/bore-v0.5.2-x86_64-pc-windows-msvc.zip
+                            version = "0.5.2"
+                            if is_win:
+                                arch = "x86_64"
+                                url = f"https://github.com/ekzhang/bore/releases/download/v{version}/bore-v{version}-{arch}-pc-windows-msvc.zip"
+                                dest_zip = os.path.join(cache_dir, "bore.zip")
+                            elif is_mac:
+                                arch = "aarch64" if "arm" in machine else "x86_64"
+                                url = f"https://github.com/ekzhang/bore/releases/download/v{version}/bore-v{version}-{arch}-apple-darwin.tar.gz"
+                                dest_zip = os.path.join(cache_dir, "bore.tar.gz")
+                            else:
+                                arch = "x86_64"
+                                url = f"https://github.com/ekzhang/bore/releases/download/v{version}/bore-v{version}-{arch}-unknown-linux-musl.tar.gz"
+                                dest_zip = os.path.join(cache_dir, "bore.tar.gz")
+                                
+                            import urllib.request
+                            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                            with urllib.request.urlopen(req, timeout=30) as resp:
+                                data = resp.read()
+                            with open(dest_zip, "wb") as f:
+                                f.write(data)
+                                
+                            if dest_zip.endswith(".zip"):
+                                import zipfile
+                                with zipfile.ZipFile(dest_zip, 'r') as zip_ref:
+                                    # extract bore.exe to cache_dir
+                                    for member in zip_ref.namelist():
+                                        if member.endswith("bore.exe"):
+                                            with zip_ref.open(member) as source, open(bore_bin, "wb") as target:
+                                                shutil.copyfileobj(source, target)
+                            else:
+                                with tarfile.open(dest_zip, "r:gz") as tar:
+                                    member = next((m for m in tar.getmembers() if "bore" in m.name and not m.isdir()), None)
+                                    if member:
+                                        with tar.extractfile(member) as source, open(bore_bin, "wb") as target:
+                                            target.write(source.read())
+                            
+                            os.chmod(bore_bin, os.stat(bore_bin).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+                            # Clean up zip archive
+                            try: os.remove(dest_zip)
+                            except Exception: pass
 
+                    cmd = [bore_bin, "local", "8000", "--to", "bore.pub"]
+                    proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        stdin=subprocess.DEVNULL,
+                        text=True,
+                        bufsize=1,
+                        **kwargs
+                    )
+                    self._tunnel_process = proc
+                    
+                    def _read_bore():
+                        try:
+                            for line in proc.stdout:
+                                if not self._tunnel_process: break
+                                sys.stdout.write(line)
+                                sys.stdout.flush()
+                                # Match console output like "listening at bore.pub:12345"
+                                match = re.search(r"listening at (bore\.pub:\d+)", line)
+                                if match:
+                                    raw_url = "http://" + match.group(1)
+                                    print(f"\n[lanpad] bore URL: {raw_url}")
+                                    self._tunnel_url = raw_url
+                                    self.gui_queue.put(self._update_display)
+                                    break
+                        except Exception as _e:
+                            print(f"[lanpad] bore read error: {_e}")
+                            
+                    _thr.Thread(target=_read_bore, daemon=True).start()
+                except Exception as bore_err:
+                    print(f"[lanpad] bore failed to start: {bore_err}")
+                    self.stop_tunnel()
 
         import threading
         threading.Thread(target=_run, daemon=True).start()
