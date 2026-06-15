@@ -990,6 +990,7 @@ class LANpadLauncher:
                                             with zip_ref.open(member) as source, open(bore_bin, "wb") as target:
                                                 shutil.copyfileobj(source, target)
                             else:
+                                import tarfile
                                 with tarfile.open(dest_zip, "r:gz") as tar:
                                     member = next((m for m in tar.getmembers() if "bore" in m.name and not m.isdir()), None)
                                     if member:
