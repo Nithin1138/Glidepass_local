@@ -337,6 +337,7 @@ export default function GlidePassAdmin() {
   // --- Monetization, Dynamic Plans & Licenses States ---
   const [monetizationSettings, setMonetizationSettings] = useState<any>({
     monetization_enabled: false,
+    free_enabled: false,
     plans: []
   });
   const [licenses, setLicenses] = useState<any[]>([]);
@@ -4908,24 +4909,47 @@ export default function GlidePassAdmin() {
                               <p className="text-[10px] text-white/50">Configure global monetization switch and customize active plan details</p>
                             </div>
                             
-                            {/* Toggle switch */}
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.monetization_enabled ? P.blue : P.white }}>
-                                {monetizationSettings.monetization_enabled ? "MONETIZATION ON (LOCKED)" : "MONETIZATION OFF (FREE)"}
-                              </span>
-                              <button 
-                                onClick={() => handleSaveMonetizationSettings({
-                                  ...monetizationSettings,
-                                  monetization_enabled: !monetizationSettings.monetization_enabled
-                                })}
-                                className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
-                                style={{ backgroundColor: monetizationSettings.monetization_enabled ? P.blue : "rgba(255,255,255,0.15)" }}
-                              >
-                                <div 
-                                  className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
-                                  style={{ left: monetizationSettings.monetization_enabled ? "26px" : "2px" }}
-                                />
-                              </button>
+                            {/* Toggles container */}
+                            <div className="flex items-center gap-6">
+                              {/* Monetization Toggle */}
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.monetization_enabled ? P.blue : P.white }}>
+                                  {monetizationSettings.monetization_enabled ? "MONETIZATION ON (LOCKED)" : "MONETIZATION OFF (FREE)"}
+                                </span>
+                                <button 
+                                  onClick={() => handleSaveMonetizationSettings({
+                                    ...monetizationSettings,
+                                    monetization_enabled: !monetizationSettings.monetization_enabled
+                                  })}
+                                  className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
+                                  style={{ backgroundColor: monetizationSettings.monetization_enabled ? P.blue : "rgba(255,255,255,0.15)" }}
+                                >
+                                  <div 
+                                    className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
+                                    style={{ left: monetizationSettings.monetization_enabled ? "26px" : "2px" }}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Free Tier Toggle */}
+                              <div className="flex items-center gap-3 border-l pl-6" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                                <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.free_enabled ? P.sky : P.white }}>
+                                  {monetizationSettings.free_enabled ? "FREE PLAN ON" : "FREE PLAN OFF"}
+                                </span>
+                                <button 
+                                  onClick={() => handleSaveMonetizationSettings({
+                                    ...monetizationSettings,
+                                    free_enabled: !monetizationSettings.free_enabled
+                                  })}
+                                  className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
+                                  style={{ backgroundColor: monetizationSettings.free_enabled ? P.sky : "rgba(255,255,255,0.15)" }}
+                                >
+                                  <div 
+                                    className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
+                                    style={{ left: monetizationSettings.free_enabled ? "26px" : "2px" }}
+                                  />
+                                </button>
+                              </div>
                             </div>
                           </div>
 

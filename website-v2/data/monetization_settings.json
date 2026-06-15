@@ -2,6 +2,24 @@
   "monetization_enabled": false,
   "plans": [
     {
+      "tier": "Free",
+      "title": "Free Pass",
+      "subtitle": "Basic access limits",
+      "price": "₹0",
+      "validity_days": 365,
+      "max_sessions": 999,
+      "max_vitcodes": 999,
+      "allow_live_sync": 0,
+      "allow_typing": 0,
+      "allow_typing_mode": 0,
+      "allow_inject": 0,
+      "allow_raw": 0,
+      "allow_select_copy": 0,
+      "allow_fetch": 0,
+      "allow_refill": 0,
+      "allow_vitcode": 0
+    },
+    {
       "tier": "Basic",
       "title": "Week Pass",
       "subtitle": "Perfect for exam weeks",
@@ -37,5 +55,6 @@
       "allow_refill": true,
       "validity_days": 300
     }
-  ]
+  ],
+  "free_enabled": false
 }

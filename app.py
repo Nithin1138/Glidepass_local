@@ -124,6 +124,7 @@ def _read_custom_website_url():
 
 def get_license_tier():
     # If monetization is disabled, we default to DEVELOPER (all features unlocked)
+    free_enabled = False
     try:
         import urllib.request
         import json
@@ -132,6 +133,7 @@ def get_license_tier():
             data = json.loads(resp.read().decode("utf-8"))
             if not data.get("monetization_enabled", False):
                 return "DEVELOPER"
+            free_enabled = data.get("free_enabled", False)
     except Exception:
         pass
 
@@ -143,6 +145,9 @@ def get_license_tier():
                 return data.get("tier", "Basic")
         except Exception:
             pass
+
+    if free_enabled:
+        return "Free"
     return "Basic" 
 
 CLOUD_LIMITS_CACHE = None

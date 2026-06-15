@@ -8,6 +8,7 @@ export async function GET() {
     const settings = await getMonetizationSettings();
     return NextResponse.json({
       monetization_enabled: settings.monetization_enabled,
+      free_enabled: settings.free_enabled,
       plans: settings.plans || []
     });
   } catch (error: any) {

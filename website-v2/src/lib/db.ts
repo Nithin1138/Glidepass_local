@@ -318,11 +318,30 @@ export async function initDb() {
     if (parseInt(monetizationRes.rows[0].count, 10) === 0) {
       const defaultSettings = {
         monetization_enabled: false,
+        free_enabled: false,
         plans: [
-          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39" },
-          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99" },
-          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299" },
-          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499" }
+          {
+            tier: "Free",
+            title: "Free Pass",
+            subtitle: "Basic access limits",
+            price: "₹0",
+            validity_days: 365,
+            max_sessions: 999,
+            max_vitcodes: 999,
+            allow_live_sync: 0,
+            allow_typing: 0,
+            allow_typing_mode: 0,
+            allow_inject: 0,
+            allow_raw: 0,
+            allow_select_copy: 0,
+            allow_fetch: 0,
+            allow_refill: 0,
+            allow_vitcode: 0
+          },
+          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
+          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
+          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
+          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
         ]
       };
       await client.query("INSERT INTO vit_settings (key, value) VALUES ('monetization_settings', $1)", [JSON.stringify(defaultSettings)]);
@@ -1490,28 +1509,81 @@ const getLicensesJsonPath = () => {
 };
 
 export async function getMonetizationSettings(): Promise<any> {
+  let settings: any = null;
   if (pool) {
     await initDb();
     const res = await pool.query("SELECT value FROM vit_settings WHERE key = 'monetization_settings'");
     if (res.rows.length > 0) {
-      return JSON.parse(res.rows[0].value);
+      settings = JSON.parse(res.rows[0].value);
     }
   }
-  const filePath = getMonetizationSettingsPath();
-  if (fs.existsSync(filePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(filePath, "utf8"));
-    } catch (e) {}
+  if (!settings) {
+    const filePath = getMonetizationSettingsPath();
+    if (fs.existsSync(filePath)) {
+      try {
+        settings = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      } catch (e) {}
+    }
   }
-  return {
-    monetization_enabled: false,
-    plans: [
-      { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
-      { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
-      { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
-      { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
-    ]
-  };
+  if (!settings) {
+    settings = {
+      monetization_enabled: false,
+      free_enabled: false,
+      plans: [
+        {
+          tier: "Free",
+          title: "Free Pass",
+          subtitle: "Basic access limits",
+          price: "₹0",
+          validity_days: 365,
+          max_sessions: 999,
+          max_vitcodes: 999,
+          allow_live_sync: 0,
+          allow_typing: 0,
+          allow_typing_mode: 0,
+          allow_inject: 0,
+          allow_raw: 0,
+          allow_select_copy: 0,
+          allow_fetch: 0,
+          allow_refill: 0,
+          allow_vitcode: 0
+        },
+        { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
+        { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
+        { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
+        { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
+      ]
+    };
+  } else {
+    if (settings.free_enabled === undefined) {
+      settings.free_enabled = false;
+    }
+    if (!settings.plans) {
+      settings.plans = [];
+    }
+    const hasFree = settings.plans.some((p: any) => p.tier === "Free");
+    if (!hasFree) {
+      settings.plans.unshift({
+        tier: "Free",
+        title: "Free Pass",
+        subtitle: "Basic access limits",
+        price: "₹0",
+        validity_days: 365,
+        max_sessions: 999,
+        max_vitcodes: 999,
+        allow_live_sync: 0,
+        allow_typing: 0,
+        allow_typing_mode: 0,
+        allow_inject: 0,
+        allow_raw: 0,
+        allow_select_copy: 0,
+        allow_fetch: 0,
+        allow_refill: 0,
+        allow_vitcode: 0
+      });
+    }
+  }
+  return settings;
 }
 
 export async function setMonetizationSettings(settings: any): Promise<void> {

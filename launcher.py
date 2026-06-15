@@ -32,9 +32,10 @@ except ImportError:
 # window using the system scale factor, so a "400x760" window renders
 # *much* larger than expected (and the contents look blurry).
 #
-# We call ``SetProcessDpiAwarenessContext`` (Win10 1607+) and fall back
-# to the older ``SetProcessDPIAware`` for compatibility.  This MUST run
-# before any Tk window is created.
+# We configure DPI settings so that Windows handles scaling uniformly, 
+# preventing overlaps of fonts and layout boxes on high-DPI monitors.
+# We prefer ``DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED`` (crisp text + unaware scaling) 
+# and fall back to standard DPI unawareness for perfect layout preservation.
 # ---------------------------------------------------------------------------
 def _enable_windows_dpi_awareness():
     if not sys.platform.startswith("win"):
@@ -42,22 +43,17 @@ def _enable_windows_dpi_awareness():
     try:
         import ctypes
         try:
-            # Per-monitor V2 DPI awareness (best, Win10 1703+).
-            ctypes.windll.shcore.SetProcessDpiAwarenessContext(
-                ctypes.c_void_p(-4)  # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+            # GDI-scaled unaware mode (crisp text, OS-managed layout scaling, Win10 1809+)
+            ctypes.windll.user32.SetProcessDpiAwarenessContext(
+                ctypes.c_void_p(-5)  # DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED
             )
             return
         except Exception:
             pass
         try:
-            # System DPI awareness (Win8.1+).
-            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            # Fall back to standard DPI unawareness (bitmap stretched scaling, perfect layout)
+            ctypes.windll.shcore.SetProcessDpiAwareness(0)  # PROCESS_DPI_UNAWARE
             return
-        except Exception:
-            pass
-        try:
-            # Legacy fallback (Vista+).
-            ctypes.windll.user32.SetProcessDPIAware()
         except Exception:
             pass
     except Exception:
@@ -1340,6 +1336,7 @@ class LANpadLauncher:
     def update_plan_label(self):
         def _task():
             monetization_enabled = False
+            free_enabled = False
             import urllib.request
             import json
             urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
@@ -1349,6 +1346,7 @@ class LANpadLauncher:
                     with safe_urlopen(req, timeout=3) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         monetization_enabled = data.get("monetization_enabled", False)
+                        free_enabled = data.get("free_enabled", False)
                         break
                 except Exception:
                     pass
@@ -1369,7 +1367,10 @@ class LANpadLauncher:
                         tier = lic.get("tier", "Basic").upper()
                         self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
                     else:
-                        self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+                        if free_enabled:
+                            self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+                        else:
+                            self._plan_lbl.config(text="Plan: BASIC  •  Upgrade")
                 except Exception:
                     self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
 
@@ -2393,12 +2394,22 @@ class LANpadLauncher:
                     except Exception:
                         pass
                     install_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "LANpad")
+                    if getattr(sys, 'frozen', False):
+                        target_exe = sys.executable
+                    else:
+                        target_exe = os.path.join(install_dir, "LANpad.exe")
+
                     bat_content = f"""@echo off
-taskkill /F /PID {mypid} >nul 2>&1
+taskkill /F /IM LANpad.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
-if not exist "{install_dir}" mkdir "{install_dir}"
-copy /Y "{download_path}" "{install_dir}\\LANpad.exe" >nul 2>&1
-start "" "{install_dir}\\LANpad.exe"
+copy /Y "{download_path}" "{target_exe}" >nul 2>&1
+if errorlevel 1 (
+    if not exist "{install_dir}" mkdir "{install_dir}"
+    copy /Y "{download_path}" "{install_dir}\\LANpad.exe" >nul 2>&1
+    start "" "{install_dir}\\LANpad.exe"
+) else (
+    start "" "{target_exe}"
+)
 del "%~f0"
 """
                     bat_path = os.path.join(temp_dir, "lanpad_update.bat")
