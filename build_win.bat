@@ -57,13 +57,9 @@ echo.
 
 REM 3. Generate the Windows icon if missing
 echo [3/6] Generating Windows icon...
-if not exist LANpad.ico (
-    python make_ico.py
-    if %errorlevel% neq 0 (
-        echo   WARNING: make_ico.py failed - using the existing icon if any.
-    )
-) else (
-    echo   LANpad.ico already exists - skipping.
+python make_ico.py
+if %errorlevel% neq 0 (
+    echo   WARNING: make_ico.py failed - using the existing icon if any.
 )
 echo.
 

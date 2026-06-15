@@ -2,7 +2,7 @@ from PIL import Image
 import os
 
 def create_ico():
-    img_path = "logo.png"
+    img_path = "logo_final_square.png"
     if not os.path.exists(img_path):
         print(f"Error: {img_path} not found")
         return
