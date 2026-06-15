@@ -723,7 +723,7 @@ export default function Home() {
                   href: "/api/download?platform=windows",
                   version: "v1.5.7",
                   supported: "Windows 10/11",
-                  size: "38.2 MB",
+                  size: "26.0 MB",
                   theme: "indigo",
                   gradient: "from-indigo-500/30 to-transparent",
                   btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",

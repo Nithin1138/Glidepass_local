@@ -97,18 +97,17 @@ if %errorlevel% neq 0 (
 echo.
 
 REM 7. Verify the build
-if exist dist\LANpad\LANpad.exe (
+if exist dist\LANpad.exe (
     echo.
     echo ============================================================
     echo   BUILD SUCCESSFUL!
     echo ============================================================
     echo.
-    echo   Your Windows app is at:   dist\LANpad\LANpad.exe
+    echo   Your Windows app is at:   dist\LANpad.exe
     echo.
     echo   To share with your friend:
-    echo     1. ZIP the entire   dist\LANpad   folder.
-    echo     2. Send the .zip to them.
-    echo     3. They unzip it and double-click LANpad.exe.
+    echo     1. Send the LANpad.exe file directly to them.
+    echo     2. They double-click LANpad.exe to launch it.
     echo.
     echo   Optional but recommended:
     echo     - Run   python register_bridge.py   to wire up the
@@ -118,15 +117,15 @@ if exist dist\LANpad\LANpad.exe (
     echo       if you move the app to a new folder.
     echo.
     echo ============================================================
-    echo   Zipping app for website distribution...
+    echo   Copying app for website distribution...
     echo ============================================================
     if not exist website-v2\public\downloads mkdir website-v2\public\downloads
-    powershell -Command "Compress-Archive -Path dist\LANpad\* -DestinationPath website-v2\public\downloads\LANpad_Windows.zip -Force"
-    echo   ✅ Created website-v2\public\downloads\LANpad_Windows.zip
+    copy dist\LANpad.exe website-v2\public\downloads\LANpad.exe /y
+    echo   ✅ Copied to website-v2\public\downloads\LANpad.exe
     echo.
 ) else (
     echo.
-    echo   BUILD FAILED - dist\LANpad\LANpad.exe not found.
+    echo   BUILD FAILED - dist\LANpad.exe not found.
     echo.
 )
 

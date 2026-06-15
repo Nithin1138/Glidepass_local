@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   // 2. Fetch the target download links from downloads/version.json if it exists, otherwise use fallback urls
   let downloadUrl = platform === "windows"
-    ? "/downloads/LANpad_Windows.zip"
+    ? "/downloads/LANpad.exe"
     : "/downloads/LANpad_macOS.dmg";
 
   try {

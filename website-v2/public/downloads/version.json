@@ -1,6 +1,6 @@
 {
   "version": "1.5.7",
-  "windows_url": "https://lanpad.vercel.app/downloads/LANpad_Windows.zip",
+  "windows_url": "https://lanpad.vercel.app/downloads/LANpad.exe",
   "mac_url": "https://lanpad.vercel.app/downloads/LANpad_macOS.dmg",
   "changelog": "v1.5.7 - Fixed: Auto-updater now shuts down menubar helper and background processes cleanly before applying update."
 }
