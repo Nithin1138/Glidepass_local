@@ -824,6 +824,7 @@ class LANpadLauncher:
             import subprocess
             import re
             import sys
+            import threading
             print("[lanpad] Starting tunnel fallback...")
 
             # Check CLI arguments for forced tunnel selection
@@ -1037,7 +1038,6 @@ class LANpadLauncher:
                     print(f"[lanpad] bore failed to start: {bore_err}")
                     self.stop_tunnel()
 
-        import threading
         threading.Thread(target=_run, daemon=True).start()
 
     def stop_tunnel(self):
