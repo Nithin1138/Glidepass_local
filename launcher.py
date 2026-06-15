@@ -1261,6 +1261,8 @@ class LANpadLauncher:
             self.lock_view.tkraise()
             if hasattr(self, "update_lock_time_left"):
                 self.update_lock_time_left()
+            if hasattr(self, "load_active_key_if_present"):
+                self.load_active_key_if_present()
         elif name == "splash":
             self.splash_view.tkraise()
         else:
@@ -1284,6 +1286,72 @@ class LANpadLauncher:
         except Exception as e:
             print(f"Error in update_lock_time_left: {e}")
             self.lock_time_left_lbl.config(text="")
+
+    def load_active_key_if_present(self):
+        try:
+            license_path = os.path.expanduser("~/.lanpad_license.json")
+            if os.path.exists(license_path):
+                import json
+                with open(license_path, "r", encoding="utf-8") as f:
+                    lic = json.load(f)
+                key = lic.get("key")
+                expires_at = lic.get("expires_at")
+                if key and expires_at:
+                    from datetime import datetime, timezone
+                    s = expires_at.replace("Z", "+00:00")
+                    if "." in s:
+                        base, tz = s.split("+") if "+" in s else (s, "00:00")
+                        base_parts = base.split(".")
+                        sec = base_parts[0]
+                        ms = base_parts[1][:6]
+                        s = f"{sec}.{ms}+{tz}"
+                    expiry_dt = datetime.fromisoformat(s)
+                    now_dt = datetime.now(timezone.utc)
+                    if expiry_dt > now_dt:
+                        self.key_entry.delete(0, "end")
+                        self.key_entry.insert(0, key)
+                        self.key_entry.config(show="*")
+                        self.show_hide_btn.place(x=244, y=10, width=48, height=24)
+                        self.show_hide_btn.config(text="Show")
+                        return
+            self.key_entry.delete(0, "end")
+            self.key_entry.config(show="")
+            self.show_hide_btn.place_forget()
+        except Exception as e:
+            print(f"Error in load_active_key_if_present: {e}")
+
+    def toggle_key_visibility(self):
+        try:
+            current_show = self.key_entry.cget("show")
+            if current_show == "*":
+                if self.authenticate_user():
+                    self.key_entry.config(show="")
+                    self.show_hide_btn.config(text="Hide")
+            else:
+                self.key_entry.config(show="*")
+                self.show_hide_btn.config(text="Show")
+        except Exception as e:
+            print(f"Error in toggle_key_visibility: {e}")
+
+    def authenticate_user(self):
+        if sys.platform == "darwin":
+            try:
+                import subprocess
+                cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges prompt "LANpad wants to display your activation key."']
+                subprocess.run(cmd, check=True, capture_output=True)
+                return True
+            except Exception:
+                return False
+        elif sys.platform.startswith("win"):
+            try:
+                import subprocess
+                ps_cmd = '$cred = $host.ui.PromptForCredential("LANpad Authentication", "Please authenticate to view your activation key.", "", ""); if ($cred) { exit 0 } else { exit 1 }'
+                res = subprocess.run(["powershell", "-Command", ps_cmd], capture_output=True)
+                return res.returncode == 0
+            except Exception:
+                return False
+        else:
+            return True
 
     # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
 
@@ -1348,7 +1416,12 @@ class LANpadLauncher:
         entry_frame.place(x=48, y=logo_y + 255, width=W - 96, height=44)
         
         self.key_entry = tk.Entry(entry_frame, bg="#16161A", fg=self.WHITE, insertbackground=self.WHITE, font=(self.FM, 11), bd=0, highlightthickness=0)
-        self.key_entry.place(x=12, y=10, width=W - 120, height=24)
+        self.key_entry.place(x=12, y=10, width=W - 176, height=24)
+        
+        self.show_hide_btn = tk.Label(entry_frame, text="Show", fg=self.DIM, bg="#16161A", font=(self.FU, 10, "bold"), cursor="hand2")
+        self.show_hide_btn.bind("<Button-1>", lambda e: self.toggle_key_visibility())
+        self.show_hide_btn.bind("<Enter>", lambda e: self.show_hide_btn.config(fg=self.WHITE))
+        self.show_hide_btn.bind("<Leave>", lambda e: self.show_hide_btn.config(fg=self.DIM))
         
         # Status Label
         self.lock_status_lbl = tk.Label(v, text="", fg=self.RED, bg="#0D0D10", font=(self.FU, 10))
