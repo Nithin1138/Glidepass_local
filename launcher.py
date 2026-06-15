@@ -826,6 +826,16 @@ class LANpadLauncher:
             import sys
             print("[lanpad] Starting tunnel fallback...")
 
+            # Check CLI arguments for forced tunnel selection
+            forced_tunnel = None
+            if "--tunnel" in sys.argv:
+                try:
+                    idx = sys.argv.index("--tunnel")
+                    if idx + 1 < len(sys.argv):
+                        forced_tunnel = sys.argv[idx + 1].lower()
+                except ValueError:
+                    pass
+
             cloudflared_bin = _get_cloudflared_bin()
 
             kwargs = {}
@@ -834,7 +844,7 @@ class LANpadLauncher:
 
 
             # ── Cloudflare Quick Tunnel ──────────────────────────────────────────
-            if cloudflared_bin:
+            if cloudflared_bin and (forced_tunnel is None or forced_tunnel == "cloudflare"):
                 try:
                     cmd = [cloudflared_bin, "tunnel", "--url", "http://localhost:8000"]
                     proc = subprocess.Popen(
@@ -881,7 +891,7 @@ class LANpadLauncher:
                 print("[lanpad] cloudflared unavailable — falling back to localtunnel...")
 
             # ── localtunnel fallback ──
-            if not self._tunnel_url:
+            if not self._tunnel_url and (forced_tunnel is None or forced_tunnel == "localtunnel"):
                 try:
                     lt_cmd = ["npx", "localtunnel", "--port", "8000"]
                     if sys.platform == "win32":
@@ -928,7 +938,7 @@ class LANpadLauncher:
                     self.stop_tunnel()
 
             # ── bore fallback ──
-            if not self._tunnel_url:
+            if not self._tunnel_url and (forced_tunnel is None or forced_tunnel == "bore"):
                 try:
                     # Check if bore is on system path
                     import shutil
