@@ -701,8 +701,7 @@ export default function Home() {
                 {
                   title: "macOS Backend",
                   icon: <Monitor size={28} />,
-                  label: "Copy Install Cmd",
-                  installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
+                  label: "Download DMG",
                   version: "v1.5.7",
                   supported: "macOS 12.0+",
                   size: "95.7 MB",
@@ -712,7 +711,6 @@ export default function Home() {
                   borderHover: "group-hover/card:border-amber-500/40",
                   iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
                   href: "/api/download?platform=mac",
-                  secondaryLabel: "Copy Install Cmd",
                   topLineColor: "via-amber-500/40"
                 },
                 {
