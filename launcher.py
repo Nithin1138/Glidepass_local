@@ -220,6 +220,13 @@ class LANpadLauncher:
         self._tunnel_url = None
         self._active_tab = "local"
 
+        # On Windows, automatically register a Start Menu shortcut on first launch
+        if is_windows():
+            try:
+                self._register_windows_start_menu_shortcut()
+            except Exception:
+                pass
+
         # Set proper app icon (title bar + Dock) so the window no
         # longer shows the default Tkinter feather.
         self._set_app_icon()
@@ -326,6 +333,36 @@ class LANpadLauncher:
             canvas.create_oval(w - 55 - r, h - 160 - r,
                                w - 55 + r, h - 160 + r, fill=c, outline="")
 
+
+    def _register_windows_start_menu_shortcut(self):
+        """Automatically create a Start Menu shortcut on Windows first run."""
+        try:
+            exe_path = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(sys.argv[0])
+            appdata = os.environ.get("APPDATA")
+            if not appdata:
+                return
+            
+            shortcut_path = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs", "LANpad.lnk")
+            
+            # Check if shortcut already exists
+            if not os.path.exists(shortcut_path):
+                import subprocess
+                ps_cmd = (
+                    f'$wshell = New-Object -ComObject WScript.Shell; '
+                    f'$shortcut = $wshell.CreateShortcut("{shortcut_path}"); '
+                    f'$shortcut.TargetPath = "{exe_path}"; '
+                    f'$shortcut.WorkingDirectory = "{os.path.dirname(exe_path)}"; '
+                    f'$shortcut.Save()'
+                )
+                subprocess.Popen(
+                    ["powershell", "-Command", ps_cmd],
+                    creationflags=0x08000000, # CREATE_NO_WINDOW
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                print("[win] Automatically registered Start Menu shortcut.")
+        except Exception as e:
+            print(f"[win] Failed to register Start Menu shortcut: {e}")
 
     # ── App icon (title bar + Dock) ──────────────────────────────────────
     def _set_app_icon(self):
