@@ -529,6 +529,7 @@ class LANpadLauncher:
                                   font=(self.FU, 9, "bold"),
                                   bg=self.BG, fg="#0077C0", anchor="e", bd=0, highlightthickness=0, cursor="hand2")
         self._plan_lbl.bind("<Button-1>", lambda e: self.show_view("lock"))
+        self.load_cached_monetization()
 
         # ── Hero text ────────────────────────────────────────────────────────
         title_frame = tk.Frame(v, bg=self.BG)
@@ -1332,6 +1333,37 @@ class LANpadLauncher:
         )
         self.code_text.insert("1.0", bookmarklet)
 
+    def load_cached_monetization(self):
+        import json
+        self.monetization_enabled = False
+        self.free_enabled = False
+        mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+        if os.path.exists(mon_path):
+            try:
+                with open(mon_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self.monetization_enabled = data.get("monetization_enabled", False)
+                self.free_enabled = data.get("free_enabled", False)
+            except Exception:
+                pass
+        if self.monetization_enabled:
+            _mac = sys.platform == "darwin"
+            self._plan_lbl.place(x=376, y=88 + (0 if _mac else 4), anchor="ne")
+            try:
+                license_path = os.path.expanduser("~/.lanpad_license.json")
+                if os.path.exists(license_path):
+                    with open(license_path, "r", encoding="utf-8") as f:
+                        lic = json.load(f)
+                    tier = lic.get("tier", "Basic").upper()
+                    self._plan_lbl.config(text=f"Plan: {tier}  •  Upgrade")
+                else:
+                    if self.free_enabled:
+                        self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+                    else:
+                        self._plan_lbl.config(text="Plan: BASIC  •  Upgrade")
+            except Exception:
+                self._plan_lbl.config(text="Plan: FREE  •  Upgrade")
+
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def update_plan_label(self):
@@ -1348,6 +1380,12 @@ class LANpadLauncher:
                         data = json.loads(resp.read().decode("utf-8"))
                         monetization_enabled = data.get("monetization_enabled", False)
                         free_enabled = data.get("free_enabled", False)
+                        try:
+                            mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+                            with open(mon_path, "w", encoding="utf-8") as f:
+                                json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                        except Exception:
+                            pass
                         break
                 except Exception:
                     pass
@@ -1866,6 +1904,12 @@ class LANpadLauncher:
                             data = json.loads(resp.read().decode("utf-8"))
                             monetization_enabled = data.get("monetization_enabled", False)
                             free_enabled = data.get("free_enabled", False)
+                            try:
+                                mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+                                with open(mon_path, "w", encoding="utf-8") as f:
+                                    json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                            except Exception:
+                                pass
                             break
                     except Exception as e:
                         print(f"[monetization] Status fetch failed on {base_url}: {e}")
@@ -1961,6 +2005,12 @@ class LANpadLauncher:
                             data = json.loads(resp.read().decode("utf-8"))
                             monetization_enabled = data.get("monetization_enabled", False)
                             free_enabled = data.get("free_enabled", False)
+                            try:
+                                mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+                                with open(mon_path, "w", encoding="utf-8") as f:
+                                    json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                            except Exception:
+                                pass
                             break
                     except Exception as e:
                         pass
