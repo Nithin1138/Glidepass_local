@@ -894,6 +894,19 @@ class LANpadLauncher:
             # ── localhost.run fallback ──
             if not self._tunnel_url and (forced_tunnel is None or forced_tunnel == "localtunnel"):
                 try:
+                    # Silently generate SSH keys if they do not exist to prevent connection prompts
+                    ssh_dir = os.path.expanduser("~/.ssh")
+                    private_key = os.path.join(ssh_dir, "id_rsa")
+                    if not os.path.exists(private_key):
+                        os.makedirs(ssh_dir, exist_ok=True)
+                        try:
+                            key_cmd = ["ssh-keygen", "-t", "rsa", "-b", "2048", "-N", "", "-f", private_key]
+                            # Run silently without windows popping up
+                            cf = 0x08000000 if sys.platform == "win32" else 0
+                            subprocess.run(key_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=cf)
+                        except Exception:
+                            pass
+
                     # Run localhost.run SSH command
                     ssh_cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", "-R", "80:localhost:8000", "nokey@localhost.run"]
                     
