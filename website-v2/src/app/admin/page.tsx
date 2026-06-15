@@ -2050,6 +2050,23 @@ export default function GlidePassAdmin() {
     } catch (e) {}
   };
 
+  const handleResetHwid = async (key: string) => {
+    try {
+      const res = await fetch("/api/admin/monetization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "reset-hwid",
+          key
+        })
+      });
+      if (res.ok) {
+        fetchMonetization();
+      }
+    } catch (e) {}
+  };
+
+
   const fetchUsersRbac = async () => {
     try {
       const res = await fetch("/api/admin/users-rbac");
@@ -5226,7 +5243,7 @@ export default function GlidePassAdmin() {
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                {["Activation Key", "Owner Email", "License Tier", "Expires At", "Created At", "Actions"].map(h => (
+                                {["Activation Key", "Owner Email", "License Tier", "Device HWID", "Expires At", "Created At", "Actions"].map(h => (
                                   <th key={h} className={`p-4 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
                                 ))}
                               </tr>
@@ -5241,6 +5258,9 @@ export default function GlidePassAdmin() {
                                       {lic.tier}
                                     </span>
                                   </td>
+                                  <td className="p-4 font-mono text-[10px]" style={{ color: lic.hwid ? P.white : `${P.white}40` }}>
+                                    {lic.hwid ? lic.hwid : "Unbound (Ready)"}
+                                  </td>
                                   <td className="p-4 font-mono text-[10px]" style={{ color: P.white }}>
                                     {new Date(lic.expires_at).toLocaleString()}
                                   </td>
@@ -5248,15 +5268,22 @@ export default function GlidePassAdmin() {
                                     {new Date(lic.created_at || Date.now()).toLocaleString()}
                                   </td>
                                   <td className="p-4 text-right pr-6">
-                                    <button onClick={() => handleDeleteLicense(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Revoke Key">
-                                      <Trash2 size={12} />
-                                    </button>
+                                    <div className="flex items-center justify-end gap-3">
+                                      {lic.hwid && (
+                                        <button onClick={() => handleResetHwid(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-sky-400 transition-colors" title="Reset HWID Lock">
+                                          <RefreshCw size={12} />
+                                        </button>
+                                      )}
+                                      <button onClick={() => handleDeleteLicense(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Revoke Key">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
                               {licenses.length === 0 && (
                                 <tr>
-                                  <td colSpan={6} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                  <td colSpan={7} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
                                     No active activation keys found.
                                   </td>
                                 </tr>
@@ -5265,6 +5292,7 @@ export default function GlidePassAdmin() {
                           </table>
                         </div>
                       </div>
+
 
                     </motion.div>
                   )}

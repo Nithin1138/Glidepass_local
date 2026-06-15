@@ -306,6 +306,8 @@ export async function initDb() {
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await client.query("ALTER TABLE vit_licenses ADD COLUMN IF NOT EXISTS hwid TEXT;");
+
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_settings (
@@ -1600,8 +1602,10 @@ export async function setMonetizationSettings(settings: any): Promise<void> {
   fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
 }
 
-export async function verifyLicenseKey(key: string): Promise<any> {
+export async function verifyLicenseKey(key: string, hwid?: string): Promise<any> {
   const cleanKey = key.trim().toUpperCase();
+  const cleanHwid = hwid ? hwid.trim().toUpperCase() : null;
+
   if (pool) {
     try {
       await initDb();
@@ -1610,15 +1614,37 @@ export async function verifyLicenseKey(key: string): Promise<any> {
         const lic = res.rows[0];
         const expiry = new Date(lic.expires_at).getTime();
         const now = Date.now();
-        if (now < expiry) {
-          return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+        if (now >= expiry) {
+          return { valid: false, error: "License key has expired." };
+        }
+
+        // HWID lock logic
+        const dbHwid = lic.hwid ? lic.hwid.trim().toUpperCase() : null;
+        if (!dbHwid) {
+          // First-time activation: bind the HWID
+          if (cleanHwid) {
+            await pool.query("UPDATE vit_licenses SET hwid = $1 WHERE UPPER(key) = $2", [cleanHwid, cleanKey]);
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          } else {
+            // No HWID passed and not bound yet: let it pass but don't bind (e.g. API checks)
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          }
+        } else {
+          // Key is already bound to a hardware ID
+          if (cleanHwid === dbHwid) {
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          } else {
+            return { valid: false, error: "License is already bound to another device." };
+          }
         }
       }
-      return { valid: false };
+      return { valid: false, error: "License key not found." };
     } catch (e) {
       console.error("DB verifyLicenseKey error, falling back to JSON:", e);
     }
   }
+
+  // Fallback JSON mode
   const filePath = getLicensesJsonPath();
   if (fs.existsSync(filePath)) {
     try {
@@ -1628,14 +1654,53 @@ export async function verifyLicenseKey(key: string): Promise<any> {
         const lic = licenses[matchingKey];
         const expiry = new Date(lic.expires_at).getTime();
         const now = Date.now();
-        if (now < expiry) {
-          return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+        if (now >= expiry) {
+          return { valid: false, error: "License key has expired." };
+        }
+
+        const dbHwid = lic.hwid ? lic.hwid.trim().toUpperCase() : null;
+        if (!dbHwid) {
+          if (cleanHwid) {
+            licenses[matchingKey].hwid = cleanHwid;
+            fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2), "utf8");
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          } else {
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          }
+        } else {
+          if (cleanHwid === dbHwid) {
+            return { valid: true, tier: lic.tier, expires_at: lic.expires_at };
+          } else {
+            return { valid: false, error: "License is already bound to another device." };
+          }
         }
       }
     } catch (e) {}
   }
-  return { valid: false };
+  return { valid: false, error: "License key not found." };
 }
+
+export async function resetLicenseHwid(key: string): Promise<void> {
+  const cleanKey = key.trim().toUpperCase();
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE vit_licenses SET hwid = NULL WHERE UPPER(key) = $1", [cleanKey]);
+    return;
+  }
+
+  const filePath = getLicensesJsonPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      const licenses = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      const matchingKey = Object.keys(licenses).find(k => k.trim().toUpperCase() === cleanKey);
+      if (matchingKey) {
+        licenses[matchingKey].hwid = null;
+        fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2), "utf8");
+      }
+    } catch (e) {}
+  }
+}
+
 
 export async function generateLicenseKey(tier: string, email: string, durationDays: number): Promise<string> {
   const generatedKey = `LP-${tier.toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;

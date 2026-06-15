@@ -1720,16 +1720,16 @@ class LANpadLauncher:
 
             def _verify_task():
                 try:
-                    success, tier, expires_at = self.verify_key_online(key)
-                    self.gui_queue.put(lambda: _handle_result(success, tier, expires_at))
+                    success, tier, expires_at, error = self.verify_key_online(key)
+                    self.gui_queue.put(lambda: _handle_result(success, tier, expires_at, error))
                 except Exception as e:
                     import traceback
                     with open(log_path, "a") as f:
                         f.write(f"Exception in _verify_task: {e}\n")
                         traceback.print_exc(file=f)
-                    self.gui_queue.put(lambda: _handle_result(False, "Basic", None))
+                    self.gui_queue.put(lambda: _handle_result(False, "Basic", None, "Internal verification error"))
 
-            def _handle_result(success, tier, expires_at):
+            def _handle_result(success, tier, expires_at, error):
                 try:
                     self.key_entry.config(state="normal")
                     btn_cv.bind("<ButtonRelease-1>", lambda e: (draw_btn_state("normal"), do_activation()))
@@ -1755,16 +1755,19 @@ class LANpadLauncher:
 
                         try:
                             import json
+                            from platform_utils import get_hardware_id
                             with open(license_path, "w", encoding="utf-8") as f:
-                                json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time(), "hwid": get_hardware_id()}, f)
+
                         except Exception as e:
                             print(f"[monetization] Error saving license: {e}")
                         
                         self.show_success_overlay(tier, days_left)
                     else:
-                        self.lock_status_lbl.config(text="Invalid or expired activation key", fg=self.RED)
+                        self.lock_status_lbl.config(text=error or "Invalid or expired activation key", fg=self.RED)
                         entry_frame.config(highlightbackground=self.RED)
                         self.root.after(1000, lambda: entry_frame.config(highlightbackground="#2A2A30"))
+
                 except Exception as e:
                     import traceback
                     with open(log_path, "a") as f:
@@ -1971,6 +1974,7 @@ class LANpadLauncher:
                 if os.path.exists(license_path):
                     try:
                         import json
+                        from platform_utils import get_hardware_id
                         with open(license_path, "r", encoding="utf-8") as f:
                             lic = json.load(f)
                         key = lic.get("key")
@@ -2004,7 +2008,7 @@ class LANpadLauncher:
                                 self.gui_queue.put(lambda: self.show_view("main"))
                                 return
                                 
-                            success, new_tier, expires_at = self.verify_key_online(key)
+                            success, new_tier, expires_at, _ = self.verify_key_online(key)
                             if success:
                                 from datetime import datetime, timezone
                                 s = expires_at.replace("Z", "+00:00")
@@ -2019,7 +2023,7 @@ class LANpadLauncher:
                                 if expiry_dt > now_dt:
                                     print(f"[monetization] Key verified online ({new_tier}).")
                                     with open(license_path, "w", encoding="utf-8") as f:
-                                        json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                        json.dump({"key": key, "tier": new_tier, "expires_at": expires_at, "last_checked": time.time(), "hwid": get_hardware_id()}, f)
                                     self.gui_queue.put(lambda: self.show_view("main"))
                                     return
                                 else:
@@ -2042,10 +2046,13 @@ class LANpadLauncher:
     def verify_key_online(self, key):
         import urllib.request
         import json
+        from platform_utils import get_hardware_id
 
-        payload = json.dumps({"key": key}).encode("utf-8")
+        hwid = get_hardware_id()
+        payload = json.dumps({"key": key, "hwid": hwid}).encode("utf-8")
         urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
         
+        last_error = "Invalid or expired activation key"
         for url in urls:
             try:
                 req = urllib.request.Request(
@@ -2057,11 +2064,14 @@ class LANpadLauncher:
                 with safe_urlopen(req, timeout=3) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     if res.get("valid", False):
-                        return True, res.get("tier", "Basic"), res.get("expires_at", "2099-12-31T23:59:59Z")
+                        return True, res.get("tier", "Basic"), res.get("expires_at", "2099-12-31T23:59:59Z"), None
+                    else:
+                        last_error = res.get("error", last_error)
             except Exception as e:
                 print(f"[monetization] Verify online error on {url}: {e}")
                 
-        return False, "Basic", None
+        return False, "Basic", None, last_error
+
 
     def start_license_loop(self):
         self.root.after(3600000, self.periodic_license_check)
@@ -2104,7 +2114,7 @@ class LANpadLauncher:
                                 lic = json.load(f)
                             key = lic.get("key")
                             
-                            success, tier, expires_at = self.verify_key_online(key)
+                            success, tier, expires_at, _ = self.verify_key_online(key)
                             if success:
                                 # Double check expiry
                                 from datetime import datetime, timezone
@@ -2119,7 +2129,8 @@ class LANpadLauncher:
                                 now_dt = datetime.now(timezone.utc)
                                 if expiry_dt > now_dt:
                                     with open(license_path, "w", encoding="utf-8") as f:
-                                        json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time()}, f)
+                                        from platform_utils import get_hardware_id
+                                        json.dump({"key": key, "tier": tier, "expires_at": expires_at, "last_checked": time.time(), "hwid": get_hardware_id()}, f)
                                 else:
                                     print("[monetization] Key expired. Locking app.")
                                     try: os.remove(license_path)

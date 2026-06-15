@@ -145,6 +145,18 @@ def get_license_tier():
                 # Expiry check
                 expires_at = data.get("expires_at")
                 is_valid = True
+                
+                # HWID verification
+                cached_hwid = data.get("hwid")
+                if cached_hwid:
+                    try:
+                        from platform_utils import get_hardware_id
+                        current_hwid = get_hardware_id()
+                        if current_hwid and cached_hwid.strip().upper() != current_hwid.strip().upper():
+                            is_valid = False
+                    except Exception:
+                        pass
+
                 if expires_at:
                     from datetime import datetime, timezone
                     s = expires_at.replace("Z", "+00:00")
@@ -158,6 +170,7 @@ def get_license_tier():
                     now_dt = datetime.now(timezone.utc)
                     if expiry_dt <= now_dt:
                         is_valid = False
+
                 if is_valid:
                     return data.get("tier", "Basic")
         except Exception:
