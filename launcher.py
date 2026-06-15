@@ -864,7 +864,6 @@ class LANpadLauncher:
                                     print(f"[lanpad] Tunnel ready: {self._tunnel_url}")
                                     self.gui_queue.put(self._update_display)
                                     url_found = True
-                                    return
                         except Exception as _e:
                             print(f"[lanpad] _read_lines error: {_e}")
 
@@ -873,9 +872,10 @@ class LANpadLauncher:
                     reader.start()
                     reader.join(timeout=45)
 
-                    if not url_found: raise Exception("Cloudflare Tunnel timed out")
+                    if not url_found:
+                        print("[lanpad] Cloudflare Tunnel initial connection timed out, keeping process running for automatic retry...")
                 except Exception as e:
-                    print(f"\n[lanpad] Cloudflare Tunnel failed: {e}")
+                    print(f"\n[lanpad] Cloudflare Tunnel process failed to start: {e}")
                     self.stop_tunnel()
             else:
                 print("[lanpad] cloudflared unavailable")
