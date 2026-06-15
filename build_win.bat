@@ -79,6 +79,8 @@ echo.
 
 REM 5. Clean previous builds
 echo [5/6] Cleaning old build artifacts...
+taskkill /f /im LANpad.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
 if exist build rmdir /s /q build
 if exist dist  rmdir /s /q dist
 echo.
