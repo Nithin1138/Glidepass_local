@@ -1336,12 +1336,52 @@ class LANpadLauncher:
     def authenticate_user(self):
         if sys.platform == "darwin":
             try:
-                import subprocess
-                cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges with prompt "LANpad wants to display your activation key."']
-                subprocess.run(cmd, check=True, capture_output=True)
-                return True
-            except Exception:
-                return False
+                import objc
+                import queue
+                
+                # Load LocalAuthentication framework dynamically
+                objc.loadBundle("LocalAuthentication", bundle_path="/System/Library/Frameworks/LocalAuthentication.framework", module_globals=globals())
+                
+                # Register metadata for LAContext evaluatePolicy:localizedReason:reply:
+                objc.registerMetaDataForSelector(
+                    b"LAContext",
+                    b"evaluatePolicy:localizedReason:reply:",
+                    {
+                        "arguments": {
+                            4: {
+                                "callable": {
+                                    "retval": {"type": b"v"},
+                                    "arguments": {
+                                        0: {"type": b"^v"},  # block ptr
+                                        1: {"type": b"B"},   # success BOOL
+                                        2: {"type": b"@"},   # error id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+                
+                context = LAContext.alloc().init()
+                
+                # LAPolicyDeviceOwnerAuthentication = 2
+                possible, error = context.canEvaluatePolicy_error_(2, None)
+                if not possible:
+                    print(f"[auth] canEvaluatePolicy failed: {error}")
+                    return self._authenticate_applescript_fallback()
+                
+                q = queue.Queue()
+                def reply_callback(success, error):
+                    q.put(success)
+                    
+                context.evaluatePolicy_localizedReason_reply_(2, "LANpad wants to display your activation key.", reply_callback)
+                
+                # Wait for authentication result (blocks cleanly until OS prompt returns)
+                success = q.get()
+                return bool(success)
+            except Exception as e:
+                print(f"[auth] LocalAuthentication failed: {e}")
+                return self._authenticate_applescript_fallback()
         elif sys.platform.startswith("win"):
             try:
                 import subprocess
@@ -1352,6 +1392,16 @@ class LANpadLauncher:
                 return False
         else:
             return True
+
+    def _authenticate_applescript_fallback(self):
+        try:
+            import subprocess
+            cmd = ["osascript", "-e", 'do shell script "true" with administrator privileges with prompt "LANpad wants to display your activation key."']
+            subprocess.run(cmd, check=True, capture_output=True)
+            return True
+        except Exception as e:
+            print(f"[auth] AppleScript fallback failed: {e}")
+            return False
 
     # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
 
