@@ -256,6 +256,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
         }
 
         .header-btn:active {
@@ -382,6 +383,7 @@
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
         }
 
         .mode-card:active {
@@ -510,6 +512,7 @@
             gap: 10px;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
         }
 
         .footer-actions button:active {
@@ -550,6 +553,26 @@
             opacity: 1;
         }
 
+        .upgrade-badge {
+            position: absolute;
+            top: 0;
+            right: 6px;
+            background: linear-gradient(180deg, #FFF59D 0%, #FBC02D 100%);
+            color: #050505;
+            font-size: 6px;
+            font-weight: 900;
+            padding: 4px 3px;
+            border-bottom-left-radius: 3px;
+            border-bottom-right-radius: 3px;
+            writing-mode: vertical-rl;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(251, 192, 45, 0.5);
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1;
+            letter-spacing: 0.05em;
+        }
+
         @media (max-height: 700px) {
             .hero-section h1 {
                 font-size: 1.5rem;
@@ -584,7 +607,7 @@
                             <i data-lucide="wifi" size="14"></i>
                             <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: bottom;">REMOTE COMMAND CENTER <span class="status-dot"></span></span>
                         </div>
-                        <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
+                        <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; position: relative;">
                             <i data-lucide="rotate-ccw" size="12"></i>
                             <span>Refill</span>
                         </button>
@@ -718,46 +741,57 @@
             }
         }
         
+        function setFeatureDisabled(element, disabled) {
+            if (!element) return;
+            const existingBadge = element.querySelector('.upgrade-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            if (disabled) {
+                element.style.opacity = '0.4';
+                element.style.pointerEvents = 'none';
+                
+                const badge = document.createElement('span');
+                badge.className = 'upgrade-badge';
+                badge.innerText = 'UPGRADE';
+                element.appendChild(badge);
+            } else {
+                element.style.opacity = '';
+                element.style.pointerEvents = '';
+            }
+        }
+
         function applyLimits() {
             if (!cloudLimits) return;
             
             // Refill
-            if (!cloudLimits.allow_refill) {
-                refillBtn.style.display = 'none';
-            }
+            setFeatureDisabled(refillBtn, !cloudLimits.allow_refill);
             
             // Live Sync
+            setFeatureDisabled(liveSyncBtn, !cloudLimits.allow_live_sync);
             if (!cloudLimits.allow_live_sync) {
-                liveSyncBtn.style.opacity = '0.4';
-                liveSyncBtn.style.pointerEvents = 'none';
                 liveSyncBtn.title = "Not available in your plan";
             }
             
             // Mode Cards (Inject, Typing)
-            if (!cloudLimits.allow_inject) {
-                injectCard.style.opacity = '0.4';
-                injectCard.style.pointerEvents = 'none';
-            }
+            setFeatureDisabled(injectCard, !cloudLimits.allow_inject);
+            
             if (!cloudLimits.allow_typing && !cloudLimits.allow_typing_mode) {
-                typingCard.style.opacity = '0.4';
-                typingCard.style.pointerEvents = 'none';
-            } else if (!cloudLimits.allow_typing_mode) {
-                document.getElementById('is-coding-checkbox').disabled = true;
-                document.getElementById('is-coding-checkbox').parentElement.style.opacity = '0.5';
-            } else if (!cloudLimits.allow_typing) {
-                document.getElementById('is-coding-checkbox').checked = true;
-                document.getElementById('is-coding-checkbox').disabled = true;
+                setFeatureDisabled(typingCard, true);
+            } else {
+                setFeatureDisabled(typingCard, false);
+                if (!cloudLimits.allow_typing_mode) {
+                    document.getElementById('is-coding-checkbox').disabled = true;
+                    document.getElementById('is-coding-checkbox').parentElement.style.opacity = '0.5';
+                } else if (!cloudLimits.allow_typing) {
+                    document.getElementById('is-coding-checkbox').checked = true;
+                    document.getElementById('is-coding-checkbox').disabled = true;
+                }
             }
             
             // Footer actions
-            if (!cloudLimits.allow_fetch) {
-                document.getElementById('fetch-btn').style.opacity = '0.4';
-                document.getElementById('fetch-btn').style.pointerEvents = 'none';
-            }
-            if (!cloudLimits.allow_select_copy) {
-                document.getElementById('select-copy-btn').style.opacity = '0.4';
-                document.getElementById('select-copy-btn').style.pointerEvents = 'none';
-            }
+            setFeatureDisabled(document.getElementById('fetch-btn'), !cloudLimits.allow_fetch);
+            setFeatureDisabled(document.getElementById('select-copy-btn'), !cloudLimits.allow_select_copy);
         }
 
         // Initialize limits
