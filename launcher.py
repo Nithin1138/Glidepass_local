@@ -997,6 +997,7 @@ class LANpadLauncher:
                                         with tar.extractfile(member) as source, open(bore_bin, "wb") as target:
                                             target.write(source.read())
                             
+                            import stat
                             os.chmod(bore_bin, os.stat(bore_bin).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
                             # Clean up zip archive
                             try: os.remove(dest_zip)
