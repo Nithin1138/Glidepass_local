@@ -145,6 +145,39 @@ def calculate_days_left(expires_at_str):
         return 30
 
 
+def format_time_left(expires_at_str):
+    try:
+        from datetime import datetime, timezone
+        s = expires_at_str.replace("Z", "+00:00")
+        if "." in s:
+            base, tz = s.split("+") if "+" in s else (s, "00:00")
+            base_parts = base.split(".")
+            sec = base_parts[0]
+            ms = base_parts[1][:6]
+            s = f"{sec}.{ms}+{tz}"
+        expiry_dt = datetime.fromisoformat(s)
+        now_dt = datetime.now(timezone.utc)
+        delta = expiry_dt - now_dt
+        total_seconds = delta.total_seconds()
+        
+        if total_seconds <= 0:
+            return None
+            
+        days = int(total_seconds // 86400)
+        hours = int((total_seconds % 86400) // 3600)
+        mins = int((total_seconds % 3600) // 60)
+        
+        if days > 0:
+            return f"{days}d {hours}h left"
+        elif hours > 0:
+            return f"{hours}h {mins}m left"
+        else:
+            return f"{mins}m left"
+    except Exception as e:
+        print(f"Error calculating time left: {e}")
+        return None
+
+
 # ── QR code generation ───────────────────────────────────────────────────────
 
 def _generate_qr_image(data: str, size: int = 200):
@@ -1226,11 +1259,31 @@ class LANpadLauncher:
                 self.update_plan_label()
         elif name == "lock":
             self.lock_view.tkraise()
+            if hasattr(self, "update_lock_time_left"):
+                self.update_lock_time_left()
         elif name == "splash":
             self.splash_view.tkraise()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
+
+    def update_lock_time_left(self):
+        try:
+            license_path = os.path.expanduser("~/.lanpad_license.json")
+            if os.path.exists(license_path):
+                import json
+                with open(license_path, "r", encoding="utf-8") as f:
+                    lic = json.load(f)
+                expires_at = lic.get("expires_at")
+                if expires_at:
+                    time_left_str = format_time_left(expires_at)
+                    if time_left_str:
+                        self.lock_time_left_lbl.config(text=time_left_str)
+                        return
+            self.lock_time_left_lbl.config(text="")
+        except Exception as e:
+            print(f"Error in update_lock_time_left: {e}")
+            self.lock_time_left_lbl.config(text="")
 
     # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
 
@@ -1261,6 +1314,9 @@ class LANpadLauncher:
 
         close_btn = tk.Button(v, text="✕", fg="#8A8A93", activeforeground=self.WHITE, bg="#0D0D10", activebackground="#0D0D10", font=(self.FD, 14, "bold"), bd=0, highlightthickness=0, command=close_lock, cursor="hand2")
         close_btn.place(x=340, y=86, width=24, height=24)
+        
+        self.lock_time_left_lbl = tk.Label(v, text="", fg="#A0AEC0", bg="#0D0D10", font=(self.FU, 8, "bold"), anchor="e")
+        self.lock_time_left_lbl.place(x=364, y=114, anchor="ne")
         
         # Logo placeholder inside card
         logo_y = 120
