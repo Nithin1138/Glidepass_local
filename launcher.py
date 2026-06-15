@@ -909,6 +909,7 @@ class LANpadLauncher:
                     self._tunnel_process = proc
                     url_found = False
                     
+                    import threading
                     def _read_lt():
                         nonlocal url_found
                         try:
@@ -927,7 +928,7 @@ class LANpadLauncher:
                         except Exception as _e:
                             print(f"[lanpad] localtunnel read error: {_e}")
                             
-                    lt_reader = _thr.Thread(target=_read_lt, daemon=True)
+                    lt_reader = threading.Thread(target=_read_lt, daemon=True)
                     lt_reader.start()
                     lt_reader.join(timeout=8)
                     
@@ -942,6 +943,7 @@ class LANpadLauncher:
                 try:
                     # Check if bore is on system path
                     import shutil
+                    import platform
                     bore_bin = shutil.which("bore")
                     if not bore_bin:
                         # Fallback to local ~/.lanpad/bore binary location
@@ -1028,7 +1030,7 @@ class LANpadLauncher:
                         except Exception as _e:
                             print(f"[lanpad] bore read error: {_e}")
                             
-                    _thr.Thread(target=_read_bore, daemon=True).start()
+                    threading.Thread(target=_read_bore, daemon=True).start()
                 except Exception as bore_err:
                     print(f"[lanpad] bore failed to start: {bore_err}")
                     self.stop_tunnel()
