@@ -870,16 +870,56 @@ class LANpadLauncher:
                     import threading as _thr
                     reader = _thr.Thread(target=_read_lines, daemon=True)
                     reader.start()
-                    reader.join(timeout=45)
+                    reader.join(timeout=8)
 
                     if not url_found:
-                        print("[lanpad] Cloudflare Tunnel initial connection timed out, keeping process running for automatic retry...")
+                        raise Exception("Cloudflare Tunnel timed out")
                 except Exception as e:
-                    print(f"\n[lanpad] Cloudflare Tunnel process failed to start: {e}")
+                    print(f"\n[lanpad] Cloudflare Tunnel failed: {e}. Falling back to localtunnel...")
                     self.stop_tunnel()
             else:
-                print("[lanpad] cloudflared unavailable")
-                self.stop_tunnel()
+                print("[lanpad] cloudflared unavailable — falling back to localtunnel...")
+
+            # ── localtunnel fallback ──
+            if not self._tunnel_url:
+                try:
+                    # Run npx localtunnel on port 8000
+                    lt_cmd = ["npx", "localtunnel", "--port", "8000"]
+                    # For Windows compatibility
+                    if sys.platform == "win32":
+                        lt_cmd = ["npx.cmd", "localtunnel", "--port", "8000"]
+                    
+                    proc = subprocess.Popen(
+                        lt_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        stdin=subprocess.DEVNULL,
+                        text=True,
+                        bufsize=1,
+                        **kwargs
+                    )
+                    self._tunnel_process = proc
+                    
+                    def _read_lt():
+                        try:
+                            for line in proc.stdout:
+                                if not self._tunnel_process: break
+                                sys.stdout.write(line)
+                                sys.stdout.flush()
+                                match = re.search(r"https://[a-zA-Z0-9\-]+\.localtunnel\.me", line)
+                                if match:
+                                    raw_url = match.group(0)
+                                    print(f"\n[lanpad] localtunnel URL: {raw_url}")
+                                    self._tunnel_url = raw_url
+                                    self.gui_queue.put(self._update_display)
+                                    break
+                        except Exception as _e:
+                            print(f"[lanpad] localtunnel read error: {_e}")
+                            
+                    _thr.Thread(target=_read_lt, daemon=True).start()
+                except Exception as lt_err:
+                    print(f"[lanpad] localtunnel failed to start: {lt_err}")
+                    self.stop_tunnel()
 
 
 
