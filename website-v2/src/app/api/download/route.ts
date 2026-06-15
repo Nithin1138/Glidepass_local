@@ -24,12 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
     const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
-    let versionFilePath = path.join(baseDir, "ota", "downloads/version.json");
-
-    if (!fs.existsSync(versionFilePath)) {
-      // Fallback to default path in public folder
-      versionFilePath = path.join(process.cwd(), "public", "downloads", "version.json");
-    }
+    const versionFilePath = path.join(baseDir, "ota", "downloads/version.json");
 
     if (fs.existsSync(versionFilePath)) {
       const parsed = JSON.parse(fs.readFileSync(versionFilePath, "utf8"));
@@ -43,10 +38,10 @@ export async function GET(request: NextRequest) {
     console.error("Failed to read version.json config for downloads", e);
   }
 
-  // 3. Perform HTTP redirect with absolute URL
-  const absoluteDownloadUrl = downloadUrl.startsWith("http")
+  // 3. Perform HTTP redirect
+  const redirectUrl = downloadUrl.startsWith("http")
     ? downloadUrl
-    : new URL(downloadUrl, request.url).toString();
+    : new URL(downloadUrl, request.nextUrl.origin).toString();
 
-  return NextResponse.redirect(absoluteDownloadUrl, 302);
+  return NextResponse.redirect(redirectUrl, 302);
 }
