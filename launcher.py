@@ -311,6 +311,8 @@ class LANpadLauncher:
         self.gui_queue = queue.Queue()
         self.process_gui_queue()
         self.update_in_progress = False
+        self.monetization_enabled = False
+        self.free_enabled = False
 
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
@@ -1351,6 +1353,8 @@ class LANpadLauncher:
                     pass
 
             def _update_ui():
+                self.monetization_enabled = monetization_enabled
+                self.free_enabled = free_enabled
                 if not monetization_enabled:
                     self._plan_lbl.place_forget()
                     return
@@ -1563,7 +1567,9 @@ class LANpadLauncher:
 
         def close_lock():
             license_path = os.path.expanduser("~/.lanpad_license.json")
-            if os.path.exists(license_path):
+            if not getattr(self, "monetization_enabled", False) or getattr(self, "free_enabled", False):
+                self.show_view("main")
+            elif os.path.exists(license_path):
                 self.show_view("main")
             else:
                 self.lock_status_lbl.config(text="Valid activation required to use LANpad", fg=self.RED)
@@ -1864,6 +1870,11 @@ class LANpadLauncher:
                     except Exception as e:
                         print(f"[monetization] Status fetch failed on {base_url}: {e}")
                     
+                def _update_vars():
+                    self.monetization_enabled = monetization_enabled
+                    self.free_enabled = free_enabled
+                self.gui_queue.put(_update_vars)
+
                 if not monetization_enabled:
                     self.gui_queue.put(lambda: self.show_view("main"))
                     return
