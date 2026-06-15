@@ -1377,10 +1377,9 @@ class LANpadLauncher:
                 
                 context = LAContext.alloc().init()
                 
-                # LAPolicyDeviceOwnerAuthentication = 2
-                possible, error = context.canEvaluatePolicy_error_(2, None)
+                possible = context.canEvaluatePolicy_error_(2, None)
                 if not possible:
-                    print(f"[auth] canEvaluatePolicy failed: {error}")
+                    print("[auth] canEvaluatePolicy failed")
                     return self._authenticate_applescript_fallback()
                 
                 q = queue.Queue()
