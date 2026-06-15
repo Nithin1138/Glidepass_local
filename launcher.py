@@ -1320,18 +1320,31 @@ class LANpadLauncher:
         except Exception as e:
             print(f"Error in load_active_key_if_present: {e}")
 
+    def start_toggle_key_visibility_thread(self):
+        import threading
+        threading.Thread(target=self.toggle_key_visibility, daemon=True).start()
+
     def toggle_key_visibility(self):
         try:
             current_show = self.key_entry.cget("show")
             if current_show == "*":
                 if self.authenticate_user():
-                    self.key_entry.config(show="")
-                    self.show_hide_btn.config(text="Hide")
+                    self.gui_queue.put(lambda: self._set_key_show_state(visible=True))
+            else:
+                self.gui_queue.put(lambda: self._set_key_show_state(visible=False))
+        except Exception as e:
+            print(f"Error in toggle_key_visibility: {e}")
+
+    def _set_key_show_state(self, visible):
+        try:
+            if visible:
+                self.key_entry.config(show="")
+                self.show_hide_btn.config(text="Hide")
             else:
                 self.key_entry.config(show="*")
                 self.show_hide_btn.config(text="Show")
         except Exception as e:
-            print(f"Error in toggle_key_visibility: {e}")
+            print(f"Error in _set_key_show_state: {e}")
 
     def authenticate_user(self):
         if sys.platform == "darwin":
@@ -1469,7 +1482,7 @@ class LANpadLauncher:
         self.key_entry.place(x=12, y=10, width=W - 176, height=24)
         
         self.show_hide_btn = tk.Label(entry_frame, text="Show", fg=self.DIM, bg="#16161A", font=(self.FU, 10, "bold"), cursor="hand2")
-        self.show_hide_btn.bind("<Button-1>", lambda e: self.toggle_key_visibility())
+        self.show_hide_btn.bind("<Button-1>", lambda e: self.start_toggle_key_visibility_thread())
         self.show_hide_btn.bind("<Enter>", lambda e: self.show_hide_btn.config(fg=self.WHITE))
         self.show_hide_btn.bind("<Leave>", lambda e: self.show_hide_btn.config(fg=self.DIM))
         
