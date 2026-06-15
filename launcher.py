@@ -657,6 +657,9 @@ class LANpadLauncher:
             self._ip_text = "http://0.0.0.0:8000"
             self._draw_ip(False)
             self._draw_qr_empty()
+            pcard, ptid = self._info_cards.get("Protocol", (None, None))
+            if ptid is not None:
+                pcard.itemconfig(ptid, text="HTTP", fill=self.DIM)
             return
 
         if self._active_tab == "local":
@@ -671,6 +674,10 @@ class LANpadLauncher:
             if SESSION_TOKEN:
                 url = f"{url}?sid={SESSION_TOKEN}"
             self.update_qr_code(url)
+            
+            pcard, ptid = self._info_cards.get("Protocol", (None, None))
+            if ptid is not None:
+                pcard.itemconfig(ptid, text="HTTP", fill=self.GREEN)
         else:  # tunnel
             if self._tunnel_url:
                 self._ip_text = self._tunnel_url
@@ -683,10 +690,18 @@ class LANpadLauncher:
                 if SESSION_TOKEN:
                     url = f"{url}?sid={SESSION_TOKEN}"
                 self.update_qr_code(url)
+                
+                pcard, ptid = self._info_cards.get("Protocol", (None, None))
+                if ptid is not None:
+                    pcard.itemconfig(ptid, text="HTTPS", fill=self.GREEN)
             else:
                 self._ip_text = "Connecting to tunnel..."
                 self._draw_ip(True)
                 self._draw_qr_loading()
+                
+                pcard, ptid = self._info_cards.get("Protocol", (None, None))
+                if ptid is not None:
+                    pcard.itemconfig(ptid, text="HTTPS", fill=self.ORANGE)
 
     def start_tunnel(self):
         """Starts the tunnel fallback in a background thread."""
@@ -1719,23 +1734,6 @@ class LANpadLauncher:
         self._update_display()
         if self.root.state() != "withdrawn":
             self.root.after(100, self.show_window)
-        # If the user has multiple network interfaces, draw a small
-        # hint under the URL pill so they know which one to use.
-        if len(all_ips) > 1:
-            try:
-                from tkinter import font as _font
-                # The hint replaces the footer for a moment so the
-                # user can see all candidates without scrolling.
-                hint = ("Other LAN IPs: " +
-                        "  ".join(all_ips[1:3]) +
-                        ("  …" if len(all_ips) > 3 else ""))
-                # We piggy-back on the existing "Protocol" info card
-                # value slot – cheap and avoids more layout work.
-                pcard, ptid = self._info_cards.get("Protocol", (None, None))
-                if ptid is not None:
-                    pcard.itemconfig(ptid, text=hint, fill=self.ORANGE)
-            except Exception:
-                pass
 
     def stop_server(self):
         self.stop_tunnel()
@@ -1767,6 +1765,10 @@ class LANpadLauncher:
 
         cv, tid = self._info_cards["State"]
         cv.itemconfig(tid, text="Off", fill=self.DIM)
+
+        pcard, ptid = self._info_cards.get("Protocol", (None, None))
+        if ptid is not None:
+            pcard.itemconfig(ptid, text="HTTP", fill=self.DIM)
 
         self._ip_text = "http://0.0.0.0:8000"
         self._draw_ip(False)
