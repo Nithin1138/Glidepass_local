@@ -2405,7 +2405,7 @@ del "%~f0"
                     with open(bat_path, "w") as f:
                         f.write(bat_content)
 
-                    subprocess.Popen([bat_path], shell=True, creationflags=0x00000010)
+                    subprocess.Popen([bat_path], shell=True, creationflags=0x08000000)
                     os._exit(0)
 
                 elif is_mac():
