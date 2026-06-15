@@ -527,15 +527,18 @@
             background: #ff4d4d;
             /* Base red for claymorphic error */
             color: #ffffff;
-            padding: 14px 28px;
-            border-radius: 30px;
-            font-size: 0.95rem;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
             font-weight: 800;
             opacity: 0;
             transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
             z-index: 1000;
             border: none;
+            width: calc(100% - 40px);
+            max-width: 400px;
+            text-align: center;
             /* Claymorphic 3D shadow effect */
             box-shadow:
                 6px 6px 12px rgba(0, 0, 0, 0.4),
