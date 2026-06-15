@@ -917,10 +917,12 @@ class LANpadLauncher:
                                 if not self._tunnel_process: break
                                 sys.stdout.write(line)
                                 sys.stdout.flush()
-                                # Match https://*.lhr.life or https://*.localhost.run
+                                # Match https://*.lhr.life or https://*.localhost.run (excluding admin link)
                                 match = re.search(r"https://[a-zA-Z0-9\-]+\.lhr\.life", line)
                                 if not match:
                                     match = re.search(r"https://[a-zA-Z0-9\-]+\.localhost\.run", line)
+                                    if match and "admin.localhost.run" in match.group(0):
+                                        match = None
                                     
                                 if match:
                                     raw_url = match.group(0)
