@@ -137,8 +137,19 @@ def main() -> int:
             print(f"✅ Registered {PROTOCOL}:// → {exe_path}")
             verify_registration()
         else:
-            bat_path = write_bat_starter()
-            register_windows_protocol(bat_path)
+            # 1. HKCU\Software\Classes\lanpad
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH) as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "URL:LANpad Protocol")
+                winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+            # 2. HKCU\Software\Classes\lanpad\DefaultIcon
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH + r"\DefaultIcon") as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, f'"{PYTHON_EXE}",0')
+            # 3. HKCU\Software\Classes\lanpad\shell\open\command
+            main_py = os.path.join(project, "main.py")
+            cmd_str = f'"{PYTHON_EXE}" "{main_py}" "%1"'
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH + r"\shell\open\command") as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, cmd_str)
+            print(f"✅ Registered {PROTOCOL}:// → {cmd_str}")
             verify_registration()
     except ImportError:
         print("❌ The 'winreg' module is missing.  Run on Windows.")

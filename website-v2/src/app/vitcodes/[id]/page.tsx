@@ -126,12 +126,12 @@ function SessionCodesContent({ params }: PageProps) {
   };
 
   // ─── Style Tokens ───
-  const bg = dk ? `bg-[#050505]` : `bg-[#F0F4F8]`; 
-  const cardBg = dk 
-    ? "bg-gradient-to-br from-white/[0.08] to-white/[0.01] backdrop-blur-[40px] shadow-2xl shadow-black/80" 
+  const bg = dk ? `bg-[#050505]` : `bg-[#F0F4F8]`;
+  const cardBg = dk
+    ? "bg-gradient-to-br from-white/[0.08] to-white/[0.01] backdrop-blur-[40px] shadow-2xl shadow-black/80"
     : "bg-gradient-to-br from-white/90 to-white/40 backdrop-blur-[40px] shadow-xl shadow-[#0077C0]/5";
-  const cardBorder = dk 
-    ? "border border-white/[0.12] border-b-white/[0.02] border-r-white/[0.02]" 
+  const cardBorder = dk
+    ? "border border-white/[0.12] border-b-white/[0.02] border-r-white/[0.02]"
     : "border border-white border-b-[#050505]/5 border-r-[#050505]/5";
   const txt1 = dk ? `text-[#FAFAFA]` : `text-[#050505]`;
   const txt2 = dk ? `text-[#C7EEFF]` : "text-[#0077C0]";
@@ -166,10 +166,10 @@ function SessionCodesContent({ params }: PageProps) {
             <div className="flex items-center gap-2 md:gap-3">
               <div className={`shrink-0 w-8 h-8 rounded-lg overflow-hidden border ${dk ? 'border-white/10' : 'border-black/10'} ${dk ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/logo.png" 
-                  alt="LANpad Logo" 
-                  className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert hue-rotate-180 brightness-110 contrast-125' : ''}`} 
+                <img
+                  src="/logo.png"
+                  alt="LANpad Logo"
+                  className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert hue-rotate-180 brightness-110 contrast-125' : ''}`}
                 />
               </div>
               <span className={`font-outfit font-black text-base md:text-lg tracking-tighter bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'}`}>
@@ -182,11 +182,11 @@ function SessionCodesContent({ params }: PageProps) {
           </div>
 
           <div>
-            <button 
+            <button
               onClick={() => {
                 const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
                 setTheme(next);
-              }} 
+              }}
               className={`w-9 h-9 rounded-xl border ${borderLight} hover:bg-white/5 flex items-center justify-center transition-all`}
               title={`Theme: ${theme}`}
             >

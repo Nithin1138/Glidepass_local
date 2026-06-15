@@ -97,7 +97,7 @@ function ContributorsDashboard() {
         if (data.rules) setExamRules(data.rules);
         if (data.sessionLimits) setSessionLimits(data.sessionLimits);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const getRuleForType = (type: string | null | undefined): string | null => {
@@ -252,7 +252,7 @@ function ContributorsDashboard() {
   useEffect(() => {
     const saved = localStorage.getItem("vit_exam_types");
     if (saved) {
-      try { setExamTypes(JSON.parse(saved)); } catch (e) {}
+      try { setExamTypes(JSON.parse(saved)); } catch (e) { }
     }
   }, []);
 
@@ -361,7 +361,7 @@ function ContributorsDashboard() {
       title: newSessionTitle,
       questions: []
     };
-    
+
     // Optimistic Update
     setVitSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
@@ -370,62 +370,62 @@ function ContributorsDashboard() {
     setVitDetailView(true);
 
   };
- 
-   const handleAddQuestion = async () => {
-     if (!activeSessionId) return;
- 
-     const currentSession = vitSessions.find(s => s.id === activeSessionId);
-     if (currentSession) {
-       const ruleForType = getRuleForType(currentSession.examType);
-       const maxCap = getMaxCap(ruleForType);
-       if (maxCap !== null && currentSession.questions.length >= maxCap) {
-         return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
-       }
-     }
- 
-     if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
-     
-     const newQ: Question = { 
-       id: "q_" + Date.now(), 
-       title: qTitle, 
-       code: qCode, 
-       language: qLang, 
-       comment: qComment,
-       contributorEmail: session?.user?.email || "unknown" 
-     };
-     
-     // Optimistic Update
-     setVitSessions(prev => prev.map(s => {
-       if (s.id === activeSessionId) {
-         return { ...s, questions: [...s.questions, newQ] };
-       }
-       return s;
-     }));
-     setQTitle("");
-     setQCode("");
-     setQComment("");
-     setShowAddQuestionModal(false);
- 
-     try {
-       const res = await fetch("/api/vitcodes/question", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ 
-           sessionId: activeSessionId, 
-           question: newQ,
-           session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
-         })
-       });
-       if (!res.ok) throw new Error("Failed to add question");
-     } catch (e: any) {
-       showToast("error", "Failed to add question");
-       fetchVitCodes();
-     }
-   };
+
+  const handleAddQuestion = async () => {
+    if (!activeSessionId) return;
+
+    const currentSession = vitSessions.find(s => s.id === activeSessionId);
+    if (currentSession) {
+      const ruleForType = getRuleForType(currentSession.examType);
+      const maxCap = getMaxCap(ruleForType);
+      if (maxCap !== null && currentSession.questions.length >= maxCap) {
+        return showToast("error", `Failed to add code: The session has reached its capacity limit of ${maxCap} codes.`);
+      }
+    }
+
+    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
+
+    const newQ: Question = {
+      id: "q_" + Date.now(),
+      title: qTitle,
+      code: qCode,
+      language: qLang,
+      comment: qComment,
+      contributorEmail: session?.user?.email || "unknown"
+    };
+
+    // Optimistic Update
+    setVitSessions(prev => prev.map(s => {
+      if (s.id === activeSessionId) {
+        return { ...s, questions: [...s.questions, newQ] };
+      }
+      return s;
+    }));
+    setQTitle("");
+    setQCode("");
+    setQComment("");
+    setShowAddQuestionModal(false);
+
+    try {
+      const res = await fetch("/api/vitcodes/question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: activeSessionId,
+          question: newQ,
+          session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
+        })
+      });
+      if (!res.ok) throw new Error("Failed to add question");
+    } catch (e: any) {
+      showToast("error", "Failed to add question");
+      fetchVitCodes();
+    }
+  };
 
   // ─── UI Variables ───
   const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId) || null, [vitSessions, activeSessionId]);
-  
+
   const { filteredSessions, groupedSessions } = useMemo(() => {
     const filtered = examTypeFilter === "all" ? vitSessions : vitSessions.filter(s => s.examType === examTypeFilter);
     const grouped = filtered.reduce((acc, s) => {
@@ -495,7 +495,7 @@ function ContributorsDashboard() {
         </div>
 
         {/* Middle Main Card Container */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 max-w-5xl w-full flex-1 flex flex-col justify-center items-center text-center min-h-0"
@@ -503,7 +503,7 @@ function ContributorsDashboard() {
           <h1 className="text-3xl md:text-6xl font-black tracking-tighter mb-2 md:mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
             Contribute to LANpad
           </h1>
-          
+
           <p className="text-xs md:text-lg text-[#FAFAFA]/60 mb-4 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
             A community effort to maintain accurate exam exam codes for VIT students. Help your peers by providing the latest exam session questions.
           </p>
@@ -511,15 +511,15 @@ function ContributorsDashboard() {
           {/* Info Cards Container (Stack vertically on mobile, row on desktop) */}
           <div className="w-full flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-6 px-4 md:px-0 py-1 mb-4 md:mb-8 min-h-0 shrink-0">
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><BookOpen size={13} className="text-sky-400 shrink-0 md:w-5 md:h-5"/> What is Contribute?</h3>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><BookOpen size={13} className="text-sky-400 shrink-0 md:w-5 md:h-5" /> What is Contribute?</h3>
               <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">Submit VIT exam sessions directly to the LANpad database for real-time local syncs.</p>
             </div>
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><Layout size={13} className="text-blue-400 shrink-0 md:w-5 md:h-5"/> Minimal Control</h3>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><Layout size={13} className="text-blue-400 shrink-0 md:w-5 md:h-5" /> Minimal Control</h3>
               <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">A simplified workspace to add sessions and verify codes safely without deletion risk.</p>
             </div>
             <div className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col text-left justify-start">
-              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5"/> Who is allowed?</h3>
+              <h3 className="font-bold mb-0.5 md:mb-2 flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base text-white"><LogOut size={13} className="text-rose-400 shrink-0 md:w-5 md:h-5" /> Who is allowed?</h3>
               <p className="text-[9px] md:text-sm text-[#FAFAFA]/60 leading-relaxed">Access is strictly limited to verified university Google accounts.</p>
             </div>
           </div>
@@ -531,10 +531,10 @@ function ContributorsDashboard() {
           )}
 
           <div className="flex items-start md:items-center gap-3 text-left max-w-md md:max-w-xl mx-auto p-3.5 md:p-5 rounded-xl md:rounded-2xl border border-white/5 bg-white/[0.02] mb-4 md:mb-8">
-            <input 
-              type="checkbox" 
-              id="terms" 
-              checked={acceptedTerms} 
+            <input
+              type="checkbox"
+              id="terms"
+              checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
               className="w-3.5 h-3.5 md:w-4 md:h-4 rounded border-white/20 bg-white/5 accent-blue-500 shrink-0 cursor-pointer mt-0.5 md:mt-0"
             />
@@ -551,10 +551,10 @@ function ContributorsDashboard() {
           >
             <svg viewBox="0 0 24 24" width="16" height="16" className="md:w-5 md:h-5" xmlns="http://www.w3.org/2000/svg">
               <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
-                <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
-                <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
-                <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/>
-                <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
+                <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z" />
+                <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z" />
+                <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z" />
+                <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z" />
               </g>
             </svg>
             Sign in with Google
@@ -594,25 +594,25 @@ function ContributorsDashboard() {
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
             <div className={`shrink-0 w-8 h-8 rounded-lg overflow-hidden border ${dk ? 'border-white/10' : 'border-black/10'} ${dk ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src="/logo.png" 
-                alt="LANpad Logo" 
-                className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert hue-rotate-180 brightness-110 contrast-125' : ''}`} 
+              <img
+                src="/logo.png"
+                alt="LANpad Logo"
+                className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert hue-rotate-180 brightness-110 contrast-125' : ''}`}
               />
             </div>
             <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
               LANpad <span className="hidden sm:inline text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
             </span>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <span className="hidden md:block text-xs font-mono" style={{ color: textSecondary }}>{session?.user?.email}</span>
-            
+
             {/* Say My Name Toggle */}
             <div className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${borderLight} ${dk ? 'bg-white/[0.02]' : 'bg-black/[0.02]'}`}>
               <span className={`text-[10px] font-bold uppercase tracking-wider ${dk ? "text-white/60" : "text-black/60"}`}>Say my name</span>
-              <button 
-                onClick={handleToggleSayMyName} 
+              <button
+                onClick={handleToggleSayMyName}
                 className={`w-9 h-5 rounded-full p-0.5 relative transition-colors duration-200 focus:outline-none shrink-0 ${sayMyName ? 'bg-blue-500' : 'bg-neutral-600'}`}
               >
                 <span className={`w-4 h-4 bg-white rounded-full block transition-transform duration-200 ${sayMyName ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -702,12 +702,12 @@ function ContributorsDashboard() {
                           <button onClick={() => setSelectedExamType(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
                             <ArrowLeft size={14} /> Back to Exam Types
                           </button>
-                          
+
                           {(() => {
                             const sessions = groupedSessions[selectedExamType] || [];
                             const today = new Date();
                             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                            
+
                             const sorted = [...sessions].sort((a, b) => {
                               if (a.date === todayStr && b.date !== todayStr) return -1;
                               if (b.date === todayStr && a.date !== todayStr) return 1;
@@ -715,12 +715,12 @@ function ContributorsDashboard() {
                               if (dateCmp !== 0) return dateCmp;
                               return b.id.localeCompare(a.id);
                             });
-                            
+
                             const formatDate = (d: string) => {
                               const p = d.split("-");
                               return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
                             };
-                            
+
                             const totalCodes = sessions.reduce((acc, s) => acc + s.questions.length, 0);
 
                             return (
@@ -779,10 +779,10 @@ function ContributorsDashboard() {
                     const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
                     const maxCap = getMaxCap(ruleForType);
                     const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
-                    
+
                     return (
-                      <button 
-                        onClick={() => { if (!isCapped) setShowAddQuestionModal(true); }} 
+                      <button
+                        onClick={() => { if (!isCapped) setShowAddQuestionModal(true); }}
                         disabled={!!isCapped}
                         className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-xs shadow-md transition-all ${isCapped ? 'opacity-50 cursor-not-allowed bg-neutral-600' : 'active:scale-[0.98]'}`}
                         style={{ background: isCapped ? undefined : P.blue }}
@@ -834,7 +834,7 @@ function ContributorsDashboard() {
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(240,240,240,0.5)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(0,0,0,0.05)", backdropFilter: "blur(40px)" }}
                             onClick={() => setExpandedQId(expandedQId === q.id ? null : q.id)}>
                             <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-50`} />
-                            
+
                             <div className="p-3 md:p-4 rounded-[16px] border" style={{ background: dk ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.8)", borderColor: dk ? "transparent" : "rgba(0,0,0,0.03)" }}>
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -949,9 +949,9 @@ function ContributorsDashboard() {
         {showAddQuestionModal && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddQuestionModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div 
-              initial={{ y: "100%", opacity: 0.5 }} 
-              animate={{ y: 0, opacity: 1 }} 
+            <motion.div
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.5 }}
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
               className={`relative w-full sm:max-w-xl p-1 rounded-t-[24px] sm:rounded-b-[24px] sm:rounded-t-[24px] border bg-black border-white/10 shadow-2xl z-10 max-h-[90vh] sm:max-h-[85vh] flex flex-col`}
@@ -1017,27 +1017,28 @@ function ContributorsDashboard() {
                   <button onClick={() => setShowAddQuestionModal(false)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${borderLight} hover:bg-white/5`}>
                     Cancel
                   </button>
-                   <button 
-                    onClick={handleAddQuestion} 
+                  <button
+                    onClick={handleAddQuestion}
                     disabled={!!(() => {
                       const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
                       const maxCap = getMaxCap(ruleForType);
                       return maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
                     })()}
-                    className={`px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all ${
-                      (() => {
+                    className={`px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all ${(() => {
                         const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
                         const maxCap = getMaxCap(ruleForType);
                         const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
                         return isCapped ? 'opacity-50 cursor-not-allowed bg-neutral-600' : 'active:scale-[0.98]';
                       })()
-                    }`}
-                    style={{ background: (() => {
-                      const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
-                      const maxCap = getMaxCap(ruleForType);
-                      const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
-                      return isCapped ? undefined : P.blue;
-                    })() }}
+                      }`}
+                    style={{
+                      background: (() => {
+                        const ruleForType = activeSession ? getRuleForType(activeSession.examType) : undefined;
+                        const maxCap = getMaxCap(ruleForType);
+                        const isCapped = maxCap !== null && activeSession && activeSession.questions.length >= maxCap;
+                        return isCapped ? undefined : P.blue;
+                      })()
+                    }}
                   >
                     <Plus size={12} /> Add Question
                   </button>
@@ -1053,9 +1054,9 @@ function ContributorsDashboard() {
         {showEditModal && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div 
-              initial={{ y: "100%", opacity: 0.5 }} 
-              animate={{ y: 0, opacity: 1 }} 
+            <motion.div
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.5 }}
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
               className={`relative w-full sm:max-w-xl p-1 rounded-t-[24px] sm:rounded-b-[24px] sm:rounded-t-[24px] border bg-black border-white/10 shadow-2xl z-10 max-h-[90vh] sm:max-h-[85vh] flex flex-col`}

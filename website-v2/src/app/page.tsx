@@ -100,9 +100,9 @@ const Navbar = () => {
         <div className="flex items-center gap-3.5 font-outfit font-black text-lg md:text-xl tracking-tighter shrink-0 relative z-10">
           <div className={`w-9 h-9 md:w-10 md:h-10 ${dk ? "bg-black" : "bg-white"} rounded-[10px] border ${dk ? "border-white/10" : "border-black/10"} flex items-center justify-center overflow-hidden shadow-2xl group/logo transition-transform duration-500 hover:scale-110`}>
             <img
-              src="/logo.png"
+              src={dk ? "/logo_dark_theme.png" : "/logo.png"}
               alt="LANpad Icon"
-              className="w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 invert hue-rotate-180 brightness-110 contrast-125"
+              className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${!dk ? "invert hue-rotate-180 brightness-110 contrast-125" : ""}`}
             />
           </div>
           <span className={`mt-1 bg-clip-text text-transparent bg-gradient-to-r ${dk ? "from-white to-white/60" : "from-black to-black/60"}`}>LANPAD</span>
@@ -847,9 +847,9 @@ export default function Home() {
                 <div className="flex items-center gap-4 font-outfit font-black text-xl md:text-2xl tracking-tighter mb-8">
                   <div className={`w-12 h-12 ${dk ? "bg-black" : "bg-white"} rounded-[12px] border ${dk ? "border-white/10" : "border-black/10"} flex items-center justify-center overflow-hidden shadow-2xl`}>
                     <img
-                      src="/logo.png"
+                      src={dk ? "/logo_dark_theme.png" : "/logo.png"}
                       alt="LANpad Icon"
-                      className="w-[120%] h-[120%] object-contain scale-125 invert hue-rotate-180 brightness-110 contrast-125"
+                      className={`w-[120%] h-[120%] object-contain scale-125 ${!dk ? "invert hue-rotate-180 brightness-110 contrast-125" : ""}`}
                     />
                   </div>
                   <span className="mt-1">LANPAD</span>

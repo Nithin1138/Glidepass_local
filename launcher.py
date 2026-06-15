@@ -526,7 +526,6 @@ class LANpadLauncher:
         self._plan_lbl = tk.Label(v, text="Plan: BASIC  •  Upgrade",
                                   font=(self.FU, 9, "bold"),
                                   bg=self.BG, fg="#0077C0", anchor="e", bd=0, highlightthickness=0, cursor="hand2")
-        self._plan_lbl.place(x=376, y=88 + (0 if _mac else 4), anchor="ne")
         self._plan_lbl.bind("<Button-1>", lambda e: self.show_view("lock"))
 
         # ── Hero text ────────────────────────────────────────────────────────
@@ -1848,6 +1847,7 @@ class LANpadLauncher:
         def _thread_task():
             try:
                 monetization_enabled = False
+                free_enabled = False
                 import urllib.request
                 import json
                 
@@ -1859,6 +1859,7 @@ class LANpadLauncher:
                         with safe_urlopen(req, timeout=3) as resp:
                             data = json.loads(resp.read().decode("utf-8"))
                             monetization_enabled = data.get("monetization_enabled", False)
+                            free_enabled = data.get("free_enabled", False)
                             break
                     except Exception as e:
                         print(f"[monetization] Status fetch failed on {base_url}: {e}")
@@ -1893,7 +1894,10 @@ class LANpadLauncher:
                     except Exception as e:
                         print(f"[monetization] License check error: {e}")
                         
-                self.gui_queue.put(lambda: self.show_view("lock"))
+                if free_enabled:
+                    self.gui_queue.put(lambda: self.show_view("main"))
+                else:
+                    self.gui_queue.put(lambda: self.show_view("lock"))
             except Exception as e:
                 print(f"[monetization] Error in status thread: {e}")
                 self.gui_queue.put(lambda: self.show_view("lock"))
@@ -1936,6 +1940,7 @@ class LANpadLauncher:
                 import json
 
                 monetization_enabled = False
+                free_enabled = False
                 urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
                 
                 for base_url in urls:
@@ -1944,6 +1949,7 @@ class LANpadLauncher:
                         with safe_urlopen(req, timeout=3) as resp:
                             data = json.loads(resp.read().decode("utf-8"))
                             monetization_enabled = data.get("monetization_enabled", False)
+                            free_enabled = data.get("free_enabled", False)
                             break
                     except Exception as e:
                         pass
@@ -1967,11 +1973,13 @@ class LANpadLauncher:
                                     os.remove(license_path)
                                 except Exception as e:
                                     print(f"[monetization] Error locking app: {e}")
-                                self.gui_queue.put(lambda: self.show_view("lock"))
+                                if not free_enabled:
+                                    self.gui_queue.put(lambda: self.show_view("lock"))
                         except Exception as e:
                             pass
                     else:
-                        self.gui_queue.put(lambda: self.show_view("lock"))
+                        if not free_enabled:
+                            self.gui_queue.put(lambda: self.show_view("lock"))
             except Exception as e:
                 print(f"[monetization] Error in periodic check thread: {e}")
             
@@ -2004,8 +2012,10 @@ class LANpadLauncher:
                     cmd = ["ipconfig"]
                 else:
                     cmd = ["ifconfig"]
+                cf = 0x08000000 if is_windows() else 0
                 out = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=2
+                    cmd, capture_output=True, text=True, timeout=2,
+                    creationflags=cf
                 ).stdout
                 for m in re.finditer(
                     r"(?:inet|IPv4)[^0-9]*((?:\d+\.){3}\d+)", out
@@ -2016,9 +2026,11 @@ class LANpadLauncher:
             else:
                 # Linux / other Unix – use the ``ip`` command if present
                 try:
+                    cf = 0x08000000 if is_windows() else 0
                     out = subprocess.run(
                         ["ip", "-4", "-o", "addr", "show"],
                         capture_output=True, text=True, timeout=2,
+                        creationflags=cf
                     ).stdout
                     for m in re.finditer(
                         r"inet\s+((?:\d+\.){3}\d+)", out
