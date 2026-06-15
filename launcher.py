@@ -917,10 +917,10 @@ class LANpadLauncher:
                                 if not self._tunnel_process: break
                                 sys.stdout.write(line)
                                 sys.stdout.flush()
-                                # Match https://*.lhr.life or https://*.localhost.run (excluding admin link)
-                                match = re.search(r"https://[a-zA-Z0-9\-]+\.lhr\.life", line)
+                                # Match http/https *.lhr.life or *.localhost.run (excluding admin link)
+                                match = re.search(r"https?://[a-zA-Z0-9\-]+\.lhr\.life", line)
                                 if not match:
-                                    match = re.search(r"https://[a-zA-Z0-9\-]+\.localhost\.run", line)
+                                    match = re.search(r"https?://[a-zA-Z0-9\-]+\.localhost\.run", line)
                                     if match and "admin.localhost.run" in match.group(0):
                                         match = None
                                     
@@ -936,7 +936,7 @@ class LANpadLauncher:
                             
                     lhr_reader = threading.Thread(target=_read_lhr, daemon=True)
                     lhr_reader.start()
-                    lhr_reader.join(timeout=8)
+                    lhr_reader.join(timeout=15)
                     
                     if not url_found:
                         raise Exception("localhost.run timed out")
