@@ -764,21 +764,7 @@ class LANpadLauncher:
         self.root.after(0, self._update_display)
 
         def shorten_url(url):
-            try:
-                import urllib.request
-                import urllib.parse
-                import json
-                api_url = f"https://is.gd/create.php?format=json&url={urllib.parse.quote(url)}"
-                req = urllib.request.Request(
-                    api_url,
-                    headers={'User-Agent': 'Mozilla/5.0'}
-                )
-                with urllib.request.urlopen(req, timeout=2) as response:
-                    data = json.loads(response.read().decode())
-                    if "shorturl" in data:
-                        return data["shorturl"]
-            except Exception as e:
-                print(f"[lanpad] URL shortening failed: {e}")
+            # Return original URL directly for instant display
             return url
 
         def _get_cloudflared_bin():
