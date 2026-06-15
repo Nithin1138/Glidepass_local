@@ -287,20 +287,39 @@ class LANpadLauncher:
         self.main_view   = tk.Frame(root, bg=self.BG)
         self.bypass_view = tk.Frame(root, bg=self.BG)
         self.lock_view   = tk.Frame(root, bg=self.BG)
+        self.splash_view = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
+        self.splash_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
         self._build_bypass()
         self._build_lock()
+        self._build_splash()
 
         self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
         
-        # Boot to lock screen first to check license status
-        self.show_view("lock")
+        # Check if we have a valid cached license to skip splash
+        has_valid_cache = False
+        try:
+            license_path = os.path.expanduser("~/.lanpad_license.json")
+            if os.path.exists(license_path):
+                import json
+                with open(license_path, "r", encoding="utf-8") as f:
+                    lic = json.load(f)
+                if time.time() - lic.get("last_checked", 0) < 86400:
+                    has_valid_cache = True
+        except Exception:
+            pass
+
+        if has_valid_cache:
+            self.show_view("main")
+        else:
+            self.show_view("splash")
+            
         self.root.after(200, self.check_monetization_status)
         self.start_license_loop()
         
@@ -1207,6 +1226,8 @@ class LANpadLauncher:
                 self.update_plan_label()
         elif name == "lock":
             self.lock_view.tkraise()
+        elif name == "splash":
+            self.splash_view.tkraise()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
@@ -1422,6 +1443,86 @@ class LANpadLauncher:
                 self.key_entry.config(state="normal")
                 
         update_progress(0)
+
+    def _build_splash(self):
+        v = self.splash_view
+        W, H = 400, 760
+        
+        self.splash_cv = tk.Canvas(v, width=W, height=H, bg="#050505", highlightthickness=0)
+        self.splash_cv.place(x=0, y=0)
+        
+        # Top Ambient glow (concentric semi-circles)
+        for r in range(160, 0, -20):
+            c = blend_hex("#0077C0", "#050505", r / 160 * 0.15)
+            self.splash_cv.create_oval(200 - r, -100 - r, 200 + r, -100 + r, fill=c, outline="")
+            
+        # Draw glassmorphic card container
+        card_x1, card_y1, card_x2, card_y2 = 24, 70, 376, 680
+        rounded_rect(self.splash_cv, card_x1, card_y1, card_x2, card_y2, r=24, fill="#0D0D10", outline="#1F1F24")
+        
+        # Logo placeholder inside card (vertically centered)
+        logo_y = 220
+        self._splash_logo_cv = tk.Canvas(v, width=80, height=80, bg="#0D0D10", highlightthickness=0)
+        self._splash_logo_cv.place(x=160, y=logo_y)
+        
+        try:
+            from PIL import Image, ImageTk
+            logo_img = Image.open(resource_path("logo.png")).resize((80, 80), Image.Resampling.LANCZOS)
+            self._splash_logo_tk = ImageTk.PhotoImage(logo_img)
+            self._splash_logo_cv.create_image(40, 40, image=self._splash_logo_tk)
+        except Exception:
+            self._splash_logo_cv.create_text(40, 40, text="⚡", fill=self.WHITE, font=(self.FD, 36, "bold"))
+            
+        # Title
+        title_lbl = tk.Label(v, text="LANpad", fg=self.WHITE, bg="#0D0D10", font=(self.FD, 26, "bold"))
+        title_lbl.place(x=24, y=logo_y + 100, width=W - 48)
+        
+        # Subtitle / loading text
+        self.splash_status_lbl = tk.Label(v, text="Synchronizing status", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 12))
+        self.splash_status_lbl.place(x=24, y=logo_y + 145, width=W - 48)
+
+        # loader line bg
+        rounded_rect(self.splash_cv, 100, logo_y + 200, 300, logo_y + 204, r=2, fill="#1F1F24", outline="")
+        
+        # We create a progress block shape on the canvas
+        self._loader_bar = self.splash_cv.create_rectangle(100, logo_y + 200, 140, logo_y + 204, fill="#0077C0", outline="")
+        
+        self._loader_x = 100
+        self._loader_dir = 1
+        
+        def animate_loader():
+            try:
+                if not self.splash_view.winfo_exists():
+                    return
+                if self.splash_view.winfo_viewable():
+                    # Move loader block back and forth
+                    self._loader_x += 4 * self._loader_dir
+                    if self._loader_x >= 260:
+                        self._loader_dir = -1
+                    elif self._loader_x <= 100:
+                        self._loader_dir = 1
+                    
+                    self.splash_cv.coords(self._loader_bar, self._loader_x, logo_y + 200, self._loader_x + 40, logo_y + 204)
+                self.root.after(30, animate_loader)
+            except Exception:
+                pass
+                
+        self.root.after(30, animate_loader)
+
+        self._splash_dots = 0
+        def animate_dots():
+            try:
+                if not self.splash_view.winfo_exists():
+                    return
+                if self.splash_view.winfo_viewable():
+                    self._splash_dots = (self._splash_dots + 1) % 4
+                    dots = "." * self._splash_dots
+                    self.splash_status_lbl.config(text=f"Synchronizing status{dots}")
+                self.root.after(500, animate_dots)
+            except Exception:
+                pass
+                
+        self.root.after(500, animate_dots)
 
     def check_monetization_status(self):
         import threading
