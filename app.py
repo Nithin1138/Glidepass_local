@@ -444,7 +444,9 @@ async def vitcodes_page():
 @app.get("/api/vitcodes")
 async def get_api_vitcodes():
     limits = get_cloud_limits(get_license_tier())
-    if not limits.get("allow_vitcode", True):
+    allow_val = limits.get("allow_vitcode", 0)
+    # Block only if explicitly disabled (-1 or False)
+    if allow_val == -1 or (isinstance(allow_val, bool) and not allow_val):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"error": "Your plan does not allow VITCodes access."})
 
