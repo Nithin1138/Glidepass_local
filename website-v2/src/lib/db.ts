@@ -789,12 +789,16 @@ export async function updateQuestion(q: Question, editorEmail?: string): Promise
     await initDb();
     const client = await pool.connect();
     try {
-      const existingRes = await client.query("SELECT edits FROM vit_questions WHERE id = $1", [q.id]);
-      if (existingRes.rows.length > 0 && existingRes.rows[0].edits) {
-        try {
-          editsList = JSON.parse(existingRes.rows[0].edits);
-        } catch (e) {
-          editsList = [];
+      const existingRes = await client.query("SELECT code, edits FROM vit_questions WHERE id = $1", [q.id]);
+      let existingCode = "";
+      if (existingRes.rows.length > 0) {
+        existingCode = existingRes.rows[0].code || "";
+        if (existingRes.rows[0].edits) {
+          try {
+            editsList = JSON.parse(existingRes.rows[0].edits);
+          } catch (e) {
+            editsList = [];
+          }
         }
       }
       
@@ -805,7 +809,8 @@ export async function updateQuestion(q: Question, editorEmail?: string): Promise
           timestamp: Date.now(),
           questionId: q.id,
           questionTitle: q.title,
-          language: q.language
+          language: q.language,
+          previousCode: existingCode
         });
       }
       
@@ -830,7 +835,8 @@ export async function updateQuestion(q: Question, editorEmail?: string): Promise
             timestamp: Date.now(),
             questionId: q.id,
             questionTitle: q.title,
-            language: q.language
+            language: q.language,
+            previousCode: existingQ.code || ""
           });
         }
         s.questions[idx] = {
@@ -1102,6 +1108,27 @@ export async function getTelemetryMetrics(): Promise<any> {
   }
 
   return { downloads, heartbeats, events };
+}
+
+export async function clearTelemetryData(): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("DELETE FROM vit_downloads");
+      await client.query("DELETE FROM vit_heartbeats");
+      await client.query("DELETE FROM vit_telemetry_events");
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.writeFileSync(filePath, JSON.stringify({ downloads: [], heartbeats: [], events: [] }, null, 2), "utf8");
+      } catch (e) {}
+    }
+  }
 }
 
 export async function logAudit(event: string, username: string, ip: string, status: "success" | "failed" | "warning"): Promise<void> {

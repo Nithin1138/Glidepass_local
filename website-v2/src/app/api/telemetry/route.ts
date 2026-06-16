@@ -40,3 +40,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { clearTelemetryData } = await import("@/lib/db");
+    await clearTelemetryData();
+    const { logAudit } = await import("@/lib/db");
+    await logAudit("Analytics Data Reset", "Nithin", "127.0.0.1", "warning");
+    return NextResponse.json({ success: true, message: "Telemetry metrics reset successfully" });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

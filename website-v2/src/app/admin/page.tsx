@@ -45,6 +45,24 @@ function parseVitEmail(email: string) {
   return { name, regno, college };
 }
 
+function getQuestionContributorInfo(email: string | undefined, contributors: { email: string; name?: string; regno?: string; college?: string; }[]) {
+  if (!email) return null;
+  const c = contributors.find(x => x.email === email);
+  if (c) {
+    return {
+      name: c.name || "Unknown",
+      id: c.regno || "N/A",
+      college: c.college || "N/A"
+    };
+  }
+  const parsed = parseVitEmail(email);
+  return {
+    name: parsed.name !== "unknown" ? parsed.name : email.split("@")[0],
+    id: parsed.regno !== "unknown" ? parsed.regno : "N/A",
+    college: parsed.college !== "unknown" ? parsed.college : "N/A"
+  };
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PALETTE TOKENS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -551,7 +569,8 @@ export default function GlidePassAdmin() {
                 edits: [...(q.edits || []), {
                   editorEmail: edit.contributorEmail,
                   reason: edit.reason,
-                  timestamp: Date.now()
+                  timestamp: Date.now(),
+                  previousCode: q.code
                 }]
               };
             }
@@ -573,7 +592,8 @@ export default function GlidePassAdmin() {
           edits: [...(origQ.edits || []), {
             editorEmail: edit.contributorEmail,
             reason: edit.reason,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            previousCode: origQ.code
           }]
         };
         const res = await fetch("/api/vitcodes/question", {
@@ -588,6 +608,62 @@ export default function GlidePassAdmin() {
       showToast("error", "Error saving approved edit: " + e.message);
     }
     setPendingEdits(prev => prev.filter(x => x.id !== edit.id));
+  };
+
+  const handleRevertEdit = async (questionId: string, previousCode: string, editorEmail: string) => {
+    if (!previousCode) return showToast("error", "No previous code available for this edit.");
+    
+    let originalQ: Question | null = null;
+    let parentSessionId: string | null = null;
+    
+    for (const s of vitSessions) {
+      const found = s.questions?.find(q => q.id === questionId);
+      if (found) {
+        originalQ = found;
+        parentSessionId = s.id;
+        break;
+      }
+    }
+    
+    if (!originalQ || !parentSessionId) {
+      return showToast("error", "Question not found.");
+    }
+    
+    const revertedQ: Question = {
+      ...originalQ,
+      code: previousCode,
+      comment: `Reverted edit by ${editorEmail}`,
+      edits: [...(originalQ.edits || []), {
+        editorEmail: "Admin",
+        reason: `Reverted edit by ${editorEmail}`,
+        timestamp: Date.now(),
+        previousCode: originalQ.code
+      }]
+    };
+    
+    // Optimistic UI update
+    setVitSessions(prev => prev.map(s => {
+      if (s.id === parentSessionId) {
+        return {
+          ...s,
+          questions: s.questions.map(q => q.id === questionId ? revertedQ : q)
+        };
+      }
+      return s;
+    }));
+    
+    try {
+      const res = await fetch("/api/vitcodes/question", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: revertedQ, editorEmail: "Admin" })
+      });
+      if (!res.ok) throw new Error("Failed to revert question");
+      showToast("success", "Reverted edit successfully!");
+    } catch (e: any) {
+      showToast("error", e.message);
+      fetchVitCodes();
+    }
   };
 
   const handleRejectEdit = (edit: PendingEdit) => {
@@ -820,16 +896,18 @@ export default function GlidePassAdmin() {
   const [loadingContributors, setLoadingContributors] = useState(false);
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null);
   const [expandedContribQId, setExpandedContribQId] = useState<string | null>(null);
+  const [expandedEditId, setExpandedEditId] = useState<string | null>(null);
   const [activeSlideTab, setActiveSlideTab] = useState<"contributed" | "edits">("contributed");
   const [contribExamTypeFilter, setContribExamTypeFilter] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveSlideTab("contributed");
     setContribExamTypeFilter(null);
+    setExpandedEditId(null);
   }, [selectedContributor]);
 
   useEffect(() => {
-    if (isAuth && view === "contributors") {
+    if (isAuth && (view === "contributors" || view === "vitcodes")) {
       setLoadingContributors(true);
       fetch("/api/admin/contributors")
         .then(r => r.json())
@@ -1349,10 +1427,6 @@ export default function GlidePassAdmin() {
       });
 
       if (eligibleUsers.length === 0) {
-        if (targetDay === 1) return 85;
-        if (targetDay === 3) return 65;
-        if (targetDay === 7) return 50;
-        if (targetDay === 30) return 30;
         return 0;
       }
 
@@ -1370,8 +1444,16 @@ export default function GlidePassAdmin() {
       return Math.round((retainedCount / eligibleUsers.length) * 100);
     };
 
-    // 7. Active LAN Pairings / Connections Map
-    const activePairingsList = heartbeatsList.map((hb: any, idx: number) => {
+    // 7. Active LAN Pairings / Connections Map (distinct active uuids)
+    const latestHeartbeats: Record<string, any> = {};
+    heartbeatsList.forEach((hb: any) => {
+      const uid = hb.uuid || "default";
+      if (!latestHeartbeats[uid] || new Date(hb.timestamp).getTime() > new Date(latestHeartbeats[uid].timestamp).getTime()) {
+        latestHeartbeats[uid] = hb;
+      }
+    });
+
+    const activePairingsList = Object.values(latestHeartbeats).map((hb: any, idx: number) => {
       let hash = 0;
       const uid = hb.uuid || "default";
       for (let i = 0; i < uid.length; i++) {
@@ -1387,7 +1469,7 @@ export default function GlidePassAdmin() {
         status: (Date.now() - new Date(hb.timestamp).getTime()) < 15 * 60 * 1000 ? "active" : "idle",
         lastActive: new Date(hb.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-    }).slice(0, 8);
+    }).sort((a, b) => (b.status === "active" ? 1 : 0) - (a.status === "active" ? 1 : 0)).slice(0, 8);
 
     // 8. Usage Volume per Day (last 7 days)
     const usageDaily: Record<string, { date: string; copies: number; injections: number; requests: number }> = {};
@@ -3048,7 +3130,34 @@ export default function GlidePassAdmin() {
                   )}
 
                   {view === "analytics" && (
-                    <motion.div key="analytics" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="analytics" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Usage Analytics Dashboard</h2>
+                          <p className="text-xs text-white/60">Monitor downloads, cohort retention, and active network connections in real-time</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (confirm("Are you sure you want to reset all analytics data? This will clear all download logs, heartbeats, and usage telemetry permanently.")) {
+                              try {
+                                const res = await fetch("/api/telemetry", { method: "DELETE" });
+                                if (res.ok) {
+                                  showToast("success", "Analytics data reset successfully.");
+                                  fetchTelemetry();
+                                } else {
+                                  throw new Error("Failed to reset analytics");
+                                }
+                              } catch (e: any) {
+                                showToast("error", e.message);
+                              }
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-red-600/10 cursor-pointer"
+                        >
+                          <RefreshCw size={12} /> Reset Analytics
+                        </button>
+                      </div>
+
                       {/* Overview Cards */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Downloads Card */}
@@ -3770,7 +3879,18 @@ export default function GlidePassAdmin() {
                                         className="w-full px-5 py-4 flex justify-between items-center text-left hover:opacity-90 transition-colors cursor-pointer">
                                         <div className="flex flex-col gap-1">
                                           <span className="text-xs font-bold">{idx + 1}. {q.title}</span>
-                                          {q.comment && <span className="text-[10px] font-mono" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</span>}
+                                          {q.comment && <span className="text-[10px] font-mono opacity-80" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</span>}
+                                          {(() => {
+                                            const info = getQuestionContributorInfo(q.contributorEmail, contributors);
+                                            if (!info) return null;
+                                            return (
+                                              <span className="text-[9px] flex items-center gap-1.5 opacity-60 mt-0.5 select-none">
+                                                <span>Contributed by:</span>
+                                                <span className="font-bold uppercase" style={{ color: P.blue }}>{info.name}</span>
+                                                <span className="font-mono text-[8px] px-1 py-0.2 rounded border bg-white/5" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }}>{info.id}</span>
+                                              </span>
+                                            );
+                                          })()}
                                         </div>
                                         <div className="flex items-center gap-3 shrink-0 ml-4">
                                           <span className="text-[9px] font-mono px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
@@ -4105,6 +4225,7 @@ export default function GlidePassAdmin() {
                                 language: string;
                                 reason: string;
                                 timestamp: number;
+                                previousCode?: string;
                               }[] = [];
                               
                               vitSessions.forEach(s => {
@@ -4119,7 +4240,8 @@ export default function GlidePassAdmin() {
                                               questionTitle: q.title,
                                               language: q.language,
                                               reason: edit.reason,
-                                              timestamp: edit.timestamp
+                                              timestamp: edit.timestamp,
+                                              previousCode: edit.previousCode
                                             });
                                           }
                                         });
@@ -4131,7 +4253,8 @@ export default function GlidePassAdmin() {
                                           questionTitle: q.title,
                                           language: q.language,
                                           reason: q.comment,
-                                          timestamp: !isNaN(ts) ? ts : Date.now()
+                                          timestamp: !isNaN(ts) ? ts : Date.now(),
+                                          previousCode: undefined
                                         });
                                       }
                                     }
@@ -4278,22 +4401,93 @@ export default function GlidePassAdmin() {
                                         {editsMade.map((edit, idx) => {
                                           const dateStr = new Date(edit.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
                                           const timeStr = new Date(edit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                          const isExpanded = expandedEditId === `edit_${edit.questionId}_${idx}`;
+                                          const targetQ = vitSessions.flatMap(s => s.questions || []).find(q => q.id === edit.questionId);
+                                          const otherEdits = targetQ?.edits || [];
                                           return (
-                                            <div key={`${edit.questionId}_${idx}`} className="p-5 rounded-[24px] border relative hover:shadow-lg transition-all" style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                                              <div className="flex justify-between items-start mb-3">
-                                                <div className="flex items-center gap-3">
-                                                  <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
-                                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{edit.language}</span>
+                                            <div key={`${edit.questionId}_${idx}`} className="p-5 rounded-[24px] border relative hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between" 
+                                              style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}
+                                              onClick={() => setExpandedEditId(isExpanded ? null : `edit_${edit.questionId}_${idx}`)}>
+                                              <div>
+                                                <div className="flex justify-between items-start mb-3">
+                                                  <div className="flex items-center gap-3">
+                                                    <span className="w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold" style={{ background: `${P.sky}15`, color: P.sky }}>{idx + 1}</span>
+                                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border uppercase" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{edit.language}</span>
+                                                  </div>
+                                                  <span className="text-[10px] font-mono opacity-60 mt-1">{dateStr} • {timeStr}</span>
                                                 </div>
-                                                <span className="text-[10px] font-mono opacity-60 mt-1">{dateStr} • {timeStr}</span>
+                                                <h4 className="text-sm font-bold mb-2">{edit.questionTitle}</h4>
+                                                <div className="mt-3 pt-3 border-t text-xs" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                                  <span className="text-[9px] uppercase font-bold tracking-wider mr-1.5 opacity-55">Reason for Edit:</span>
+                                                  <span className="font-medium" style={{ color: P.blue }}>
+                                                    {edit.reason.replace(/solved error/i, "Error solved")}
+                                                  </span>
+                                                </div>
                                               </div>
-                                              <h4 className="text-sm font-bold mb-2">{edit.questionTitle}</h4>
-                                              <div className="mt-3 pt-3 border-t text-xs" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                                <span className="text-[9px] uppercase font-bold tracking-wider mr-1.5 opacity-55">Reason for Edit:</span>
-                                                <span className="font-medium" style={{ color: P.blue }}>
-                                                  {edit.reason.replace(/solved error/i, "Error solved")}
-                                                </span>
-                                              </div>
+
+                                              <AnimatePresence>
+                                                {isExpanded && (
+                                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4" onClick={e => e.stopPropagation()}>
+                                                    {edit.previousCode ? (
+                                                      <div className="space-y-2">
+                                                        <span className="text-[9px] uppercase font-bold tracking-wider opacity-55 block">Code Prior to Edit:</span>
+                                                        <pre className="p-3 rounded-xl text-[9px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-40 border bg-[#151b22] text-[#8ecfff] border-white/5">
+                                                          <code>{edit.previousCode}</code>
+                                                        </pre>
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm(`Are you sure you want to revert "${edit.questionTitle}" back to this previous version?`)) {
+                                                              handleRevertEdit(edit.questionId, edit.previousCode!, c.email);
+                                                            }
+                                                          }}
+                                                          className="px-3 py-2 rounded-lg text-[10px] font-bold text-white bg-red-600 hover:bg-red-500 transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-red-600/10 cursor-pointer"
+                                                        >
+                                                          <RefreshCw size={11} /> Revert to this Version
+                                                        </button>
+                                                      </div>
+                                                    ) : (
+                                                      <span className="text-[9px] text-red-400 font-semibold block">No previous version code stored in history for this edit.</span>
+                                                    )}
+
+                                                    {otherEdits.length > 0 && (
+                                                      <div className="mt-4 pt-3 border-t border-dashed" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                                                        <h5 className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-75">All Revision Logs ({otherEdits.length})</h5>
+                                                        <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                                          {otherEdits.map((h, hIdx) => {
+                                                            const hDate = new Date(h.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                                            return (
+                                                              <div key={hIdx} className="text-[9px] p-2 rounded bg-white/5 border flex justify-between items-center gap-2" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                                                <div className="flex flex-col">
+                                                                  <span className="font-semibold text-white">{h.editorEmail}</span>
+                                                                  <span className="opacity-60">{h.reason}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-right shrink-0">
+                                                                  <span className="opacity-55">{hDate}</span>
+                                                                  {h.previousCode && (
+                                                                    <button
+                                                                      onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (confirm(`Revert "${edit.questionTitle}" to the code version from ${h.editorEmail} on ${hDate}?`)) {
+                                                                          handleRevertEdit(edit.questionId, h.previousCode, h.editorEmail);
+                                                                        }
+                                                                      }}
+                                                                      title="Revert to this version"
+                                                                      className="p-1 rounded hover:bg-white/10 text-red-400 cursor-pointer"
+                                                                    >
+                                                                      <RefreshCw size={10} />
+                                                                    </button>
+                                                                  )}
+                                                                </div>
+                                                              </div>
+                                                            );
+                                                          })}
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </motion.div>
+                                                )}
+                                              </AnimatePresence>
                                             </div>
                                           );
                                         })}
