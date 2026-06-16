@@ -536,8 +536,8 @@
             pointer-events: none;
             z-index: 1000;
             border: none;
-            width: calc(100% - 40px);
-            max-width: 400px;
+            width: max-content;
+            max-width: 90%;
             text-align: center;
             /* Claymorphic 3D shadow effect */
             box-shadow:
@@ -1128,7 +1128,7 @@
         document.getElementById('stop-paste-btn').addEventListener('click', async () => {
             try {
                 await fetch('/stop');
-                showToast('❌ Stopping...');
+                showToast('❌ Stopping...', 'error');
                 stopCountdown();
             } catch (e) { }
         });

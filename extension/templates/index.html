@@ -360,18 +360,35 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: #222;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 30px;
+            background: #ff4d4d; /* Base red for claymorphic error */
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 12px;
             font-size: 0.9rem;
+            font-weight: 800;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
             z-index: 1000;
+            border: none;
+            width: max-content;
+            max-width: 90%;
+            text-align: center;
+            /* Claymorphic 3D shadow effect */
+            box-shadow:
+                6px 6px 12px rgba(0, 0, 0, 0.4),
+                -2px -2px 8px rgba(255, 255, 255, 0.05),
+                inset 4px 4px 10px rgba(255, 255, 255, 0.4),
+                inset -4px -4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .toast.show { opacity: 1; }
+        .toast.success {
+            background: var(--accent-color); /* Success color */
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
 
         @media (max-height: 700px) {
             .hero-section h1 { font-size: 1.5rem; }
@@ -649,7 +666,7 @@
                     if (!liveSync) remoteText.value = '';
                 }
             } catch (e) {
-                showToast('Error Connecting');
+                showToast('Error Connecting', 'error');
             } finally {
                 setTimeout(() => {
                     sendBtn.innerHTML = '<i data-lucide="zap" size="20"></i> SEND TO LAPTOP';
@@ -684,7 +701,7 @@
                     showToast('Fetched Clipboard!');
                 }
             } catch (e) {
-                showToast('Fetch Failed');
+                showToast('Fetch Failed', 'error');
             }
         });
 
@@ -705,7 +722,7 @@
                     showToast(data.message || 'Nothing Selected');
                 }
             } catch (e) {
-                showToast('Capture Failed');
+                showToast('Capture Failed', 'error');
             }
         });
 
@@ -713,7 +730,7 @@
         document.getElementById('stop-paste-btn').addEventListener('click', async () => {
             try {
                 await fetch('/stop');
-                showToast('❌ Stopping...');
+                showToast('❌ Stopping...', 'error');
             } catch (e) {}
         });
 
@@ -722,11 +739,17 @@
             showToast('Session Reset');
         });
 
-        function showToast(msg) {
+        function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
+            toast.className = 'toast show ' + type;
+            // Add a little pop animation
+            toast.style.transform = 'translateX(-50%) scale(1.05)';
+            setTimeout(() => toast.style.transform = 'translateX(-50%) scale(1)', 150);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateX(-50%)';
+            }, 2500);
         }
         
         // Auto-enter if already linked (optional)
