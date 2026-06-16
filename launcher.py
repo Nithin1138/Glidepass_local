@@ -1392,9 +1392,11 @@ class LANpadLauncher:
         def _task():
             monetization_enabled = False
             free_enabled = False
-            import urllib.request
-            import json
-            urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+            import sys
+            if getattr(sys, 'frozen', False):
+                urls = ["https://lanpad.vercel.app"]
+            else:
+                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
             for base_url in urls:
                 try:
                     req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
@@ -1939,10 +1941,11 @@ class LANpadLauncher:
             try:
                 monetization_enabled = False
                 free_enabled = False
-                import urllib.request
-                import json
-                
-                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                import sys
+                if getattr(sys, 'frozen', False):
+                    urls = ["https://lanpad.vercel.app"]
+                else:
+                    urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
                 
                 for base_url in urls:
                     try:
@@ -2002,8 +2005,8 @@ class LANpadLauncher:
                             try: os.remove(license_path)
                             except Exception: pass
                         else:
-                            # Trust key offline if checked within 24 hours
-                            if time.time() - last_checked < 86400:
+                            # Trust key offline if checked within 24 hours and has a valid cached HWID
+                            if time.time() - last_checked < 86400 and lic.get("hwid"):
                                 print(f"[monetization] Cached key '{key}' is valid offline ({tier}).")
                                 self.gui_queue.put(lambda: self.show_view("main"))
                                 return
@@ -2046,11 +2049,15 @@ class LANpadLauncher:
     def verify_key_online(self, key):
         import urllib.request
         import json
+        import sys
         from platform_utils import get_hardware_id
 
         hwid = get_hardware_id()
         payload = json.dumps({"key": key, "hwid": hwid}).encode("utf-8")
-        urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
+        if getattr(sys, 'frozen', False):
+            urls = ["https://lanpad.vercel.app/api/monetization/verify"]
+        else:
+            urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
         
         last_error = "Invalid or expired activation key"
         for url in urls:
@@ -2081,12 +2088,13 @@ class LANpadLauncher:
         
         def _thread_task():
             try:
-                import urllib.request
-                import json
-
+                import sys
                 monetization_enabled = False
                 free_enabled = False
-                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                if getattr(sys, 'frozen', False):
+                    urls = ["https://lanpad.vercel.app"]
+                else:
+                    urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
                 
                 for base_url in urls:
                     try:
