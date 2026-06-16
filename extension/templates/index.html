@@ -677,18 +677,35 @@
 
         // Live Typing covered above
 
+        let isSyncing = false;
+        let pendingSyncText = null;
+
         async function syncToLaptop() {
+            const text = remoteText.value;
+            if (isSyncing) {
+                pendingSyncText = text;
+                return;
+            }
+            isSyncing = true;
             try {
                 await fetch('/paste', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        text: remoteText.value,
+                        text: text,
                         mode: 'sync',
                         wpm: selectedWpm
                     })
                 });
             } catch (e) {}
+            isSyncing = false;
+            if (pendingSyncText !== null) {
+                const nextText = pendingSyncText;
+                pendingSyncText = null;
+                if (nextText !== text) {
+                    syncToLaptop();
+                }
+            }
         }
 
         // Fetch Laptop Clipboard

@@ -938,7 +938,13 @@
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${proto}//${window.location.host}/ws/connect`;
             const ws = new WebSocket(wsUrl);
+            let pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send('ping');
+                }
+            }, 10000);
             ws.onclose = () => {
+                clearInterval(pingInterval);
                 setTimeout(connectWebSocket, 3000);
             };
             ws.onerror = () => {
