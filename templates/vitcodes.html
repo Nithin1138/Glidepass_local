@@ -569,6 +569,14 @@
         let currentSessionId = null;
         let currentExamType = null;
 
+        // Restore state if history.state exists
+        if (history.state) {
+            currentView = history.state.view || 'overview';
+            currentSubView = history.state.subView || 'types';
+            currentSessionId = history.state.sessionId || null;
+            currentExamType = history.state.examType || null;
+        }
+
         // Initialize history state on page load
         function initHistoryState() {
             if (!history.state) {
