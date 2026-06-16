@@ -2418,7 +2418,7 @@ export default function GlidePassAdmin() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <h1 className="text-xl font-bold font-[family-name:var(--font-outfit)] tracking-wider">GLIDEPASS ADMIN</h1>
+                  <h1 className="text-xl font-bold font-[family-name:var(--font-outfit)] tracking-wider">LANPAD ADMIN</h1>
                   <p className={txt3} style={{ fontSize: 12 }}>Administrative credentials required</p>
                 </div>
 
@@ -2585,7 +2585,7 @@ export default function GlidePassAdmin() {
                         <Terminal size={14} className="text-white" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-[family-name:var(--font-outfit)] font-black text-xs tracking-wider">GLIDEPASS</span>
+                        <span className="font-[family-name:var(--font-outfit)] font-black text-xs tracking-wider">LANPAD</span>
                         <span className="text-[8px] uppercase tracking-wider font-extrabold" style={{ color: P.blue }}>Control v1.0</span>
                       </div>
                     </div>
@@ -2722,7 +2722,7 @@ export default function GlidePassAdmin() {
               </header>
 
               {/* Content Area */}
-              <div className="flex-1 p-8 max-w-[1600px] w-full mx-auto space-y-8">
+              <div className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto space-y-6 md:space-y-8">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={view}
@@ -4791,7 +4791,7 @@ export default function GlidePassAdmin() {
                         <div className="space-y-4">
                           <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Console Brand Label</span>
-                            <input type="text" defaultValue="GlidePass Control" className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
+                            <input type="text" defaultValue="LANpad Control" className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${inputBg}`} />
                           </div>
                           <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold block" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Local IP Proxy</span>
