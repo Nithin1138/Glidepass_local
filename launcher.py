@@ -845,7 +845,7 @@ class LANpadLauncher:
             # ── Cloudflare Quick Tunnel ──────────────────────────────────────────
             if cloudflared_bin and (forced_tunnel is None or forced_tunnel == "cloudflare"):
                 try:
-                    cmd = [cloudflared_bin, "tunnel", "--url", "http://localhost:8000"]
+                    cmd = [cloudflared_bin, "tunnel", "--url", "http://127.0.0.1:8000"]
                     proc = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
@@ -906,7 +906,7 @@ class LANpadLauncher:
                             pass
 
                     # Run localhost.run SSH command
-                    ssh_cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", "-R", "80:localhost:8000", "nokey@localhost.run"]
+                    ssh_cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", "-R", "80:127.0.0.1:8000", "nokey@localhost.run"]
                     
                     proc = subprocess.Popen(
                         ssh_cmd,
