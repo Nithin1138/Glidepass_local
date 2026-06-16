@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const file = searchParams.get("file");
 
-  const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json"];
+  const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json", "downloads/versions_history.json"];
   if (!file || !allowedFiles.includes(file)) {
     return NextResponse.json({ error: "Invalid file parameter." }, { status: 400 });
   }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { file, content } = body;
 
-    const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json"];
+    const allowedFiles = ["index.html", "center.html", "vitcodes.html", "downloads/version.json", "downloads/versions_history.json"];
     if (!file || !allowedFiles.includes(file)) {
       return NextResponse.json({ error: "Invalid file parameter." }, { status: 400 });
     }
@@ -75,6 +75,40 @@ export async function POST(request: NextRequest) {
     }
 
     fs.writeFileSync(filePath, content, "utf8");
+
+    // Auto-update version history
+    if (file === "downloads/version.json") {
+      try {
+        const parsed = JSON.parse(content);
+        const historyPath = getCustomFilePath("downloads/versions_history.json");
+        const historyDir = path.dirname(historyPath);
+        if (!fs.existsSync(historyDir)) {
+          fs.mkdirSync(historyDir, { recursive: true });
+        }
+        let historyList: any[] = [];
+        if (fs.existsSync(historyPath)) {
+          try {
+            historyList = JSON.parse(fs.readFileSync(historyPath, "utf8"));
+          } catch (e) {
+            historyList = [];
+          }
+        }
+        const newEntry = {
+          version: parsed.version || "1.0.0",
+          windows_url: parsed.windows_url || "",
+          mac_url: parsed.mac_url || "",
+          force_update: !!parsed.force_update,
+          changelog: parsed.changelog || "",
+          timestamp: new Date().toISOString()
+        };
+        // Prepend and filter duplicates
+        historyList = [newEntry, ...historyList.filter((item: any) => item.version !== newEntry.version)];
+        fs.writeFileSync(historyPath, JSON.stringify(historyList, null, 2), "utf8");
+      } catch (e) {
+        console.error("[ota] Failed to write version history:", e);
+      }
+    }
+
     await logAudit(`OTA Template Modified: ${file}`, "Nithin", "127.0.0.1", "success");
 
     return NextResponse.json({ success: true, message: `Successfully updated ${file}` });

@@ -367,6 +367,7 @@ export default function GlidePassAdmin() {
   });
 
   const [savingVersion, setSavingVersion] = useState(false);
+  const [versionHistory, setVersionHistory] = useState<any[]>([]);
 
   const [telemetry, setTelemetry] = useState({
     activePairings: 34,
@@ -2090,6 +2091,14 @@ export default function GlidePassAdmin() {
           forceUpdate: !!data.force_update,
           changelog: data.changelog || ""
         });
+      }
+
+      const historyRes = await fetch(`/api/ota?file=downloads/versions_history.json&t=${Date.now()}`);
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        if (Array.isArray(historyData)) {
+          setVersionHistory(historyData);
+        }
       }
     } catch (e) {}
   };
@@ -5391,6 +5400,68 @@ export default function GlidePassAdmin() {
                                 force_update: appVersionData.forceUpdate,
                                 changelog: appVersionData.changelog
                               }, null, 2)}</pre>
+                            </div>
+                          </div>
+
+                          {/* Release History List */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Release History</h3>
+                            <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
+                              {versionHistory.length === 0 ? (
+                                <div className="text-center py-6 text-xs text-white/40">No release history found.</div>
+                              ) : (
+                                versionHistory.map((item: any, idx: number) => (
+                                  <div key={idx} className="p-3.5 rounded-xl border flex flex-col gap-2 relative group"
+                                    style={{ background: dk ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <span className="font-mono text-xs font-bold text-white">v{item.version}</span>
+                                        {item.force_update && (
+                                          <span className="ml-2 text-[9px] font-extrabold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 uppercase tracking-wide">Force</span>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={async () => {
+                                          if (!confirm(`Are you sure you want to revert to version v${item.version}?`)) return;
+                                          setSavingVersion(true);
+                                          try {
+                                            const res = await fetch("/api/ota", {
+                                              method: "POST",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({
+                                                file: "downloads/version.json",
+                                                content: JSON.stringify({
+                                                  version: item.version,
+                                                  windows_url: item.windows_url,
+                                                  mac_url: item.mac_url,
+                                                  force_update: item.force_update,
+                                                  changelog: item.changelog
+                                                }, null, 2)
+                                              })
+                                            });
+                                            if (!res.ok) throw new Error("Failed to revert version.");
+                                            showToast("success", `Reverted to v${item.version} successfully.`);
+                                            fetchAppVersion();
+                                          } catch (e: any) {
+                                            showToast("error", e.message);
+                                          } finally {
+                                            setSavingVersion(false);
+                                          }
+                                        }}
+                                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg text-white shadow bg-[#0077C0] hover:opacity-90 active:scale-[0.97] transition-all"
+                                      >
+                                        Revert
+                                      </button>
+                                    </div>
+                                    <p className="text-[10px] text-white/50 line-clamp-2">{item.changelog}</p>
+                                    <div className="text-[9px] text-white/30 font-mono">
+                                      {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown date"}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </div>
 
