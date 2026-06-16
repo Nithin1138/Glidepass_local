@@ -858,6 +858,12 @@
                     return r.json();
                 })
                 .then(data => {
+                    if (data && data.error) {
+                        throw new Error(data.error);
+                    }
+                    if (!Array.isArray(data)) {
+                        throw new Error('Invalid data format received');
+                    }
                     const changed = JSON.stringify(allSessions) !== JSON.stringify(data);
                     if (changed || !isSilent) {
                         allSessions = data;

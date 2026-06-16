@@ -445,7 +445,8 @@ async def vitcodes_page():
 async def get_api_vitcodes():
     limits = get_cloud_limits(get_license_tier())
     if not limits.get("allow_vitcode", True):
-        return {"error": "Your plan does not allow VITCodes access."}
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"error": "Your plan does not allow VITCodes access."})
 
     config_path = os.path.expanduser("~/.lanpad/config.json")
     custom_url = None
