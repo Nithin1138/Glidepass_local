@@ -1015,14 +1015,11 @@ async def paste(data: dict):
     if text is not None:
         print(f"[PASTE] Triggering {mode} mode | Content: {text[:20]}...")
         if not text:
-            if last_synced_text and mode == "sync":
-                pyautogui_module = _safe_pyautogui()
-                if pyautogui_module:
-                    pyautogui_module.press('backspace')
-            last_synced_text = ""
-            pending_paste["text"] = ""
-            pending_paste["id"] += 1
-            return {"status": "success"}
+            if mode != "sync":
+                last_synced_text = ""
+                pending_paste["text"] = ""
+                pending_paste["id"] += 1
+                return {"status": "success"}
 
         pending_paste["text"] = text
         pending_paste["id"] += 1
