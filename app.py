@@ -1069,14 +1069,26 @@ async def paste(data: dict):
         last_synced_text = text
         
         def run_sync():
-            if text.startswith(old_text):
+            if text == old_text:
+                return
+
+            if text.startswith(old_text) and len(text) - len(old_text) <= 3:
                 new_chars = text[len(old_text):]
                 if new_chars:
                     pyautogui_module.write(new_chars)
-            elif old_text.startswith(text):
+            elif old_text.startswith(text) and len(old_text) - len(text) <= 3:
                 backspaces = len(old_text) - len(text)
                 for _ in range(backspaces):
                     pyautogui_module.press('backspace')
+            else:
+                _set_clipboard(text)
+                time.sleep(0.03)
+                if IS_MAC:
+                    pyautogui_module.hotkey('command', 'a')
+                    pyautogui_module.hotkey('command', 'v')
+                else:
+                    pyautogui_module.hotkey('ctrl', 'a')
+                    pyautogui_module.hotkey('ctrl', 'v')
 
         import asyncio
         await asyncio.to_thread(run_sync)

@@ -1976,7 +1976,6 @@ class LANpadLauncher:
                 license_path = os.path.expanduser("~/.lanpad_license.json")
                 if os.path.exists(license_path):
                     try:
-                        import json
                         from platform_utils import get_hardware_id
                         with open(license_path, "r", encoding="utf-8") as f:
                             lic = json.load(f)
