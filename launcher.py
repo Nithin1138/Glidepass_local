@@ -2412,7 +2412,7 @@ class LANpadLauncher:
             try:
                 import urllib.request
                 import json
-                with urllib.request.urlopen("http://127.0.0.1:8000/api/connections", timeout=0.5) as response:
+                with urllib.request.urlopen("http://127.0.0.1:8000/api/connections", timeout=2.0) as response:
                     data = json.loads(response.read().decode())
                     count = data.get("count", 0)
                     devices = data.get("devices", [])

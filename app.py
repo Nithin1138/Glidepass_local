@@ -1028,20 +1028,26 @@ async def paste(data: dict):
         pending_paste["id"] += 1
 
     if mode == "inject":
-        text = " ".join(text.split())
-        # Cross-platform clipboard copy
-        _set_clipboard(text)
-        time.sleep(0.1)
+        def run_inject():
+            cleaned_text = " ".join(text.split())
+            _set_clipboard(cleaned_text)
+            time.sleep(0.1)
 
-        pyautogui_module = _safe_pyautogui()
-        if not pyautogui_module:
-            return {"status": "error", "message": "pyautogui not available"}
+            pyautogui_module = _safe_pyautogui()
+            if not pyautogui_module:
+                raise Exception("pyautogui not available")
 
-        if IS_MAC:
-            _check_mac_accessibility_and_prompt()
-            pyautogui_module.hotkey('command', 'v', interval=0.05)
-        else:
-            pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
+            if IS_MAC:
+                _check_mac_accessibility_and_prompt()
+                pyautogui_module.hotkey('command', 'v', interval=0.05)
+            else:
+                pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
+
+        import asyncio
+        try:
+            await asyncio.to_thread(run_inject)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
         return {"status": "success"}
 
     elif mode == "type":
@@ -1058,18 +1064,22 @@ async def paste(data: dict):
         pyautogui_module = _safe_pyautogui()
         if not pyautogui_module:
             return {"status": "error", "message": "pyautogui not available"}
-        # Better diffing for Live Sync
-        if text.startswith(last_synced_text):
-            new_chars = text[len(last_synced_text):]
-            if new_chars:
-                pyautogui_module.write(new_chars)
-        elif last_synced_text.startswith(text):
-            backspaces = len(last_synced_text) - len(text)
-            for _ in range(backspaces):
-                pyautogui_module.press('backspace')
-        # else: total change in the middle – bail out to avoid
-        # massive destructive backspacing.
+        
+        old_text = last_synced_text
         last_synced_text = text
+        
+        def run_sync():
+            if text.startswith(old_text):
+                new_chars = text[len(old_text):]
+                if new_chars:
+                    pyautogui_module.write(new_chars)
+            elif old_text.startswith(text):
+                backspaces = len(old_text) - len(text)
+                for _ in range(backspaces):
+                    pyautogui_module.press('backspace')
+
+        import asyncio
+        await asyncio.to_thread(run_sync)
         return {"status": "success"}
 
     else:  # Default: Flash
@@ -1077,15 +1087,19 @@ async def paste(data: dict):
         if not pyautogui_module:
             return {"status": "error", "message": "pyautogui not available"}
 
-        _set_clipboard(text)
-        # CRITICAL: Wait for clipboard to actually take the text
-        # Some apps are slow to register the new clipboard content
-        time.sleep(0.5)
-        if IS_MAC:
-            _check_mac_accessibility_and_prompt()
-            pyautogui_module.hotkey('command', 'v', interval=0.05)
-        else:
-            pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
+        def run_flash():
+            _set_clipboard(text)
+            # CRITICAL: Wait for clipboard to actually take the text
+            # Some apps are slow to register the new clipboard content
+            time.sleep(0.5)
+            if IS_MAC:
+                _check_mac_accessibility_and_prompt()
+                pyautogui_module.hotkey('command', 'v', interval=0.05)
+            else:
+                pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
+
+        import asyncio
+        await asyncio.to_thread(run_flash)
         return {"status": "success"}
 
     return {"status": "error", "message": "No text provided"}
