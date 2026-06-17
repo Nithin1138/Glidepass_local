@@ -321,7 +321,6 @@ export async function initDb() {
       const defaultSettings = {
         monetization_enabled: false,
         free_enabled: false,
-        plans: [
           {
             tier: "Free",
             title: "Free Pass",
@@ -338,12 +337,13 @@ export async function initDb() {
             allow_select_copy: 0,
             allow_fetch: 0,
             allow_refill: 0,
-            allow_vitcode: 0
+            allow_vitcode: 0,
+            allow_tunnel: -1
           },
-          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
-          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
-          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
-          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
+          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7, allow_tunnel: -1 },
+          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30, allow_tunnel: 0 },
+          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120, allow_tunnel: 0 },
+          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365, allow_tunnel: 0 }
         ]
       };
       await client.query("INSERT INTO vit_settings (key, value) VALUES ('monetization_settings', $1)", [JSON.stringify(defaultSettings)]);
@@ -1575,12 +1575,13 @@ export async function getMonetizationSettings(): Promise<any> {
           allow_select_copy: 0,
           allow_fetch: 0,
           allow_refill: 0,
-          allow_vitcode: 0
+          allow_vitcode: 0,
+          allow_tunnel: -1
         },
-        { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7 },
-        { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30 },
-        { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120 },
-        { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365 }
+        { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7, allow_tunnel: -1 },
+        { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30, allow_tunnel: 0 },
+        { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120, allow_tunnel: 0 },
+        { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365, allow_tunnel: 0 }
       ]
     };
   } else {
@@ -1608,9 +1609,16 @@ export async function getMonetizationSettings(): Promise<any> {
         allow_select_copy: 0,
         allow_fetch: 0,
         allow_refill: 0,
-        allow_vitcode: 0
+        allow_vitcode: 0,
+        allow_tunnel: -1
       });
     }
+    // Backward compatibility check for other plans lacking allow_tunnel
+    settings.plans.forEach((plan: any) => {
+      if (plan.allow_tunnel === undefined) {
+        plan.allow_tunnel = (plan.tier === "Basic" || plan.tier === "Free") ? -1 : 0;
+      }
+    });
   }
   return settings;
 }

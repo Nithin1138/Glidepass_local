@@ -5386,7 +5386,8 @@ export default function GlidePassAdmin() {
                                     { key: 'allow_select_copy', label: 'Select Copy Usage' },
                                     { key: 'allow_fetch', label: 'Fetch Paste Usage' },
                                     { key: 'allow_refill', label: 'Refill Action Usage' },
-                                    { key: 'allow_vitcode', label: 'VITCodes Access Usage' }
+                                    { key: 'allow_vitcode', label: 'VITCodes Access Usage' },
+                                    { key: 'allow_tunnel', label: 'AP Isolation Bypass (Tunnel)' }
                                   ].map((toggle) => (
                                     <tr key={toggle.key}>
                                       <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>

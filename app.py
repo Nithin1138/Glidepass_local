@@ -214,7 +214,8 @@ def get_cloud_limits(tier):
         "allow_select_copy": 0,
         "allow_fetch": 0,
         "allow_refill": 0,
-        "allow_vitcode": 0
+        "allow_vitcode": 0,
+        "allow_tunnel": 0
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled

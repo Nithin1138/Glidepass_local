@@ -595,8 +595,34 @@ class LANpadLauncher:
             except Exception:
                 pass
 
-            if tier == "Basic":
-                messagebox.showwarning("Upgrade Required", "AP Isolation Bypass (College Wi-Fi Tunnel Mode) is only available on Pro, Max, and Ultra plans. Please upgrade your package.")
+            # Check if plan allows AP Isolation Bypass (Tunnel Mode)
+            allow_tunnel = True
+            plans = []
+            try:
+                mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+                if os.path.exists(mon_path):
+                    import json
+                    with open(mon_path, "r", encoding="utf-8") as f:
+                        mon_data = json.load(f)
+                    if mon_data.get("monetization_enabled", False):
+                        allow_tunnel = False
+                        plans = mon_data.get("plans", [])
+                        for plan in plans:
+                            if plan.get("tier") == tier:
+                                if plan.get("allow_tunnel") != -1:
+                                    allow_tunnel = True
+                                break
+            except Exception as e:
+                print(f"[monetization] Error checking tunnel permission: {e}")
+
+            if not allow_tunnel:
+                try:
+                    allowed_plans = [p.get("title", p.get("tier")) for p in plans if p.get("allow_tunnel") != -1]
+                    plans_str = ", ".join(allowed_plans)
+                except Exception:
+                    plans_str = "Pro, Max, and Ultra plans"
+                
+                messagebox.showwarning("Upgrade Required", f"AP Isolation Bypass (College Wi-Fi Tunnel Mode) is only available on {plans_str}. Please upgrade your package.")
                 return
 
             if self._active_tab != "tunnel":
@@ -1958,7 +1984,12 @@ class LANpadLauncher:
                             try:
                                 mon_path = os.path.expanduser("~/.lanpad_monetization.json")
                                 with open(mon_path, "w", encoding="utf-8") as f:
-                                    json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                                    json.dump({
+                                        "monetization_enabled": monetization_enabled, 
+                                        "free_enabled": free_enabled, 
+                                        "plans": data.get("plans", []),
+                                        "last_checked": time.time()
+                                    }, f)
                             except Exception:
                                 pass
                             break
