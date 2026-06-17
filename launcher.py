@@ -670,7 +670,7 @@ class LANpadLauncher:
         self._btn_cv.place(x=24, y=626 + yo * 2.5)
         self._draw_main_btn(active=False)
 
-        # Open Received Files button
+        # Open Received Files / Send/Receive Buttons
         def open_shared_folder():
             import os
             import subprocess
@@ -685,10 +685,19 @@ class LANpadLauncher:
             else:
                 subprocess.Popen(["xdg-open", path])
 
-        self._files_btn = tk.Button(v, text="Open Received Files Folder", fg=self.DIM, activeforeground=self.WHITE,
+        def open_send_receive():
+            import webbrowser
+            webbrowser.open("http://127.0.0.1:8000/files")
+
+        self._send_receive_btn = tk.Button(v, text="Send/Receive", fg=self.DIM, activeforeground=self.WHITE,
+                                           bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
+                                           bd=0, highlightthickness=0, command=open_send_receive, cursor="hand2")
+        self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
+
+        self._files_btn = tk.Button(v, text="Open Files", fg=self.DIM, activeforeground=self.WHITE,
                                     bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
                                     bd=0, highlightthickness=0, command=open_shared_folder, cursor="hand2")
-        self._files_btn.place(x=24, y=690 + yo * 2.4, width=W - 48, height=24)
+        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
