@@ -1733,10 +1733,46 @@ class LANpadLauncher:
         # Title
         tk.Label(hdr, text="Files Center", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
 
-        # ── Dropzone Card ────────────────────────────────────────────────────
+        # ── Dropzone Card & Drag-and-Drop Setup ──────────────────────────────
+        shared_path = os.path.expanduser("~/Downloads/LANpad")
+
+        def parse_dropped_paths(text):
+            import re
+            paths = []
+            pattern = r'\{([^}]+)\}|(\S+)'
+            for match in re.finditer(pattern, text):
+                path = match.group(1) or match.group(2)
+                if path:
+                    paths.append(path.strip())
+            return paths
+
         dropzone = tk.Canvas(v, width=W - 36, height=130, bg=self.BG, highlightthickness=0)
         dropzone.place(x=18, y=105 + yo)
-        
+
+        # Styled DnD entry inside dropzone
+        dnd_var = tk.StringVar()
+        dnd_entry = tk.Entry(dropzone, textvariable=dnd_var, bg=self.BG2, fg=self.DIM, insertbackground=self.WHITE,
+                             font=(self.FU, 9), bd=0, highlightthickness=1, highlightbackground="#2A2A30",
+                             highlightcolor="#0077C0", justify="center")
+        dnd_entry.place(x=30, y=90, width=W - 36 - 60, height=26)
+
+        placeholder = "or Drop Files Here..."
+        dnd_entry.insert(0, placeholder)
+
+        def add_placeholder(entry, ph):
+            def on_focus_in(event):
+                if entry.get() == ph:
+                    entry.delete(0, tk.END)
+                    entry.config(fg=self.WHITE)
+            def on_focus_out(event):
+                if not entry.get():
+                    entry.insert(0, ph)
+                    entry.config(fg=self.DIM)
+            entry.bind("<FocusIn>", on_focus_in)
+            entry.bind("<FocusOut>", on_focus_out)
+
+        add_placeholder(dnd_entry, placeholder)
+
         def draw_dropzone(hover=False):
             dropzone.delete("all")
             fill_color = "#16161D" if hover else self.BG2
@@ -1746,7 +1782,7 @@ class LANpadLauncher:
             
             # Custom Vector Cloud Icon with Arrow
             cx = (W - 36) // 2
-            cy = 42
+            cy = 38
             dropzone.create_oval(cx - 24, cy - 8, cx - 4, cy + 12, fill="#0077C0", outline="")
             dropzone.create_oval(cx - 8, cy - 22, cx + 18, cy + 12, fill="#0077C0", outline="")
             dropzone.create_oval(cx + 8, cy - 8, cx + 24, cy + 12, fill="#0077C0", outline="")
@@ -1758,8 +1794,10 @@ class LANpadLauncher:
             dropzone.create_line(cx + 1, cy - 8, cx + 5, cy - 4, fill=self.WHITE, width=2)
             
             # Text
-            dropzone.create_text((W - 36) // 2, 78, text="Choose Files / Drag & Drop", font=(self.FU, 12, "bold"), fill=self.WHITE)
-            dropzone.create_text((W - 36) // 2, 98, text="Supports large files (5-10 GB+) cross-device over Local LAN", font=(self.FU, 8), fill=self.DIM)
+            dropzone.create_text((W - 36) // 2, 70, text="Choose Files / Drag & Drop", font=(self.FU, 12, "bold"), fill=self.WHITE)
+            
+            # Keep entry visual style updated
+            dnd_entry.config(bg=fill_color)
 
         draw_dropzone()
 
@@ -1789,7 +1827,59 @@ class LANpadLauncher:
         list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
         list_canvas.configure(yscrollcommand=scrollbar.set)
 
-        shared_path = os.path.expanduser("~/Downloads/LANpad")
+        def process_dropped_files(paths_str):
+            import shutil
+            from tkinter import messagebox
+            if not paths_str or paths_str == placeholder:
+                return
+            
+            paths = parse_dropped_paths(paths_str)
+            copied_any = False
+            for fp in paths:
+                if os.path.exists(fp):
+                    try:
+                        if not os.path.exists(shared_path):
+                            os.makedirs(shared_path, exist_ok=True)
+                        if os.path.isdir(fp):
+                            dest = os.path.join(shared_path, os.path.basename(fp))
+                            if os.path.exists(dest):
+                                if os.path.isdir(dest):
+                                    shutil.rmtree(dest)
+                                else:
+                                    os.remove(dest)
+                            shutil.copytree(fp, dest)
+                        else:
+                            shutil.copy(fp, shared_path)
+                        copied_any = True
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Could not copy {os.path.basename(fp)}: {e}")
+            
+            dnd_entry.delete(0, tk.END)
+            dnd_entry.insert(0, placeholder)
+            dnd_entry.config(fg=self.DIM)
+            v.focus_set()
+            
+            if copied_any:
+                refresh_files()
+
+        def on_dnd_change(*args):
+            val = dnd_var.get().strip()
+            if val and val != placeholder:
+                v.after(100, lambda: process_dropped_files(dnd_var.get().strip()))
+
+        dnd_var.trace_add("write", on_dnd_change)
+
+        def on_enter_dropzone(e):
+            draw_dropzone(True)
+            dnd_entry.focus_set()
+
+        def on_leave_dropzone(e):
+            draw_dropzone(False)
+
+        dropzone.bind("<Enter>", on_enter_dropzone)
+        dropzone.bind("<Leave>", on_leave_dropzone)
+        dnd_entry.bind("<Enter>", on_enter_dropzone)
+        dnd_entry.bind("<Leave>", on_leave_dropzone)
 
         def refresh_files():
             # Clear previous items
