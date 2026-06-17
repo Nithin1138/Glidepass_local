@@ -1716,11 +1716,11 @@ class LANpadLauncher:
         hdr = tk.Frame(v, bg=self.BG)
         hdr.place(x=18, y=58 + yo, width=W - 36)
         
-        # Folder icon tile
+        # Folder icon tile (custom vector folder drawing)
         ic = tk.Canvas(hdr, width=32, height=32, bg=self.BG, highlightthickness=0)
         ic.pack(side="left")
         rounded_rect(ic, 0, 0, 32, 32, r=8, fill=self.BG2, outline="")
-        ic.create_text(16, 16, text="📁", font=(self.FU, 14), anchor="center")
+        ic.create_polygon(8, 10, 14, 10, 16, 12, 24, 12, 24, 22, 8, 22, fill="#0077C0", outline="")
 
         # Title
         tk.Label(hdr, text="Files Center", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
@@ -1736,11 +1736,21 @@ class LANpadLauncher:
             # Draw rounded dashed rect
             rounded_rect(dropzone, 2, 2, W - 38, 128, r=16, fill=fill_color, outline=outline_color, width=1)
             
-            # Cloud Icon
-            dropzone.create_text((W - 36) // 2, 35, text="☁", font=(self.FU, 28), fill="#0077C0")
+            # Custom Vector Cloud Icon with Arrow
+            cx = (W - 36) // 2
+            cy = 42
+            dropzone.create_oval(cx - 24, cy - 8, cx - 4, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_oval(cx - 8, cy - 22, cx + 18, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_oval(cx + 8, cy - 8, cx + 24, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_rectangle(cx - 16, cy, cx + 16, cy + 12, fill="#0077C0", outline="")
+            
+            # White Arrow inside Cloud
+            dropzone.create_line(cx + 1, cy + 6, cx + 1, cy - 8, fill=self.WHITE, width=2)
+            dropzone.create_line(cx + 1, cy - 8, cx - 3, cy - 4, fill=self.WHITE, width=2)
+            dropzone.create_line(cx + 1, cy - 8, cx + 5, cy - 4, fill=self.WHITE, width=2)
             
             # Text
-            dropzone.create_text((W - 36) // 2, 75, text="Choose Files / Drag & Drop", font=(self.FU, 12, "bold"), fill=self.WHITE)
+            dropzone.create_text((W - 36) // 2, 78, text="Choose Files / Drag & Drop", font=(self.FU, 12, "bold"), fill=self.WHITE)
             dropzone.create_text((W - 36) // 2, 98, text="Supports large files (5-10 GB+) cross-device over Local LAN", font=(self.FU, 8), fill=self.DIM)
 
         draw_dropzone()
@@ -1751,7 +1761,7 @@ class LANpadLauncher:
         
         tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM).pack(side="left", anchor="center")
         
-        refresh_lbl = tk.Label(sec_frame, text="🔄 Refresh", font=(self.FU, 9, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
+        refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 10, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
         refresh_lbl.pack(side="right", anchor="center")
 
         # ── Scrollable list container ────────────────────────────────────────
@@ -1832,15 +1842,17 @@ class LANpadLauncher:
                         btn_col = tk.Frame(card, bg=self.BG2)
                         btn_col.pack(side="right", fill="y")
                         
-                        # Open button (blue square)
-                        open_btn = tk.Button(btn_col, text="📥", font=(self.FU, 10), bg="#0077C0", fg="#FFFFFF", activebackground="#009BF5", bd=0, width=3, height=1, cursor="hand2", command=make_open_handler(f_path))
+                        # Open button (styled Label)
+                        open_btn = tk.Label(btn_col, text="↓", font=(self.FU, 11, "bold"), bg="#0077C0", fg="#FFFFFF", padx=12, pady=4, relief="flat", cursor="hand2")
                         open_btn.pack(side="left", padx=4)
+                        open_btn.bind("<Button-1>", lambda e, path=f_path: open_path(path))
                         
-                        # Delete button (red outline/tint)
+                        # Delete button (styled Label)
                         def make_delete_handler(fname):
-                            return lambda: delete_file(fname)
-                        del_btn = tk.Button(btn_col, text="🗑", font=(self.FU, 10), bg="#3B1C1C", fg="#FF4D4D", activebackground="#742A2A", bd=0, width=3, height=1, cursor="hand2", command=make_delete_handler(f))
+                            return lambda e: delete_file(fname)
+                        del_btn = tk.Label(btn_col, text="✕", font=(self.FU, 11, "bold"), bg="#3B1C1C", fg="#FF4D4D", padx=12, pady=4, relief="flat", cursor="hand2")
                         del_btn.pack(side="left", padx=4)
+                        del_btn.bind("<Button-1>", make_delete_handler(f))
             except Exception as e:
                 lbl = tk.Label(scrollable_frame, text=f"Error: {e}", font=(self.FU, 10), bg=self.BG, fg=self.RED, pady=20)
                 lbl.pack(fill="x")
