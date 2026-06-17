@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logDownload } from "@/lib/db";
+import { logDownload, getOtaFile } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 
@@ -22,12 +22,30 @@ export async function GET(request: NextRequest) {
     : "/downloads/LANpad_macOS.dmg";
 
   try {
-    const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
-    const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
-    const versionFilePath = path.join(baseDir, "ota", "downloads/version.json");
+    let parsed: any = null;
+    
+    // Try reading from database first
+    const dbContent = await getOtaFile("downloads/version.json");
+    if (dbContent !== null) {
+      try {
+        parsed = JSON.parse(dbContent);
+      } catch (e) {}
+    }
 
-    if (fs.existsSync(versionFilePath)) {
-      const parsed = JSON.parse(fs.readFileSync(versionFilePath, "utf8"));
+    // Fall back to custom file path if not found in database
+    if (!parsed) {
+      const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+      const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+      const versionFilePath = path.join(baseDir, "ota", "downloads/version.json");
+
+      if (fs.existsSync(versionFilePath)) {
+        try {
+          parsed = JSON.parse(fs.readFileSync(versionFilePath, "utf8"));
+        } catch (e) {}
+      }
+    }
+
+    if (parsed) {
       if (platform === "windows" && parsed.windows_url) {
         downloadUrl = parsed.windows_url;
       } else if (platform === "mac" && parsed.mac_url) {
@@ -45,3 +63,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(redirectUrl, 302);
 }
+

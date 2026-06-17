@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { logAudit } from "@/lib/db";
+import { logAudit, getOtaFile, setOtaFile } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +21,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const customFilePath = getCustomFilePath(file);
+    // 1. Try reading from Database
+    const dbContent = await getOtaFile(file);
+    if (dbContent !== null) {
+      return new NextResponse(dbContent, {
+        headers: { "Content-Type": file.endsWith(".json") ? "application/json; charset=utf-8" : "text/html; charset=utf-8" },
+      });
+    }
 
-    // Try reading custom OTA template if it exists
+    // 2. Try reading custom OTA template if it exists in local file storage
+    const customFilePath = getCustomFilePath(file);
     if (fs.existsSync(customFilePath)) {
       const content = fs.readFileSync(customFilePath, "utf8");
       return new NextResponse(content, {
@@ -31,7 +38,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fall back to default template
+    // 3. Fall back to default template
     let defaultFilePath;
     if (file === "downloads/version.json") {
       defaultFilePath = path.join(process.cwd(), "public", "downloads", "version.json");
@@ -66,33 +73,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Content must be a string" }, { status: 400 });
     }
 
+    // 1. Save to Database
+    await setOtaFile(file, content);
+
+    // 2. Save to filesystem as secondary cache/local development fallback
     const filePath = getCustomFilePath(file);
     const parentDir = path.dirname(filePath);
-
-    // Only create directory if it does not exist
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
-
     fs.writeFileSync(filePath, content, "utf8");
 
     // Auto-update version history
     if (file === "downloads/version.json") {
       try {
         const parsed = JSON.parse(content);
-        const historyPath = getCustomFilePath("downloads/versions_history.json");
-        const historyDir = path.dirname(historyPath);
-        if (!fs.existsSync(historyDir)) {
-          fs.mkdirSync(historyDir, { recursive: true });
-        }
+        
+        // Load history from DB first, fall back to file history
         let historyList: any[] = [];
-        if (fs.existsSync(historyPath)) {
+        const dbHistory = await getOtaFile("downloads/versions_history.json");
+        if (dbHistory !== null) {
           try {
-            historyList = JSON.parse(fs.readFileSync(historyPath, "utf8"));
-          } catch (e) {
-            historyList = [];
+            historyList = JSON.parse(dbHistory);
+          } catch (e) {}
+        } else {
+          const historyPath = getCustomFilePath("downloads/versions_history.json");
+          if (fs.existsSync(historyPath)) {
+            try {
+              historyList = JSON.parse(fs.readFileSync(historyPath, "utf8"));
+            } catch (e) {}
           }
         }
+
         const newEntry = {
           version: parsed.version || "1.0.0",
           windows_url: parsed.windows_url || "",
@@ -103,7 +115,13 @@ export async function POST(request: NextRequest) {
         };
         // Prepend and filter duplicates
         historyList = [newEntry, ...historyList.filter((item: any) => item.version !== newEntry.version)];
-        fs.writeFileSync(historyPath, JSON.stringify(historyList, null, 2), "utf8");
+        
+        const historyJson = JSON.stringify(historyList, null, 2);
+        
+        // Save history to DB and file cache
+        await setOtaFile("downloads/versions_history.json", historyJson);
+        const historyPath = getCustomFilePath("downloads/versions_history.json");
+        fs.writeFileSync(historyPath, historyJson, "utf8");
       } catch (e) {
         console.error("[ota] Failed to write version history:", e);
       }

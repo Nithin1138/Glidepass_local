@@ -1790,3 +1790,25 @@ export async function getAllLicenses(): Promise<any[]> {
   }
   return [];
 }
+
+export async function getOtaFile(file: string): Promise<string | null> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT value FROM vit_settings WHERE key = $1", [`ota_file:${file}`]);
+    if (res.rows.length > 0) {
+      return res.rows[0].value;
+    }
+  }
+  return null;
+}
+
+export async function setOtaFile(file: string, content: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [`ota_file:${file}`, content]
+    );
+  }
+}
+
