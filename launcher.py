@@ -691,21 +691,23 @@ class LANpadLauncher:
         def open_send_receive():
             self.show_view("files")
 
-        self._send_receive_btn = tk.Label(v, text="Send/Receive", fg=self.DIM,
-                                          bg=self.BG, font=(self.FU, 10, "underline"),
+        self._send_receive_btn = tk.Label(v, text="Send/Receive", fg=self.WHITE,
+                                          bg=self.BG2, font=(self.FU, 10, "bold"),
+                                          highlightthickness=1, highlightbackground="#2A2A30",
                                           cursor="hand2")
-        self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
+        self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
         self._send_receive_btn.bind("<Button-1>", lambda e: open_send_receive())
-        self._send_receive_btn.bind("<Enter>", lambda e: self._send_receive_btn.config(fg=self.WHITE))
-        self._send_receive_btn.bind("<Leave>", lambda e: self._send_receive_btn.config(fg=self.DIM))
+        self._send_receive_btn.bind("<Enter>", lambda e: self._send_receive_btn.config(highlightbackground=self.WHITE))
+        self._send_receive_btn.bind("<Leave>", lambda e: self._send_receive_btn.config(highlightbackground="#2A2A30"))
 
-        self._files_btn = tk.Label(v, text="Open Files", fg=self.DIM,
-                                   bg=self.BG, font=(self.FU, 10, "underline"),
+        self._files_btn = tk.Label(v, text="Open Files", fg=self.WHITE,
+                                   bg=self.BG2, font=(self.FU, 10, "bold"),
+                                   highlightthickness=1, highlightbackground="#2A2A30",
                                    cursor="hand2")
-        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
+        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
         self._files_btn.bind("<Button-1>", lambda e: open_shared_folder())
-        self._files_btn.bind("<Enter>", lambda e: self._files_btn.config(fg=self.WHITE))
-        self._files_btn.bind("<Leave>", lambda e: self._files_btn.config(fg=self.DIM))
+        self._files_btn.bind("<Enter>", lambda e: self._files_btn.config(highlightbackground=self.WHITE))
+        self._files_btn.bind("<Leave>", lambda e: self._files_btn.config(highlightbackground="#2A2A30"))
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
