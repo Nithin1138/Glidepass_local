@@ -608,7 +608,7 @@ class LANpadLauncher:
                         allow_tunnel = False
                         plans = mon_data.get("plans", [])
                         for plan in plans:
-                            if plan.get("tier") == tier:
+                            if plan.get("tier", "").lower() == tier.lower():
                                 if plan.get("allow_tunnel") != -1:
                                     allow_tunnel = True
                                 break
@@ -1432,7 +1432,12 @@ class LANpadLauncher:
                         try:
                             mon_path = os.path.expanduser("~/.lanpad_monetization.json")
                             with open(mon_path, "w", encoding="utf-8") as f:
-                                json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                                json.dump({
+                                    "monetization_enabled": monetization_enabled,
+                                    "free_enabled": free_enabled,
+                                    "plans": data.get("plans", []),
+                                    "last_checked": time.time()
+                                }, f)
                         except Exception:
                             pass
                         break
@@ -2137,7 +2142,12 @@ class LANpadLauncher:
                             try:
                                 mon_path = os.path.expanduser("~/.lanpad_monetization.json")
                                 with open(mon_path, "w", encoding="utf-8") as f:
-                                    json.dump({"monetization_enabled": monetization_enabled, "free_enabled": free_enabled, "last_checked": time.time()}, f)
+                                    json.dump({
+                                        "monetization_enabled": monetization_enabled,
+                                        "free_enabled": free_enabled,
+                                        "plans": data.get("plans", []),
+                                        "last_checked": time.time()
+                                    }, f)
                             except Exception:
                                 pass
                             break
