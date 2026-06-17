@@ -321,6 +321,7 @@ export async function initDb() {
       const defaultSettings = {
         monetization_enabled: false,
         free_enabled: false,
+        plans: [
           {
             tier: "Free",
             title: "Free Pass",
