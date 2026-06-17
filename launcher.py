@@ -2514,9 +2514,10 @@ class LANpadLauncher:
 
     def apply_update(self, version, data):
         """Download and install the update."""
+        from tkinter import ttk
         status_win = tk.Toplevel(self.root)
         status_win.title("Updating LANpad")
-        status_win.geometry("300x120")
+        status_win.geometry("350x150")
         status_win.resizable(False, False)
         status_win.configure(bg=self.BG)
         status_win.transient(self.root)
@@ -2525,16 +2526,30 @@ class LANpadLauncher:
         lbl = tk.Label(
             status_win, 
             text="Downloading update...", 
-            font=(self.FU, 12, "bold"), 
+            font=(self.FU, 11, "bold"), 
             bg=self.BG, 
             fg=self.WHITE
         )
-        lbl.pack(pady=25)
+        lbl.pack(pady=(20, 5))
+
+        # Progress bar
+        progress = ttk.Progressbar(status_win, orient="horizontal", length=280, mode="determinate")
+        progress.pack(pady=5)
+
+        # Percentage label
+        pct_lbl = tk.Label(
+            status_win, 
+            text="0%", 
+            font=(self.FU, 10), 
+            bg=self.BG, 
+            fg=self.WHITE
+        )
+        pct_lbl.pack(pady=2)
 
         try:
             self.root.update_idletasks()
-            x = self.root.winfo_x() + (self.root.winfo_width() - 300) // 2
-            y = self.root.winfo_y() + (self.root.winfo_height() - 120) // 2
+            x = self.root.winfo_x() + (self.root.winfo_width() - 350) // 2
+            y = self.root.winfo_y() + (self.root.winfo_height() - 150) // 2
             status_win.geometry(f"+{x}+{y}")
         except Exception:
             pass
@@ -2563,10 +2578,27 @@ class LANpadLauncher:
                 download_path = os.path.join(temp_dir, filename)
 
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=30) as response, open(download_path, 'wb') as out_file:
-                    shutil.copyfileobj(response, out_file)
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    content_length = response.getheader('Content-Length')
+                    total_size = int(content_length) if content_length else 0
+                    
+                    downloaded = 0
+                    with open(download_path, 'wb') as out_file:
+                        while True:
+                            chunk = response.read(16384)
+                            if not chunk:
+                                break
+                            out_file.write(chunk)
+                            downloaded += len(chunk)
+                            if total_size > 0:
+                                percent = int((downloaded / total_size) * 100)
+                                self.root.after(0, lambda p=percent: [
+                                    progress.configure(value=p),
+                                    pct_lbl.configure(text=f"{p}%")
+                                ])
 
-                self.root.after(0, lambda: lbl.config(text="Applying update..."))
+                self.root.after(0, lambda: [lbl.config(text="Applying update..."), pct_lbl.config(text="")])
+
 
                 # Clean up tunnel process before quitting
                 try:
