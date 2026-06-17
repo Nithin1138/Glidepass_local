@@ -1197,7 +1197,22 @@ async def download_file(filename: str):
     if not os.path.exists(file_path):
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(file_path, filename=safe_filename)
+    
+    from fastapi.responses import StreamingResponse
+    import urllib.parse
+    
+    def iterfile():
+        with open(file_path, mode="rb") as f:
+            while chunk := f.read(1024 * 1024):  # 1MB buffer
+                yield chunk
+
+    # Properly URL encode filename for Content-Disposition header
+    encoded_filename = urllib.parse.quote(safe_filename)
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+        "Content-Length": str(os.path.getsize(file_path)),
+    }
+    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
 
 
 @app.delete("/api/files/delete/{filename}")
