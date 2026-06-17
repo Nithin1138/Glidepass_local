@@ -1252,32 +1252,31 @@ async def download_file(filename: str):
                     os.remove(zip_path)
                 except Exception:
                     pass
-            shutil.make_archive(zip_path.replace(".zip", ""), 'zip', file_path)
+            import zipfile
+            # Use ZIP_STORED (no compression) for instantaneous zipping at full disk I/O speeds
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zf:
+                for root, dirs, files in os.walk(file_path):
+                    for file in files:
+                        full_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(full_path, file_path)
+                        zf.write(full_path, rel_path)
             
         await run_in_threadpool(zip_dir)
         file_path = zip_path
         safe_filename = zip_filename
 
     async def iterfile():
-        offset = 0
-        chunk_size = 1024 * 1024  # 1MB chunks
-        
-        def read_chunk(off):
-            with open(file_path, mode="rb") as f:
-                f.seek(off)
-                return f.read(chunk_size)
-                
-        while True:
-            chunk = await run_in_threadpool(read_chunk, offset)
-            if not chunk:
-                break
-            yield chunk
-            offset += len(chunk)
-
-    import mimetypes
-    mime_type, _ = mimetypes.guess_type(file_path)
-    if not mime_type:
-        mime_type = "application/octet-stream"
+        # Open file descriptor once to eliminate repetitive open/close system calls
+        f = open(file_path, mode="rb")
+        try:
+            chunk_size = 1024 * 1024  # 1MB chunks
+            while True:
+                chunk = await run_in_threadpool(f.read, chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            f.close()
 
     # Properly URL encode filename for Content-Disposition header
     encoded_filename = urllib.parse.quote(safe_filename)
@@ -1285,7 +1284,7 @@ async def download_file(filename: str):
         "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
         "Content-Length": str(os.path.getsize(file_path)),
     }
-    return StreamingResponse(iterfile(), media_type=mime_type, headers=headers)
+    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
 
 
 @app.delete("/api/files/delete/{filename}")
