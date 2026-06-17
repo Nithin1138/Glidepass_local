@@ -44,7 +44,7 @@ if _sys.stderr is None:
 if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
 
 import httpx
@@ -215,7 +215,8 @@ def get_cloud_limits(tier):
         "allow_fetch": 0,
         "allow_refill": 0,
         "allow_vitcode": 0,
-        "allow_tunnel": 0
+        "allow_tunnel": 0,
+        "allow_file_share": 0
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled
@@ -1130,6 +1131,84 @@ def _safe_pyautogui():
     except Exception as e:
         print(f"[lanpad] pyautogui unavailable: {e}")
         return None
+
+
+# ── File Sharing Operations ───────────────────────────────────────────────────
+
+SHARED_DIR = os.path.expanduser("~/Downloads/GlidePass")
+if not os.path.exists(SHARED_DIR):
+    os.makedirs(SHARED_DIR, exist_ok=True)
+
+
+@app.get("/api/files/list")
+async def list_files():
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        files = []
+        if os.path.exists(SHARED_DIR):
+            for name in os.listdir(SHARED_DIR):
+                full_path = os.path.join(SHARED_DIR, name)
+                if os.path.isfile(full_path) and not name.startswith("."):
+                    stat = os.stat(full_path)
+                    files.append({
+                        "name": name,
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime
+                    })
+        files.sort(key=lambda x: x["modified"], reverse=True)
+        return {"status": "success", "files": files}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/upload")
+async def upload_file(file: UploadFile = File(...)):
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        filename = os.path.basename(file.filename)
+        dest_path = os.path.join(SHARED_DIR, filename)
+        
+        # Write file block-by-block using 64KB chunks to optimize socket transfer speed & memory usage
+        with open(dest_path, "wb") as f:
+            while chunk := await file.read(65536):
+                f.write(chunk)
+        return {"status": "success", "filename": filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/files/download/{filename}")
+async def download_file(filename: str):
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail=err)
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, filename=safe_filename)
+
+
+@app.delete("/api/files/delete/{filename}")
+async def delete_file(filename: str):
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return {"status": "success"}
+        return {"status": "error", "message": "File not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

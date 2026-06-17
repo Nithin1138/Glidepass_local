@@ -670,6 +670,26 @@ class LANpadLauncher:
         self._btn_cv.place(x=24, y=626 + yo * 2.5)
         self._draw_main_btn(active=False)
 
+        # Open Received Files button
+        def open_shared_folder():
+            import os
+            import subprocess
+            import platform
+            path = os.path.expanduser("~/Downloads/GlidePass")
+            if not os.path.exists(path):
+                os.makedirs(path, exist_ok=True)
+            if platform.system() == "Darwin":
+                subprocess.Popen(["open", path])
+            elif platform.system() == "Windows":
+                os.startfile(path)
+            else:
+                subprocess.Popen(["xdg-open", path])
+
+        self._files_btn = tk.Button(v, text="Open Received Files Folder", fg=self.DIM, activeforeground=self.WHITE,
+                                    bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
+                                    bd=0, highlightthickness=0, command=open_shared_folder, cursor="hand2")
+        self._files_btn.place(x=24, y=690 + yo * 2.4, width=W - 48, height=24)
+
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
                  font=(self.FU, 9), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).place(
