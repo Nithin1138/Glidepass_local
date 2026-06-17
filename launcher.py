@@ -1769,7 +1769,7 @@ class LANpadLauncher:
         
         tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM).pack(side="left", anchor="center")
         
-        refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 10, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
+        refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 11, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
         refresh_lbl.pack(side="right", anchor="center")
 
         # ── Scrollable list container ────────────────────────────────────────
@@ -1827,6 +1827,10 @@ class LANpadLauncher:
                         else:
                             size_str = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
                         
+                        disp_name = f
+                        if len(disp_name) > 30:
+                            disp_name = disp_name[:18] + "..." + disp_name[-9:]
+                        
                         card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground="#1A1A1F")
                         card.pack(fill="x", pady=(0, 8))
                         
@@ -1839,7 +1843,7 @@ class LANpadLauncher:
                         text_col = tk.Frame(card, bg=self.BG2)
                         text_col.pack(side="left", fill="both", expand=True)
                         
-                        name_lbl = tk.Label(text_col, text=f, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
+                        name_lbl = tk.Label(text_col, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
                         name_lbl.pack(fill="x")
                         name_lbl.bind("<Double-1>", make_open_handler(f_path))
                         
