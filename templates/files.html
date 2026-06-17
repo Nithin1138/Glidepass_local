@@ -287,6 +287,10 @@
                         </div>
                     </div>
                     <div class="controls-row">
+                        <button class="header-btn" id="speedtest-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <i data-lucide="gauge" size="16"></i>
+                            <span>SPEED TEST</span>
+                        </button>
                         <button class="header-btn disconnect-btn" id="disconnect-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
                             <i data-lucide="link-2-off" size="16"></i>
                             <span>DISCONNECT</span>
@@ -300,6 +304,37 @@
                     <i data-lucide="upload-cloud" size="36" style="color: var(--accent-color); margin-bottom: 12px; filter: drop-shadow(0 0 10px var(--accent-glow));"></i>
                     <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #fff;">Choose Files / Drag & Drop</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Supports large files (5-10 GB+) cross-device over Local LAN</div>
+                </div>
+
+                <!-- Speed Test Card -->
+                <div id="speedtest-container" style="display: none; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; backdrop-filter: blur(20px);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="gauge" size="14" style="color: var(--accent-color);"></i> LAN Speed Test
+                        </span>
+                        <button id="close-speedtest-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; font-weight: bold; width: 24px; height: 24px;">✕</button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Ping / Latency:</span>
+                            <span id="st-ping-lbl" style="font-weight: bold; color: var(--text-main);">- ms</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Download Speed:</span>
+                            <span id="st-download-lbl" style="font-weight: bold; color: #00F59B;">- MB/s</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Upload Speed:</span>
+                            <span id="st-upload-lbl" style="font-weight: bold; color: var(--accent-color);">- MB/s</span>
+                        </div>
+                    </div>
+                    
+                    <div id="st-progress-bar-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: none; margin-top: 4px;">
+                        <div id="st-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00F59B 0%, var(--accent-color) 100%); transition: width 0.1s ease-out;"></div>
+                    </div>
+                    
+                    <button id="run-speedtest-btn" style="background: var(--accent-color); color: #000; border: none; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; cursor: pointer; margin-top: 4px; width: 100%; transition: all 0.2s;">Run Speed Test</button>
                 </div>
 
                 <!-- Progress Bar Card -->
@@ -530,6 +565,116 @@
 
         window.deleteSharedFile = deleteSharedFile;
         refreshFilesBtn.addEventListener('click', fetchFilesList);
+
+        // --- Speed Test Logic ---
+        const speedtestBtn = document.getElementById('speedtest-btn');
+        const speedtestContainer = document.getElementById('speedtest-container');
+        const closeSpeedtestBtn = document.getElementById('close-speedtest-btn');
+        const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
+        
+        const stPingLbl = document.getElementById('st-ping-lbl');
+        const stDownloadLbl = document.getElementById('st-download-lbl');
+        const stUploadLbl = document.getElementById('st-upload-lbl');
+        const stProgressBarContainer = document.getElementById('st-progress-bar-container');
+        const stProgressBar = document.getElementById('st-progress-bar');
+
+        if (speedtestBtn) {
+            speedtestBtn.addEventListener('click', () => {
+                if (speedtestContainer.style.display === 'none' || !speedtestContainer.style.display) {
+                    speedtestContainer.style.display = 'flex';
+                    speedtestContainer.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    speedtestContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        if (closeSpeedtestBtn) {
+            closeSpeedtestBtn.addEventListener('click', () => {
+                speedtestContainer.style.display = 'none';
+            });
+        }
+        
+        async function runSpeedTest() {
+            runSpeedtestBtn.disabled = true;
+            runSpeedtestBtn.textContent = "Testing...";
+            stProgressBarContainer.style.display = 'block';
+            stProgressBar.style.width = '0%';
+            
+            stPingLbl.textContent = "Measuring...";
+            stDownloadLbl.textContent = "- MB/s";
+            stUploadLbl.textContent = "- MB/s";
+            
+            try {
+                // 1. Measure Ping / Latency (5 iterations)
+                let pings = [];
+                for (let i = 0; i < 5; i++) {
+                    const start = performance.now();
+                    await fetch('/api/files/list', { cache: 'no-store' });
+                    pings.push(performance.now() - start);
+                    stProgressBar.style.width = ((i + 1) * 5) + '%';
+                }
+                const avgPing = (pings.reduce((a, b) => a + b, 0) / pings.length).toFixed(1);
+                stPingLbl.textContent = `${avgPing} ms`;
+                
+                // 2. Measure Download Speed (10MB payload)
+                stDownloadLbl.textContent = "Testing...";
+                const dlStart = performance.now();
+                const dlRes = await fetch('/api/speedtest/download?size=' + (10 * 1024 * 1024), { cache: 'no-store' });
+                
+                const reader = dlRes.body.getReader();
+                let loaded = 0;
+                const total = 10 * 1024 * 1024;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    loaded += value.length;
+                    const pct = 25 + Math.round((loaded / total) * 35);
+                    stProgressBar.style.width = pct + '%';
+                }
+                
+                const dlDuration = (performance.now() - dlStart) / 1000;
+                const dlSpeed = (10 / dlDuration).toFixed(2);
+                stDownloadLbl.textContent = `${dlSpeed} MB/s`;
+                
+                // 3. Measure Upload Speed (5MB payload)
+                stUploadLbl.textContent = "Testing...";
+                const ulStart = performance.now();
+                const ulSize = 5 * 1024 * 1024;
+                const dummyData = new Uint8Array(ulSize);
+                
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/speedtest/upload');
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            const pct = 60 + Math.round((e.loaded / e.total) * 40);
+                            stProgressBar.style.width = pct + '%';
+                        }
+                    });
+                    xhr.onload = () => resolve();
+                    xhr.onerror = () => reject(new Error("Upload failed"));
+                    xhr.send(dummyData);
+                });
+                
+                const ulDuration = (performance.now() - ulStart) / 1000;
+                const ulSpeed = (5 / ulDuration).toFixed(2);
+                stUploadLbl.textContent = `${ulSpeed} MB/s`;
+                
+            } catch (err) {
+                console.error(err);
+                showToast("Speed test failed: " + err.message, "error");
+            } finally {
+                stProgressBar.style.width = '100%';
+                setTimeout(() => {
+                    stProgressBarContainer.style.display = 'none';
+                }, 1000);
+                runSpeedtestBtn.disabled = false;
+                runSpeedtestBtn.textContent = "Run Speed Test";
+            }
+        }
+        
+        runSpeedtestBtn.addEventListener('click', runSpeedTest);
 
         // Fetch list on load
         fetchFilesList();

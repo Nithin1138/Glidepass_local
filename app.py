@@ -44,7 +44,7 @@ if _sys.stderr is None:
 if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import FileResponse
 
 import httpx
@@ -1229,6 +1229,29 @@ async def delete_file(filename: str):
         return {"status": "error", "message": "File not found"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/speedtest/upload")
+async def speedtest_upload(request: Request):
+    # Consume request stream without writing to disk
+    async for _ in request.stream():
+        pass
+    return {"status": "success"}
+
+
+@app.get("/api/speedtest/download")
+async def speedtest_download(size: int = 10 * 1024 * 1024):
+    # Stream random/dummy bytes directly from memory (10MB default)
+    chunk = b"\0" * (128 * 1024)  # 128KB chunk of zeros
+    def iter_dummy():
+        total_sent = 0
+        while total_sent < size:
+            to_send = min(len(chunk), size - total_sent)
+            yield chunk[:to_send]
+            total_sent += to_send
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(iter_dummy(), media_type="application/octet-stream")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
