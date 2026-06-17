@@ -1191,6 +1191,27 @@ async def upload_file(file: UploadFile = File(...)):
         return {"status": "error", "message": str(e)}
 
 
+@app.post("/api/files/upload_raw")
+async def upload_file_raw(request: Request, filename: str):
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        safe_filename = os.path.basename(filename)
+        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        
+        from fastapi.concurrency import run_in_threadpool
+        
+        # Write chunks directly to final destination as they stream from socket
+        with open(dest_path, "wb") as f:
+            async for chunk in request.stream():
+                await run_in_threadpool(f.write, chunk)
+                
+        return {"status": "success", "filename": safe_filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @app.get("/api/files/download/{filename}")
 async def download_file(filename: str):
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")

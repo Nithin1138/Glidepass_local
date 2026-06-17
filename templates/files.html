@@ -434,8 +434,6 @@
         function uploadSingleFile(file) {
             return new Promise((resolve) => {
                 const xhr = new XMLHttpRequest();
-                const formData = new FormData();
-                formData.append('file', file);
 
                 progressContainer.style.display = 'flex';
                 progressBar.style.width = '0%';
@@ -483,8 +481,9 @@
                     resolve();
                 });
 
-                xhr.open('POST', '/api/files/upload');
-                xhr.send(formData);
+                xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}`);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.send(file);
             });
         }
 
