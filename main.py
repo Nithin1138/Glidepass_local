@@ -111,12 +111,99 @@ class ServerManager:
             self.server_instance.force_exit = True
         self.should_be_running = False
 
+def is_currently_licensed() -> bool:
+    import json
+    import urllib.request
+    import time
+    
+    # 1. Fetch monetization status (cached/timeout safe)
+    monetization_enabled = False
+    free_enabled = False
+    try:
+        req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            monetization_enabled = data.get("monetization_enabled", False)
+            free_enabled = data.get("free_enabled", False)
+    except Exception:
+        # If network fails, look at cached monetization file or assume previous state
+        try:
+            mon_path = os.path.expanduser("~/.lanpad_monetization.json")
+            if os.path.exists(mon_path):
+                with open(mon_path, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                    monetization_enabled = cached.get("monetization_enabled", False)
+                    free_enabled = cached.get("free_enabled", False)
+        except Exception:
+            pass
+
+    if not monetization_enabled or free_enabled:
+        return True
+
+    # 2. Check local license file
+    license_path = os.path.expanduser("~/.lanpad_license.json")
+    if os.path.exists(license_path):
+        try:
+            with open(license_path, "r", encoding="utf-8") as f:
+                lic = json.load(f)
+            
+            # Check HWID
+            cached_hwid = lic.get("hwid")
+            if cached_hwid:
+                try:
+                    from platform_utils import get_hardware_id
+                    if cached_hwid.strip().upper() != get_hardware_id().strip().upper():
+                        return False
+                except Exception:
+                    pass
+
+            # Check Expiry
+            expires_at = lic.get("expires_at")
+            if expires_at:
+                from datetime import datetime, timezone
+                s = expires_at.replace("Z", "+00:00")
+                if "." in s:
+                    base, tz = s.split("+") if "+" in s else (s, "00:00")
+                    base_parts = base.split(".")
+                    sec = base_parts[0]
+                    ms = base_parts[1][:6]
+                    s = f"{sec}.{ms}+{tz}"
+                expiry_dt = datetime.fromisoformat(s)
+                now_dt = datetime.now(timezone.utc)
+                if expiry_dt <= now_dt:
+                    return False
+
+            return True
+        except Exception:
+            pass
+    return False
+
+def license_enforcer_loop(controller):
+    import time
+    while True:
+        try:
+            licensed = is_currently_licensed()
+            if licensed:
+                if not controller.server_manager.should_be_running:
+                    print("[security] Licensed state detected. Starting backend server...")
+                    controller.server_manager.start()
+            else:
+                if controller.server_manager.should_be_running:
+                    print("[security] Unlicensed state detected. Stopping backend server...")
+                    controller.stop_backend()
+        except Exception as e:
+            print(f"[security] Enforcer error: {e}")
+        time.sleep(2.0)
+
 class AppController:
     def __init__(self):
         self.server_manager = ServerManager()
 
     def start_backend(self):
-        self.server_manager.start()
+        if is_currently_licensed():
+            self.server_manager.start()
+        else:
+            print("[security] Blocked start_backend() call: App is unlicensed.")
 
     def stop_backend(self):
         self.server_manager.stop()
@@ -167,8 +254,9 @@ def main():
     # 1. Setup Controller
     controller = AppController()
 
-    # 2. Start Backend initially
-    controller.start_backend()
+    # 2. Start Backend enforcer thread to monitor license changes dynamically
+    t = threading.Thread(target=license_enforcer_loop, args=(controller,), daemon=True)
+    t.start()
 
     # 3. Launch Menubar (Main Thread)
     menu_app = LANpadMenuApp(
