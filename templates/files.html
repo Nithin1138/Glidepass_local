@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GlidePass Files Center</title>
+    <title>LANpad Files Center</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -321,7 +321,7 @@
                                 <i data-lucide="arrow-left" size="16"></i>
                             </button>
                             <i data-lucide="folder-up" size="14"></i>
-                            <span style="font-weight: 900; letter-spacing: 0.05em;">GLIDEPASS FILE TRANSFER <span class="status-dot"></span></span>
+                            <span style="font-weight: 900; letter-spacing: 0.05em;">LANPAD FILE TRANSFER <span class="status-dot"></span></span>
                         </div>
                     </div>
                     <div class="controls-row">
@@ -422,17 +422,25 @@
 
         lucide.createIcons();
 
+        // Capture session ID (sid) from URL and save to sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
         const backBtn = document.getElementById('back-btn');
         const disconnectBtn = document.getElementById('disconnect-btn');
 
         if (backBtn) {
             backBtn.addEventListener('click', () => {
-                window.location.href = '/';
+                window.location.href = '/' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
             });
         }
 
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
+                sessionStorage.removeItem('sid');
                 window.location.href = '/';
             }
         });
@@ -476,66 +484,180 @@
         }
 
         function uploadSingleFile(file) {
-            return new Promise((resolve) => {
-                const xhr = new XMLHttpRequest();
+            return new Promise(async (resolve) => {
+                // Dynamic chunk sizing — larger chunks = fewer HTTP requests = less overhead
+                let chunkSize;
+                if (file.size > 1024 * 1024 * 1024) {
+                    chunkSize = 64 * 1024 * 1024;  // 64MB for >1GB (only ~47 chunks for 3GB)
+                } else if (file.size > 200 * 1024 * 1024) {
+                    chunkSize = 32 * 1024 * 1024;   // 32MB for >200MB
+                } else if (file.size > 50 * 1024 * 1024) {
+                    chunkSize = 16 * 1024 * 1024;   // 16MB for >50MB
+                } else if (file.size > 10 * 1024 * 1024) {
+                    chunkSize = 8 * 1024 * 1024;    // 8MB for >10MB
+                } else {
+                    chunkSize = file.size || 1;      // Single shot for small files
+                }
+                const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
 
                 progressContainer.style.display = 'flex';
                 progressBar.style.width = '0%';
                 percentLbl.textContent = '0%';
                 speedLbl.textContent = '0.00 MB/s';
-                bytesLbl.textContent = `0.00 / ${(file.size / (1024*1024)).toFixed(2)} MB`;
+                const totalMB = (file.size / (1024*1024)).toFixed(2);
+                bytesLbl.textContent = `0.00 / ${totalMB} MB`;
 
-                const startTime = Date.now();
-
-                let lastUpdate = 0;
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
+                // For small files (<10MB), use simple single-stream upload — zero overhead
+                if (file.size <= 10 * 1024 * 1024) {
+                    const xhr = new XMLHttpRequest();
+                    const startTime = Date.now();
+                    let lastUpdate = 0;
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (!e.lengthComputable) return;
                         const now = Date.now();
-                        // Throttle UI updates to at most once every 150ms to prevent main thread CPU thrashing
-                        if (now - lastUpdate < 150 && e.loaded < e.total) {
-                            return;
-                        }
+                        if (now - lastUpdate < 100 && e.loaded < e.total) return;
                         lastUpdate = now;
-
-                        const percent = Math.round((e.loaded / e.total) * 100);
-                        progressBar.style.width = percent + '%';
-                        percentLbl.textContent = percent + '%';
-
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = pct + '%';
+                        percentLbl.textContent = pct + '%';
                         const elapsed = (now - startTime) / 1000;
-                        const speedBytes = elapsed > 0 ? (e.loaded / elapsed) : 0;
-                        const speedMB = (speedBytes / (1024 * 1024)).toFixed(2);
-                        speedLbl.textContent = `${speedMB} MB/s`;
-
-                        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
-                        const totalMB = (e.total / (1024 * 1024)).toFixed(2);
-                        bytesLbl.textContent = `${loadedMB} / ${totalMB} MB`;
-                    }
-                });
-
-                xhr.addEventListener('load', () => {
-                    progressContainer.style.display = 'none';
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const res = JSON.parse(xhr.responseText);
-                        if (res.status === 'success') {
-                            showToast(`Uploaded ${file.name} successfully!`);
+                        const spd = elapsed > 0 ? (e.loaded / elapsed / 1048576).toFixed(2) : '0.00';
+                        speedLbl.textContent = `${spd} MB/s`;
+                        bytesLbl.textContent = `${(e.loaded/1048576).toFixed(2)} / ${totalMB} MB`;
+                    });
+                    xhr.addEventListener('load', () => {
+                        progressContainer.style.display = 'none';
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.status === 'success') showToast(`Uploaded ${file.name} successfully!`);
+                            else showToast(res.message || 'Upload failed', 'error');
                         } else {
-                            showToast(res.message || 'Upload failed', 'error');
+                            showToast(`Upload failed (${xhr.status})`, 'error');
                         }
-                    } else {
-                        showToast(`Upload failed (${xhr.status})`, 'error');
+                        resolve();
+                    });
+                    xhr.addEventListener('error', () => {
+                        progressContainer.style.display = 'none';
+                        showToast('Network error during upload', 'error');
+                        resolve();
+                    });
+                    xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}&sid=${encodeURIComponent(sid)}`);
+                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                    xhr.send(file);
+                    return;
+                }
+
+                // ── ZERO-COPY DIRECT WRITE for large files ──────────────────────
+                // Step 1: Pre-allocate the destination file (instant, no disk I/O)
+                try {
+                    const preRes = await fetch(`/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&sid=${encodeURIComponent(sid)}`, {method: 'POST'});
+                    const preData = await preRes.json();
+                    if (preData.status !== 'success') {
+                        progressContainer.style.display = 'none';
+                        showToast('Failed to initialize upload', 'error');
+                        resolve();
+                        return;
                     }
-                    resolve();
-                });
-
-                xhr.addEventListener('error', () => {
+                } catch(e) {
                     progressContainer.style.display = 'none';
-                    showToast('Network error during upload', 'error');
+                    showToast('Failed to initialize upload', 'error');
                     resolve();
-                });
+                    return;
+                }
 
-                xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}`);
-                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-                xhr.send(file);
+                // Step 2: Upload chunks in parallel — each writes directly to its byte offset
+                const startTime = Date.now();
+                let loadedBytes = new Float64Array(totalChunks); // typed array for fast sum
+                let activeUploads = 0;
+                let nextChunkIdx = 0;
+                let hasFailed = false;
+                let lastUpdate = 0;
+                const CONCURRENCY = 6; // 6 parallel streams to saturate WiFi bandwidth
+
+                function updateProgress() {
+                    const now = Date.now();
+                    let totalLoaded = 0;
+                    for (let i = 0; i < totalChunks; i++) totalLoaded += loadedBytes[i];
+                    if (totalLoaded > file.size) totalLoaded = file.size;
+                    if (now - lastUpdate < 80 && totalLoaded < file.size) return;
+                    lastUpdate = now;
+
+                    const pct = Math.round((totalLoaded / file.size) * 100);
+                    progressBar.style.width = pct + '%';
+                    percentLbl.textContent = pct + '%';
+                    const elapsed = (now - startTime) / 1000;
+                    const spd = elapsed > 0 ? (totalLoaded / elapsed / 1048576).toFixed(2) : '0.00';
+                    speedLbl.textContent = `${spd} MB/s`;
+                    bytesLbl.textContent = `${(totalLoaded/1048576).toFixed(2)} / ${totalMB} MB`;
+                }
+
+                function pumpNext() {
+                    if (hasFailed) return;
+                    if (nextChunkIdx >= totalChunks) {
+                        if (activeUploads === 0) {
+                            // All done — file is already fully assembled, no merge needed!
+                            progressContainer.style.display = 'none';
+                            showToast(`Uploaded ${file.name} successfully!`);
+                            resolve();
+                        }
+                        return;
+                    }
+
+                    const idx = nextChunkIdx++;
+                    activeUploads++;
+
+                    const byteOffset = idx * chunkSize;
+                    const end = Math.min(byteOffset + chunkSize, file.size);
+                    const blob = file.slice(byteOffset, end);
+
+                    sendChunk(blob, idx, byteOffset, 3);
+                }
+
+                function sendChunk(blob, idx, byteOffset, retriesLeft) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            loadedBytes[idx] = e.loaded;
+                            updateProgress();
+                        }
+                    });
+
+                    xhr.addEventListener('load', () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            loadedBytes[idx] = blob.size;
+                            updateProgress();
+                            activeUploads--;
+                            pumpNext();
+                        } else if (retriesLeft > 0) {
+                            sendChunk(blob, idx, byteOffset, retriesLeft - 1);
+                        } else {
+                            hasFailed = true;
+                            progressContainer.style.display = 'none';
+                            showToast(`Upload failed on part ${idx + 1}`, 'error');
+                            resolve();
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => {
+                        if (retriesLeft > 0) {
+                            sendChunk(blob, idx, byteOffset, retriesLeft - 1);
+                        } else {
+                            hasFailed = true;
+                            progressContainer.style.display = 'none';
+                            showToast('Network error during upload', 'error');
+                            resolve();
+                        }
+                    });
+
+                    // Direct write to final file at exact byte offset — no temp files, no merge
+                    xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&sid=${encodeURIComponent(sid)}`);
+                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                    xhr.send(blob);
+                }
+
+                // Launch concurrent upload streams
+                const lanes = Math.min(CONCURRENCY, totalChunks);
+                for (let i = 0; i < lanes; i++) pumpNext();
             });
         }
 
@@ -543,7 +665,7 @@
             const icon = refreshFilesBtn.querySelector('svg') || refreshFilesBtn.querySelector('i');
             if (icon) icon.classList.add('spinning');
             try {
-                const res = await fetch('/api/files/list');
+                const res = await fetch(`/api/files/list?sid=${encodeURIComponent(sid)}`);
                 const data = await res.json();
                 if (data.status === 'success') {
                     renderFiles(data.files);
@@ -574,17 +696,27 @@
                 return;
             }
 
+            // Track downloaded files in sessionStorage
+            const downloadedSet = new Set(JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]'));
+
             filesList.innerHTML = files.map(file => {
                 const nameEscaped = encodeURIComponent(file.name);
+                const isDownloaded = downloadedSet.has(file.name);
+                const borderStyle = isDownloaded
+                    ? 'border: 1px solid rgba(0, 200, 83, 0.6); box-shadow: 0 0 8px rgba(0, 200, 83, 0.15);'
+                    : 'border: 1px solid var(--border-color);';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; backdrop-filter: blur(10px);">
+                    <div id="file-card-${nameEscaped}" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); ${borderStyle} border-radius: 12px; padding: 12px 16px; backdrop-filter: blur(10px); transition: border-color 0.3s ease, box-shadow 0.3s ease;">
                         <div style="display: flex; flex-direction: column; gap: 3px; max-width: 65%; min-width: 0;">
-                            <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>
+                                ${isDownloaded ? '<i data-lucide="check-circle-2" size="14" style="color: #00C853; flex-shrink: 0;"></i>' : ''}
+                            </div>
                             <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="/api/files/download/${nameEscaped}" download="${file.name}" style="background: var(--accent-color); color: #000; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
-                                <i data-lucide="download" size="14" style="pointer-events: none;"></i>
+                            <a href="/api/files/download/${nameEscaped}?sid=${encodeURIComponent(sid)}" download="${file.name}" onclick="window.markFileDownloaded('${file.name.replace(/'/g, "\\'")}')" style="background: ${isDownloaded ? 'rgba(0, 200, 83, 0.2)' : 'var(--accent-color)'}; color: ${isDownloaded ? '#00C853' : '#000'}; border: ${isDownloaded ? '1px solid rgba(0, 200, 83, 0.4)' : 'none'}; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i data-lucide="${isDownloaded ? 'check' : 'download'}" size="14" style="pointer-events: none;"></i>
                             </a>
                             <button onclick="window.deleteSharedFile('${nameEscaped}')" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i data-lucide="trash-2" size="14"></i>
@@ -597,10 +729,21 @@
             lucide.createIcons();
         }
 
+        // Mark a file as downloaded and re-render the card with green border
+        window.markFileDownloaded = function(filename) {
+            const downloaded = JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]');
+            if (!downloaded.includes(filename)) {
+                downloaded.push(filename);
+                sessionStorage.setItem('downloadedFiles', JSON.stringify(downloaded));
+            }
+            // Re-render after a short delay so the browser starts the download first
+            setTimeout(() => fetchFilesList(), 300);
+        };
+
         async function deleteSharedFile(filename) {
             if (confirm("Are you sure you want to delete this file?")) {
                 try {
-                    const res = await fetch(`/api/files/delete/${filename}`, { method: 'DELETE' });
+                    const res = await fetch(`/api/files/delete/${filename}?sid=${encodeURIComponent(sid)}`, { method: 'DELETE' });
                     const data = await res.json();
                     if (data.status === 'success') {
                         showToast('File deleted successfully');
@@ -661,7 +804,7 @@
                 let pings = [];
                 for (let i = 0; i < 5; i++) {
                     const start = performance.now();
-                    await fetch('/api/files/list', { cache: 'no-store' });
+                    await fetch(`/api/files/list?sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
                     pings.push(performance.now() - start);
                     stProgressBar.style.width = ((i + 1) * 5) + '%';
                 }
@@ -671,7 +814,7 @@
                 // 2. Measure Download Speed (10MB payload)
                 stDownloadLbl.textContent = "Testing...";
                 const dlStart = performance.now();
-                const dlRes = await fetch('/api/speedtest/download?size=' + (10 * 1024 * 1024), { cache: 'no-store' });
+                const dlRes = await fetch(`/api/speedtest/download?size=${10 * 1024 * 1024}&sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
                 
                 const reader = dlRes.body.getReader();
                 let loaded = 0;
@@ -696,7 +839,7 @@
                 
                 await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/speedtest/upload');
+                    xhr.open('POST', `/api/speedtest/upload?sid=${encodeURIComponent(sid)}`);
                     xhr.upload.addEventListener('progress', (e) => {
                         if (e.lengthComputable) {
                             const pct = 60 + Math.round((e.loaded / e.total) * 40);
@@ -745,7 +888,7 @@
         // Connect to active status websocket
         function connectWebSocket() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${proto}//${window.location.host}/ws/connect`;
+            const wsUrl = `${proto}//${window.location.host}/ws/connect?sid=${encodeURIComponent(sid)}`;
             const ws = new WebSocket(wsUrl);
             let pingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {

@@ -563,6 +563,13 @@
     </div>
 
     <script>
+        // Capture session ID (sid) from URL and save to sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
         let allSessions = [];
         let currentView = 'overview'; // 'overview' or 'detail'
         let currentSubView = 'types'; // 'types' or 'sessions'
@@ -588,7 +595,7 @@
         const backBtn = document.getElementById('header-back-btn');
         backBtn.addEventListener('click', () => {
             if (currentView === 'overview' && currentSubView === 'types') {
-                window.location.href = '/';
+                window.location.href = '/' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
             } else {
                 history.back();
             }
@@ -743,7 +750,7 @@
                     const code = decodeURIComponent(btn.getAttribute('data-code'));
                     const title = btn.getAttribute('data-title') || '';
                     const language = btn.getAttribute('data-language') || '';
-                    window.location.href = `/center?code=${encodeURIComponent(code)}&title=${title}&language=${language}`;
+                    window.location.href = `/center?code=${encodeURIComponent(code)}&title=${title}&language=${language}` + (sid ? `&sid=${encodeURIComponent(sid)}` : '');
                 });
             });
 
@@ -860,7 +867,7 @@
                 `;
             }
 
-            fetch('/api/vitcodes')
+            fetch('/api/vitcodes' + (sid ? `?sid=${encodeURIComponent(sid)}` : ''))
                 .then(r => {
                     if (!r.ok) throw new Error('Failed to load session codes');
                     return r.json();
@@ -952,7 +959,7 @@
         // Connect to active status websocket
         function connectWebSocket() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${proto}//${window.location.host}/ws/connect`;
+            const wsUrl = `${proto}//${window.location.host}/ws/connect` + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
             const ws = new WebSocket(wsUrl);
             let pingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {

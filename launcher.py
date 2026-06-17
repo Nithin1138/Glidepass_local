@@ -1810,11 +1810,179 @@ class LANpadLauncher:
         )
         
         list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
+        # ── Scrollable list container ────────────────────────────────────────
+        list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
+        list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
+
+        scrollbar = tk.Scrollbar(v, orient="vertical", command=list_canvas.yview)
+        
+        # ── Progress Bar Card (Hidden by default) ─────────────────────────────
+        progress_card = tk.Frame(v, bg="#0D0D10", highlightthickness=1, highlightbackground="#1F1F24")
+        
+        # Row 1: Title & Speed
+        r1 = tk.Frame(progress_card, bg="#0D0D10")
+        r1.pack(fill="x", padx=12, pady=(8, 2))
+        progress_title_lbl = tk.Label(r1, text="Sending File...", font=(self.FU, 9, "bold"), fg=self.WHITE, bg="#0D0D10")
+        progress_title_lbl.pack(side="left")
+        progress_speed_lbl = tk.Label(r1, text="0.00 MB/s", font=(self.FU, 8, "bold"), fg="#0077C0", bg="#0D0D10")
+        progress_speed_lbl.pack(side="right")
+        
+        # Row 2: Progress Canvas
+        progress_bar_canvas = tk.Canvas(progress_card, height=6, bg="#1A1A1F", highlightthickness=0)
+        progress_bar_canvas.pack(fill="x", padx=12, pady=4)
+        
+        # Row 3: Percent & Bytes
+        r3 = tk.Frame(progress_card, bg="#0D0D10")
+        r3.pack(fill="x", padx=12, pady=(2, 8))
+        progress_percent_lbl = tk.Label(r3, text="0%", font=(self.FU, 8), fg=self.WHITE, bg="#0D0D10")
+        progress_percent_lbl.pack(side="left")
+        progress_bytes_lbl = tk.Label(r3, text="0.00 / 0.00 MB", font=(self.FU, 8), fg=self.DIM, bg="#0D0D10")
+        progress_bytes_lbl.pack(side="right")
+
+        import time
+        progress_data = {"copied": 0, "total": 0, "active": False, "speed": 0.0, "start_time": 0.0}
+
+        def copy_batch_with_progress(paths, dst, progress_cb, finish_cb):
+            import threading
+            import shutil
+            def run_copy():
+                try:
+                    total_bytes = 0
+                    files_to_copy = []
+                    for fp in paths:
+                        if not os.path.exists(fp):
+                            continue
+                        if os.path.isdir(fp):
+                            dir_size = 0
+                            for root, dirs, files in os.walk(fp):
+                                for file in files:
+                                    dir_size += os.path.getsize(os.path.join(root, file))
+                            total_bytes += dir_size
+                            files_to_copy.append((fp, True))
+                        else:
+                            total_bytes += os.path.getsize(fp)
+                            files_to_copy.append((fp, False))
+                    
+                    if total_bytes == 0:
+                        finish_cb(None)
+                        return
+
+                    copied_bytes = 0
+                    for src, is_dir in files_to_copy:
+                        if is_dir:
+                            dest_dir = os.path.join(dst, os.path.basename(src))
+                            if os.path.exists(dest_dir):
+                                if os.path.isdir(dest_dir):
+                                    shutil.rmtree(dest_dir)
+                                else:
+                                    os.remove(dest_dir)
+                            os.makedirs(dest_dir, exist_ok=True)
+                            for root, dirs, files in os.walk(src):
+                                rel_dir = os.path.relpath(root, src)
+                                cur_dest_dir = os.path.join(dest_dir, rel_dir) if rel_dir != "." else dest_dir
+                                os.makedirs(cur_dest_dir, exist_ok=True)
+                                for file in files:
+                                    file_src = os.path.join(root, file)
+                                    file_dst = os.path.join(cur_dest_dir, file)
+                                    with open(file_src, "rb") as fsrc:
+                                        with open(file_dst, "wb") as fdst:
+                                            while True:
+                                                chunk = fsrc.read(4 * 1024 * 1024)
+                                                if not chunk:
+                                                    break
+                                                fdst.write(chunk)
+                                                copied_bytes += len(chunk)
+                                                progress_cb(copied_bytes, total_bytes)
+                        else:
+                            dest_file = os.path.join(dst, os.path.basename(src))
+                            if os.path.exists(dest_file):
+                                os.remove(dest_file)
+                            with open(src, "rb") as fsrc:
+                                with open(dest_file, "wb") as fdst:
+                                    while True:
+                                        chunk = fsrc.read(4 * 1024 * 1024)
+                                        if not chunk:
+                                            break
+                                        fdst.write(chunk)
+                                        copied_bytes += len(chunk)
+                                        progress_cb(copied_bytes, total_bytes)
+                    finish_cb(None)
+                except Exception as ex:
+                    finish_cb(ex)
+            threading.Thread(target=run_copy, daemon=True).start()
+
+        def start_async_copy(paths):
+            from tkinter import messagebox
+            progress_data["copied"] = 0
+            progress_data["total"] = 0
+            progress_data["active"] = True
+            progress_data["start_time"] = time.time()
+
+            # Shift list view down and show progress card
+            progress_card.place(x=18, y=242 + yo, width=W - 36, height=75)
+            sec_frame.place(x=18, y=322 + yo, width=W - 36, height=24)
+            list_canvas.place(x=18, y=352 + yo, width=W - 36, height=365)
+            
+            # Redraw progress bar
+            progress_bar_canvas.delete("bar")
+            
+            def progress_cb(copied, total):
+                progress_data["copied"] = copied
+                progress_data["total"] = total
+                
+            def finish_cb(err):
+                progress_data["active"] = False
+                if err:
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Copy failed: {err}"))
+                self.root.after(0, refresh_files)
+
+            copy_batch_with_progress(paths, shared_path, progress_cb, finish_cb)
+            
+            def poll_progress():
+                if not progress_data["active"]:
+                    progress_card.place_forget()
+                    sec_frame.place(x=18, y=250 + yo, width=W - 36, height=24)
+                    list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
+                    return
+                
+                copied = progress_data["copied"]
+                total = progress_data["total"]
+                if total > 0:
+                    percent = int(copied / total * 100)
+                    elapsed = time.time() - progress_data["start_time"]
+                    speed = (copied / (1024 * 1024)) / elapsed if elapsed > 0 else 0.0
+                    
+                    bar_width = int((W - 36 - 24) * (copied / total))
+                    progress_bar_canvas.delete("bar")
+                    progress_bar_canvas.create_rectangle(0, 0, bar_width, 6, fill="#0077C0", outline="", tags="bar")
+                    
+                    progress_title_lbl.config(text="Sending File..." if percent < 100 else "Completed")
+                    progress_speed_lbl.config(text=f"{speed:.2f} MB/s")
+                    progress_percent_lbl.config(text=f"{percent}%")
+                    
+                    copied_mb = copied / (1024 * 1024)
+                    total_mb = total / (1024 * 1024)
+                    if total_mb >= 1024:
+                        progress_bytes_lbl.config(text=f"{copied_mb/1024:.2f} / {total_mb/1024:.2f} GB")
+                    else:
+                        progress_bytes_lbl.config(text=f"{copied_mb:.2f} / {total_mb:.2f} MB")
+                
+                v.after(100, poll_progress)
+                
+            poll_progress()
+
+        scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: list_canvas.configure(
+                scrollregion=list_canvas.bbox("all")
+            )
+        )
+        
+        list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
         list_canvas.configure(yscrollcommand=scrollbar.set)
 
         def process_dropped_files(paths_str):
-            import shutil
-            from tkinter import messagebox
             if not paths_str:
                 return
             # Filter out the placeholder text if present
@@ -1823,33 +1991,12 @@ class LANpadLauncher:
                 return
             
             paths = parse_dropped_paths(paths_str)
-            copied_any = False
-            for fp in paths:
-                if os.path.exists(fp):
-                    try:
-                        if not os.path.exists(shared_path):
-                            os.makedirs(shared_path, exist_ok=True)
-                        if os.path.isdir(fp):
-                            dest = os.path.join(shared_path, os.path.basename(fp))
-                            if os.path.exists(dest):
-                                if os.path.isdir(dest):
-                                    shutil.rmtree(dest)
-                                else:
-                                    os.remove(dest)
-                            shutil.copytree(fp, dest)
-                        else:
-                            shutil.copy(fp, shared_path)
-                        copied_any = True
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Could not copy {os.path.basename(fp)}: {e}")
-            
             dnd_entry.delete(0, tk.END)
             dnd_entry.insert(0, placeholder)
             dnd_entry.config(fg=self.DIM)
             v.focus_set()
             
-            if copied_any:
-                refresh_files()
+            start_async_copy(paths)
 
         def on_dnd_change(*args):
             val = dnd_var.get().strip()
@@ -1869,6 +2016,9 @@ class LANpadLauncher:
         dropzone.bind("<Leave>", on_leave_dropzone)
         dnd_entry.bind("<Enter>", on_enter_dropzone)
         dnd_entry.bind("<Leave>", on_leave_dropzone)
+
+        # Track which files have been opened/downloaded this session
+        opened_files = set()
 
         def refresh_files():
             # Clear previous items
@@ -1910,33 +2060,51 @@ class LANpadLauncher:
                         if len(disp_name) > 30:
                             disp_name = disp_name[:18] + "..." + disp_name[-9:]
                         
-                        card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground="#1A1A1F")
+                        is_opened = f in opened_files
+                        border_color = "#00C853" if is_opened else "#1A1A1F"
+                        
+                        card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
                         card.pack(fill="x", pady=(0, 8))
                         
                         # Double click card to open
-                        def make_open_handler(path_to_open):
-                            return lambda e: open_path(path_to_open)
+                        def make_open_handler(path_to_open, fname):
+                            def handler(e=None):
+                                opened_files.add(fname)
+                                open_path(path_to_open)
+                                self.root.after(300, refresh_files)
+                            return handler
                         
-                        card.bind("<Double-1>", make_open_handler(f_path))
+                        card.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         text_col = tk.Frame(card, bg=self.BG2)
                         text_col.pack(side="left", fill="both", expand=True)
                         
-                        name_lbl = tk.Label(text_col, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
-                        name_lbl.pack(fill="x")
-                        name_lbl.bind("<Double-1>", make_open_handler(f_path))
+                        # Name row with optional check icon
+                        name_frame = tk.Frame(text_col, bg=self.BG2)
+                        name_frame.pack(fill="x")
+                        
+                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
+                        name_lbl.pack(side="left")
+                        name_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                        
+                        if is_opened:
+                            check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=self.BG2)
+                            check_lbl.pack(side="left", padx=(4, 0))
                         
                         size_lbl = tk.Label(text_col, text=size_str, font=(self.FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
                         size_lbl.pack(fill="x")
-                        size_lbl.bind("<Double-1>", make_open_handler(f_path))
+                        size_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         btn_col = tk.Frame(card, bg=self.BG2)
                         btn_col.pack(side="right", fill="y")
                         
-                        # Open button (styled Label)
-                        open_btn = tk.Label(btn_col, text="↓", font=(self.FU, 11, "bold"), bg="#0077C0", fg="#FFFFFF", padx=12, pady=4, relief="flat", cursor="hand2")
+                        # Open button — green if already opened, blue if not
+                        btn_bg = "#1B4332" if is_opened else "#0077C0"
+                        btn_fg = "#00C853" if is_opened else "#FFFFFF"
+                        btn_text = "✓" if is_opened else "↓"
+                        open_btn = tk.Label(btn_col, text=btn_text, font=(self.FU, 11, "bold"), bg=btn_bg, fg=btn_fg, padx=12, pady=4, relief="flat", cursor="hand2")
                         open_btn.pack(side="left", padx=4)
-                        open_btn.bind("<Button-1>", lambda e, path=f_path: open_path(path))
+                        open_btn.bind("<Button-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         # Delete button (styled Label)
                         def make_delete_handler(fname):
@@ -1972,18 +2140,10 @@ class LANpadLauncher:
                 messagebox.showerror("Error", f"Could not delete file: {e}")
 
         def add_file():
-            from tkinter import filedialog, messagebox
-            import shutil
+            from tkinter import filedialog
             file_paths = filedialog.askopenfilenames(title="Select Files to Share")
             if file_paths:
-                if not os.path.exists(shared_path):
-                    os.makedirs(shared_path, exist_ok=True)
-                for fp in file_paths:
-                    try:
-                        shutil.copy(fp, shared_path)
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Could not copy {os.path.basename(fp)}: {e}")
-                refresh_files()
+                start_async_copy(file_paths)
 
         # Bind Dropzone clicks
         dropzone.bind("<Button-1>", lambda e: add_file())

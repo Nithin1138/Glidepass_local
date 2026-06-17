@@ -698,27 +698,34 @@
 
         lucide.createIcons();
 
+        // Capture session ID (sid) from URL and save to sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
         const launchBtn = document.getElementById('launch-btn');
         launchBtn.addEventListener('click', () => {
-            window.location.href = '/center';
+            window.location.href = '/center' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
         });
 
         const homeFilesBtn = document.getElementById('home-files-btn');
         if (homeFilesBtn) {
             homeFilesBtn.addEventListener('click', () => {
-                window.location.href = '/files';
+                window.location.href = '/files' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
             });
         }
 
         const vitBtn = document.getElementById('vit-btn');
         vitBtn.addEventListener('click', () => {
-            window.location.href = '/vitcodes';
+            window.location.href = '/vitcodes' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
         });
 
         // Connect to active status websocket
         function connectWebSocket() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${proto}//${window.location.host}/ws/connect`;
+            const wsUrl = `${proto}//${window.location.host}/ws/connect` + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
             const ws = new WebSocket(wsUrl);
             let pingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {

@@ -797,6 +797,13 @@
             setFeatureDisabled(document.getElementById('select-copy-btn'), !cloudLimits.allow_select_copy);
         }
 
+        // Capture session ID (sid) from URL and save to sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
         // Initialize limits
         fetchLimits();
 
@@ -805,7 +812,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/vitcodes';
+                    window.location.href = '/vitcodes' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
                 }
             });
         }
@@ -813,6 +820,7 @@
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
                 resetSession();
+                sessionStorage.removeItem('sid');
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {

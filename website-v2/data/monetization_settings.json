@@ -17,7 +17,8 @@
       "allow_select_copy": 0,
       "allow_fetch": 0,
       "allow_refill": 0,
-      "allow_vitcode": 0
+      "allow_vitcode": 0,
+      "allow_tunnel": 0
     },
     {
       "tier": "Basic",
@@ -28,7 +29,8 @@
       "max_sessions": 0,
       "allow_inject": 0,
       "allow_live_sync": 0,
-      "validity_days": 7
+      "validity_days": 7,
+      "allow_tunnel": 0
     },
     {
       "tier": "Pro",
@@ -37,7 +39,8 @@
       "price": "₹99",
       "allow_refill": true,
       "allow_typing": true,
-      "allow_typing_mode": true
+      "allow_typing_mode": true,
+      "allow_tunnel": 0
     },
     {
       "tier": "Max",
@@ -45,7 +48,8 @@
       "subtitle": "Semester companion",
       "price": "₹299",
       "allow_refill": true,
-      "validity_days": 160
+      "validity_days": 160,
+      "allow_tunnel": 0
     },
     {
       "tier": "Ultra",
@@ -53,7 +57,8 @@
       "subtitle": "Year-round connectivity",
       "price": "₹499",
       "allow_refill": true,
-      "validity_days": 300
+      "validity_days": 300,
+      "allow_tunnel": 0
     }
   ],
   "free_enabled": false

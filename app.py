@@ -928,6 +928,13 @@ def perform_typing(text, wpm, is_coding=False):
 
 @app.websocket("/ws/connect")
 async def websocket_endpoint(websocket: WebSocket):
+    sid = websocket.query_params.get("sid")
+    if sid != SESSION_TOKEN:
+        await websocket.accept()
+        await websocket.send_text(json.dumps({"error": "Unauthorized session"}))
+        await websocket.close()
+        return
+
     tier = get_license_tier()
     limits = get_cloud_limits(tier)
     max_sessions = limits.get("max_sessions", 1)
@@ -1146,7 +1153,10 @@ if not os.path.exists(SHARED_DIR):
 
 
 @app.get("/api/files/list")
-async def list_files():
+async def list_files(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
     if not allowed:
         return {"status": "error", "message": err}
@@ -1169,7 +1179,10 @@ async def list_files():
 
 
 @app.post("/api/files/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
     if not allowed:
         return {"status": "error", "message": err}
@@ -1192,7 +1205,10 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @app.post("/api/files/upload_raw")
-async def upload_file_raw(request: Request, filename: str):
+async def upload_file_raw(request: Request, filename: str, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
     if not allowed:
         return {"status": "error", "message": err}
@@ -1200,48 +1216,177 @@ async def upload_file_raw(request: Request, filename: str):
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         
-        import asyncio
-        from fastapi.concurrency import run_in_threadpool
+        # Direct sync writes — on SSD a 4MB write takes <2ms, negligible event loop block
+        chunks = []
+        chunks_size = 0
+        buffer_limit = 4 * 1024 * 1024  # 4MB buffer — fewer write syscalls
         
-        # Async queue to buffer incoming network chunks and decouple socket reading from disk writing
-        queue = asyncio.Queue(maxsize=100)
-        
-        async def file_writer():
-            with open(dest_path, "wb") as f:
-                while True:
-                    data = await queue.get()
-                    if data is None:
-                        queue.task_done()
-                        break
-                    await run_in_threadpool(f.write, data)
-                    queue.task_done()
-
-        # Spawn background disk writer task
-        writer_task = asyncio.create_task(file_writer())
-        
-        buffer = bytearray()
-        buffer_limit = 2 * 1024 * 1024  # 2MB chunks for balanced memory and throughput
-        
-        try:
+        with open(dest_path, "wb") as f:
             async for chunk in request.stream():
-                buffer.extend(chunk)
-                if len(buffer) >= buffer_limit:
-                    await queue.put(bytes(buffer))
-                    buffer.clear()
+                chunks.append(chunk)
+                chunks_size += len(chunk)
+                if chunks_size >= buffer_limit:
+                    f.write(b''.join(chunks))
+                    chunks = []
+                    chunks_size = 0
             
-            if buffer:
-                await queue.put(bytes(buffer))
-        finally:
-            await queue.put(None)
-            await writer_task
+            if chunks:
+                f.write(b''.join(chunks))
                 
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
+@app.post("/api/files/preallocate")
+async def preallocate_file(filename: str, size: int, sid: str = None):
+    """Pre-allocate the destination file so parallel chunk writers can seek to their offsets."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        safe_filename = os.path.basename(filename)
+        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        with open(dest_path, "wb") as f:
+            f.truncate(size)  # Instant — just sets file size, no disk I/O
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/upload_direct")
+async def upload_file_direct(request: Request, filename: str, offset: int, sid: str = None):
+    """Write streamed data directly to the final file at the given byte offset.
+    Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        safe_filename = os.path.basename(filename)
+        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        
+        fd = os.open(dest_path, os.O_WRONLY)
+        try:
+            current_offset = offset
+            chunks = []
+            chunks_size = 0
+            buffer_limit = 4 * 1024 * 1024  # 4MB flush — direct sync write
+            
+            async for chunk in request.stream():
+                chunks.append(chunk)
+                chunks_size += len(chunk)
+                if chunks_size >= buffer_limit:
+                    data = b''.join(chunks)
+                    os.pwrite(fd, data, current_offset)  # Atomic positional write
+                    current_offset += len(data)
+                    chunks = []
+                    chunks_size = 0
+            
+            if chunks:
+                data = b''.join(chunks)
+                os.pwrite(fd, data, current_offset)
+        finally:
+            os.close(fd)
+                
+        return {"status": "success", "offset": offset}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/upload_chunk")
+async def upload_file_chunk(request: Request, upload_id: str, chunk_index: int, sid: str = None):
+    """Legacy chunked upload — kept for backward compatibility."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    
+    import re
+    if not re.match(r"^[a-zA-Z0-9_\-]+$", upload_id):
+        return {"status": "error", "message": "Invalid upload_id"}
+        
+    try:
+        temp_filename = f".tmp_{upload_id}_{chunk_index}"
+        dest_path = os.path.join(SHARED_DIR, temp_filename)
+        
+        chunks = []
+        chunks_size = 0
+        with open(dest_path, "wb") as f:
+            async for chunk in request.stream():
+                chunks.append(chunk)
+                chunks_size += len(chunk)
+                if chunks_size >= 4 * 1024 * 1024:
+                    f.write(b''.join(chunks))
+                    chunks = []
+                    chunks_size = 0
+            if chunks:
+                f.write(b''.join(chunks))
+                
+        return {"status": "success", "chunk_index": chunk_index}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/merge_chunks")
+async def merge_file_chunks(upload_id: str, filename: str, total_chunks: int, sid: str = None):
+    """Legacy merge — kept for backward compatibility."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+        
+    import re
+    if not re.match(r"^[a-zA-Z0-9_\-]+$", upload_id):
+        return {"status": "error", "message": "Invalid upload_id"}
+        
+    try:
+        safe_filename = os.path.basename(filename)
+        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        
+        from fastapi.concurrency import run_in_threadpool
+        
+        def do_merge():
+            with open(dest_path, "wb") as outfile:
+                for idx in range(total_chunks):
+                    chunk_path = os.path.join(SHARED_DIR, f".tmp_{upload_id}_{idx}")
+                    if not os.path.exists(chunk_path):
+                        raise Exception(f"Missing chunk {idx}")
+                    with open(chunk_path, "rb") as infile:
+                        while True:
+                            data = infile.read(4 * 1024 * 1024)
+                            if not data:
+                                break
+                            outfile.write(data)
+            
+            for idx in range(total_chunks):
+                chunk_path = os.path.join(SHARED_DIR, f".tmp_{upload_id}_{idx}")
+                try:
+                    os.remove(chunk_path)
+                except Exception:
+                    pass
+                    
+        await run_in_threadpool(do_merge)
+        return {"status": "success", "filename": safe_filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+
 @app.get("/api/files/download/{filename}")
-async def download_file(filename: str):
+async def download_file(filename: str, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
     if not allowed:
         from fastapi import HTTPException
@@ -1283,18 +1428,15 @@ async def download_file(filename: str):
         file_path = zip_path
         safe_filename = zip_filename
 
-    async def iterfile():
-        # Open file descriptor once to eliminate repetitive open/close system calls
-        f = open(file_path, mode="rb")
-        try:
-            chunk_size = 1024 * 1024  # 1MB chunks
+    def iterfile():
+        # Open file descriptor once and stream it synchronously inside uvicorn's threadpool to eliminate context switching
+        with open(file_path, mode="rb") as f:
+            chunk_size = 8 * 1024 * 1024  # 8MB chunks
             while True:
-                chunk = await run_in_threadpool(f.read, chunk_size)
+                chunk = f.read(chunk_size)
                 if not chunk:
                     break
                 yield chunk
-        finally:
-            f.close()
 
     # Properly URL encode filename for Content-Disposition header
     encoded_filename = urllib.parse.quote(safe_filename)
@@ -1306,7 +1448,10 @@ async def download_file(filename: str):
 
 
 @app.delete("/api/files/delete/{filename}")
-async def delete_file(filename: str):
+async def delete_file(filename: str, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
     if not allowed:
         return {"status": "error", "message": err}
@@ -1322,7 +1467,10 @@ async def delete_file(filename: str):
 
 
 @app.post("/api/speedtest/upload")
-async def speedtest_upload(request: Request):
+async def speedtest_upload(request: Request, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     # Consume request stream without writing to disk
     async for _ in request.stream():
         pass
@@ -1330,7 +1478,10 @@ async def speedtest_upload(request: Request):
 
 
 @app.get("/api/speedtest/download")
-async def speedtest_download(size: int = 10 * 1024 * 1024):
+async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
     # Stream random/dummy bytes directly from memory (10MB default)
     chunk = b"\0" * (128 * 1024)  # 128KB chunk of zeros
     def iter_dummy():
