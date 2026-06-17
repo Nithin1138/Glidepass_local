@@ -487,13 +487,21 @@
 
                 const startTime = Date.now();
 
+                let lastUpdate = 0;
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
+                        const now = Date.now();
+                        // Throttle UI updates to at most once every 150ms to prevent main thread CPU thrashing
+                        if (now - lastUpdate < 150 && e.loaded < e.total) {
+                            return;
+                        }
+                        lastUpdate = now;
+
                         const percent = Math.round((e.loaded / e.total) * 100);
                         progressBar.style.width = percent + '%';
                         percentLbl.textContent = percent + '%';
 
-                        const elapsed = (Date.now() - startTime) / 1000;
+                        const elapsed = (now - startTime) / 1000;
                         const speedBytes = elapsed > 0 ? (e.loaded / elapsed) : 0;
                         const speedMB = (speedBytes / (1024 * 1024)).toFixed(2);
                         speedLbl.textContent = `${speedMB} MB/s`;
