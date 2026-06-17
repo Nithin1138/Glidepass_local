@@ -654,6 +654,13 @@
                 <div class="stars layer2"></div>
                 <div class="stars layer3"></div>
             </div>
+            
+            <!-- File Share Button in Top-Right corner -->
+            <button id="home-files-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--accent-color); padding: 8px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; z-index: 10; backdrop-filter: blur(10px); transition: all 0.2s;">
+                <i data-lucide="folder-up" size="14"></i>
+                <span>File Share</span>
+            </button>
+
             <div class="onboarding" style="position: relative; z-index: 1;">
                 <div class="logo-stack">
                     <div
@@ -688,6 +695,13 @@
         launchBtn.addEventListener('click', () => {
             window.location.href = '/center';
         });
+
+        const homeFilesBtn = document.getElementById('home-files-btn');
+        if (homeFilesBtn) {
+            homeFilesBtn.addEventListener('click', () => {
+                window.location.href = '/center?tab=files';
+            });
+        }
 
         const vitBtn = document.getElementById('vit-btn');
         vitBtn.addEventListener('click', () => {

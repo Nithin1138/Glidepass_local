@@ -627,17 +627,7 @@
                     </div>
                 </header>
 
-                <!-- Segmented Tabs for Text vs Files -->
-                <div class="tabs-nav" style="display: flex; gap: 8px; margin-top: 5px; margin-bottom: 5px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 12px; border: 1px solid var(--border-color); backdrop-filter: blur(10px);">
-                    <button class="tab-nav-btn active" id="text-tab-btn" style="flex: 1; background: none; border: none; padding: 10px; border-radius: 8px; color: #fff; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i data-lucide="file-text" size="14"></i>
-                        <span>Text Command</span>
-                    </button>
-                    <button class="tab-nav-btn" id="files-tab-btn" style="flex: 1; background: none; border: none; padding: 10px; border-radius: 8px; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; position: relative;">
-                        <i data-lucide="folder-up" size="14"></i>
-                        <span>File Share</span>
-                    </button>
-                </div>
+
 
                 <!-- Text Command Tab Content -->
                 <div id="text-tab-content" style="display: flex; flex-direction: column; gap: 20px; flex: 1;">
@@ -1264,43 +1254,28 @@
         // setTimeout(() => launchBtn.click(), 500); 
 
         // --- Tab Switching Logic ---
-        const textTabBtn = document.getElementById('text-tab-btn');
-        const filesTabBtn = document.getElementById('files-tab-btn');
         const textTabContent = document.getElementById('text-tab-content');
         const filesTabContent = document.getElementById('files-tab-content');
 
         function switchTab(tab) {
             if (tab === 'text') {
-                textTabBtn.classList.add('active');
-                textTabBtn.style.color = '#fff';
-                textTabBtn.style.background = 'rgba(255,255,255,0.08)';
-                
-                filesTabBtn.classList.remove('active');
-                filesTabBtn.style.color = 'var(--text-muted)';
-                filesTabBtn.style.background = 'none';
-                
                 textTabContent.style.display = 'flex';
                 filesTabContent.style.display = 'none';
             } else {
-                filesTabBtn.classList.add('active');
-                filesTabBtn.style.color = '#fff';
-                filesTabBtn.style.background = 'rgba(255,255,255,0.08)';
-                
-                textTabBtn.classList.remove('active');
-                textTabBtn.style.color = 'var(--text-muted)';
-                textTabBtn.style.background = 'none';
-                
                 filesTabContent.style.display = 'flex';
                 textTabContent.style.display = 'none';
                 fetchFilesList();
             }
         }
 
-        textTabBtn.addEventListener('click', () => switchTab('text'));
-        filesTabBtn.addEventListener('click', () => switchTab('files'));
-        
-        // Set initial tab state styling
-        textTabBtn.style.background = 'rgba(255,255,255,0.08)';
+        // Set initial tab based on parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam === 'files') {
+            switchTab('files');
+        } else {
+            switchTab('text');
+        }
 
         // --- File Sharing Logic ---
         const fileInput = document.getElementById('file-input');
