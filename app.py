@@ -1200,22 +1200,40 @@ async def upload_file_raw(request: Request, filename: str):
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         
+        import asyncio
         from fastapi.concurrency import run_in_threadpool
         
-        # Buffer chunks in memory to minimize thread pool scheduling overhead
-        buffer = bytearray()
-        buffer_limit = 4 * 1024 * 1024  # 4MB buffer size
+        # Async queue to buffer incoming network chunks and decouple socket reading from disk writing
+        queue = asyncio.Queue(maxsize=100)
         
-        with open(dest_path, "wb") as f:
+        async def file_writer():
+            with open(dest_path, "wb") as f:
+                while True:
+                    data = await queue.get()
+                    if data is None:
+                        queue.task_done()
+                        break
+                    await run_in_threadpool(f.write, data)
+                    queue.task_done()
+
+        # Spawn background disk writer task
+        writer_task = asyncio.create_task(file_writer())
+        
+        buffer = bytearray()
+        buffer_limit = 2 * 1024 * 1024  # 2MB chunks for balanced memory and throughput
+        
+        try:
             async for chunk in request.stream():
                 buffer.extend(chunk)
                 if len(buffer) >= buffer_limit:
-                    chunk_to_write = bytes(buffer)
-                    await run_in_threadpool(f.write, chunk_to_write)
+                    await queue.put(bytes(buffer))
                     buffer.clear()
             
             if buffer:
-                await run_in_threadpool(f.write, bytes(buffer))
+                await queue.put(bytes(buffer))
+        finally:
+            await queue.put(None)
+            await writer_task
                 
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
