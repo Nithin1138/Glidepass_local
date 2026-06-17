@@ -569,8 +569,8 @@
                             <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="/api/files/download/${nameEscaped}" download="${file.name}" style="background: var(--accent-color); color: #000; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
-                                <i data-lucide="download" size="14"></i>
+                            <a href="/api/files/download/${nameEscaped}" download="${file.name}" target="_blank" rel="noopener noreferrer" style="background: var(--accent-color); color: #000; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i data-lucide="download" size="14" style="pointer-events: none;"></i>
                             </a>
                             <button onclick="window.deleteSharedFile('${nameEscaped}')" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i data-lucide="trash-2" size="14"></i>
