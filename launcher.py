@@ -686,7 +686,162 @@ class LANpadLauncher:
                 subprocess.Popen(["xdg-open", path])
 
         def open_send_receive():
-            self.open_send_receive_window()
+            # Create a Toplevel window for in-app files management
+            files_win = tk.Toplevel(self.root)
+            files_win.title("LANpad Files Center")
+            files_win.geometry("420x500")
+            files_win.resizable(False, False)
+            files_win.configure(bg=self.BG)
+            files_win.transient(self.root)
+            files_win.grab_set()
+
+            # Header
+            header_frame = tk.Frame(files_win, bg=self.BG, pady=15)
+            header_frame.pack(fill="x", padx=20)
+
+            tk.Label(header_frame, text="SHARED FILES", font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE).pack(anchor="w")
+            tk.Label(header_frame, text="Manage files shared with connected devices", font=(self.FU, 9), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(2, 0))
+
+            # List Container with scrollbar
+            list_frame = tk.Frame(files_win, bg=self.BG)
+            list_frame.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+
+            scrollbar = tk.Scrollbar(list_frame, orient="vertical", bg=self.BG, troughcolor=self.BG2, bd=0, highlightthickness=0)
+            scrollbar.pack(side="right", fill="y")
+
+            # Custom listbox styling
+            listbox = tk.Listbox(
+                list_frame, 
+                bg=self.BG2, 
+                fg=self.WHITE, 
+                selectbackground="#0077C0", 
+                selectforeground=self.WHITE, 
+                font=(self.FU, 10), 
+                bd=1, 
+                highlightthickness=1, 
+                highlightbackground="#2A2A30", 
+                highlightcolor="#0077C0",
+                yscrollcommand=scrollbar.set,
+                relief="flat"
+            )
+            listbox.pack(side="left", fill="both", expand=True)
+            scrollbar.config(command=listbox.yview)
+
+            # Help label / status inside list frame if empty
+            status_lbl = tk.Label(files_win, text="", bg=self.BG, fg=self.GREEN, font=(self.FU, 9, "bold"))
+            status_lbl.pack(pady=5)
+
+            shared_path = os.path.expanduser("~/Downloads/LANpad")
+
+            def refresh_files():
+                listbox.delete(0, tk.END)
+                if not os.path.exists(shared_path):
+                    os.makedirs(shared_path, exist_ok=True)
+                
+                try:
+                    files = sorted(os.listdir(shared_path))
+                    # Ignore hidden files
+                    files = [f for f in files if not f.startswith('.')]
+                    if not files:
+                        listbox.insert(tk.END, " (No files shared yet)")
+                        listbox.config(state="disabled")
+                    else:
+                        listbox.config(state="normal")
+                        for f in files:
+                            f_path = os.path.join(shared_path, f)
+                            size_bytes = os.path.getsize(f_path)
+                            # format size
+                            if size_bytes < 1024:
+                                size_str = f"{size_bytes} B"
+                            elif size_bytes < 1024 * 1024:
+                                size_str = f"{size_bytes / 1024:.1f} KB"
+                            elif size_bytes < 1024 * 1024 * 1024:
+                                size_str = f"{size_bytes / (1024 * 1024):.1f} MB"
+                            else:
+                                size_str = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+                            listbox.insert(tk.END, f" {f} ({size_str})")
+                except Exception as e:
+                    listbox.insert(tk.END, f" Error loading files: {e}")
+
+            def add_file():
+                from tkinter import filedialog
+                import shutil
+                file_paths = filedialog.askopenfilenames(title="Select Files to Share")
+                if file_paths:
+                    if not os.path.exists(shared_path):
+                        os.makedirs(shared_path, exist_ok=True)
+                    for fp in file_paths:
+                        try:
+                            shutil.copy(fp, shared_path)
+                        except Exception as e:
+                            messagebox.showerror("Error", f"Could not copy {os.path.basename(fp)}: {e}")
+                    status_lbl.config(text="Files added successfully!", fg=self.GREEN)
+                    files_win.after(2000, lambda: status_lbl.config(text=""))
+                    refresh_files()
+
+            def delete_file():
+                listbox_state = str(listbox.cget("state"))
+                if listbox_state == "disabled":
+                    return
+                sel = listbox.curselection()
+                if not sel:
+                    messagebox.showwarning("Selection Required", "Please select a file to delete")
+                    return
+                
+                # Get selected file name
+                try:
+                    files = sorted([f for f in os.listdir(shared_path) if not f.startswith('.')])
+                    filename = files[sel[0]]
+                    if messagebox.askyesno("Delete File", f"Are you sure you want to delete {filename}?"):
+                        os.remove(os.path.join(shared_path, filename))
+                        status_lbl.config(text="File deleted successfully", fg=self.RED)
+                        files_win.after(2000, lambda: status_lbl.config(text=""))
+                        refresh_files()
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not delete file: {e}")
+
+            def open_file():
+                listbox_state = str(listbox.cget("state"))
+                if listbox_state == "disabled":
+                    return
+                sel = listbox.curselection()
+                if not sel:
+                    messagebox.showwarning("Selection Required", "Please select a file to open")
+                    return
+                try:
+                    files = sorted([f for f in os.listdir(shared_path) if not f.startswith('.')])
+                    filename = files[sel[0]]
+                    path = os.path.join(shared_path, filename)
+                    import platform
+                    import subprocess
+                    if platform.system() == "Darwin":
+                        subprocess.Popen(["open", path])
+                    elif platform.system() == "Windows":
+                        os.startfile(path)
+                    else:
+                        subprocess.Popen(["xdg-open", path])
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not open file: {e}")
+
+            # Buttons Panel
+            btn_panel = tk.Frame(files_win, bg=self.BG, pady=15)
+            btn_panel.pack(fill="x", padx=20)
+
+            # Styled Buttons (using simple flat buttons with subtle borders/colors)
+            add_btn = tk.Button(btn_panel, text="Add File", bg="#0077C0", fg=self.WHITE, activebackground="#009BF5", activeforeground=self.WHITE, font=(self.FU, 10, "bold"), bd=0, padx=15, pady=8, command=add_file, cursor="hand2")
+            add_btn.pack(side="left", padx=(0, 10))
+
+            open_btn = tk.Button(btn_panel, text="Open File", bg=self.BG2, fg=self.WHITE, activebackground="#2D3748", activeforeground=self.WHITE, font=(self.FU, 10, "bold"), bd=1, highlightthickness=0, highlightbackground="#2D3748", padx=15, pady=8, command=open_file, cursor="hand2")
+            open_btn.pack(side="left", padx=5)
+
+            del_btn = tk.Button(btn_panel, text="Delete", bg="#742A2A", fg=self.WHITE, activebackground="#9B2C2C", activeforeground=self.WHITE, font=(self.FU, 10, "bold"), bd=0, padx=15, pady=8, command=delete_file, cursor="hand2")
+            del_btn.pack(side="left", padx=5)
+
+            ref_btn = tk.Button(btn_panel, text="Refresh", bg=self.BG2, fg=self.WHITE, activebackground="#2D3748", activeforeground=self.WHITE, font=(self.FU, 10, "bold"), bd=1, highlightthickness=0, highlightbackground="#2D3748", padx=15, pady=8, command=refresh_files, cursor="hand2")
+            ref_btn.pack(side="right", padx=(10, 0))
+
+            listbox.bind("<Double-1>", lambda e: open_file())
+            refresh_files()
 
         self._send_receive_btn = tk.Button(v, text="Send/Receive", fg=self.DIM, activeforeground=self.WHITE,
                                            bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
@@ -702,224 +857,6 @@ class LANpadLauncher:
         tk.Label(v, text="Ensure server is running on your laptop.",
                  font=(self.FU, 9), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).place(
                  x=0, y=726 + yo * 2.2, relwidth=1, anchor="nw")
-
-    def open_send_receive_window(self):
-        import os
-        import shutil
-        import platform
-        import subprocess
-        from tkinter import filedialog, messagebox
-
-        # Create window
-        win = tk.Toplevel(self.root)
-        win.title("LANpad Files Center")
-        win.geometry("450x550")
-        win.resizable(False, False)
-        win.configure(bg=self.BG)
-        win.transient(self.root)
-        win.grab_set()
-
-        # Target directory
-        shared_dir = os.path.expanduser("~/Downloads/LANpad")
-        if not os.path.exists(shared_dir):
-            os.makedirs(shared_dir, exist_ok=True)
-
-        # Header Title
-        title_lbl = tk.Label(
-            win,
-            text="LANPAD FILES CENTER",
-            font=(self.FU, 16, "bold"),
-            bg=self.BG,
-            fg=self.WHITE
-        )
-        title_lbl.pack(pady=(20, 10))
-
-        subtitle_lbl = tk.Label(
-            win,
-            text="Manage shared files on this computer",
-            font=(self.FU, 10),
-            bg=self.BG,
-            fg=self.DIM
-        )
-        subtitle_lbl.pack(pady=(0, 20))
-
-        # Files Frame (contains Listbox and Scrollbar)
-        files_frame = tk.Frame(win, bg=self.BG2, bd=1, relief="flat", highlightbackground=self.BORDER, highlightthickness=1)
-        files_frame.pack(padx=24, pady=10, fill="both", expand=True)
-
-        scrollbar = tk.Scrollbar(files_frame, orient="vertical")
-        scrollbar.pack(side="right", fill="y")
-
-        listbox = tk.Listbox(
-            files_frame,
-            yscrollcommand=scrollbar.set,
-            bg=self.BG2,
-            fg=self.WHITE,
-            selectbackground=self.GREEN,
-            selectforeground=self.BG,
-            font=(self.FM, 11),
-            bd=0,
-            highlightthickness=0,
-            activestyle="none"
-        )
-        listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        scrollbar.config(command=listbox.yview)
-
-        def refresh_list():
-            listbox.delete(0, "end")
-            if os.path.exists(shared_dir):
-                files = [f for f in os.listdir(shared_dir) if os.path.isfile(os.path.join(shared_dir, f))]
-                files.sort()
-                for f in files:
-                    try:
-                        sz = os.path.getsize(os.path.join(shared_dir, f))
-                        if sz < 1024:
-                            sz_str = f"{sz} B"
-                        elif sz < 1024*1024:
-                            sz_str = f"{sz/1024:.1f} KB"
-                        else:
-                            sz_str = f"{sz/(1024*1024):.1f} MB"
-                        listbox.insert("end", f" {f} ({sz_str})")
-                    except Exception:
-                        listbox.insert("end", f" {f}")
-            if listbox.size() == 0:
-                listbox.insert("end", " (No files shared yet)")
-
-        # Control Functions
-        def add_file():
-            file_path = filedialog.askopenfilename(title="Select File to Share")
-            if file_path:
-                try:
-                    dest_path = os.path.join(shared_dir, os.path.basename(file_path))
-                    shutil.copy2(file_path, dest_path)
-                    refresh_list()
-                    messagebox.showinfo("Success", f"Shared {os.path.basename(file_path)} successfully!", parent=win)
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to copy file: {e}", parent=win)
-
-        def delete_file():
-            sel = listbox.curselection()
-            if not sel:
-                messagebox.showwarning("Warning", "Please select a file to delete.", parent=win)
-                return
-            
-            selected_text = listbox.get(sel[0]).strip()
-            if selected_text == "(No files shared yet)":
-                return
-                
-            filename = selected_text
-            if " (" in selected_text:
-                filename = selected_text.rsplit(" (", 1)[0]
-
-            file_path = os.path.join(shared_dir, filename)
-            if os.path.exists(file_path):
-                if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {filename}?", parent=win):
-                    try:
-                        os.remove(file_path)
-                        refresh_list()
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Failed to delete file: {e}", parent=win)
-
-        def open_file():
-            sel = listbox.curselection()
-            if not sel:
-                messagebox.showwarning("Warning", "Please select a file to open.", parent=win)
-                return
-            
-            selected_text = listbox.get(sel[0]).strip()
-            if selected_text == "(No files shared yet)":
-                return
-
-            filename = selected_text
-            if " (" in selected_text:
-                filename = selected_text.rsplit(" (", 1)[0]
-
-            file_path = os.path.join(shared_dir, filename)
-            if os.path.exists(file_path):
-                try:
-                    if platform.system() == "Darwin":
-                        subprocess.Popen(["open", file_path])
-                    elif platform.system() == "Windows":
-                        os.startfile(file_path)
-                    else:
-                        subprocess.Popen(["xdg-open", file_path])
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to open file: {e}", parent=win)
-
-        # Buttons Panel
-        btn_frame = tk.Frame(win, bg=self.BG)
-        btn_frame.pack(padx=24, pady=(10, 24), fill="x")
-
-        # Top row of buttons
-        add_btn = tk.Button(
-            btn_frame,
-            text="Add File",
-            font=(self.FU, 10, "bold"),
-            bg=self.BG2,
-            fg=self.WHITE,
-            activebackground=self.BORDER,
-            activeforeground=self.WHITE,
-            bd=1,
-            relief="flat",
-            highlightthickness=0,
-            command=add_file,
-            cursor="hand2"
-        )
-        add_btn.grid(row=0, column=0, padx=4, pady=4, sticky="nsew")
-
-        open_btn = tk.Button(
-            btn_frame,
-            text="Open Selected",
-            font=(self.FU, 10, "bold"),
-            bg=self.BG2,
-            fg=self.WHITE,
-            activebackground=self.BORDER,
-            activeforeground=self.WHITE,
-            bd=1,
-            relief="flat",
-            highlightthickness=0,
-            command=open_file,
-            cursor="hand2"
-        )
-        open_btn.grid(row=0, column=1, padx=4, pady=4, sticky="nsew")
-
-        # Bottom row of buttons
-        delete_btn = tk.Button(
-            btn_frame,
-            text="Delete Selected",
-            font=(self.FU, 10, "bold"),
-            bg=self.BG2,
-            fg=self.WHITE,
-            activebackground=self.BORDER,
-            activeforeground=self.WHITE,
-            bd=1,
-            relief="flat",
-            highlightthickness=0,
-            command=delete_file,
-            cursor="hand2"
-        )
-        delete_btn.grid(row=1, column=0, padx=4, pady=4, sticky="nsew")
-
-        refresh_btn = tk.Button(
-            btn_frame,
-            text="Refresh List",
-            font=(self.FU, 10, "bold"),
-            bg=self.BG2,
-            fg=self.WHITE,
-            activebackground=self.BORDER,
-            activeforeground=self.WHITE,
-            bd=1,
-            relief="flat",
-            highlightthickness=0,
-            command=refresh_list,
-            cursor="hand2"
-        )
-        refresh_btn.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
-
-        btn_frame.grid_columnconfigure(0, weight=1)
-        btn_frame.grid_columnconfigure(1, weight=1)
-
-        refresh_list()
 
     def _draw_tabs(self):
         # Local tab
