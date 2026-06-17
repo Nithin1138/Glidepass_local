@@ -481,7 +481,7 @@ class LANpadLauncher:
         tw = len(text) * (7 if _mac else 10) + (30 if _mac else 40)
         cv = tk.Canvas(parent, width=tw, height=28, bg=self.BG, highlightthickness=0)
         cv.pack(side=side, padx=18, pady=(24, 0))
-        rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline="")
+        rounded_rect(cv, 2, 2, tw - 2, 26, r=12, fill=fill, outline="")
         cv.create_text(tw // 2, 14, text=text, fill=fg,
                        font=(self.FU, 11, "bold"))
         if cmd:
@@ -691,15 +691,21 @@ class LANpadLauncher:
         def open_send_receive():
             self.show_view("files")
 
-        self._send_receive_btn = tk.Button(v, text="Send/Receive", fg=self.DIM, activeforeground=self.WHITE,
-                                           bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
-                                           bd=0, highlightthickness=0, command=open_send_receive, cursor="hand2")
+        self._send_receive_btn = tk.Label(v, text="Send/Receive", fg=self.DIM,
+                                          bg=self.BG, font=(self.FU, 10, "underline"),
+                                          cursor="hand2")
         self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
+        self._send_receive_btn.bind("<Button-1>", lambda e: open_send_receive())
+        self._send_receive_btn.bind("<Enter>", lambda e: self._send_receive_btn.config(fg=self.WHITE))
+        self._send_receive_btn.bind("<Leave>", lambda e: self._send_receive_btn.config(fg=self.DIM))
 
-        self._files_btn = tk.Button(v, text="Open Files", fg=self.DIM, activeforeground=self.WHITE,
-                                    bg=self.BG, activebackground=self.BG, font=(self.FU, 10, "underline"),
-                                    bd=0, highlightthickness=0, command=open_shared_folder, cursor="hand2")
+        self._files_btn = tk.Label(v, text="Open Files", fg=self.DIM,
+                                   bg=self.BG, font=(self.FU, 10, "underline"),
+                                   cursor="hand2")
         self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=24)
+        self._files_btn.bind("<Button-1>", lambda e: open_shared_folder())
+        self._files_btn.bind("<Enter>", lambda e: self._files_btn.config(fg=self.WHITE))
+        self._files_btn.bind("<Leave>", lambda e: self._files_btn.config(fg=self.DIM))
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
