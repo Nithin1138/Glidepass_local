@@ -1202,10 +1202,20 @@ async def upload_file_raw(request: Request, filename: str):
         
         from fastapi.concurrency import run_in_threadpool
         
-        # Write chunks directly to final destination as they stream from socket
+        # Buffer chunks in memory to minimize thread pool scheduling overhead
+        buffer = bytearray()
+        buffer_limit = 4 * 1024 * 1024  # 4MB buffer size
+        
         with open(dest_path, "wb") as f:
             async for chunk in request.stream():
-                await run_in_threadpool(f.write, chunk)
+                buffer.extend(chunk)
+                if len(buffer) >= buffer_limit:
+                    chunk_to_write = bytes(buffer)
+                    await run_in_threadpool(f.write, chunk_to_write)
+                    buffer.clear()
+            
+            if buffer:
+                await run_in_threadpool(f.write, bytes(buffer))
                 
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
@@ -1225,12 +1235,24 @@ async def download_file(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     from fastapi.responses import StreamingResponse
+    from fastapi.concurrency import run_in_threadpool
     import urllib.parse
     
-    def iterfile():
-        with open(file_path, mode="rb") as f:
-            while chunk := f.read(1024 * 1024):  # 1MB buffer
-                yield chunk
+    async def iterfile():
+        offset = 0
+        chunk_size = 1024 * 1024  # 1MB chunks
+        
+        def read_chunk(off):
+            with open(file_path, mode="rb") as f:
+                f.seek(off)
+                return f.read(chunk_size)
+                
+        while True:
+            chunk = await run_in_threadpool(read_chunk, offset)
+            if not chunk:
+                break
+            yield chunk
+            offset += len(chunk)
 
     # Properly URL encode filename for Content-Disposition header
     encoded_filename = urllib.parse.quote(safe_filename)

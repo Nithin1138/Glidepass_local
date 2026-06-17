@@ -336,6 +336,12 @@
                     </div>
                 </header>
 
+                <!-- Tunnel Performance Warning -->
+                <div id="tunnel-warning-card" style="display: none; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); border-radius: 14px; padding: 12px; font-size: 0.75rem; color: #ff4d4d; margin-bottom: 5px;">
+                    <i data-lucide="alert-triangle" size="14" style="vertical-align: middle; margin-right: 6px; display: inline-block;"></i>
+                    <strong>Connected via Internet Tunnel:</strong> Large files (like 3.4GB) will transfer slowly over Cloudflare. For lightning-fast speeds, scan the QR code from the <strong>"Local (Home Wi-Fi)"</strong> tab in your desktop app!
+                </div>
+
                 <!-- Dropzone / Selector -->
                 <div id="file-dropzone" style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 45px 20px; text-align: center; background: var(--card-bg); cursor: pointer; transition: all 0.3s; position: relative; backdrop-filter: blur(20px);">
                     <input type="file" id="file-input" multiple style="display: none;">
@@ -746,6 +752,15 @@
                 ws.close();
             };
         }
+        // Show tunnel speed warning if not connected via local IP/localhost
+        const hostname = window.location.hostname;
+        if (hostname.includes('trycloudflare.com')) {
+            const warningCard = document.getElementById('tunnel-warning-card');
+            if (warningCard) {
+                warningCard.style.display = 'block';
+            }
+        }
+
         connectWebSocket();
     </script>
 </body>
