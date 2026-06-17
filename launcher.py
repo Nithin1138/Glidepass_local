@@ -329,7 +329,6 @@ class LANpadLauncher:
         self._build_lock()
         self._build_splash()
 
-        self.root.after(500, self.start_server)
         self._tick_dot()
         self.check_process_status()
         
@@ -1471,6 +1470,8 @@ class LANpadLauncher:
             self.main_view.tkraise()
             if hasattr(self, "update_plan_label"):
                 self.update_plan_label()
+            # Start backend server only after successful license/monetization validation
+            self.start_server()
         elif name == "lock":
             self.lock_view.tkraise()
             if hasattr(self, "update_lock_time_left"):
