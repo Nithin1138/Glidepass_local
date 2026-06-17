@@ -438,6 +438,11 @@ async def center():
     return _cached_file_response("center.html")
 
 
+@app.get("/files")
+async def files_page():
+    return _cached_file_response("files.html")
+
+
 @app.get("/vitcodes")
 async def vitcodes_page():
     return _cached_file_response("vitcodes.html")

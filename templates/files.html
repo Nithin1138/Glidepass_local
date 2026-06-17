@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GlidePass Files Center</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: rgba(250, 250, 250, 0.4);
+            --accent-color: #0077C0;
+            --accent-glow: rgba(0, 119, 192, 0.3);
+            --red-status: #C62828;
+            --green-status: #C7EEFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: hidden;
+        }
+
+        #app-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view {
+            width: 100%;
+            flex: 1;
+            opacity: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .aurora-container {
+            position: absolute;
+            inset: -20%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+            background: #000;
+        }
+
+        .aurora-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.5;
+            animation: aurora-float 15s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+        }
+
+        .aurora-1 {
+            background: var(--accent-color);
+            width: 350px; height: 350px;
+            top: 0%; left: 10%;
+            animation-duration: 12s;
+        }
+
+        .aurora-2 {
+            background: #2B6CB0;
+            width: 300px; height: 300px;
+            bottom: 10%; right: 0%;
+            animation-duration: 18s;
+            animation-delay: -3s;
+        }
+
+        .aurora-3 {
+            background: #4C3B43;
+            width: 250px; height: 250px;
+            top: 40%; left: 60%;
+            transform: translate(-50%, -50%);
+            animation-duration: 22s;
+            animation-delay: -7s;
+        }
+        
+        .aurora-overlay {
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            opacity: 0.06;
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes aurora-float {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate(30px, -40px) scale(1.1) rotate(15deg); }
+            100% { transform: translate(-30px, 30px) scale(0.9) rotate(-15deg); }
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Command Center View */
+        .command-center {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+            z-index: 1;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .top-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-color);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--green-status);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--green-status);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            padding: 12px 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .header-btn:active {
+            transform: scale(0.95);
+        }
+
+        .disconnect-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--red-status);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4d4d;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            border: none;
+            width: calc(100% - 40px);
+            max-width: 400px;
+            text-align: center;
+            box-shadow:
+                6px 6px 12px rgba(0, 0, 0, 0.4),
+                -2px -2px 8px rgba(255, 255, 255, 0.05),
+                inset 4px 4px 10px rgba(255, 255, 255, 0.4),
+                inset -4px -4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.success {
+            background: var(--accent-color);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .upgrade-badge {
+            position: absolute;
+            top: -5px;
+            right: 4px;
+            background: linear-gradient(135deg, #FFF59D 0%, #FBC02D 100%);
+            color: #050505;
+            font-size: 7px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(251, 192, 45, 0.5);
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-wrapper">
+        <div class="aurora-container">
+            <div class="aurora-blob aurora-1"></div>
+            <div class="aurora-blob aurora-2"></div>
+            <div class="aurora-blob aurora-3"></div>
+            <div class="aurora-overlay"></div>
+        </div>
+
+        <div class="view">
+            <div class="command-center">
+                <header>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
+                            <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
+                                <i data-lucide="arrow-left" size="16"></i>
+                            </button>
+                            <i data-lucide="folder-up" size="14"></i>
+                            <span style="font-weight: 900; letter-spacing: 0.05em;">GLIDEPASS FILE TRANSFER <span class="status-dot"></span></span>
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <button class="header-btn disconnect-btn" id="disconnect-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <i data-lucide="link-2-off" size="16"></i>
+                            <span>DISCONNECT</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Dropzone / Selector -->
+                <div id="file-dropzone" style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 45px 20px; text-align: center; background: var(--card-bg); cursor: pointer; transition: all 0.3s; position: relative; backdrop-filter: blur(20px);">
+                    <input type="file" id="file-input" multiple style="display: none;">
+                    <i data-lucide="upload-cloud" size="36" style="color: var(--accent-color); margin-bottom: 12px; filter: drop-shadow(0 0 10px var(--accent-glow));"></i>
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #fff;">Choose Files / Drag & Drop</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Supports large files (5-10 GB+) cross-device over Local LAN</div>
+                </div>
+
+                <!-- Progress Bar Card -->
+                <div id="upload-progress-container" style="display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase;">Uploading File</span>
+                        <span id="upload-speed-lbl" style="font-size: 0.7rem; color: var(--accent-color); font-weight: 800;">0.00 MB/s</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="upload-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color) 0%, #009BF5 100%); transition: width 0.1s ease-out;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                        <span id="upload-percent-lbl">0%</span>
+                        <span id="upload-bytes-lbl">0 / 0 MB</span>
+                    </div>
+                </div>
+
+                <!-- Shared Files list -->
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">Shared Files on Laptop</span>
+                        <button id="refresh-files-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700;">
+                            <i data-lucide="refresh-cw" size="12"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="shared-files-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                        <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared yet. Select a file above to start!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        lucide.createIcons();
+
+        const backBtn = document.getElementById('back-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = '/';
+            });
+        }
+
+        disconnectBtn.addEventListener('click', () => {
+            if (confirm("Disconnect and reset session?")) {
+                window.location.href = '/';
+            }
+        });
+
+        // --- File Sharing Logic ---
+        const fileInput = document.getElementById('file-input');
+        const fileDropzone = document.getElementById('file-dropzone');
+        const progressContainer = document.getElementById('upload-progress-container');
+        const progressBar = document.getElementById('upload-progress-bar');
+        const speedLbl = document.getElementById('upload-speed-lbl');
+        const percentLbl = document.getElementById('upload-percent-lbl');
+        const bytesLbl = document.getElementById('upload-bytes-lbl');
+        const filesList = document.getElementById('shared-files-list');
+        const refreshFilesBtn = document.getElementById('refresh-files-btn');
+
+        fileDropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => handleFilesSelected(fileInput.files));
+
+        fileDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropzone.style.borderColor = 'var(--accent-color)';
+        });
+        fileDropzone.addEventListener('dragleave', () => {
+            fileDropzone.style.borderColor = 'var(--border-color)';
+        });
+        fileDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropzone.style.borderColor = 'var(--border-color)';
+            if (e.dataTransfer.files.length > 0) {
+                handleFilesSelected(e.dataTransfer.files);
+            }
+        });
+
+        async function handleFilesSelected(files) {
+            if (files.length === 0) return;
+            for (let i = 0; i < files.length; i++) {
+                await uploadSingleFile(files[i]);
+            }
+            fileInput.value = '';
+            fetchFilesList();
+        }
+
+        function uploadSingleFile(file) {
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                formData.append('file', file);
+
+                progressContainer.style.display = 'flex';
+                progressBar.style.width = '0%';
+                percentLbl.textContent = '0%';
+                speedLbl.textContent = '0.00 MB/s';
+                bytesLbl.textContent = `0.00 / ${(file.size / (1024*1024)).toFixed(2)} MB`;
+
+                const startTime = Date.now();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percent + '%';
+                        percentLbl.textContent = percent + '%';
+
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        const speedBytes = elapsed > 0 ? (e.loaded / elapsed) : 0;
+                        const speedMB = (speedBytes / (1024 * 1024)).toFixed(2);
+                        speedLbl.textContent = `${speedMB} MB/s`;
+
+                        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
+                        const totalMB = (e.total / (1024 * 1024)).toFixed(2);
+                        bytesLbl.textContent = `${loadedMB} / ${totalMB} MB`;
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    progressContainer.style.display = 'none';
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.status === 'success') {
+                            showToast(`Uploaded ${file.name} successfully!`);
+                        } else {
+                            showToast(res.message || 'Upload failed', 'error');
+                        }
+                    } else {
+                        showToast(`Upload failed (${xhr.status})`, 'error');
+                    }
+                    resolve();
+                });
+
+                xhr.addEventListener('error', () => {
+                    progressContainer.style.display = 'none';
+                    showToast('Network error during upload', 'error');
+                    resolve();
+                });
+
+                xhr.open('POST', '/api/files/upload');
+                xhr.send(formData);
+            });
+        }
+
+        async function fetchFilesList() {
+            try {
+                const res = await fetch('/api/files/list');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderFiles(data.files);
+                } else {
+                    filesList.innerHTML = `<div style="text-align: center; color: var(--red-status); padding: 20px 10px; font-size: 0.8rem;">${data.message}</div>`;
+                }
+            } catch (e) {
+                filesList.innerHTML = `<div style="text-align: center; color: var(--red-status); padding: 20px 10px; font-size: 0.8rem;">Failed to load files</div>`;
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function renderFiles(files) {
+            if (files.length === 0) {
+                filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared yet. Select a file above to start!</div>`;
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => {
+                const nameEscaped = encodeURIComponent(file.name);
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; backdrop-filter: blur(10px);">
+                        <div style="display: flex; flex-direction: column; gap: 3px; max-width: 65%; min-width: 0;">
+                            <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/api/files/download/${nameEscaped}" download="${file.name}" style="background: var(--accent-color); color: #000; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i data-lucide="download" size="14"></i>
+                            </a>
+                            <button onclick="window.deleteSharedFile('${nameEscaped}')" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="trash-2" size="14"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        async function deleteSharedFile(filename) {
+            if (confirm("Are you sure you want to delete this file?")) {
+                try {
+                    const res = await fetch(`/api/files/delete/${filename}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        showToast('File deleted successfully');
+                        fetchFilesList();
+                    } else {
+                        showToast(data.message || 'Delete failed', 'error');
+                    }
+                } catch(e) {
+                    showToast('Delete failed', 'error');
+                }
+            }
+        }
+
+        window.deleteSharedFile = deleteSharedFile;
+        refreshFilesBtn.addEventListener('click', fetchFilesList);
+
+        // Fetch list on load
+        fetchFilesList();
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            toast.style.transform = 'translateX(-50%) scale(1.05)';
+            setTimeout(() => toast.style.transform = 'translateX(-50%) scale(1)', 150);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateX(-50%)';
+            }, 2500);
+        }
+
+        // Connect to active status websocket
+        function connectWebSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${proto}//${window.location.host}/ws/connect`;
+            const ws = new WebSocket(wsUrl);
+            let pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send('ping');
+                }
+            }, 10000);
+            ws.onclose = () => {
+                clearInterval(pingInterval);
+                setTimeout(connectWebSocket, 3000);
+            };
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
