@@ -1752,10 +1752,10 @@ class LANpadLauncher:
         # Styled DnD entry inside dropzone
         dnd_var = tk.StringVar()
         dnd_entry = tk.Entry(dropzone, textvariable=dnd_var, bg=self.BG2, fg=self.DIM,
-                             font=(self.FU, 9), bd=0, highlightthickness=0, justify="center", insertontime=0)
-        dnd_entry.place(x=30, y=90, width=W - 36 - 60, height=26)
+                             font=(self.FU, 8), bd=0, highlightthickness=0, justify="center", insertontime=0)
+        dnd_entry.place(x=10, y=90, width=W - 36 - 20, height=26)
 
-        placeholder = "or Drop Files Here..."
+        placeholder = "Supports large files (5-10 GB+) cross-device over Local LAN"
         dnd_entry.insert(0, placeholder)
 
         def draw_dropzone(hover=False):
