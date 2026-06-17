@@ -1140,7 +1140,7 @@ def _safe_pyautogui():
 
 # ── File Sharing Operations ───────────────────────────────────────────────────
 
-SHARED_DIR = os.path.expanduser("~/Downloads/GlidePass")
+SHARED_DIR = os.path.expanduser("~/Downloads/LANpad")
 if not os.path.exists(SHARED_DIR):
     os.makedirs(SHARED_DIR, exist_ok=True)
 

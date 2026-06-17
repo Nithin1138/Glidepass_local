@@ -675,7 +675,7 @@ class LANpadLauncher:
             import os
             import subprocess
             import platform
-            path = os.path.expanduser("~/Downloads/GlidePass")
+            path = os.path.expanduser("~/Downloads/LANpad")
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             if platform.system() == "Darwin":
