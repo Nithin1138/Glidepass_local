@@ -34,6 +34,7 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             min-height: 100vh;
+            min-height: 100dvh;
             width: 100vw;
             display: flex;
             justify-content: center;
@@ -46,6 +47,7 @@
             width: 100%;
             max-width: 450px;
             min-height: 100vh;
+            min-height: 100dvh;
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -334,6 +336,11 @@
     <div id="toast" class="toast"></div>
 
     <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+
         lucide.createIcons();
 
         const backBtn = document.getElementById('back-btn');
