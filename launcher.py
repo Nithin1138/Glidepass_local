@@ -2537,22 +2537,41 @@ class LANpadLauncher:
         threading.Thread(target=_thread, daemon=True).start()
 
     def prompt_update(self, version, data):
-        """Prompt user to update."""
+        """Prompt user to update. Force updates cannot be cancelled."""
         if getattr(self, "update_in_progress", False):
             return
-        self.update_in_progress = True
         
-        ans = messagebox.askyesno(
-            "Update Available",
-            f"A new version of LANpad (v{version}) is available.\n\n"
-            "Would you like to download and install it automatically now?\n"
-            "This will restart the application.",
-            parent=self.root
-        )
-        if ans:
+        # Don't re-prompt for the same version if user already declined this session
+        if hasattr(self, '_declined_version') and self._declined_version == version:
+            return
+        
+        self.update_in_progress = True
+        is_force = data.get("force_update", False)
+        
+        if is_force:
+            # Force update — non-cancellable, user MUST update
+            messagebox.showwarning(
+                "Critical Update Required",
+                f"LANpad v{version} is a required update.\n\n"
+                "The app will now download and install the update.\n"
+                "This cannot be skipped.",
+                parent=self.root
+            )
             self.apply_update(version, data)
         else:
-            self.update_in_progress = False
+            # Optional update — user can decline
+            ans = messagebox.askyesno(
+                "Update Available",
+                f"A new version of LANpad (v{version}) is available.\n\n"
+                "Would you like to download and install it automatically now?\n"
+                "This will restart the application.",
+                parent=self.root
+            )
+            if ans:
+                self.apply_update(version, data)
+            else:
+                self._declined_version = version
+                self.update_in_progress = False
 
     def apply_update(self, version, data):
         """Download and install the update."""
@@ -2564,6 +2583,7 @@ class LANpadLauncher:
         status_win.configure(bg=self.BG)
         status_win.transient(self.root)
         status_win.grab_set()
+        status_win.protocol("WM_DELETE_WINDOW", lambda: None)  # Prevent closing via X button
 
         lbl = tk.Label(
             status_win, 
