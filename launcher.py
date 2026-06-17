@@ -1751,27 +1751,12 @@ class LANpadLauncher:
 
         # Styled DnD entry inside dropzone
         dnd_var = tk.StringVar()
-        dnd_entry = tk.Entry(dropzone, textvariable=dnd_var, bg=self.BG2, fg=self.DIM, insertbackground=self.WHITE,
-                             font=(self.FU, 9), bd=0, highlightthickness=1, highlightbackground="#2A2A30",
-                             highlightcolor="#0077C0", justify="center")
+        dnd_entry = tk.Entry(dropzone, textvariable=dnd_var, bg=self.BG2, fg=self.DIM,
+                             font=(self.FU, 9), bd=0, highlightthickness=0, justify="center", insertontime=0)
         dnd_entry.place(x=30, y=90, width=W - 36 - 60, height=26)
 
         placeholder = "or Drop Files Here..."
         dnd_entry.insert(0, placeholder)
-
-        def add_placeholder(entry, ph):
-            def on_focus_in(event):
-                if entry.get() == ph:
-                    entry.delete(0, tk.END)
-                    entry.config(fg=self.WHITE)
-            def on_focus_out(event):
-                if not entry.get():
-                    entry.insert(0, ph)
-                    entry.config(fg=self.DIM)
-            entry.bind("<FocusIn>", on_focus_in)
-            entry.bind("<FocusOut>", on_focus_out)
-
-        add_placeholder(dnd_entry, placeholder)
 
         def draw_dropzone(hover=False):
             dropzone.delete("all")
@@ -1830,7 +1815,11 @@ class LANpadLauncher:
         def process_dropped_files(paths_str):
             import shutil
             from tkinter import messagebox
-            if not paths_str or paths_str == placeholder:
+            if not paths_str:
+                return
+            # Filter out the placeholder text if present
+            paths_str = paths_str.replace(placeholder, "").strip()
+            if not paths_str:
                 return
             
             paths = parse_dropped_paths(paths_str)
