@@ -1274,13 +1274,18 @@ async def download_file(filename: str):
             yield chunk
             offset += len(chunk)
 
+    import mimetypes
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if not mime_type:
+        mime_type = "application/octet-stream"
+
     # Properly URL encode filename for Content-Disposition header
     encoded_filename = urllib.parse.quote(safe_filename)
     headers = {
         "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
         "Content-Length": str(os.path.getsize(file_path)),
     }
-    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
+    return StreamingResponse(iterfile(), media_type=mime_type, headers=headers)
 
 
 @app.delete("/api/files/delete/{filename}")
