@@ -1237,7 +1237,27 @@ async def download_file(filename: str):
     from fastapi.responses import StreamingResponse
     from fastapi.concurrency import run_in_threadpool
     import urllib.parse
+    import shutil
+    import tempfile
     
+    # If the target is a directory (like a Keynote .key package or folder), zip it on the fly
+    if os.path.isdir(file_path):
+        temp_dir = tempfile.gettempdir()
+        zip_filename = safe_filename + ".zip"
+        zip_path = os.path.join(temp_dir, zip_filename)
+        
+        def zip_dir():
+            if os.path.exists(zip_path):
+                try:
+                    os.remove(zip_path)
+                except Exception:
+                    pass
+            shutil.make_archive(zip_path.replace(".zip", ""), 'zip', file_path)
+            
+        await run_in_threadpool(zip_dir)
+        file_path = zip_path
+        safe_filename = zip_filename
+
     async def iterfile():
         offset = 0
         chunk_size = 1024 * 1024  # 1MB chunks
