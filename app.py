@@ -1177,10 +1177,15 @@ async def upload_file(file: UploadFile = File(...)):
         filename = os.path.basename(file.filename)
         dest_path = os.path.join(SHARED_DIR, filename)
         
-        # Write file block-by-block using 64KB chunks to optimize socket transfer speed & memory usage
-        with open(dest_path, "wb") as f:
-            while chunk := await file.read(65536):
-                f.write(chunk)
+        from fastapi.concurrency import run_in_threadpool
+        import shutil
+
+        def save_file():
+            file.file.seek(0)
+            with open(dest_path, "wb") as f:
+                shutil.copyfileobj(file.file, f, length=1024 * 1024)
+
+        await run_in_threadpool(save_file)
         return {"status": "success", "filename": filename}
     except Exception as e:
         return {"status": "error", "message": str(e)}
