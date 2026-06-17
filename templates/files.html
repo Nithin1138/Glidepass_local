@@ -260,7 +260,7 @@
             100% { transform: rotate(360deg); }
         }
         .spinning {
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1) 1;
         }
     </style>
 </head>
@@ -468,8 +468,9 @@
                 filesList.innerHTML = `<div style="text-align: center; color: var(--red-status); padding: 20px 10px; font-size: 0.8rem;">Failed to load files</div>`;
             } finally {
                 setTimeout(() => {
-                    if (icon) icon.classList.remove('spinning');
-                }, 500);
+                    const currentIcon = refreshFilesBtn.querySelector('svg') || refreshFilesBtn.querySelector('i');
+                    if (currentIcon) currentIcon.classList.remove('spinning');
+                }, 600);
             }
         }
 
