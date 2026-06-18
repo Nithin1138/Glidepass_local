@@ -1270,35 +1270,18 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
     try:
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
-        
+
         import asyncio
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         fd = os.open(dest_path, os.O_WRONLY)
         try:
-            current_offset = offset
-            chunks = []
-            chunks_size = 0
-            buffer_limit = 4 * 1024 * 1024  # 4MB flush buffer
-
-            async for chunk in request.stream():
-                chunks.append(chunk)
-                chunks_size += len(chunk)
-                if chunks_size >= buffer_limit:
-                    data = b''.join(chunks)
-                    write_offset = current_offset
-                    # Run pwrite in executor — keeps event loop free for other parallel chunks
-                    await loop.run_in_executor(None, lambda d=data, o=write_offset: os.pwrite(fd, d, o))
-                    current_offset += len(data)
-                    chunks = []
-                    chunks_size = 0
-
-            if chunks:
-                data = b''.join(chunks)
-                write_offset = current_offset
-                await loop.run_in_executor(None, lambda d=data, o=write_offset: os.pwrite(fd, d, o))
+            # Read entire chunk body at once then single pwrite — avoids multiple
+            # intermediate writes and minimizes syscall overhead for parallel chunks
+            body = await request.body()
+            await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
         finally:
             os.close(fd)
-                
+
         return {"status": "success", "offset": offset}
     except Exception as e:
         return {"status": "error", "message": str(e)}
