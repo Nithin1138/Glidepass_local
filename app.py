@@ -122,7 +122,15 @@ def _read_custom_website_url():
             return None
     return None
 
+_license_tier_cache = {"tier": None, "ts": 0}
+
 def get_license_tier():
+    import time
+    global _license_tier_cache
+    # Return cached value for 60 seconds — avoids a blocking network call on every request
+    if _license_tier_cache["tier"] is not None and time.time() - _license_tier_cache["ts"] < 60:
+        return _license_tier_cache["tier"]
+
     # If monetization is disabled, we default to DEVELOPER (all features unlocked)
     free_enabled = False
     try:
@@ -132,6 +140,7 @@ def get_license_tier():
         with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if not data.get("monetization_enabled", False):
+                _license_tier_cache = {"tier": "DEVELOPER", "ts": time.time()}
                 return "DEVELOPER"
             free_enabled = data.get("free_enabled", False)
     except Exception:
@@ -172,13 +181,16 @@ def get_license_tier():
                         is_valid = False
 
                 if is_valid:
-                    return data.get("tier", "Basic")
+                    tier = data.get("tier", "Basic")
+                    _license_tier_cache = {"tier": tier, "ts": time.time()}
+                    return tier
         except Exception:
             pass
 
-    if free_enabled:
-        return "Free"
-    return "Basic" 
+    result = "Free" if free_enabled else "Basic"
+    _license_tier_cache = {"tier": result, "ts": time.time()}
+    return result
+
 
 CLOUD_LIMITS_CACHE = None
 
@@ -1203,6 +1215,10 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
+# Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
+_upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
+
 
 @app.post("/api/files/upload_raw")
 async def upload_file_raw(request: Request, filename: str, sid: str = None):
@@ -1252,6 +1268,14 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         with open(dest_path, "wb") as f:
             f.truncate(size)  # Instant — just sets file size, no disk I/O
+        # Open and cache fd so upload_direct reuses it without open()/close() per chunk
+        import threading
+        _upload_fd_cache[dest_path] = {
+            "fd": os.open(dest_path, os.O_WRONLY),
+            "size": size,
+            "written": 0,
+            "lock": threading.Lock(),
+        }
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -1260,31 +1284,133 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
 @app.post("/api/files/upload_direct")
 async def upload_file_direct(request: Request, filename: str, offset: int, sid: str = None):
     """Write streamed data directly to the final file at the given byte offset.
-    Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions."""
+    Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions.
+    PERFORMANCE: Skips license check for chunks after preallocate (permission already verified)."""
     if sid != SESSION_TOKEN:
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
-    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
-    if not allowed:
-        return {"status": "error", "message": err}
     try:
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
 
         import asyncio
         loop = asyncio.get_running_loop()
-        fd = os.open(dest_path, os.O_WRONLY)
-        try:
-            # Read entire chunk body at once then single pwrite — avoids multiple
-            # intermediate writes and minimizes syscall overhead for parallel chunks
+
+        # Get cached fd (created during preallocate) to skip open()/close() overhead.
+        # CRITICAL: also skips check_feature_usage() which makes a blocking network call!
+        # Permission was already verified during preallocate — no need to re-check per chunk.
+        cache = _upload_fd_cache.get(dest_path)
+        if cache:
+            fd = cache["fd"]
             body = await request.body()
             await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
-        finally:
-            os.close(fd)
+            # Track written bytes; close fd once all data is received
+            with cache["lock"]:
+                cache["written"] += len(body)
+                done = cache["written"] >= cache["size"]
+            if done:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                _upload_fd_cache.pop(dest_path, None)
+        else:
+            # Fallback: fd not in cache (preallocate was not called) — check permission then write
+            allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+            if not allowed:
+                return {"status": "error", "message": err}
+            fd = os.open(dest_path, os.O_WRONLY)
+            try:
+                body = await request.body()
+                await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
+            finally:
+                os.close(fd)
 
         return {"status": "success", "offset": offset}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.websocket("/ws/upload")
+async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: str = None, size: int = 0):
+    """WebSocket-based file upload — single TCP connection, binary frames, zero HTTP overhead.
+    Pipelining: next receive starts while current write completes for maximum throughput."""
+    await websocket.accept()
+
+    if sid != SESSION_TOKEN:
+        await websocket.send_json({"status": "error", "message": "Unauthorized"})
+        await websocket.close(code=1008)
+        return
+
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        await websocket.send_json({"status": "error", "message": err})
+        await websocket.close()
+        return
+
+    if not filename or size <= 0:
+        await websocket.send_json({"status": "error", "message": "Missing filename or size"})
+        await websocket.close()
+        return
+
+    safe_filename = os.path.basename(filename)
+    dest_path = os.path.join(SHARED_DIR, safe_filename)
+
+    # Pre-allocate the full file instantly (no actual I/O, just sets file size)
+    with open(dest_path, "wb") as f:
+        f.truncate(size)
+
+    import asyncio
+    import concurrent.futures
+    loop = asyncio.get_running_loop()
+
+    # Dedicated thread pool for disk writes — keeps event loop free for new receives
+    write_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+
+    fd = os.open(dest_path, os.O_WRONLY)
+    received = 0
+    last_ack = 0
+    ACK_EVERY = 8 * 1024 * 1024   # ACK every 8MB — less JSON overhead vs 4MB
+    pending_write = None           # Current in-flight pwrite future
+
+    try:
+        while received < size:
+            data = await websocket.receive_bytes()
+            write_offset = received
+            received += len(data)
+
+            # Await the PREVIOUS write before starting the next receive+write cycle.
+            # This prevents unbounded memory growth while still pipelining effectively.
+            if pending_write is not None:
+                await pending_write
+
+            # Kick off the write without awaiting — receive next chunk while this writes
+            pending_write = loop.run_in_executor(
+                write_executor,
+                lambda d=data, o=write_offset: os.pwrite(fd, d, o)
+            )
+
+            # Send lightweight progress ACK
+            if received - last_ack >= ACK_EVERY or received >= size:
+                await websocket.send_json({"received": received, "total": size})
+                last_ack = received
+
+        # Ensure the last write completes before signalling success
+        if pending_write is not None:
+            await pending_write
+
+        await websocket.send_json({"status": "success", "filename": safe_filename})
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        try:
+            await websocket.send_json({"status": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        os.close(fd)
+        write_executor.shutdown(wait=False)
+
 
 
 @app.post("/api/files/upload_chunk")
@@ -1512,7 +1638,7 @@ if __name__ == "__main__":
     # Thread pool sized to handle 6+ concurrent pwrite() calls without queuing
     import concurrent.futures
     import asyncio
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=24)  # 12 streams × 2 headroom
     loop_instance = None
     try:
         import uvloop
@@ -1524,10 +1650,13 @@ if __name__ == "__main__":
     uvicorn_kwargs = dict(
         host="0.0.0.0",
         port=8000,
-        http="httptools",   # Fast llhttp-based HTTP/1.1 parser
-        loop="uvloop",      # Fast C-based event loop
+        http="httptools",      # Fast llhttp-based HTTP/1.1 parser
+        loop="uvloop",         # Fast C-based event loop
         timeout_keep_alive=30,
         limit_concurrency=200,
+        ws_max_size=8 * 1024 * 1024,  # 8 MB max WS message — allows 4 MB client chunks with headroom
+        ws_ping_interval=30,          # Keep WS alive during long uploads
+        ws_ping_timeout=60,           # Generous timeout for slow connections
     )
 
     # Gracefully fall back if uvloop/httptools not installed in this environment
@@ -1539,4 +1668,4 @@ if __name__ == "__main__":
         uvicorn_kwargs.pop("loop", None)
 
     uvicorn.run(app, **uvicorn_kwargs)
-       
+   

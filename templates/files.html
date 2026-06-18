@@ -485,201 +485,200 @@
 
         function uploadSingleFile(file) {
             return new Promise(async (resolve) => {
-                // Detect mobile for tuned settings
-                const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-                    || window.innerWidth <= 768;
-
-                // Chunk sizing:
-                // Mobile: 4-8MB — enough to keep pipe full, small enough for retries
-                // Desktop: 8-64MB — maximize throughput, fewer requests
-                let chunkSize;
-                if (isMobile) {
-                    if (file.size > 500 * 1024 * 1024) {
-                        chunkSize = 32 * 1024 * 1024;  // 32MB for >500MB (movie-size)
-                    } else if (file.size > 100 * 1024 * 1024) {
-                        chunkSize = 16 * 1024 * 1024;  // 16MB for >100MB
-                    } else if (file.size > 20 * 1024 * 1024) {
-                        chunkSize = 8 * 1024 * 1024;   // 8MB for >20MB
-                    } else {
-                        chunkSize = file.size || 1;    // Single shot for small files
-                    }
-                } else {
-                    if (file.size > 1024 * 1024 * 1024) {
-                        chunkSize = 64 * 1024 * 1024;
-                    } else if (file.size > 200 * 1024 * 1024) {
-                        chunkSize = 32 * 1024 * 1024;
-                    } else if (file.size > 50 * 1024 * 1024) {
-                        chunkSize = 16 * 1024 * 1024;
-                    } else if (file.size > 10 * 1024 * 1024) {
-                        chunkSize = 8 * 1024 * 1024;
-                    } else {
-                        chunkSize = file.size || 1;
-                    }
-                }
-                const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+                const totalMB = (file.size / 1048576).toFixed(2);
 
                 progressContainer.style.display = 'flex';
                 progressBar.style.width = '0%';
                 percentLbl.textContent = '0%';
                 speedLbl.textContent = '0.00 MB/s';
-                const totalMB = (file.size / (1024*1024)).toFixed(2);
                 bytesLbl.textContent = `0.00 / ${totalMB} MB`;
 
-                // For small files (<=20MB on mobile, <=10MB on desktop): single-stream
-                const singleStreamLimit = isMobile ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
-                if (file.size <= singleStreamLimit) {
-                    const xhr = new XMLHttpRequest();
-                    const startTime = Date.now();
-                    let lastUpdate = 0;
-                    xhr.upload.addEventListener('progress', (e) => {
-                        if (!e.lengthComputable) return;
-                        const now = Date.now();
-                        if (now - lastUpdate < 100 && e.loaded < e.total) return;
-                        lastUpdate = now;
-                        const pct = Math.round((e.loaded / e.total) * 100);
-                        progressBar.style.width = pct + '%';
-                        percentLbl.textContent = pct + '%';
-                        const elapsed = (now - startTime) / 1000;
-                        const spd = elapsed > 0 ? (e.loaded / elapsed / 1048576).toFixed(2) : '0.00';
-                        speedLbl.textContent = `${spd} MB/s`;
-                        bytesLbl.textContent = `${(e.loaded/1048576).toFixed(2)} / ${totalMB} MB`;
-                    });
-                    xhr.addEventListener('load', () => {
-                        progressContainer.style.display = 'none';
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const res = JSON.parse(xhr.responseText);
-                            if (res.status === 'success') showToast(`Uploaded ${file.name} successfully!`);
-                            else showToast(res.message || 'Upload failed', 'error');
-                        } else {
-                            showToast(`Upload failed (${xhr.status})`, 'error');
-                        }
-                        resolve();
-                    });
-                    xhr.addEventListener('error', () => {
-                        progressContainer.style.display = 'none';
-                        showToast('Network error during upload', 'error');
-                        resolve();
-                    });
-                    xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}&sid=${encodeURIComponent(sid)}`);
-                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-                    xhr.send(file);
-                    return;
+                // ── Strategy: Parallel HTTP streams (PRIMARY — fastest on WiFi) ──
+                // Physics: 12 independent TCP streams saturate WiFi far better than 1 WebSocket.
+                // Each stream has its own congestion window — 12x the effective bandwidth.
+                await uploadViaHttpChunks(file, totalMB);
+                resolve();
+            });
+        }
+
+        // ── WebSocket binary streaming ────────────────────────────────────────────
+        // Single TCP connection, pure binary frames = zero per-chunk HTTP overhead.
+        // Server writes each ArrayBuffer directly to disk via os.pwrite().
+        async function uploadViaWebSocket(file, totalMB) {
+            return new Promise((resolve, reject) => {
+                const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+                const wsUrl = `${proto}://${location.host}/ws/upload?sid=${encodeURIComponent(sid)}&filename=${encodeURIComponent(file.name)}&size=${file.size}`;
+                const ws = new WebSocket(wsUrl);
+                ws.binaryType = 'arraybuffer';
+
+                // 4 MB chunk — large enough to saturate mobile WiFi,
+                // small enough to not stall the JS event loop per read.
+                const CHUNK_SIZE = 4 * 1024 * 1024;
+                const startTime = Date.now();
+                let sent = 0;
+                let progressInterval = null;
+
+                function updateProgress(received) {
+                    const pct = Math.min(100, Math.round((received / file.size) * 100));
+                    progressBar.style.width = pct + '%';
+                    percentLbl.textContent = pct + '%';
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const spd = elapsed > 0 ? (received / elapsed / 1048576).toFixed(2) : '0.00';
+                    speedLbl.textContent = `${spd} MB/s`;
+                    bytesLbl.textContent = `${(received / 1048576).toFixed(2)} / ${totalMB} MB`;
                 }
 
-                // ── ZERO-COPY DIRECT WRITE for large files ──────────────────────
-                // Step 1: Pre-allocate the destination file (instant, no disk I/O)
-                try {
-                    const preRes = await fetch(`/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&sid=${encodeURIComponent(sid)}`, {method: 'POST'});
-                    const preData = await preRes.json();
-                    if (preData.status !== 'success') {
-                        progressContainer.style.display = 'none';
-                        showToast('Failed to initialize upload', 'error');
-                        resolve();
-                        return;
+                ws.onopen = async () => {
+                    // Tick progress bar based on bytes sent (optimistic)
+                    progressInterval = setInterval(() => updateProgress(sent), 100);
+                    try {
+                        let offset = 0;
+                        while (offset < file.size) {
+                            const end = Math.min(offset + CHUNK_SIZE, file.size);
+                            const buf = await file.slice(offset, end).arrayBuffer();
+                            // Back-pressure: pause if server is falling behind
+                            while (ws.bufferedAmount > 16 * 1024 * 1024) {
+                                await new Promise(r => setTimeout(r, 5));
+                            }
+                            ws.send(buf);
+                            sent = end;
+                            offset = end;
+                        }
+                        // All bytes sent — wait for server's final ACK
+                    } catch (err) {
+                        clearInterval(progressInterval);
+                        ws.close();
+                        reject(err);
                     }
-                } catch(e) {
+                };
+
+                ws.onmessage = (ev) => {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg.received !== undefined) updateProgress(msg.received);
+                        if (msg.status === 'success') {
+                            clearInterval(progressInterval);
+                            updateProgress(file.size);
+                            progressContainer.style.display = 'none';
+                            showToast(`✓ Uploaded ${file.name}`);
+                            fetchFilesList();
+                            resolve();
+                        } else if (msg.status === 'error') {
+                            clearInterval(progressInterval);
+                            progressContainer.style.display = 'none';
+                            reject(new Error(msg.message || 'Upload failed'));
+                        }
+                    } catch (e) { /* ignore JSON parse errors on binary frames */ }
+                };
+
+                ws.onerror = () => {
+                    clearInterval(progressInterval);
+                    progressContainer.style.display = 'none';
+                    reject(new Error('WebSocket error'));
+                };
+
+                ws.onclose = (e) => {
+                    clearInterval(progressInterval);
+                    // 1000=normal, 1001=going away — not error conditions
+                    if (e.code !== 1000 && e.code !== 1001) {
+                        progressContainer.style.display = 'none';
+                        reject(new Error(`WebSocket closed unexpectedly: ${e.code}`));
+                    }
+                };
+            });
+        }
+
+        // ── HTTP parallel direct-write fallback ──────────────────────────────────
+        // Pre-allocates the file then writes N chunks concurrently to exact byte
+        // offsets via os.pwrite(). No temp files or merge step needed.
+        async function uploadViaHttpChunks(file, totalMB) {
+            // 2 MB chunks × 12 concurrent = 24 MB in-flight at once — fills WiFi pipe
+            // Smaller chunks = more parallelism slots = better pipe utilization
+            const chunkSize = file.size > 2 * 1024 * 1024 ? 2 * 1024 * 1024 : file.size || 1;
+            const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+            const CONCURRENCY = 12;
+
+            try {
+                const preRes = await fetch(
+                    `/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&sid=${encodeURIComponent(sid)}`,
+                    { method: 'POST' }
+                );
+                const preData = await preRes.json();
+                if (preData.status !== 'success') {
                     progressContainer.style.display = 'none';
                     showToast('Failed to initialize upload', 'error');
-                    resolve();
                     return;
                 }
+            } catch (e) {
+                progressContainer.style.display = 'none';
+                showToast('Failed to initialize upload', 'error');
+                return;
+            }
 
-                // Step 2: Upload chunks in parallel — each writes directly to its byte offset
-                const startTime = Date.now();
-                let loadedBytes = new Float64Array(totalChunks); // typed array for fast sum
-                let activeUploads = 0;
-                let nextChunkIdx = 0;
-                let hasFailed = false;
-                let lastUpdate = 0;
-                // Concurrency:
-                // 8 parallel streams — keeps server pipeline full with uvloop/httptools
-                const CONCURRENCY = 8;
+            const startTime = Date.now();
+            const loadedBytes = new Float64Array(totalChunks);
+            let activeUploads = 0, nextChunkIdx = 0, hasFailed = false, lastUpdate = 0;
 
+            await new Promise((resolve) => {
                 function updateProgress() {
                     const now = Date.now();
+                    if (now - lastUpdate < 80) return;
+                    lastUpdate = now;
                     let totalLoaded = 0;
                     for (let i = 0; i < totalChunks; i++) totalLoaded += loadedBytes[i];
                     if (totalLoaded > file.size) totalLoaded = file.size;
-                    if (now - lastUpdate < 80 && totalLoaded < file.size) return;
-                    lastUpdate = now;
-
                     const pct = Math.round((totalLoaded / file.size) * 100);
                     progressBar.style.width = pct + '%';
                     percentLbl.textContent = pct + '%';
                     const elapsed = (now - startTime) / 1000;
                     const spd = elapsed > 0 ? (totalLoaded / elapsed / 1048576).toFixed(2) : '0.00';
                     speedLbl.textContent = `${spd} MB/s`;
-                    bytesLbl.textContent = `${(totalLoaded/1048576).toFixed(2)} / ${totalMB} MB`;
+                    bytesLbl.textContent = `${(totalLoaded / 1048576).toFixed(2)} / ${totalMB} MB`;
                 }
-
                 function pumpNext() {
                     if (hasFailed) return;
                     if (nextChunkIdx >= totalChunks) {
                         if (activeUploads === 0) {
-                            // All done — file is already fully assembled, no merge needed!
                             progressContainer.style.display = 'none';
-                            showToast(`Uploaded ${file.name} successfully!`);
+                            showToast(`✓ Uploaded ${file.name}`);
+                            fetchFilesList();
                             resolve();
                         }
                         return;
                     }
-
                     const idx = nextChunkIdx++;
                     activeUploads++;
-
                     const byteOffset = idx * chunkSize;
-                    const end = Math.min(byteOffset + chunkSize, file.size);
-                    const blob = file.slice(byteOffset, end);
-
-                    sendChunk(blob, idx, byteOffset, 4);
+                    sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, 3);
                 }
-
                 function sendChunk(blob, idx, byteOffset, retriesLeft) {
                     const xhr = new XMLHttpRequest();
                     xhr.upload.addEventListener('progress', (e) => {
-                        if (e.lengthComputable) {
-                            loadedBytes[idx] = e.loaded;
-                            updateProgress();
-                        }
+                        if (e.lengthComputable) { loadedBytes[idx] = e.loaded; updateProgress(); }
                     });
-
                     xhr.addEventListener('load', () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            loadedBytes[idx] = blob.size;
-                            updateProgress();
-                            activeUploads--;
-                            pumpNext();
+                            loadedBytes[idx] = blob.size; updateProgress(); activeUploads--; pumpNext();
                         } else if (retriesLeft > 0) {
-                            // Brief backoff before retry to avoid hammering on transient errors
-                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 300);
+                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 400);
                         } else {
-                            hasFailed = true;
-                            progressContainer.style.display = 'none';
-                            showToast(`Upload failed on part ${idx + 1}`, 'error');
-                            resolve();
+                            hasFailed = true; progressContainer.style.display = 'none';
+                            showToast(`Upload failed on part ${idx + 1}`, 'error'); resolve();
                         }
                     });
-
                     xhr.addEventListener('error', () => {
                         if (retriesLeft > 0) {
-                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 300);
+                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 400);
                         } else {
-                            hasFailed = true;
-                            progressContainer.style.display = 'none';
-                            showToast('Network error during upload', 'error');
-                            resolve();
+                            hasFailed = true; progressContainer.style.display = 'none';
+                            showToast('Network error during upload', 'error'); resolve();
                         }
                     });
-
-                    // Direct write to final file at exact byte offset — no temp files, no merge
                     xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&sid=${encodeURIComponent(sid)}`);
                     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                     xhr.send(blob);
                 }
-
-                // Launch concurrent upload streams
-                const lanes = Math.min(CONCURRENCY, totalChunks);
-                for (let i = 0; i < lanes; i++) pumpNext();
+                for (let i = 0; i < Math.min(CONCURRENCY, totalChunks); i++) pumpNext();
             });
         }
 
