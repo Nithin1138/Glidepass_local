@@ -485,18 +485,36 @@
 
         function uploadSingleFile(file) {
             return new Promise(async (resolve) => {
-                // Dynamic chunk sizing — larger chunks = fewer HTTP requests = less overhead
+                // Detect mobile to use conservative settings
+                const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                    || window.innerWidth <= 768;
+
+                // Dynamic chunk sizing:
+                // Mobile: smaller chunks (1-4MB) to reduce memory pressure and allow faster retries
+                // Desktop: larger chunks (8-64MB) for fewer requests and lower overhead
                 let chunkSize;
-                if (file.size > 1024 * 1024 * 1024) {
-                    chunkSize = 64 * 1024 * 1024;  // 64MB for >1GB (only ~47 chunks for 3GB)
-                } else if (file.size > 200 * 1024 * 1024) {
-                    chunkSize = 32 * 1024 * 1024;   // 32MB for >200MB
-                } else if (file.size > 50 * 1024 * 1024) {
-                    chunkSize = 16 * 1024 * 1024;   // 16MB for >50MB
-                } else if (file.size > 10 * 1024 * 1024) {
-                    chunkSize = 8 * 1024 * 1024;    // 8MB for >10MB
+                if (isMobile) {
+                    if (file.size > 200 * 1024 * 1024) {
+                        chunkSize = 4 * 1024 * 1024;   // 4MB for >200MB on mobile
+                    } else if (file.size > 50 * 1024 * 1024) {
+                        chunkSize = 2 * 1024 * 1024;   // 2MB for >50MB on mobile
+                    } else if (file.size > 10 * 1024 * 1024) {
+                        chunkSize = 1 * 1024 * 1024;   // 1MB for >10MB on mobile
+                    } else {
+                        chunkSize = file.size || 1;     // Single shot for small files
+                    }
                 } else {
-                    chunkSize = file.size || 1;      // Single shot for small files
+                    if (file.size > 1024 * 1024 * 1024) {
+                        chunkSize = 64 * 1024 * 1024;  // 64MB for >1GB
+                    } else if (file.size > 200 * 1024 * 1024) {
+                        chunkSize = 32 * 1024 * 1024;  // 32MB for >200MB
+                    } else if (file.size > 50 * 1024 * 1024) {
+                        chunkSize = 16 * 1024 * 1024;  // 16MB for >50MB
+                    } else if (file.size > 10 * 1024 * 1024) {
+                        chunkSize = 8 * 1024 * 1024;   // 8MB for >10MB
+                    } else {
+                        chunkSize = file.size || 1;     // Single shot for small files
+                    }
                 }
                 const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
 
@@ -572,7 +590,9 @@
                 let nextChunkIdx = 0;
                 let hasFailed = false;
                 let lastUpdate = 0;
-                const CONCURRENCY = 6; // 6 parallel streams to saturate WiFi bandwidth
+                // Mobile: 2 streams (avoids WiFi congestion + memory pressure from parallel blobs)
+                // Desktop: 6 streams to saturate local WiFi bandwidth
+                const CONCURRENCY = isMobile ? 2 : 6;
 
                 function updateProgress() {
                     const now = Date.now();
@@ -610,7 +630,7 @@
                     const end = Math.min(byteOffset + chunkSize, file.size);
                     const blob = file.slice(byteOffset, end);
 
-                    sendChunk(blob, idx, byteOffset, 3);
+                    sendChunk(blob, idx, byteOffset, 4);
                 }
 
                 function sendChunk(blob, idx, byteOffset, retriesLeft) {
@@ -627,9 +647,16 @@
                             loadedBytes[idx] = blob.size;
                             updateProgress();
                             activeUploads--;
-                            pumpNext();
+                            // Small delay on mobile between chunks to let GC breathe
+                            if (isMobile) {
+                                setTimeout(pumpNext, 20);
+                            } else {
+                                pumpNext();
+                            }
                         } else if (retriesLeft > 0) {
-                            sendChunk(blob, idx, byteOffset, retriesLeft - 1);
+                            // Exponential backoff on retry
+                            const delay = isMobile ? (4 - retriesLeft) * 500 : 0;
+                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), delay);
                         } else {
                             hasFailed = true;
                             progressContainer.style.display = 'none';
@@ -640,7 +667,8 @@
 
                     xhr.addEventListener('error', () => {
                         if (retriesLeft > 0) {
-                            sendChunk(blob, idx, byteOffset, retriesLeft - 1);
+                            const delay = isMobile ? (4 - retriesLeft) * 500 : 0;
+                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), delay);
                         } else {
                             hasFailed = true;
                             progressContainer.style.display = 'none';
