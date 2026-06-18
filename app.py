@@ -1507,5 +1507,36 @@ if __name__ == "__main__":
         print("  - Make sure your firewall allows inbound TCP/8000.")
         print("  - Phone and laptop must be on the same Wi-Fi network.\n")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Boost throughput: uvloop = 2-4x faster event loop (C-based, replaces Python asyncio)
+    # httptools = llhttp-based HTTP parser (same as Node.js, much faster than h11)
+    # Thread pool sized to handle 6+ concurrent pwrite() calls without queuing
+    import concurrent.futures
+    import asyncio
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
+    loop_instance = None
+    try:
+        import uvloop
+        loop_instance = uvloop.new_event_loop()
+        asyncio.set_event_loop(loop_instance)
+    except ImportError:
+        pass
+
+    uvicorn_kwargs = dict(
+        host="0.0.0.0",
+        port=8000,
+        http="httptools",   # Fast llhttp-based HTTP/1.1 parser
+        loop="uvloop",      # Fast C-based event loop
+        timeout_keep_alive=30,
+        limit_concurrency=200,
+    )
+
+    # Gracefully fall back if uvloop/httptools not installed in this environment
+    try:
+        import uvloop  # noqa
+        import httptools  # noqa
+    except ImportError:
+        uvicorn_kwargs.pop("http", None)
+        uvicorn_kwargs.pop("loop", None)
+
+    uvicorn.run(app, **uvicorn_kwargs)
        

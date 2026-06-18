@@ -592,8 +592,8 @@
                 let hasFailed = false;
                 let lastUpdate = 0;
                 // Concurrency:
-                // Mobile + Desktop: 6 parallel streams to saturate local WiFi
-                const CONCURRENCY = 6;
+                // 8 parallel streams — keeps server pipeline full with uvloop/httptools
+                const CONCURRENCY = 8;
 
                 function updateProgress() {
                     const now = Date.now();
