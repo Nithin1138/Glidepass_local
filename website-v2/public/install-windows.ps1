@@ -11,8 +11,8 @@ Write-Host "data security issues, or system disruption." -ForegroundColor Yellow
 Write-Host "By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
 Write-Host ""
 
-# Define paths
-$DownloadUrl = "https://lanpad.vercel.app/downloads/LANpad.exe"
+# Define paths (uses telemetry redirect for counts)
+$DownloadUrl = "https://lanpad.vercel.app/api/download?platform=windows"
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
 $ExePath = Join-Path $InstallDir "LANpad.exe"
 

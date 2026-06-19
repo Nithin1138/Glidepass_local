@@ -1974,7 +1974,71 @@ class LANpadLauncher:
         privacy_btn.place(x=24, y=500, width=W - 48)
         privacy_btn.bind("<Button-1>", lambda e: open_privacy())
         
+        agree_var = tk.BooleanVar(value=False)
+        agree_chk = tk.Checkbutton(
+            v,
+            text="I agree to the Terms of Service and Privacy Policy",
+            variable=agree_var,
+            fg=self.WHITE,
+            bg="#0D0D10",
+            selectcolor="#0D0D10",
+            activebackground="#0D0D10",
+            activeforeground=self.WHITE,
+            font=(self.FU, 9),
+            highlightthickness=0,
+            bd=0
+        )
+        agree_chk.place(x=24, y=530, width=W - 48)
+
+        def send_consent_telemetry():
+            try:
+                import urllib.request
+                import json
+                import sys
+                from platform_utils import get_hardware_id, VERSION, is_mac
+                
+                hwid = get_hardware_id()
+                platform_str = "macOS" if is_mac() else "Windows"
+                event_name = f"terms_acceptance:{VERSION}:{platform_str}"
+                
+                payload = json.dumps({
+                    "type": "event",
+                    "uuid": hwid,
+                    "event": event_name
+                }).encode("utf-8")
+                
+                if getattr(sys, 'frozen', False):
+                    urls = ["https://lanpad.vercel.app/api/telemetry"]
+                else:
+                    urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                    
+                for url in urls:
+                    try:
+                        req = urllib.request.Request(
+                            url,
+                            data=payload,
+                            headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
+                            method="POST"
+                        )
+                        with safe_urlopen(req, timeout=3) as resp:
+                            res = json.loads(resp.read().decode("utf-8"))
+                            if res.get("success", False):
+                                print(f"[telemetry] Consent logged successfully to {url}")
+                                break
+                    except Exception as e:
+                        print(f"[telemetry] Failed to log consent on {url}: {e}")
+            except Exception as e:
+                print(f"[telemetry] Error preparing consent telemetry: {e}")
+
         def on_accept():
+            if not agree_var.get():
+                import tkinter.messagebox
+                tkinter.messagebox.showwarning(
+                    "Agreement Required",
+                    "You must check the box to agree to the Terms of Service and Privacy Policy before continuing."
+                )
+                return
+
             try:
                 path = os.path.expanduser("~/.lanpad_legal.json")
                 import json
@@ -1983,6 +2047,10 @@ class LANpadLauncher:
             except Exception as e:
                 print(f"Error saving legal acceptance: {e}")
             
+            # Send consent telemetry asynchronously in the background
+            import threading
+            threading.Thread(target=send_consent_telemetry, daemon=True).start()
+
             if hasattr(self, "monetization_enabled") and self.monetization_enabled:
                 if hasattr(self, "free_enabled") and self.free_enabled:
                     self.show_view("main")
@@ -1993,7 +2061,7 @@ class LANpadLauncher:
                 
         btn_tw = 200
         btn_cv = tk.Canvas(v, width=btn_tw, height=36, bg="#0D0D10", highlightthickness=0)
-        btn_cv.place(x=(W - btn_tw) // 2, y=560)
+        btn_cv.place(x=(W - btn_tw) // 2, y=570)
         
         rounded_rect(btn_cv, 0, 2, btn_tw, 34, r=16, fill="#0077C0", outline="")
         btn_cv.create_text(btn_tw // 2, 18, text="ACCEPT & CONTINUE", fill=self.WHITE, font=(self.FU, 11, "bold"))
