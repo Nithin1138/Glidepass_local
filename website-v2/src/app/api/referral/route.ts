@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getReferralCodeByEmail, createReferralCode, getReferrals } from "@/lib/db";
+import { getReferralCodeByEmail, createReferralCode, getReferrals, getEmailByReferralCode } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +7,19 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
+    const code = searchParams.get("code");
+
+    if (code) {
+      const cleanCode = code.trim().toUpperCase();
+      const referrerEmail = await getEmailByReferralCode(cleanCode);
+      return NextResponse.json({
+        valid: !!referrerEmail,
+        email: referrerEmail
+      });
+    }
+
     if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return NextResponse.json({ error: "Email or code is required" }, { status: 400 });
     }
 
     const cleanEmail = email.trim().toLowerCase();

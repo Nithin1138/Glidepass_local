@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMonetizationSettings, getCoupons } from "@/lib/db";
+import { getMonetizationSettings, getCoupons, getEmailByReferralCode } from "@/lib/db";
 import Razorpay from "razorpay";
 
 export const dynamic = "force-dynamic";
@@ -65,9 +65,15 @@ export async function POST(req: NextRequest) {
       finalAmount = amountInRupees * (1 - Math.min(discountPercent, 100) / 100);
     }
 
-    // If referral code is used, apply an extra 10% discount for the referred user!
+    // If referral code is used, validate it first!
     if (referralCode) {
-      finalAmount = finalAmount * 0.90; // 10% off
+      const cleanRefCode = referralCode.trim().toUpperCase();
+      const referrerEmail = await getEmailByReferralCode(cleanRefCode);
+      if (referrerEmail && referrerEmail.toLowerCase() !== email.toLowerCase()) {
+        finalAmount = finalAmount * 0.90; // 10% off
+      } else {
+        return NextResponse.json({ error: "Invalid or self-referred referral code" }, { status: 400 });
+      }
     }
 
     // Minimum amount for Razorpay is 1 INR

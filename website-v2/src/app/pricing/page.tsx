@@ -38,6 +38,9 @@ export default function PricingPage() {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [isValidatingReferral, setIsValidatingReferral] = useState(false);
+  const [isReferralValid, setIsReferralValid] = useState(false);
+  const [referralCodeError, setReferralCodeError] = useState<string | null>(null);
   
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [licenseKey, setLicenseKey] = useState<string | null>(null);
@@ -167,7 +170,16 @@ export default function PricingPage() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref") || params.get("referral");
     if (ref) {
-      setReferralCode(ref.toUpperCase());
+      const cleanRef = ref.toUpperCase();
+      setReferralCode(cleanRef);
+      fetch(`/api/referral?code=${encodeURIComponent(cleanRef)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.valid) {
+            setIsReferralValid(true);
+          }
+        })
+        .catch((err) => console.error("Error auto-validating referral:", err));
     }
 
     // Load Razorpay script
@@ -221,6 +233,32 @@ export default function PricingPage() {
     }
   };
 
+  // Handle referral validation
+  const validateReferralCode = async () => {
+    if (!referralCode) return;
+    setIsValidatingReferral(true);
+    setIsReferralValid(false);
+    setReferralCodeError(null);
+
+    try {
+      const res = await fetch(`/api/referral?code=${encodeURIComponent(referralCode)}`);
+      const data = await res.json();
+      if (data.valid) {
+        if (data.email?.toLowerCase() === checkoutEmail.toLowerCase()) {
+          setReferralCodeError("Cannot refer yourself!");
+        } else {
+          setIsReferralValid(true);
+        }
+      } else {
+        setReferralCodeError("Invalid referral code");
+      }
+    } catch (e) {
+      setReferralCodeError("Failed to validate referral code");
+    } finally {
+      setIsValidatingReferral(false);
+    }
+  };
+
   // Calculate pricing breakdown
   const getCalculatedPrice = () => {
     if (!selectedPlan) return { base: 0, discount: 0, refDiscount: 0, total: 0 };
@@ -234,7 +272,7 @@ export default function PricingPage() {
     
     let subtotal = base - discount;
     let refDiscount = 0;
-    if (referralCode.trim()) {
+    if (isReferralValid) {
       refDiscount = subtotal * 0.10; // 10% off for referred user
     }
     
@@ -633,14 +671,29 @@ export default function PricingPage() {
                         {/* Referral Code */}
                         <div>
                           <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Referral Code</label>
-                          <input
-                            type="text"
-                            value={referralCode}
-                            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                            placeholder="FRIENDCODE"
-                            className="w-full text-xs rounded-xl px-3 py-2.5 border border-white/10 bg-white/5 focus:outline-none"
-                          />
-                          {referralCode && <p className="text-[9px] text-sky-400 mt-1">Extra 10% referral discount active!</p>}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={referralCode}
+                              onChange={(e) => {
+                                setReferralCode(e.target.value.toUpperCase());
+                                setIsReferralValid(false);
+                                setReferralCodeError(null);
+                              }}
+                              placeholder="FRIENDCODE"
+                              className="w-full text-xs rounded-xl px-3 py-2.5 border border-white/10 bg-white/5 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={validateReferralCode}
+                              disabled={isValidatingReferral || !referralCode}
+                              className="px-3 rounded-xl text-[10px] font-bold bg-[#0077C0] text-white cursor-pointer disabled:opacity-40"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                          {isReferralValid && <p className="text-[9px] text-emerald-400 mt-1">Referral active! 10% discount applied.</p>}
+                          {referralCodeError && <p className="text-[9px] text-red-400 mt-1">{referralCodeError}</p>}
                         </div>
                       </div>
 
