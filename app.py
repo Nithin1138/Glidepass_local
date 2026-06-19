@@ -409,6 +409,63 @@ async def lifespan(app: FastAPI):
             import traceback
             traceback.print_exc()
     threading.Thread(target=fetch_ota_templates_safe, daemon=True).start()
+
+    # Telemetry Heartbeat Loop to track Daily Active Users (DAU)
+    def start_heartbeat_loop():
+        import time
+        import urllib.request
+        import json
+        import os
+        from platform_utils import get_hardware_id, VERSION
+        
+        # Give network/startup a few seconds to settle
+        time.sleep(5)
+        
+        while True:
+            try:
+                legal_path = os.path.expanduser("~/.lanpad_legal.json")
+                if os.path.exists(legal_path):
+                    with open(legal_path, "r", encoding="utf-8") as f:
+                        legal_data = json.load(f)
+                    if legal_data.get("accepted", False):
+                        hwid = get_hardware_id()
+                        platform_str = "macOS" if IS_MAC else "Windows"
+                        version = VERSION
+                        
+                        payload = json.dumps({
+                            "type": "heartbeat",
+                            "uuid": hwid,
+                            "platform": platform_str,
+                            "app_version": version
+                        }).encode("utf-8")
+                        
+                        if getattr(sys, 'frozen', False):
+                            urls = ["https://lanpad.vercel.app/api/telemetry"]
+                        else:
+                            urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                            
+                        for url in urls:
+                            try:
+                                req = urllib.request.Request(
+                                    url,
+                                    data=payload,
+                                    headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
+                                    method="POST"
+                                )
+                                with urllib.request.urlopen(req, timeout=5) as resp:
+                                    res = json.loads(resp.read().decode("utf-8"))
+                                    if res.get("success", False):
+                                        print(f"[telemetry] Heartbeat logged successfully to {url}")
+                                        break
+                            except Exception as e:
+                                print(f"[telemetry] Failed to log heartbeat on {url}: {e}")
+            except Exception as e:
+                print(f"[telemetry] Error in heartbeat loop: {e}")
+            
+            # Send heartbeat every 5 minutes (300 seconds)
+            time.sleep(300)
+
+    threading.Thread(target=start_heartbeat_loop, daemon=True).start()
     yield
 
 
