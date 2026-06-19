@@ -1966,12 +1966,19 @@ class LANpadLauncher:
             import webbrowser
             webbrowser.open("http://127.0.0.1:8000/privacy")
 
-        tos_btn = tk.Label(v, text="Read Terms of Service", fg="#0077C0", bg="#0D0D10", font=(self.FU, 11, "underline"), cursor="hand2")
-        tos_btn.place(x=24, y=470, width=W - 48)
+        # Position terms and privacy links side-by-side on a single centered row
+        links_frame = tk.Frame(v, bg="#0D0D10")
+        links_frame.place(x=24, y=470, width=W - 48, height=30)
+        
+        tos_btn = tk.Label(links_frame, text="Read Terms of Service", fg="#0077C0", bg="#0D0D10", font=(self.FU, 10, "underline"), cursor="hand2")
+        tos_btn.pack(side="left", expand=True)
         tos_btn.bind("<Button-1>", lambda e: open_tos())
         
-        privacy_btn = tk.Label(v, text="Read Privacy Policy", fg="#0077C0", bg="#0D0D10", font=(self.FU, 11, "underline"), cursor="hand2")
-        privacy_btn.place(x=24, y=500, width=W - 48)
+        divider_lbl = tk.Label(links_frame, text="•", fg="#4A5568", bg="#0D0D10", font=(self.FU, 10))
+        divider_lbl.pack(side="left")
+        
+        privacy_btn = tk.Label(links_frame, text="Read Privacy Policy", fg="#0077C0", bg="#0D0D10", font=(self.FU, 10, "underline"), cursor="hand2")
+        privacy_btn.pack(side="left", expand=True)
         privacy_btn.bind("<Button-1>", lambda e: open_privacy())
         
         agree_var = tk.BooleanVar(value=False)
@@ -1984,11 +1991,12 @@ class LANpadLauncher:
             selectcolor="#0D0D10",
             activebackground="#0D0D10",
             activeforeground=self.WHITE,
-            font=(self.FU, 9),
+            font=(self.FU, 10),
             highlightthickness=0,
-            bd=0
+            bd=0,
+            anchor="w"
         )
-        agree_chk.place(x=24, y=530, width=W - 48)
+        agree_chk.place(x=45, y=515, width=310)
 
         def send_consent_telemetry():
             try:
@@ -2061,7 +2069,7 @@ class LANpadLauncher:
                 
         btn_tw = 200
         btn_cv = tk.Canvas(v, width=btn_tw, height=36, bg="#0D0D10", highlightthickness=0)
-        btn_cv.place(x=(W - btn_tw) // 2, y=570)
+        btn_cv.place(x=(W - btn_tw) // 2, y=565)
         
         rounded_rect(btn_cv, 0, 2, btn_tw, 34, r=16, fill="#0077C0", outline="")
         btn_cv.create_text(btn_tw // 2, 18, text="ACCEPT & CONTINUE", fill=self.WHITE, font=(self.FU, 11, "bold"))
