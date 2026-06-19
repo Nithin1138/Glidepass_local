@@ -310,8 +310,8 @@ export default function PricingPage() {
         body: JSON.stringify({
           email: checkoutEmail,
           tier: selectedPlan.appTier,
-          couponCode,
-          referralCode,
+          couponCode: couponDiscount ? couponCode : "",
+          referralCode: isReferralValid ? referralCode : "",
         }),
       });
       const orderData = await res.json();
