@@ -901,7 +901,7 @@ export default function Home() {
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
                   <li><a href="/privacy" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</a></li>
                   <li><a href="/terms" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</a></li>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</a></li>
+                  <li><a href="/cookies" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</a></li>
                 </ul>
               </div>
             </div>
