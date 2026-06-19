@@ -889,9 +889,9 @@ export default function Home() {
               <div>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Resources</h4>
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Documentation</a></li>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Setup Guide</a></li>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>API Status</a></li>
+                  <li><a href="/docs" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Documentation</a></li>
+                  <li><a href="/setup" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Setup Guide</a></li>
+                  <li><a href="/status" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>API Status</a></li>
                 </ul>
               </div>
 
