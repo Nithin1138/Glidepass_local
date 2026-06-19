@@ -3209,18 +3209,23 @@ export default function GlidePassAdmin() {
                         </div>
                         <button
                           onClick={async () => {
-                            if (confirm("Are you sure you want to reset all analytics data? This will clear all download logs, heartbeats, and usage telemetry permanently.")) {
-                              try {
-                                const res = await fetch("/api/telemetry", { method: "DELETE" });
-                                if (res.ok) {
-                                  showToast("success", "Analytics data reset successfully.");
-                                  fetchTelemetry();
-                                } else {
-                                  throw new Error("Failed to reset analytics");
-                                }
-                              } catch (e: any) {
-                                showToast("error", e.message);
+                            const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                            const userInput = prompt(`⚠️ WARNING: This will permanently clear all download logs, heartbeats, and usage telemetry.\n\nTo confirm, please type the following code:\n\n${randomCode}`);
+                            if (userInput === null) return; // User cancelled
+                            if (userInput.trim().toUpperCase() !== randomCode) {
+                              showToast("error", "Reset cancelled: Confirmation code did not match.");
+                              return;
+                            }
+                            try {
+                              const res = await fetch("/api/telemetry", { method: "DELETE" });
+                              if (res.ok) {
+                                showToast("success", "Analytics data reset successfully.");
+                                fetchTelemetry();
+                              } else {
+                                throw new Error("Failed to reset analytics");
                               }
+                            } catch (e: any) {
+                              showToast("error", e.message);
                             }
                           }}
                           className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-red-600/10 cursor-pointer"
