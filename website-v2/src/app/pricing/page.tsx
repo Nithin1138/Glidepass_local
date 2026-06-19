@@ -329,7 +329,6 @@ export default function PricingPage() {
         order_id: orderData.orderId,
         prefill: {
           email: checkoutEmail,
-          method: "upi",
         },
         theme: {
           color: P.blue,
