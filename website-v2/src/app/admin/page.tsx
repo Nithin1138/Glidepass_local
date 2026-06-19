@@ -1520,6 +1520,73 @@ export default function GlidePassAdmin() {
       }
     });
 
+    // Calculate currently using users count (heartbeat in last 15 minutes)
+    const getCurrentlyUsingCount = () => {
+      const cutoff = now.getTime() - 15 * 60 * 1000;
+      const uuids = new Set<string>();
+      heartbeatsList.forEach((hb: any) => {
+        const t = new Date(hb.timestamp).getTime();
+        if (t >= cutoff) {
+          uuids.add(hb.uuid);
+        }
+      });
+      return uuids.size;
+    };
+    const currentlyUsing = getCurrentlyUsingCount();
+
+    // Calculate peak hour in a day
+    const hourCounts = Array(24).fill(0);
+    heartbeatsList.forEach((hb: any) => {
+      const hour = new Date(hb.timestamp).getHours();
+      hourCounts[hour]++;
+    });
+    let peakHour = 0;
+    let maxHourCount = 0;
+    hourCounts.forEach((count, hour) => {
+      if (count > maxHourCount) {
+        maxHourCount = count;
+        peakHour = hour;
+      }
+    });
+    const peakHourStr = maxHourCount > 0 ? `${peakHour.toString().padStart(2, '0')}:00 - ${(peakHour + 1).toString().padStart(2, '0')}:00` : "N/A";
+
+    // Calculate peak day/hour in a week
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const weekHourCounts: Record<string, number> = {};
+    heartbeatsList.forEach((hb: any) => {
+      const d = new Date(hb.timestamp);
+      const day = d.getDay();
+      const hour = d.getHours();
+      const key = `${dayNames[day]} at ${hour.toString().padStart(2, '0')}:00`;
+      weekHourCounts[key] = (weekHourCounts[key] || 0) + 1;
+    });
+    let peakWeekHour = "N/A";
+    let maxWeekHourCount = 0;
+    Object.entries(weekHourCounts).forEach(([key, count]) => {
+      if (count > maxWeekHourCount) {
+        maxWeekHourCount = count;
+        peakWeekHour = key;
+      }
+    });
+
+    // Calculate peak day in a month
+    const monthDayCounts: Record<string, number> = {};
+    heartbeatsList.forEach((hb: any) => {
+      const d = new Date(hb.timestamp);
+      const dayOfMonth = d.getDate();
+      const monthName = d.toLocaleDateString([], { month: 'short' });
+      const key = `${monthName} ${dayOfMonth}`;
+      monthDayCounts[key] = (monthDayCounts[key] || 0) + 1;
+    });
+    let peakMonthDay = "N/A";
+    let maxMonthDayCount = 0;
+    Object.entries(monthDayCounts).forEach(([key, count]) => {
+      if (count > maxMonthDayCount) {
+        maxMonthDayCount = count;
+        peakMonthDay = key;
+      }
+    });
+
     const targetSites = Object.entries(targetSiteCounts).map(([name, count]) => ({
       name,
       count,
@@ -1542,6 +1609,10 @@ export default function GlidePassAdmin() {
       targetSites,
       totalCopies,
       totalInjections,
+      currentlyUsing,
+      peakHourStr,
+      peakWeekHour,
+      peakMonthDay,
       retention: {
         day1: getRetentionForDay(1),
         day3: getRetentionForDay(3),
@@ -3212,6 +3283,63 @@ export default function GlidePassAdmin() {
                           </div>
                           <div className="text-3xl font-black font-[family-name:var(--font-outfit)] mb-2">{analytics.mau}</div>
                           <div className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Unique users last 30 days</div>
+                        </div>
+                      </div>
+
+                      {/* Real-time & Peak Usage Metrics Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Currently Using Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Currently Using</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                              <Activity size={16} style={{ color: P.blue }} />
+                            </div>
+                          </div>
+                          <div className="text-3xl font-black font-[family-name:var(--font-outfit)] mb-2">{analytics.currentlyUsing}</div>
+                          <div className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Active users in last 15 minutes</div>
+                        </div>
+
+                        {/* Peak Hour (Day) Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Peak Hour (Day)</span>
+                            <Clock size={16} style={{ color: P.blue }} />
+                          </div>
+                          <div className="text-3xl font-black font-[family-name:var(--font-outfit)] mb-2">{analytics.peakHourStr}</div>
+                          <div className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Most active hour of the day</div>
+                        </div>
+
+                        {/* Peak Hour (Week) Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Peak Day & Hour (Week)</span>
+                            <Calendar size={16} style={{ color: P.blue }} />
+                          </div>
+                          <div className="text-xl font-black font-[family-name:var(--font-outfit)] mb-2 mt-2">{analytics.peakWeekHour}</div>
+                          <div className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Most active day/hour combination</div>
+                        </div>
+
+                        {/* Peak Day (Month) Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase" style={{ color: P.blue }}>Peak Day (Month)</span>
+                            <BarChart3 size={16} style={{ color: P.blue }} />
+                          </div>
+                          <div className="text-3xl font-black font-[family-name:var(--font-outfit)] mb-2">{analytics.peakMonthDay}</div>
+                          <div className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Most active date of the month</div>
                         </div>
                       </div>
 
