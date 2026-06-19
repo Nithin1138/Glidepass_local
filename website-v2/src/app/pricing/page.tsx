@@ -259,25 +259,32 @@ export default function PricingPage() {
     }
   };
 
-  // Calculate pricing breakdown
+  // Calculate pricing breakdown (only applying the highest discount of either Coupon or Referral)
   const getCalculatedPrice = () => {
-    if (!selectedPlan) return { base: 0, discount: 0, refDiscount: 0, total: 0 };
+    if (!selectedPlan) return { base: 0, discount: 0, refDiscount: 0, total: 0, applied: "none" };
     const base = parseFloat(selectedPlan.price.replace(/[^0-9]/g, "")) || 0;
     
-    let discount = 0;
+    let couponPct = 0;
     if (couponDiscount) {
-      const pct = parseFloat(couponDiscount.replace(/[^0-9]/g, "")) || 0;
-      discount = base * (pct / 100);
+      couponPct = parseFloat(couponDiscount.replace(/[^0-9]/g, "")) || 0;
     }
     
-    let subtotal = base - discount;
+    let refPct = isReferralValid ? 10 : 0;
+    
+    let discount = 0;
     let refDiscount = 0;
-    if (isReferralValid) {
-      refDiscount = subtotal * 0.10; // 10% off for referred user
+    let applied: "none" | "coupon" | "referral" = "none";
+    
+    if (couponPct >= refPct && couponPct > 0) {
+      discount = base * (couponPct / 100);
+      applied = "coupon";
+    } else if (refPct > couponPct) {
+      refDiscount = base * (refPct / 100);
+      applied = "referral";
     }
     
-    const total = Math.max(subtotal - refDiscount, 1);
-    return { base, discount, refDiscount, total };
+    const total = Math.max(base - discount - refDiscount, 1);
+    return { base, discount, refDiscount, total, applied };
   };
 
   // Launch Razorpay Payment checkout
@@ -703,16 +710,16 @@ export default function PricingPage() {
                           <span className="opacity-60">Base Price</span>
                           <span>₹{pricingDetails.base}</span>
                         </div>
-                        {pricingDetails.discount > 0 && (
+                        {couponDiscount && (
                           <div className="flex justify-between text-emerald-400">
-                            <span>Coupon Discount</span>
-                            <span>-₹{pricingDetails.discount.toFixed(2)}</span>
+                            <span>Coupon Discount {pricingDetails.applied !== "coupon" && <span className="text-[9px] opacity-60">(Ignored - Referral is higher)</span>}</span>
+                            <span>{pricingDetails.applied === "coupon" ? `-₹${pricingDetails.discount.toFixed(2)}` : "₹0.00"}</span>
                           </div>
                         )}
-                        {pricingDetails.refDiscount > 0 && (
+                        {isReferralValid && (
                           <div className="flex justify-between text-sky-400">
-                            <span>Referral Bonus (10% Off)</span>
-                            <span>-₹{pricingDetails.refDiscount.toFixed(2)}</span>
+                            <span>Referral Bonus (10% Off) {pricingDetails.applied !== "referral" && <span className="text-[9px] opacity-60">(Ignored - Coupon is higher)</span>}</span>
+                            <span>{pricingDetails.applied === "referral" ? `-₹${pricingDetails.refDiscount.toFixed(2)}` : "₹0.00"}</span>
                           </div>
                         )}
                         <div className="h-[1px] bg-white/10 my-2" />

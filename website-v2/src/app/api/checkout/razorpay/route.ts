@@ -59,22 +59,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Apply coupon discount (capped at 100%)
-    let finalAmount = amountInRupees;
+    // Select the single highest discount between the coupon and referral code
+    let appliedDiscountPercent = 0;
     if (discountPercent > 0) {
-      finalAmount = amountInRupees * (1 - Math.min(discountPercent, 100) / 100);
+      appliedDiscountPercent = discountPercent;
     }
 
-    // If referral code is used, validate it first!
     if (referralCode) {
       const cleanRefCode = referralCode.trim().toUpperCase();
       const referrerEmail = await getEmailByReferralCode(cleanRefCode);
       if (referrerEmail && referrerEmail.toLowerCase() !== email.toLowerCase()) {
-        finalAmount = finalAmount * 0.90; // 10% off
+        // Compare and pick referral (10%) only if it is higher than the coupon discount
+        if (10 > appliedDiscountPercent) {
+          appliedDiscountPercent = 10;
+        }
       } else {
         return NextResponse.json({ error: "Invalid or self-referred referral code" }, { status: 400 });
       }
     }
+
+    let finalAmount = amountInRupees * (1 - Math.min(appliedDiscountPercent, 100) / 100);
 
     // Minimum amount for Razorpay is 1 INR
     finalAmount = Math.max(finalAmount, 1);
