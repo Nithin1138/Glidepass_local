@@ -53,7 +53,7 @@ def user_data_dir() -> str:
     return os.path.expanduser("~/.lanpad")
 
 
-VERSION = "1.5.8.4"
+VERSION = "1.5.8.6"
 
 
 def get_hardware_id() -> str:

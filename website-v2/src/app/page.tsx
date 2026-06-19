@@ -703,7 +703,7 @@ export default function Home() {
                   icon: <Monitor size={28} />,
                   label: "Copy Install Cmd",
                   installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
-                  version: "v1.5.8",
+                  version: "v1.5.8.6",
                   supported: "macOS 12.0+",
                   size: "",
                   theme: "amber",
@@ -719,7 +719,7 @@ export default function Home() {
                   icon: <Monitor size={28} />,
                   label: "Copy Install Cmd",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
-                  version: "v1.5.8",
+                  version: "v1.5.8.6",
                   supported: "Windows 10/11",
                   size: "",
                   theme: "indigo",
@@ -917,7 +917,7 @@ export default function Home() {
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">All Systems Operational</span>
                 </div>
-                <span className={`text-[10px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-widest`}>v1.5.8-stable</span>
+                <span className={`text-[10px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-widest`}>v1.5.8.6-stable</span>
               </div>
               <p className={`text-[10px] ${dk ? "text-white" : "text-black"}/10 font-mono tracking-widest`}>© 2026 LANPAD. ALL RIGHTS RESERVED.</p>
             </div>

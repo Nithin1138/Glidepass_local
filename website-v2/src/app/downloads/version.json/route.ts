@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
     console.error("Failed to read version.json from DB:", error);
   }
 
-  // Fallback to default version 1.5.8.4 manifest
+  // Fallback to default version 1.5.8.6 manifest
   const fallback = {
-    version: "1.5.8.4",
+    version: "1.5.8.6",
     windows_url: "https://lanpad.vercel.app/downloads/LANpad.exe",
     mac_url: "https://lanpad.vercel.app/downloads/LANpad_macOS.dmg",
     force_update: true,
     stable: true,
-    changelog: "v1.5.8.4 - STABLE: Fixed update loop, non-cancellable force update, improved update reliability."
+    changelog: "v1.5.8.6 - STABLE: Fixed exit finalization print issue and updated client version."
   };
 
   return NextResponse.json(fallback, {
