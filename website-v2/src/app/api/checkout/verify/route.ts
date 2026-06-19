@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const settings = await getMonetizationSettings();
     const plans = settings?.plans || [];
     const plan = plans.find((p: any) => p.tier.toLowerCase() === tier.toLowerCase());
-    const durationDays = plan ? parseInt(plan.validity_days, 10) : 30;
+    const durationDays = plan && !isNaN(parseInt(plan.validity_days, 10)) ? parseInt(plan.validity_days, 10) : 30;
 
     const licenseKey = await generateLicenseKey(tier, email, durationDays);
 

@@ -1768,7 +1768,8 @@ export async function resetLicenseHwid(key: string): Promise<void> {
 
 export async function generateLicenseKey(tier: string, email: string, durationDays: number): Promise<string> {
   const generatedKey = `LP-${tier.toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+  const finalDays = isNaN(durationDays) || durationDays <= 0 ? 30 : durationDays;
+  const expiresAt = new Date(Date.now() + finalDays * 24 * 60 * 60 * 1000).toISOString();
   
   if (pool) {
     await initDb();
