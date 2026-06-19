@@ -2076,7 +2076,6 @@ class LANpadLauncher:
         
         def handler(e): on_accept()
         btn_cv.bind("<Button-1>", handler)
-        btn_cv.tag_bind("all", "<Button-1>", handler)
         btn_cv.config(cursor="hand2")
 
     def _build_splash(self):
