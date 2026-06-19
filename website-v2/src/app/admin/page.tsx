@@ -336,18 +336,9 @@ export default function GlidePassAdmin() {
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
   // ─── Subscriptions & Monetization ───
-  const [subscriptions, setSubscriptions] = useState([
-    { id: "TXN_001", email: "student1@vitap.ac.in", plan: "Monthly Pass", amount: "₹99", status: "success", date: "2026-06-14 10:15" },
-    { id: "TXN_002", email: "student2@vitap.ac.in", plan: "Yearly Pass", amount: "₹499", status: "success", date: "2026-06-14 09:30" },
-    { id: "TXN_003", email: "student3@vitstudent.ac.in", plan: "Monthly Pass", amount: "₹99", status: "failed", date: "2026-06-13 18:45" },
-    { id: "TXN_004", email: "student4@vit.ac.in", plan: "Semester Pass", amount: "₹249", status: "success", date: "2026-06-13 14:20" },
-  ]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
 
-  const [promoCodes, setPromoCodes] = useState<any[]>([
-    { code: "VITAP50", discount: "50%", usage: 42, status: "active", max_uses: 100, expires_at: null },
-    { code: "FREEWEEK", discount: "100%", usage: 118, status: "active", max_uses: 200, expires_at: null },
-    { code: "WELCOME10", discount: "20%", usage: 5, status: "expired", max_uses: 50, expires_at: null },
-  ]);
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
 
   const [newPromoCode, setNewPromoCode] = useState("");
   const [newPromoDiscount, setNewPromoDiscount] = useState("50%");
@@ -1706,7 +1697,7 @@ export default function GlidePassAdmin() {
         }, 1000);
         return () => clearInterval(interval);
       }
-      if (view === "subscriptions" || view === "plans") {
+      if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
         fetchMonetization();
         const interval = setInterval(() => {
           fetchMonetization();
@@ -1759,14 +1750,6 @@ export default function GlidePassAdmin() {
       if (savedUsers) {
         try { setUsers(JSON.parse(savedUsers)); } catch (e) {}
       }
-      const savedSubs = localStorage.getItem("glidepass_subscriptions");
-      if (savedSubs) {
-        try { setSubscriptions(JSON.parse(savedSubs)); } catch (e) {}
-      }
-      const savedPromo = localStorage.getItem("glidepass_promo_codes");
-      if (savedPromo) {
-        try { setPromoCodes(JSON.parse(savedPromo)); } catch (e) {}
-      }
       const savedLimits = localStorage.getItem("glidepass_free_tier_limits");
       if (savedLimits) {
         try { setFreeTierLimits(JSON.parse(savedLimits)); } catch (e) {}
@@ -1779,18 +1762,6 @@ export default function GlidePassAdmin() {
       localStorage.setItem("glidepass_users", JSON.stringify(users));
     }
   }, [users]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("glidepass_subscriptions", JSON.stringify(subscriptions));
-    }
-  }, [subscriptions]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("glidepass_promo_codes", JSON.stringify(promoCodes));
-    }
-  }, [promoCodes]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
