@@ -333,6 +333,25 @@ export default function PricingPage() {
         theme: {
           color: P.blue,
         },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "UPI / QR Code Scanner",
+                instruments: [
+                  {
+                    method: "upi",
+                    flows: ["qr", "intent", "collect"],
+                  },
+                ],
+              },
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: false,
+            },
+          },
+        },
         handler: async function (response: any) {
           try {
             // 3. Verify Payment
