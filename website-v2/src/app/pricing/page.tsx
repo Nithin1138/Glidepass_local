@@ -324,7 +324,7 @@ export default function PricingPage() {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "GlidePass Premium",
+        name: "LANpad Premium",
         description: `${selectedPlan.name} - ${selectedPlan.appTier} Tier`,
         order_id: orderData.orderId,
         prefill: {
