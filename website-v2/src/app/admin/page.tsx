@@ -7,7 +7,7 @@ import {
   Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail,
-  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders
+  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders, Gift, Tag
 } from "lucide-react";
 import Link from "next/link";
 
@@ -331,7 +331,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning" | "coupons" | "referrals"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -343,14 +343,25 @@ export default function GlidePassAdmin() {
     { id: "TXN_004", email: "student4@vit.ac.in", plan: "Semester Pass", amount: "₹249", status: "success", date: "2026-06-13 14:20" },
   ]);
 
-  const [promoCodes, setPromoCodes] = useState([
-    { code: "VITAP50", discount: "50%", usage: 42, status: "active" },
-    { code: "FREEWEEK", discount: "100%", usage: 118, status: "active" },
-    { code: "WELCOME10", discount: "20%", usage: 5, status: "expired" },
+  const [promoCodes, setPromoCodes] = useState<any[]>([
+    { code: "VITAP50", discount: "50%", usage: 42, status: "active", max_uses: 100, expires_at: null },
+    { code: "FREEWEEK", discount: "100%", usage: 118, status: "active", max_uses: 200, expires_at: null },
+    { code: "WELCOME10", discount: "20%", usage: 5, status: "expired", max_uses: 50, expires_at: null },
   ]);
 
   const [newPromoCode, setNewPromoCode] = useState("");
   const [newPromoDiscount, setNewPromoDiscount] = useState("50%");
+
+  // --- Referral and Extended Coupon States ---
+  const [referralsList, setReferralsList] = useState<any[]>([]);
+  const [referralCodesList, setReferralCodesList] = useState<any[]>([]);
+  const [newReferrerEmail, setNewReferrerEmail] = useState("");
+  const [newReferrerCode, setNewReferrerCode] = useState("");
+
+  const [newCouponCode, setNewCouponCode] = useState("");
+  const [newCouponDiscount, setNewCouponDiscount] = useState("10%");
+  const [newCouponExpires, setNewCouponExpires] = useState("");
+  const [newCouponMaxUses, setNewCouponMaxUses] = useState("100");
 
   // --- Monetization, Dynamic Plans & Licenses States ---
   const [monetizationSettings, setMonetizationSettings] = useState<any>({
@@ -1884,7 +1895,9 @@ export default function GlidePassAdmin() {
       code: newPromoCode.trim(),
       discount: newPromoDiscount,
       usage: 0,
-      status: "active"
+      status: "active",
+      expires_at: newCouponExpires ? new Date(newCouponExpires).toISOString() : null,
+      max_uses: parseInt(newCouponMaxUses, 10) || 100
     };
     try {
       await fetch("/api/admin/monetization", {
@@ -1894,6 +1907,8 @@ export default function GlidePassAdmin() {
       });
       setPromoCodes(prev => [newCoupon, ...prev]);
       setNewPromoCode("");
+      setNewCouponExpires("");
+      setNewCouponMaxUses("100");
       showToast("success", "Promo code created in DB.");
     } catch (e) {
       showToast("error", "Failed to save to DB.");
@@ -2144,6 +2159,29 @@ export default function GlidePassAdmin() {
     setLoadingAudit(false);
   };
 
+  const handleGenerateReferralCode = async () => {
+    if (!newReferrerEmail.trim() || !newReferrerCode.trim()) {
+      return showToast("error", "Email and referral code are required.");
+    }
+    const refCodeObj = {
+      email: newReferrerEmail.trim(),
+      code: newReferrerCode.trim().toUpperCase()
+    };
+    try {
+      await fetch("/api/admin/monetization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "referral-code", data: refCodeObj })
+      });
+      fetchMonetization();
+      setNewReferrerEmail("");
+      setNewReferrerCode("");
+      showToast("success", "Referral code registered successfully.");
+    } catch (e) {
+      showToast("error", "Failed to register referral code.");
+    }
+  };
+
   const fetchMonetization = async () => {
     try {
       const res = await fetch("/api/admin/monetization");
@@ -2153,6 +2191,8 @@ export default function GlidePassAdmin() {
         if (data.coupons) setPromoCodes(data.coupons);
         if (data.settings) setMonetizationSettings(data.settings);
         if (data.licenses) setLicenses(data.licenses);
+        if (data.referrals) setReferralsList(data.referrals);
+        if (data.referralCodes) setReferralCodesList(data.referralCodes);
       }
     } catch (e) {}
   };
@@ -2268,7 +2308,7 @@ export default function GlidePassAdmin() {
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security") return !!perms.security;
-    if (key === "subscriptions" || key === "plans" || key === "settings") return !!perms.settings;
+    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
     return true;
   };
 
@@ -2689,7 +2729,7 @@ export default function GlidePassAdmin() {
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -5647,7 +5687,7 @@ export default function GlidePassAdmin() {
                                   </td>
                                 </tr>
                               ))}
-                              {licenses.length === 0 && (
+                      {licenses.length === 0 && (
                                 <tr>
                                   <td colSpan={7} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
                                     No active activation keys found.
@@ -5659,7 +5699,257 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
+                    </motion.div>
+                  )}
 
+                  {view === "coupons" && (
+                    <motion.div key="coupons" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      {/* Header */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Coupon Codes Manager</h2>
+                          <p className="text-xs text-white/60">Configure and manage active promo codes, discounts, usage limits, and expiration dates</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Create Coupon Form */}
+                        <div className="lg:col-span-4 p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Create Coupon</h3>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Coupon Code</label>
+                              <input type="text" value={newPromoCode} onChange={e => setNewPromoCode(e.target.value.toUpperCase())} placeholder="e.g. VITAP50"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Discount Rate</label>
+                              <select value={newPromoDiscount} onChange={e => setNewPromoDiscount(e.target.value)}
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`}>
+                                {["10%", "15%", "20%", "25%", "30%", "40%", "50%", "75%", "90%", "100%"].map(d => (
+                                  <option key={d} value={d}>{d} Off</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Max Uses</label>
+                              <input type="number" min="1" value={newCouponMaxUses} onChange={e => setNewCouponMaxUses(e.target.value)} placeholder="100"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Expiration Date (Optional)</label>
+                              <input type="date" value={newCouponExpires} onChange={e => setNewCouponExpires(e.target.value)}
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <button onClick={handleGeneratePromo} className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95">
+                              Generate Coupon
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List of Coupons Table */}
+                        <div className="lg:col-span-8 rounded-[28px] border overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Promotions</h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  {["Code", "Discount", "Usage Limit", "Expiration", "Status", "Actions"].map(h => (
+                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {promoCodes.map(c => (
+                                  <tr key={c.code} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-mono font-bold" style={{ color: P.sky }}>{c.code}</td>
+                                    <td className="p-4 font-semibold text-emerald-500">{c.discount}</td>
+                                    <td className="p-4">
+                                      <span className="font-mono">{c.usage || 0}</span> / <span className="font-mono text-white/40">{c.max_uses || 100}</span>
+                                    </td>
+                                    <td className="p-4 font-mono text-[10px]">
+                                      {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : "Never"}
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`text-[9px] font-bold uppercase px-2.5 py-0.5 rounded ${c.status === "active" ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                                        {c.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="flex items-center gap-3">
+                                        <button onClick={() => handleTogglePromo(c.code, c.status)} className="text-[10px] font-bold text-sky-400 hover:underline">
+                                          Toggle
+                                        </button>
+                                        <button onClick={() => handleDeletePromo(c.code)} className="text-[10px] font-bold text-red-400 hover:underline">
+                                          Delete
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                                {promoCodes.length === 0 && (
+                                  <tr>
+                                    <td colSpan={6} className="text-center py-6 text-xs text-mono text-white/40">
+                                      No promo codes found.
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {view === "referrals" && (
+                    <motion.div key="referrals" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                      {/* Header */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Referral Program Settings & Logs</h2>
+                          <p className="text-xs text-white/60">Manage referrer codes, customize subscription extension rewards, and view signups logs</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Settings & Create Form */}
+                        <div className="lg:col-span-4 space-y-8">
+                          {/* Config Box */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Referral Config</h3>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Extension Days Given as Reward</label>
+                              <div className="flex gap-2">
+                                <input type="number" min="1" value={monetizationSettings.referral_reward_days || 7}
+                                  onChange={e => {
+                                    handleSaveMonetizationSettings({
+                                      ...monetizationSettings,
+                                      referral_reward_days: parseInt(e.target.value) || 7
+                                    });
+                                  }}
+                                  className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                                <span className="text-xs font-bold font-mono self-center">Days</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Code Generator Form */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Create Referrer Code</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">User Email</label>
+                                <input type="email" value={newReferrerEmail} onChange={e => setNewReferrerEmail(e.target.value)} placeholder="user@gmail.com"
+                                  className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                              </div>
+                              <div>
+                                <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Custom Referral Code</label>
+                                <input type="text" value={newReferrerCode} onChange={e => setNewReferrerCode(e.target.value.toUpperCase())} placeholder="NITHIN100"
+                                  className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                              </div>
+                              <button onClick={handleGenerateReferralCode} className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95">
+                                Register Code
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Logs and Lists Column */}
+                        <div className="lg:col-span-8 space-y-8">
+                          {/* Referrer Codes List */}
+                          <div className="rounded-[28px] border overflow-hidden"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Registered Referral Codes</h3>
+                            </div>
+                            <div className="overflow-x-auto max-h-[220px]">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                    {["User Email", "Referral Code", "Created At"].map(h => (
+                                      <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {referralCodesList.map(r => (
+                                    <tr key={r.email} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 font-semibold">{r.email}</td>
+                                      <td className="p-4 font-mono font-bold text-sky-400">{r.referral_code}</td>
+                                      <td className="p-4 font-mono text-[10px] text-white/50">
+                                        {new Date(r.created_at).toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {referralCodesList.length === 0 && (
+                                    <tr>
+                                      <td colSpan={3} className="text-center py-6 text-xs text-mono text-white/40">
+                                        No referrer codes registered.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Referral Signups Logs */}
+                          <div className="rounded-[28px] border overflow-hidden"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Referral Rewards Audit Logs</h3>
+                            </div>
+                            <div className="overflow-x-auto max-h-[220px]">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                    {["Referrer Email", "Referred User", "Status", "Rewards Applied", "Joined Date"].map(h => (
+                                      <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {referralsList.map(r => (
+                                    <tr key={r.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 font-semibold">{r.referrer_email}</td>
+                                      <td className="p-4 font-semibold">{r.referred_email}</td>
+                                      <td className="p-4">
+                                        <span className={`text-[9px] font-bold uppercase px-2.5 py-0.5 rounded ${r.status === "rewarded" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
+                                          {r.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 font-medium text-emerald-400">
+                                        {r.status === "rewarded" ? `+${monetizationSettings.referral_reward_days || 7} Days Premium` : "Pending Action"}
+                                      </td>
+                                      <td className="p-4 font-mono text-[10px] text-white/50">
+                                        {new Date(r.created_at).toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {referralsList.length === 0 && (
+                                    <tr>
+                                      <td colSpan={5} className="text-center py-6 text-xs text-mono text-white/40">
+                                        No referral events logged yet.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
 

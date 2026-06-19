@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { 
   getSubscriptions, getCoupons, addSubscription, deleteSubscription, addCoupon, 
   toggleCoupon, deleteCoupon, getMonetizationSettings, setMonetizationSettings, 
-  getAllLicenses, generateLicenseKey, deleteLicense, resetLicenseHwid
+  getAllLicenses, generateLicenseKey, deleteLicense, resetLicenseHwid,
+  getReferrals, getReferralCodes, createReferralCode
 } from "@/lib/db";
 
 
@@ -14,7 +15,9 @@ export async function GET() {
     const coupons = await getCoupons();
     const settings = await getMonetizationSettings();
     const licenses = await getAllLicenses();
-    return NextResponse.json({ subscriptions, coupons, settings, licenses });
+    const referrals = await getReferrals();
+    const referralCodes = await getReferralCodes();
+    return NextResponse.json({ subscriptions, coupons, settings, licenses, referrals, referralCodes });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -45,6 +48,10 @@ export async function POST(req: NextRequest) {
       }
       const key = await generateLicenseKey(tier, email, durationDays);
       return NextResponse.json({ success: true, key });
+    } else if (type === "referral-code") {
+      const { email, code } = data;
+      await createReferralCode(email, code);
+      return NextResponse.json({ success: true });
     } else {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }

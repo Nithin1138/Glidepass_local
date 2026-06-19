@@ -223,6 +223,27 @@ export async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_referrals (
+        id SERIAL PRIMARY KEY,
+        referrer_email TEXT NOT NULL,
+        referred_email TEXT NOT NULL UNIQUE,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_referrer_codes (
+        email TEXT PRIMARY KEY,
+        referral_code TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query("ALTER TABLE vit_coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;");
+    await client.query("ALTER TABLE vit_coupons ADD COLUMN IF NOT EXISTS max_uses INT DEFAULT 100;");
+
     const auditCountRes = await client.query("SELECT COUNT(*) FROM vit_audit_logs");
     if (parseInt(auditCountRes.rows[0].count, 10) === 0) {
       await client.query(`
@@ -1377,8 +1398,15 @@ export async function deleteSubscription(id: string): Promise<void> {
 export async function addCoupon(coupon: any): Promise<void> {
   if (pool) {
     await pool.query(
-      "INSERT INTO vit_coupons (code, discount, usage, status) VALUES ($1, $2, $3, $4) ON CONFLICT (code) DO UPDATE SET discount = EXCLUDED.discount, usage = EXCLUDED.usage, status = EXCLUDED.status",
-      [coupon.code, coupon.discount, coupon.usage || 0, coupon.status || 'active']
+      "INSERT INTO vit_coupons (code, discount, usage, status, expires_at, max_uses) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (code) DO UPDATE SET discount = EXCLUDED.discount, usage = EXCLUDED.usage, status = EXCLUDED.status, expires_at = EXCLUDED.expires_at, max_uses = EXCLUDED.max_uses",
+      [
+        coupon.code, 
+        coupon.discount, 
+        coupon.usage || 0, 
+        coupon.status || 'active',
+        coupon.expires_at || null,
+        coupon.max_uses !== undefined ? parseInt(coupon.max_uses, 10) : 100
+      ]
     );
   } else {
     const data = await readMonetization();
@@ -1818,6 +1846,121 @@ export async function setOtaFile(file: string, content: string): Promise<void> {
       "INSERT INTO vit_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
       [`ota_file:${file}`, content]
     );
+  }
+}
+
+export async function getReferrals(): Promise<any[]> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM vit_referrals ORDER BY created_at DESC");
+      return res.rows;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+  return [];
+}
+
+export async function getReferralCodes(): Promise<any[]> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM vit_referrer_codes ORDER BY created_at DESC");
+      return res.rows;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+  return [];
+}
+
+export async function getReferralCodeByEmail(email: string): Promise<string | null> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT referral_code FROM vit_referrer_codes WHERE email = $1", [email]);
+      if (res.rows.length > 0) {
+        return res.rows[0].referral_code;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return null;
+}
+
+export async function getEmailByReferralCode(code: string): Promise<string | null> {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT email FROM vit_referrer_codes WHERE referral_code = $1", [code]);
+      if (res.rows.length > 0) {
+        return res.rows[0].email;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return null;
+}
+
+export async function createReferralCode(email: string, code: string): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_referrer_codes (email, referral_code) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET referral_code = EXCLUDED.referral_code",
+      [email, code]
+    );
+  }
+}
+
+export async function addReferral(referrerEmail: string, referredEmail: string): Promise<void> {
+  if (pool) {
+    await pool.query(
+      "INSERT INTO vit_referrals (referrer_email, referred_email, status) VALUES ($1, $2, 'pending') ON CONFLICT (referred_email) DO NOTHING",
+      [referrerEmail, referredEmail]
+    );
+  }
+}
+
+export async function rewardReferrer(referredEmail: string): Promise<void> {
+  if (pool) {
+    try {
+      // Find the referral record
+      const refRes = await pool.query("SELECT * FROM vit_referrals WHERE referred_email = $1 AND status = 'pending'", [referredEmail]);
+      if (refRes.rows.length === 0) return;
+      const refRecord = refRes.rows[0];
+      const referrerEmail = refRecord.referrer_email;
+
+      // Fetch reward days from settings
+      let rewardDays = 7;
+      const settingsRes = await pool.query("SELECT value FROM vit_settings WHERE key = 'monetization_settings'");
+      if (settingsRes.rows.length > 0) {
+        const settings = JSON.parse(settingsRes.rows[0].value);
+        rewardDays = parseInt(settings.referral_reward_days, 10) || 7;
+      }
+
+      // Check if referrer has an active license to extend, otherwise generate a new one
+      const licRes = await pool.query("SELECT * FROM vit_licenses WHERE email = $1 ORDER BY expires_at DESC LIMIT 1", [referrerEmail]);
+      if (licRes.rows.length > 0) {
+        const lic = licRes.rows[0];
+        // Extend existing license
+        const currentExpiry = new Date(lic.expires_at).getTime();
+        const newExpiry = new Date(Math.max(currentExpiry, Date.now()) + rewardDays * 24 * 60 * 60 * 1000);
+        await pool.query("UPDATE vit_licenses SET expires_at = $1 WHERE key = $2", [newExpiry.toISOString(), lic.key]);
+      } else {
+        // Generate a new Pro license key for the referrer
+        const key = "REF-" + Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+        const expiresAt = new Date(Date.now() + rewardDays * 24 * 60 * 60 * 1000);
+        await pool.query(
+          "INSERT INTO vit_licenses (key, tier, email, expires_at) VALUES ($1, $2, $3, $4)",
+          [key, "Pro", referrerEmail, expiresAt.toISOString()]
+        );
+      }
+
+      // Update referral status to 'rewarded'
+      await pool.query("UPDATE vit_referrals SET status = 'rewarded' WHERE referred_email = $1", [referredEmail]);
+    } catch (e) {
+      console.error("Error in rewardReferrer:", e);
+    }
   }
 }
 
