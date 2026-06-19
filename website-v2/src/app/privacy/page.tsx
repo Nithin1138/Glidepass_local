@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Eye, Database, Globe } from "lucide-react";
+import { ArrowLeft, Shield, Eye, Database, Globe, ListCollapse, HelpCircle } from "lucide-react";
 import Link from "next/link";
 
 const P = {
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             <span className="text-xs uppercase tracking-widest text-[#A0AEC0]">Home</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-[#A0AEC0] font-mono">
-            LEGAL // DOCUMENT
+            LEGAL // PRIVACY POLICY
           </div>
         </div>
       </header>
@@ -46,12 +46,12 @@ export default function PrivacyPage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(199,238,255,0.15)] bg-[#121212]/80 mb-6">
             <Shield size={14} className="text-[#C7EEFF]" />
-            <span className="text-xs font-semibold tracking-wider uppercase text-[#C7EEFF]">Privacy Policy</span>
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#C7EEFF]">Data Privacy disclosures</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
             Privacy <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C7EEFF] via-[#0077C0] to-[#FAFAFA]">Policy</span>
           </h1>
-          <p className="text-sm text-[#A0AEC0] font-mono">LAST UPDATED: JUNE 19, 2026</p>
+          <p className="text-sm text-[#A0AEC0] font-mono">LAST UPDATED: JUNE 19, 2026 &bull; EFFECTIVE DATE: JUNE 19, 2026</p>
         </motion.div>
 
         <motion.div
@@ -61,12 +61,10 @@ export default function PrivacyPage() {
           className="border border-[rgba(199,238,255,0.08)] rounded-3xl bg-[#050505]/40 backdrop-blur-md p-8 md:p-12 space-y-10 text-[#FAFAFA]/90 leading-relaxed font-inter text-sm md:text-base"
         >
           {/* Section 1 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">01.</span> Introduction
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">1. INTRODUCTION</h2>
             <p>
-              This Privacy Policy explains how LANpad collects, uses, stores, and protects your data. LANpad is designed with <strong>privacy-by-default</strong> principles: data is processed locally on your devices and is never transmitted to external servers.
+              This Privacy Policy ("<strong>Policy</strong>") explains how LANpad collects, uses, stores, and protects your data. LANpad is designed with <strong>privacy-by-default</strong> principles: most data is processed locally on your devices and is never transmitted to external servers.
             </p>
             <p>
               By using LANpad, you consent to this Policy. If you do not agree, please do not use LANpad.
@@ -77,50 +75,84 @@ export default function PrivacyPage() {
 
           {/* Section 2 */}
           <section className="space-y-6">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">02.</span> What Data is Processed?
-            </h2>
-
-            <div className="overflow-x-auto">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">2. WHAT DATA DOES LANpad PROCESS?</h2>
+            
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">2.1 Data You Provide</h3>
+            <div className="overflow-x-auto border border-[rgba(199,238,255,0.08)] rounded-xl">
               <table className="w-full text-left text-xs md:text-sm border-collapse">
                 <thead>
-                  <tr className="border-b border-[rgba(199,238,255,0.08)]">
-                    <th className="py-3 pr-4 font-bold text-[#C7EEFF]">Data Type</th>
+                  <tr className="border-b border-[rgba(199,238,255,0.08)] bg-white/[0.01]">
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Data Type</th>
                     <th className="py-3 px-4 font-bold text-[#C7EEFF]">Purpose</th>
-                    <th className="py-3 pl-4 font-bold text-[#C7EEFF]">Retention</th>
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Retained?</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(199,238,255,0.04)] text-[#A0AEC0]">
                   <tr>
-                    <td className="py-3 pr-4 font-semibold text-white">Clipboard Contents</td>
-                    <td className="py-3 px-4">Transfer text between devices</td>
-                    <td className="py-3 pl-4">Temporary (Session only)</td>
+                    <td className="py-3 px-4 font-semibold text-white">Clipboard contents</td>
+                    <td className="py-3 px-4">Transfer between paired desktop/mobile devices</td>
+                    <td className="py-3 px-4">Temporarily (during active session only)</td>
                   </tr>
                   <tr>
-                    <td className="py-3 pr-4 font-semibold text-white">Typed Inputs</td>
-                    <td className="py-3 px-4">Inject simulated keyboard entries</td>
-                    <td className="py-3 pl-4">Temporary (Session only)</td>
+                    <td className="py-3 px-4 font-semibold text-white">Text you type</td>
+                    <td className="py-3 px-4">Inject simulated keyboard input on target</td>
+                    <td className="py-3 px-4">Temporarily (during active session only)</td>
                   </tr>
                   <tr>
-                    <td className="py-3 pr-4 font-semibold text-white">Local Network Parameters</td>
-                    <td className="py-3 px-4">Connect devices via local IP</td>
-                    <td className="py-3 pl-4">Temporary (Session only)</td>
+                    <td className="py-3 px-4 font-semibold text-white">Session preferences</td>
+                    <td className="py-3 px-4">Remember user settings (WPM speed limit, etc.)</td>
+                    <td className="py-3 px-4">Until config file is cleared</td>
                   </tr>
                   <tr>
-                    <td className="py-3 pr-4 font-semibold text-white">Configuration File</td>
-                    <td className="py-3 px-4">Remember preference settings</td>
-                    <td className="py-3 pl-4">Persistent (Local configuration)</td>
+                    <td className="py-3 px-4 font-semibold text-white">Configuration data</td>
+                    <td className="py-3 px-4">Store user credentials and local settings</td>
+                    <td className="py-3 px-4">Indefinitely in local files (`~/.lanpad/config.json`)</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="p-5 rounded-2xl border border-blue-500/10 bg-blue-500/5 space-y-2">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#C7EEFF] flex items-center gap-2">
-                <Eye size={16} /> What We Do NOT Collect
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">2.2 Technical Data Collected Automatically</h3>
+            <div className="overflow-x-auto border border-[rgba(199,238,255,0.08)] rounded-xl">
+              <table className="w-full text-left text-xs md:text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-[rgba(199,238,255,0.08)] bg-white/[0.01]">
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Data Type</th>
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Purpose</th>
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Retained?</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(199,238,255,0.04)] text-[#A0AEC0]">
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Local IP address</td>
+                    <td className="py-3 px-4">Generate QR code for local network pairing</td>
+                    <td className="py-3 px-4">Session-only</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Device hostname</td>
+                    <td className="py-3 px-4">Identify target connection terminals in GUI</td>
+                    <td className="py-3 px-4">Session-only</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Platform details</td>
+                    <td className="py-3 px-4">Adapt system shortcuts to macOS or Windows</td>
+                    <td className="py-3 px-4">Session-only</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Session pairing token</td>
+                    <td className="py-3 px-4">Authenticate and cryptographically pair phone</td>
+                    <td className="py-3 px-4">Session-only</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-red-500/10 bg-red-500/5 space-y-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
+                <Eye size={16} /> Data We Do NOT Collect
               </h3>
               <p className="text-xs text-[#A0AEC0]">
-                We do not collect names, email addresses, location telemetry, web history, keystroke logs, or third-party credentials.
+                We do not collect or monitor your name, GPS location, web search histories, persistent keystroke inputs, or telemetry configurations. All transfers happen locally.
               </p>
             </div>
           </section>
@@ -129,32 +161,30 @@ export default function PrivacyPage() {
 
           {/* Section 3 */}
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">03.</span> Where is My Data Stored?
-            </h2>
-            <p className="flex items-start gap-2">
-              <Database className="text-[#0077C0] mt-1 flex-shrink-0" size={18} />
-              <span>
-                <strong>Local-Only Processing:</strong> LANpad processes data only on your local network. Your clipboard text never leaves your local network, and no external servers store your personal data.
-              </span>
-            </p>
-            <p className="flex items-start gap-2">
-              <Globe className="text-[#C7EEFF] mt-1 flex-shrink-0" size={18} />
-              <span>
-                <strong>Transmission Security:</strong> Local network transmission is over HTTP (plaintext). For maximum protection against local eavesdropping, verify that your Wi-Fi network uses WPA3 encryption.
-              </span>
-            </p>
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">3. WHERE IS MY DATA STORED?</h2>
+            <div className="space-y-3">
+              <p className="flex items-start gap-3">
+                <Database className="text-[#0077C0] mt-1 flex-shrink-0" size={18} />
+                <span>
+                  <strong>Local-Only Processing:</strong> LANpad processes data only on your local network. Your clipboard text never leaves your local Wi-Fi, and no centralized databases hold copy logs.
+                </span>
+              </p>
+              <p className="flex items-start gap-3">
+                <Globe className="text-[#C7EEFF] mt-1 flex-shrink-0" size={18} />
+                <span>
+                  <strong>Plaintext local transport:</strong> Because local network traffic is routed via HTTP (not HTTPS) for convenience, it is readable by users sharing the same subnet. Secure your Wi-Fi network using WPA3.
+                </span>
+              </p>
+            </div>
           </section>
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           {/* Section 4 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">04.</span> How is My Data Used?
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4. THIRD-PARTY INTEGRATIONS</h2>
             <p>
-              Data is processed strictly to enable cross-device synchronization and keystroke simulation. We <strong>NEVER</strong> sell or share your clipboard data, and we do not participate in any ad network tracking.
+              LANpad does not integrate with any external advertisement networks or tracking cookies (e.g. Google Analytics). The application may contact verification servers solely to check license validations (`https://lanpad.vercel.app/api/monetization/status`) or download updated web UI templates from GitHub repository. No private clipboard data is ever sent during these checks.
             </p>
           </section>
 
@@ -162,11 +192,62 @@ export default function PrivacyPage() {
 
           {/* Section 5 */}
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">05.</span> Contact Info
-            </h2>
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">5. YOUR RIGHTS & CONTROLS</h2>
+            <p>Because configuration data is saved locally, you can view or delete it immediately:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              <div className="p-4 rounded-xl border border-[rgba(199,238,255,0.08)] bg-white/[0.01]">
+                <p className="text-white mb-2">// View config data (macOS):</p>
+                <code className="text-emerald-400">cat ~/.lanpad/config.json</code>
+              </div>
+              <div className="p-4 rounded-xl border border-[rgba(199,238,255,0.08)] bg-white/[0.01]">
+                <p className="text-white mb-2">// Delete config data (macOS):</p>
+                <code className="text-red-400">rm -rf ~/.lanpad</code>
+              </div>
+            </div>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
+          {/* Section 6 */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">6. DATA RETENTION POLICY</h2>
+            <div className="overflow-x-auto border border-[rgba(199,238,255,0.08)] rounded-xl">
+              <table className="w-full text-left text-xs md:text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-[rgba(199,238,255,0.08)] bg-white/[0.01]">
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Data Type</th>
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Retention Duration</th>
+                    <th className="py-3 px-4 font-bold text-[#C7EEFF]">Deletion Mechanism</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(199,238,255,0.04)] text-[#A0AEC0]">
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Session logs</td>
+                    <td className="py-3 px-4">Duration of the pairing connection only</td>
+                    <td className="py-3 px-4">Automatic cleanup on disconnect</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Clipboard text</td>
+                    <td className="py-3 px-4">Memory-buffered only during sync events</td>
+                    <td className="py-3 px-4">Cleared instantly on exit</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">License keys</td>
+                    <td className="py-3 px-4">Until revoked or manually deleted</td>
+                    <td className="py-3 px-4">Manual deletion of file</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
+          {/* Section 7 */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">7. CONTACT INFORMATION</h2>
             <p>
-              For questions regarding this Privacy Policy, you can reach out via email to privacy@example.com.
+              If you have any questions or complaints regarding local network processing, data boundaries, or CCPA/GDPR compliance requests, please write to us at <strong>privacy@example.com</strong>.
             </p>
           </section>
         </motion.div>

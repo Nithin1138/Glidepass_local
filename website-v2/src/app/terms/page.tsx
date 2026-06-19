@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Check, AlertTriangle, FileText } from "lucide-react";
+import { ArrowLeft, FileText, AlertTriangle, Check, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 const P = {
@@ -31,7 +31,7 @@ export default function TermsPage() {
             <span className="text-xs uppercase tracking-widest text-[#A0AEC0]">Home</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-[#A0AEC0] font-mono">
-            LEGAL // DOCUMENT
+            LEGAL // TERMS OF SERVICE
           </div>
         </div>
       </header>
@@ -46,93 +46,86 @@ export default function TermsPage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(199,238,255,0.15)] bg-[#121212]/80 mb-6">
             <FileText size={14} className="text-[#C7EEFF]" />
-            <span className="text-xs font-semibold tracking-wider uppercase text-[#C7EEFF]">Terms of Service</span>
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#C7EEFF]">LANpad Core Terms</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
             Terms of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C7EEFF] via-[#0077C0] to-[#FAFAFA]">Service</span>
           </h1>
-          <p className="text-sm text-[#A0AEC0] font-mono">LAST UPDATED: JUNE 19, 2026</p>
+          <p className="text-sm text-[#A0AEC0] font-mono">LAST UPDATED: JUNE 19, 2026 &bull; EFFECTIVE DATE: JUNE 19, 2026</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="border border-[rgba(199,238,255,0.08)] rounded-3xl bg-[#050505]/40 backdrop-blur-md p-8 md:p-12 space-y-10 text-[#FAFAFA]/90 leading-relaxed font-inter text-sm md:text-base"
+          className="border border-[rgba(199,238,255,0.08)] rounded-3xl bg-[#050505]/40 backdrop-blur-md p-8 md:p-12 space-y-8 text-[#FAFAFA]/90 leading-relaxed font-inter text-sm md:text-base"
         >
           {/* Section 1 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">01.</span> Acceptance of Terms
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">1. ACCEPTANCE OF TERMS</h2>
             <p>
-              By downloading, installing, or using LANpad (including any updates, mobile apps, desktop applications) (collectively, <strong>"LANpad"</strong>), you agree to be bound by these Terms of Service (<strong>"Terms"</strong>). If you do not agree to these Terms, do not use LANpad.
+              By downloading, installing, or using LANpad (including any updates, mobile apps, desktop applications, or scripts) (collectively, <strong>"LANpad"</strong>), you agree to be bound by these Terms of Service (<strong>"Terms"</strong>). If you do not agree to these Terms, do not use LANpad.
             </p>
             <p>
-              LANpad is provided by Developer (<strong>"we"</strong>). These Terms apply to all users of LANpad regardless of platform (macOS, Windows, mobile, web application).
+              LANpad is provided by Developer (<strong>"we"</strong> or <strong>"Developer"</strong>). These Terms apply to all users of LANpad regardless of platform (macOS, Windows, mobile, local web interface).
             </p>
           </section>
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           {/* Section 2 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">02.</span> License Grant
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">2. LICENSE GRANT</h2>
             <p>
-              We grant you a limited, non-exclusive, non-transferable, revocable license to use LANpad for personal, non-commercial purposes. You may not:
+              We grant you a limited, non-exclusive, non-transferable, revocable license to use LANpad for personal, non-commercial productivity purposes. Under this license, you may not:
             </p>
-            <ul className="list-disc list-inside space-y-2 pl-2 text-[#A0AEC0]">
+            <ul className="list-disc pl-5 space-y-2 text-[#A0AEC0]">
               <li>Rent, lease, lend, sell, redistribute, or sublicense LANpad.</li>
-              <li>Reverse-engineer, decompile, or extract source code.</li>
-              <li>Create derivative works or adaptations.</li>
-              <li>Use LANpad to provide services to third parties.</li>
-              <li>Remove or obscure any copyright, trademark, or proprietary notice.</li>
+              <li>Reverse-engineer, decompile, disassemble, or attempt to extract the source code (except to the extent permitted by applicable open-source licensing or active local debugging permissions).</li>
+              <li>Create unauthorized derivative works or modifications.</li>
+              <li>Use LANpad as a managed service to provide commercial automated typing solutions to third parties.</li>
+              <li>Remove, obscure, or alter any copyright, trademark, or other proprietary rights notices contained in the application files.</li>
             </ul>
           </section>
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           {/* Section 3 */}
-          <section className="space-y-6">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">03.</span> Acceptable Use & Prohibited Conduct
-            </h2>
-            <p>You MUST NOT use LANpad to perform any of the following prohibited actions:</p>
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">3. ACCEPTABLE USE & PROHIBITED CONDUCT</h2>
+            <p>You agree to comply with all applicable local, national, and international laws when using LANpad. Specifically, you agree that you <strong>MUST NOT</strong> use LANpad for any of the following prohibited categories:</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 rounded-2xl border border-red-500/10 bg-red-500/5 space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
-                  <AlertTriangle size={16} /> Academic Infractions
-                </h3>
-                <ul className="text-xs space-y-2 text-[#A0AEC0]">
-                  <li>Bypassing exam proctoring or assessment security measures.</li>
-                  <li>Cheating on exams, quizzes, or assignments.</li>
-                  <li>Circumventing paste-block or keyboard-lock features.</li>
-                </ul>
-              </div>
-
-              <div className="p-5 rounded-2xl border border-red-500/10 bg-red-500/5 space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
-                  <AlertTriangle size={16} /> Unauthorized Access
-                </h3>
-                <ul className="text-xs space-y-2 text-[#A0AEC0]">
-                  <li>Accessing systems without authorization.</li>
-                  <li>Bypassing authentication, firewalls, or network controls.</li>
-                  <li>Deploying keystroke loggers or unauthorized sniffing tools.</li>
-                </ul>
+            <div className="p-6 rounded-2xl border border-red-500/10 bg-red-500/5 space-y-4">
+              <h3 className="text-base font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
+                <AlertTriangle size={18} /> Prohibited Conduct Checklists
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs md:text-sm text-[#A0AEC0]">
+                <div className="space-y-2">
+                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px]">Academic Integrity</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Bypassing browser exam proctoring softwares or system isolation lockouts.</li>
+                    <li>Cheating on exams, quizzes, or formal assessments.</li>
+                    <li>Circumventing copy-paste locks or keystroke detection layers on academic platforms.</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px]">System Interception</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Accessing corporate computer networks or target terminals without explicit, written authorization.</li>
+                    <li>Deploying keylogging or network sniffer scripts on shared computers.</li>
+                    <li>Harvesting passwords, session keys, or API configurations.</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-3">
+            <div className="p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
               <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <Check size={16} /> Permitted Use Cases
+                <Check size={16} /> Explicit Permitted Uses
               </h3>
-              <ul className="text-xs space-y-2 text-[#A0AEC0]">
-                <li>Accessibility assistance with explicit institutional approval.</li>
-                <li>Personal productivity transfers between devices you own.</li>
-                <li>Testing and software development under controlled local environments.</li>
+              <ul className="list-disc pl-5 text-xs md:text-sm space-y-1 text-[#A0AEC0]">
+                <li>Accessibility: Users with physical keyboard typing difficulties using local clipboard mirrors with institutional approval.</li>
+                <li>Cross-device productivity: Mirroring your own typed paragraphs between your personally owned phone and laptop over private network routes.</li>
               </ul>
             </div>
           </section>
@@ -141,38 +134,67 @@ export default function TermsPage() {
 
           {/* Section 4 */}
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">04.</span> Disclaimers & "AS-IS" Warranty
-            </h2>
-            <p>
-              <strong>LANpad is provided "AS-IS" and "AS-AVAILABLE" without warranty of any kind</strong>, either express or implied. To the maximum extent permitted by law, Developer disclaims all warranties, including merchantability, fitness for a particular purpose, non-infringement, security, privacy, accuracy, and uninterrupted operation.
-            </p>
-            <p>
-              You acknowledge that keystroke injection is inherently risky and local network data travels unencrypted over HTTP. Secure your network parameters accordingly.
-            </p>
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4. DISCLAIMERS & "AS-IS" WARRANTY</h2>
+            <div className="space-y-3 text-sm md:text-base">
+              <p>
+                <strong>LANpad is provided "AS-IS" and "AS-AVAILABLE" without warranty of any kind</strong>, either express or implied. To the maximum extent permitted by law, Developer disclaims all warranties, including merchantability, fitness for a particular purpose, non-infringement, security, privacy, data integrity, and uninterrupted operation.
+              </p>
+              <p className="flex items-start gap-2 text-yellow-400/90 font-mono text-xs">
+                <ShieldAlert className="flex-shrink-0 mt-0.5" size={16} />
+                <span>
+                  <strong>NO SECURITY GUARANTEE:</strong> Because clipboard contents travel over your local network using plaintext HTTP requests, your shared text is vulnerable to local Wi-Fi eavesdropping. Users must connect exclusively to secure, password-protected networks (utilizing WPA3) to safeguard sensitive credentials.
+                </span>
+              </p>
+            </div>
           </section>
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           {/* Section 5 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">05.</span> Limitation of Liability
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">5. LIMITATION OF LIABILITY</h2>
             <p>
-              IN NO EVENT shall Developer be liable for any direct, indirect, incidental, special, consequential, or punitive damages (including loss of profits, data, academic integrity violations, or criminal prosecution) resulting from your use or misuse of LANpad.
+              IN NO EVENT shall Developer, its contributors, or associates be liable for any direct, indirect, incidental, special, consequential, or punitive damages (including loss of profits, data, system breaches, academic suspensions, workplace terminations, or criminal prosecutions) arising from your use, misuse, or inability to use LANpad.
             </p>
           </section>
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           {/* Section 6 */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight flex items-center gap-2 font-outfit">
-              <span className="text-[#0077C0] font-mono text-sm">06.</span> Jurisdiction
-            </h2>
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">6. DATA HANDLING & RETENTION</h2>
             <p>
-              These Terms are governed by the laws of India, without regard to its conflict-of-law provisions. You irrevocably consent to the exclusive jurisdiction of the local courts.
+              LANpad is designed with local-first protocols. No clipboard text, simulated typing logs, or connection tokens are ever written to, synced with, or transmitted to any external databases or cloud servers owned by Developer. All configuration preferences are saved in your local directory (e.g. `~/.lanpad/`).
+            </p>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
+          {/* Section 7 */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">7. JURISDICTION & DISPUTE RESOLUTION</h2>
+            <p>
+              These Terms and your relationship with Developer under these Terms shall be governed by the laws of India, without regard to conflict of law provisions. You agree to submit to the exclusive jurisdiction of the courts located within our home region for any dispute resolution.
+            </p>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
+          {/* Section 8 */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">8. MODIFICATIONS & UPDATES</h2>
+            <p>
+              We reserve the right to modify these Terms at any time. Changes will be posted inside the repository or fronted on our website. Your continued use of the application following updates indicates binding acceptance of the updated terms.
+            </p>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
+          {/* Section 9 */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">9. CONTACT</h2>
+            <p>
+              For legal compliance questions, licensing validation details, or other terms concerns, please contact our support desk at <strong>legal@example.com</strong>.
             </p>
           </section>
         </motion.div>
