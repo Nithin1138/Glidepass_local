@@ -44,7 +44,7 @@ if _sys.stderr is None:
 if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 
 import httpx
@@ -76,7 +76,7 @@ IS_LINUX   = is_linux()
 CMD_KEY    = cmd_key()
 
 # Simple queue to store the last paste for the browser listener
-pending_paste = {"text": "", "id": 0}
+pending_paste = {"text": "", "id": 0, "mode": ""}
 stop_typing = False
 is_currently_typing = False
 
@@ -93,7 +93,10 @@ def get_local_ip():
 
 
 # Session management as per PRD
-SESSION_TOKEN = str(uuid.uuid4())[:8]  # Simple temporary token for pairing
+import secrets
+SESSION_TOKEN = secrets.token_hex(16)  # 32 hex chars, 128-bit entropy
+_ws_connect_attempts = {}  # {ip: [(timestamp, count), ...]}
+_http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
 active_connections = []
 active_devices = {}
 
@@ -104,6 +107,18 @@ import requests
 
 OTA_DIR = os.path.join(user_data_dir(), "templates")
 OTA_URL_BASE = "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/templates/"
+
+def is_rate_limited(client_ip: str, endpoint: str, limit: int = 60, window: int = 60) -> bool:
+    global _http_rate_limits
+    now = time.time()
+    if client_ip not in _http_rate_limits:
+        _http_rate_limits[client_ip] = [(now, endpoint)]
+        return False
+    recent = [t for t, ep in _http_rate_limits[client_ip] if now - t < window and ep == endpoint]
+    if len(recent) >= limit:
+        return True
+    _http_rate_limits[client_ip] = [(t, ep) for t, ep in _http_rate_limits[client_ip] if now - t < window] + [(now, endpoint)]
+    return False
 
 
 def _config_path():
@@ -297,7 +312,7 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "vitcodes.html"]:
+    for tmpl in ["index.html", "center.html", "vitcodes.html", "terms_of_service.html", "privacy_policy.html"]:
         success = False
         
         # 0. Try local templates directory in workspace
@@ -386,7 +401,14 @@ except Exception as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Fetch latest templates in the background on startup
-    threading.Thread(target=fetch_ota_templates, daemon=True).start()
+    def fetch_ota_templates_safe():
+        try:
+            fetch_ota_templates()
+        except Exception as e:
+            print(f"[ota] Template fetch failed: {e}")
+            import traceback
+            traceback.print_exc()
+    threading.Thread(target=fetch_ota_templates_safe, daemon=True).start()
     yield
 
 
@@ -442,6 +464,16 @@ async def vitcodes_page():
     return _cached_file_response("vitcodes.html")
 
 
+@app.get("/terms")
+async def terms_page():
+    return _cached_file_response("terms_of_service.html")
+
+
+@app.get("/privacy")
+async def privacy_page():
+    return _cached_file_response("privacy_policy.html")
+
+
 @app.get("/api/vitcodes")
 async def get_api_vitcodes():
     limits = get_cloud_limits(get_license_tier())
@@ -458,8 +490,10 @@ async def get_api_vitcodes():
             with open(config_path, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 custom_url = cfg.get("website_url")
-        except:
-            pass
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"[config] Failed to read config: {e}")
+        except Exception as e:
+            print(f"[config] Unexpected error: {e}")
 
     urls = []
     if custom_url:
@@ -725,24 +759,33 @@ async def copy_from_laptop():
 
 
 @app.get("/get_clipboard")
-async def get_clipboard():
+async def get_clipboard(request: Request):
+    # Rate limit check
+    client_ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(client_ip, "/get_clipboard", limit=20):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limit exceeded"})
+
     # Security Check
     allowed, err = check_feature_usage("allow_vitcode", "VITCodes Access")
     if not allowed:
         return {"status": "error", "message": err}       
     try:
         text = pyperclip.paste()
+        if text and len(text) > 10 * 1024 * 1024:
+            return {"status": "error", "message": "Clipboard exceeds 10MB limit"}
         return {"status": "success", "text": text}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
 @app.get("/clipboard/get")
-async def prd_get_clipboard():
-    return await get_clipboard()
+async def prd_get_clipboard(request: Request):
+    return await get_clipboard(request)
 
 
 @app.get("/poll_paste")
+@app.get("/api/v1/paste/poll")
 async def poll_paste(last_id: int = 0):
     """Long-polling endpoint used by the mobile UI."""
     for _ in range(60):
@@ -750,6 +793,7 @@ async def poll_paste(last_id: int = 0):
             return {
                 "status": "success",
                 "text": pending_paste["text"],
+                "mode": pending_paste.get("mode", ""),
                 "id": pending_paste["id"],
             }
         await asyncio.sleep(0.5)
@@ -922,6 +966,19 @@ def perform_typing(text, wpm, is_coding=False):
 
 @app.websocket("/ws/connect")
 async def websocket_endpoint(websocket: WebSocket):
+    client_ip = websocket.client[0] if websocket.client else "unknown"
+    now = time.time()
+    if client_ip in _ws_connect_attempts:
+        recent = [t for t in _ws_connect_attempts[client_ip] if now - t < 60]
+        if len(recent) >= 5:
+            await websocket.accept()
+            await websocket.send_text(json.dumps({"error": "Rate limited"}))
+            await websocket.close(code=1008)
+            return
+        _ws_connect_attempts[client_ip] = recent + [now]
+    else:
+        _ws_connect_attempts[client_ip] = [now]
+
     tier = get_license_tier()
     limits = get_cloud_limits(tier)
     max_sessions = limits.get("max_sessions", 1)
@@ -957,8 +1014,15 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             # Handle incoming WebSocket data if needed
     except WebSocketDisconnect:
-        active_connections.remove(websocket)
-        active_devices.pop(websocket, None)
+        try:
+            if websocket in active_connections:
+                active_connections.remove(websocket)
+        except ValueError:
+            pass
+        try:
+            active_devices.pop(websocket, None)
+        except Exception:
+            pass
 
 
 @app.get("/api/connections")
@@ -973,7 +1037,24 @@ async def get_connections():
 
 @app.post("/input/send")
 @app.post("/paste")
-async def paste(data: dict):
+async def paste(request: Request, data: dict):
+    # Rate limit check
+    client_ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(client_ip, "/paste", limit=60):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limit exceeded"})
+
+    # Check origin for security
+    origin = request.headers.get("origin")
+    if origin:
+        import re
+        allowed_pattern = re.compile(
+            r"^(chrome-extension://.*|http://localhost(:.*)?|http://127\.0\.0\.1(:.*)?|http://192\.168\..*|http://10\..*|http://172\..*|https://lanpad\.vercel\.app)$"
+        )
+        if not allowed_pattern.match(origin):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=403, content={"status": "error", "message": "Origin not allowed"})
+
     global pending_paste, last_synced_text, stop_typing
     stop_typing = False
     try:
@@ -983,6 +1064,13 @@ async def paste(data: dict):
             wpm = int(data.get("wpm", 40))
         except (ValueError, TypeError):
             wpm = 40
+        
+        # Validate WPM range
+        MIN_WPM, MAX_WPM = 1, 300
+        if wpm < MIN_WPM:
+            wpm = MIN_WPM
+        elif wpm > MAX_WPM:
+            wpm = MAX_WPM
         
         # Enforce basic WPM cap
         if mode == "sync":
@@ -1019,10 +1107,12 @@ async def paste(data: dict):
             if mode != "sync":
                 last_synced_text = ""
                 pending_paste["text"] = ""
+                pending_paste["mode"] = mode
                 pending_paste["id"] += 1
                 return {"status": "success"}
 
         pending_paste["text"] = text
+        pending_paste["mode"] = mode
         pending_paste["id"] += 1
 
     if mode == "inject":
@@ -1049,7 +1139,10 @@ async def paste(data: dict):
         return {"status": "success"}
 
     elif mode == "type":
-        # Note: Permission check already done at top of function
+        # Check pyautogui early
+        pyautogui_module = _safe_pyautogui()
+        if not pyautogui_module:
+            return {"status": "error", "message": "pyautogui not available (headless mode)"}
         
         # Run typing in a separate thread to keep server responsive to /stop
         import threading

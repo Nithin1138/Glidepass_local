@@ -319,15 +319,18 @@ class LANpadLauncher:
         self.bypass_view = tk.Frame(root, bg=self.BG)
         self.lock_view   = tk.Frame(root, bg=self.BG)
         self.splash_view = tk.Frame(root, bg=self.BG)
+        self.legal_view  = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.splash_view.place(x=0, y=0, relwidth=1, relheight=1)
+        self.legal_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
         self._build_bypass()
         self._build_lock()
         self._build_splash()
+        self._build_legal()
 
         self._tick_dot()
         self.check_process_status()
@@ -841,6 +844,11 @@ class LANpadLauncher:
                 return dest
             except Exception as dl_err:
                 print(f"[lanpad] cloudflared download failed: {dl_err}")
+                if os.path.exists(dest):
+                    try:
+                        os.remove(dest)
+                    except Exception:
+                        pass
                 return None
 
         def _run():
@@ -982,6 +990,8 @@ class LANpadLauncher:
 
             # ── bore fallback ──
             if not self._tunnel_url and (forced_tunnel is None or forced_tunnel == "bore"):
+                dest_zip = None
+                bore_bin = None
                 try:
                     # Check if bore is on system path
                     import shutil
@@ -990,15 +1000,15 @@ class LANpadLauncher:
                     if not bore_bin:
                         # Fallback to local ~/.lanpad/bore binary location
                         cache_dir = os.path.expanduser("~/.lanpad")
-                        bore_bin = os.path.join(cache_dir, "bore.exe" if sys.platform.startswith("win") else "bore")
+                        bore_bin = os.path.join(cache_dir, "bore.exe" if sys.platform.startswith('win') else "bore")
                         
                         if not (os.path.isfile(bore_bin) and os.access(bore_bin, os.X_OK)):
                             # Need to download bore binary dynamically
                             print("[lanpad] Downloading bore binary (one-time setup)...")
                             self.root.after(0, lambda: self._show_tunnel_status("Downloading bore binary…"))
                             machine = platform.machine().lower()
-                            is_win = sys.platform.startswith("win")
-                            is_mac = sys.platform.startswith("darwin")
+                            is_win = sys.platform.startswith('win')
+                            is_mac = sys.platform.startswith('darwin')
                             
                             # Determine correct release binary URL from ekzhang/bore GitHub releases
                             # URL format: https://github.com/ekzhang/bore/releases/download/v0.5.2/bore-v0.5.2-x86_64-pc-windows-msvc.zip
@@ -1044,6 +1054,9 @@ class LANpadLauncher:
                             # Clean up zip archive
                             try: os.remove(dest_zip)
                             except Exception: pass
+ 
+                    if not bore_bin or not os.path.exists(bore_bin):
+                        raise Exception("bore binary missing or failed to download")
 
                     cmd = [bore_bin, "local", "8000", "--to", "bore.pub"]
                     proc = subprocess.Popen(
@@ -1076,7 +1089,13 @@ class LANpadLauncher:
                             
                     threading.Thread(target=_read_bore, daemon=True).start()
                 except Exception as bore_err:
-                    print(f"[lanpad] bore failed to start: {bore_err}")
+                    print(f"[lanpad] bore failed: {bore_err}")
+                    if dest_zip and os.path.exists(dest_zip):
+                        try: os.remove(dest_zip)
+                        except Exception: pass
+                    if bore_bin and os.path.exists(bore_bin) and not os.access(bore_bin, os.X_OK):
+                        try: os.remove(bore_bin)
+                        except Exception: pass
                     self.stop_tunnel()
 
         threading.Thread(target=_run, daemon=True).start()
@@ -1356,6 +1375,7 @@ class LANpadLauncher:
             "else%7Bif(!window.__gp_abort)inject(txt);%7D%7D%7D"
             "await wait(100);%7D%7D poller();executor();%7D)();"
         )
+        bookmarklet = bookmarklet.replace("https://bypass-backend-nms1.onrender.com", "http://127.0.0.1:8000")
         self.code_text.insert("1.0", bookmarklet)
 
     def load_cached_monetization(self):
@@ -1496,7 +1516,22 @@ class LANpadLauncher:
         import threading
         threading.Thread(target=_task, daemon=True).start()
 
+    def _is_legal_accepted(self):
+        try:
+            path = os.path.expanduser("~/.lanpad_legal.json")
+            if os.path.exists(path):
+                import json
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return data.get("accepted", False)
+        except Exception:
+            pass
+        return False
+
     def show_view(self, name: str):
+        if not self._is_legal_accepted() and name != "splash":
+            name = "legal"
+
         if name == "main":
             self.main_view.tkraise()
             if hasattr(self, "update_plan_label"):
@@ -1511,6 +1546,8 @@ class LANpadLauncher:
                 self.load_active_key_if_present()
         elif name == "splash":
             self.splash_view.tkraise()
+        elif name == "legal":
+            self.legal_view.tkraise()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
@@ -1885,6 +1922,86 @@ class LANpadLauncher:
                 self.key_entry.config(state="normal")
                 
         update_progress(0)
+
+    def _build_legal(self):
+        v = self.legal_view
+        W, H = 400, 760
+        
+        self.legal_cv = tk.Canvas(v, width=W, height=H, bg="#050505", highlightthickness=0)
+        self.legal_cv.place(x=0, y=0)
+        
+        for r in range(160, 0, -20):
+            c = blend_hex("#0077C0", "#050505", r / 160 * 0.15)
+            self.legal_cv.create_oval(200 - r, -80 - r, 200 + r, -80 + r, fill=c, outline="")
+            
+        card_x1, card_y1, card_x2, card_y2 = 24, 60, 376, 700
+        rounded_rect(self.legal_cv, card_x1, card_y1, card_x2, card_y2, r=24, fill="#0D0D10", outline="#1F1F24")
+        
+        title_lbl = tk.Label(v, text="Legal Agreement", fg=self.WHITE, bg="#0D0D10", font=(self.FD, 22, "bold"))
+        title_lbl.place(x=24, y=90, width=W - 48)
+        
+        desc_lbl = tk.Label(v, text="To use LANpad, you must read and accept the terms and privacy conditions.", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 11), justify="center", wraplength=320)
+        desc_lbl.place(x=24, y=135, width=W - 48)
+        
+        y_offset = 200
+        highlights = [
+            ("No Academic Malpractice", "You agree NOT to bypass exam security or proctoring platforms (CFAA & ITA compliance)."),
+            ("Local Data Syncing", "No clipboard or typing data leaves your local network. Zero external cloud storage."),
+            ("AS-IS Disclaimers", "Provided with no warranty. Users assume 100% liability for system setup and security.")
+        ]
+        
+        for title, text in highlights:
+            lbl_title = tk.Label(v, text=f"• {title}", fg="#C7EEFF", bg="#0D0D10", font=(self.FD, 12, "bold"), anchor="w")
+            lbl_title.place(x=45, y=y_offset, width=310)
+            
+            lbl_text = tk.Label(v, text=text, fg="#A0AEC0", bg="#0D0D10", font=(self.FU, 10), justify="left", anchor="w", wraplength=300)
+            lbl_text.place(x=55, y=y_offset + 22, width=300)
+            y_offset += 75
+            
+        def open_tos():
+            import webbrowser
+            webbrowser.open("http://127.0.0.1:8000/terms")
+            
+        def open_privacy():
+            import webbrowser
+            webbrowser.open("http://127.0.0.1:8000/privacy")
+
+        tos_btn = tk.Label(v, text="Read Terms of Service", fg="#0077C0", bg="#0D0D10", font=(self.FU, 11, "underline"), cursor="hand2")
+        tos_btn.place(x=24, y=470, width=W - 48)
+        tos_btn.bind("<Button-1>", lambda e: open_tos())
+        
+        privacy_btn = tk.Label(v, text="Read Privacy Policy", fg="#0077C0", bg="#0D0D10", font=(self.FU, 11, "underline"), cursor="hand2")
+        privacy_btn.place(x=24, y=500, width=W - 48)
+        privacy_btn.bind("<Button-1>", lambda e: open_privacy())
+        
+        def on_accept():
+            try:
+                path = os.path.expanduser("~/.lanpad_legal.json")
+                import json
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump({"accepted": True, "timestamp": time.time()}, f)
+            except Exception as e:
+                print(f"Error saving legal acceptance: {e}")
+            
+            if hasattr(self, "monetization_enabled") and self.monetization_enabled:
+                if hasattr(self, "free_enabled") and self.free_enabled:
+                    self.show_view("main")
+                else:
+                    self.show_view("lock")
+            else:
+                self.show_view("main")
+                
+        btn_tw = 200
+        btn_cv = tk.Canvas(v, width=btn_tw, height=36, bg="#0D0D10", highlightthickness=0)
+        btn_cv.place(x=(W - btn_tw) // 2, y=560)
+        
+        rounded_rect(btn_cv, 0, 2, btn_tw, 34, r=16, fill="#0077C0", outline="")
+        btn_cv.create_text(btn_tw // 2, 18, text="ACCEPT & CONTINUE", fill=self.WHITE, font=(self.FU, 11, "bold"))
+        
+        def handler(e): on_accept()
+        btn_cv.bind("<Button-1>", handler)
+        btn_cv.tag_bind("all", "<Button-1>", handler)
+        btn_cv.config(cursor="hand2")
 
     def _build_splash(self):
         v = self.splash_view
@@ -2428,14 +2545,21 @@ class LANpadLauncher:
             self.root.after(100, self.show_window)
 
     def check_process_status(self):
+        is_running = False
+        s = None
         try:
             import socket
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(0.5)
             is_running = (s.connect_ex(("127.0.0.1", 8000)) == 0)
-            s.close()
         except Exception:
             is_running = False
+        finally:
+            if s is not None:
+                try:
+                    s.close()
+                except Exception:
+                    pass
 
         if is_running and not self._server_on:
             self.process = "EXTERNAL"
@@ -2456,9 +2580,18 @@ class LANpadLauncher:
                 with urllib.request.urlopen("http://127.0.0.1:8000/api/connections", timeout=2.0) as response:
                     data = json.loads(response.read().decode())
                     count = data.get("count", 0)
+                    if not isinstance(count, int) or count < 0:
+                        count = 0
                     devices = data.get("devices", [])
+                    if not isinstance(devices, list):
+                        devices = []
+                    devices = [d for d in devices if isinstance(d, str)]
                     if self.root.winfo_exists():
                         self.root.after(0, lambda: self._update_conn_lbl(count, devices))
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                print(f"[connections] Parse error: {e}")
+                if self.root.winfo_exists():
+                    self.root.after(0, lambda: self._update_conn_lbl(0, []))
             except Exception:
                 if self.root.winfo_exists():
                     self.root.after(0, lambda: self._update_conn_lbl(0, []))
@@ -2768,11 +2901,22 @@ def run_launcher():
     import sys
     import threading
 
+    is_exiting = [False]
+
     # Single-instance lock & IPC MUST happen before tk.Tk()
     try:
         lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        lock_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         lock_socket.bind(("127.0.0.1", 8001))
         lock_socket.listen(1)
+        import atexit
+        def cleanup_ipc():
+            is_exiting[0] = True
+            try:
+                lock_socket.close()
+            except Exception:
+                pass
+        atexit.register(cleanup_ipc)
     except socket.error:
         # Already running, just wake it up
         try:
@@ -2802,17 +2946,41 @@ def run_launcher():
 
     # Listen for reopen or quit requests
     def listen_for_show():
-        while True:
+        max_consecutive_errors = 0
+        while not is_exiting[0]:
             try:
                 conn, _ = lock_socket.accept()
+                if is_exiting[0]:
+                    break
                 data = conn.recv(1024)
                 conn.close()
+                max_consecutive_errors = 0  # Reset on success
                 if data == b"QUIT":
                     root.after(0, app.root.destroy)
                 else:
                     root.after(0, app.show_window)
-            except Exception:
-                pass
+            except (OSError, socket.error) as e:
+                if is_exiting[0]:
+                    break
+                try:
+                    print(f"[ipc] Listener socket error: {e}")
+                except Exception:
+                    pass
+                max_consecutive_errors += 1
+                if max_consecutive_errors > 3:
+                    break
+            except Exception as e:
+                if is_exiting[0]:
+                    break
+                try:
+                    print(f"[ipc] Unexpected error in listener: {e}")
+                except Exception:
+                    pass
+                max_consecutive_errors += 1
+                if max_consecutive_errors > 3:
+                    break
+                import time
+                time.sleep(0.1)
     threading.Thread(target=listen_for_show, daemon=True).start()
 
     root.protocol("WM_DELETE_WINDOW", app.on_closing)

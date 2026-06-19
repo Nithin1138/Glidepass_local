@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — LANpad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0D0D10;
+            --border-color: rgba(199, 238, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: #A0AEC0;
+            --accent-color: #0077C0;
+            --accent-sky: #C7EEFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 40px 20px;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 119, 192, 0.15) 0%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-b: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(199, 238, 255, 0.08);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--accent-sky) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .content {
+            line-height: 1.7;
+            font-size: 0.95rem;
+            color: rgba(250, 250, 250, 0.9);
+        }
+
+        .content h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--accent-sky);
+        }
+
+        .content h3, .content h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .content p {
+            margin-bottom: 15px;
+        }
+
+        .content ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        .content th, .content td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content th {
+            background: rgba(199, 238, 255, 0.04);
+            font-weight: 600;
+            color: var(--accent-sky);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            transition: color 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .back-btn:hover {
+            color: var(--text-main);
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-glow"></div>
+    <div style="width: 100%; max-width: 800px;">
+        <button onclick="window.history.back()" class="back-btn">
+            &larr; Go Back
+        </button>
+        <div class="container">
+            <header>
+                <h1>Privacy Policy</h1>
+                <div class="meta">Last Updated: June 19, 2026</div>
+            </header>
+            <div class="content">
+                <h2>1. INTRODUCTION</h2>
+                <p>This Privacy Policy explains how LANpad collects, uses, stores, and protects your data. LANpad is designed with <strong>privacy-by-default</strong> principles: data is processed locally on your devices and is never transmitted to external servers.</p>
+                <p>By using LANpad, you consent to this Policy. If you do not agree, please do not use LANpad.</p>
+
+                <hr>
+
+                <h2>2. WHAT DATA DOES LANpad PROCESS?</h2>
+                <h3>2.1 Data You Provide</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Purpose</th>
+                            <th>Retained?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Clipboard contents</strong></td>
+                            <td>Transfer between devices</td>
+                            <td>Temporarily (during session)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Text you type</strong></td>
+                            <td>Inject into applications</td>
+                            <td>Temporarily (during session)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Configuration data</strong></td>
+                            <td>Store preferences, license info</td>
+                            <td>Indefinitely (in local storage)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>2.2 Technical Data Processed Automatically</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Purpose</th>
+                            <th>Retained?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Local IP address</strong></td>
+                            <td>Generate QR code for mobile pairing</td>
+                            <td>Session-only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Device hostname</strong></td>
+                            <td>Display in UI for identification</td>
+                            <td>Session-only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Session token</strong></td>
+                            <td>Authenticate pairing connection</td>
+                            <td>Session-only</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>2.3 Data We Do NOT Collect</h3>
+                <ul>
+                    <li>❌ Your name, email, or personal identity</li>
+                    <li>❌ GPS location or device location</li>
+                    <li>❌ Browsing history or web pages visited</li>
+                    <li>❌ Keystroke logs (outside the active session)</li>
+                    <li>❌ Third-party account credentials</li>
+                </ul>
+
+                <hr>
+
+                <h2>3. WHERE IS MY DATA STORED?</h2>
+                <h3>3.1 Local-Only Processing</h3>
+                <p>LANpad processes data only on your local network. Your clipboard data never leaves your local Wi-Fi network, and no external servers store your personal data.</p>
+                <p>Note: data is transmitted via HTTP (unencrypted) over your local Wi-Fi. Ensure your Wi-Fi network is password-protected and uses WPA3 encryption.</p>
+
+                <hr>
+
+                <h2>4. HOW IS MY DATA USED?</h2>
+                <p>We process data to enable text transfer between your devices, support users with disabilities via keystroke injection, and authenticate pairing between devices.</p>
+                <p>We <strong>NEVER</strong> sell or share your clipboard data, nor do we track or profile you.</p>
+
+                <hr>
+
+                <h2>5. CONTACT</h2>
+                <p>For questions about this Privacy Policy, contact us at privacy@example.com.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

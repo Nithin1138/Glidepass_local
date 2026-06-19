@@ -180,17 +180,26 @@ def is_currently_licensed() -> bool:
 
 def license_enforcer_loop(controller):
     import time
+    unlicensed_since = None
     while True:
         try:
             licensed = is_currently_licensed()
             if licensed:
+                unlicensed_since = None
                 if not controller.server_manager.should_be_running:
                     print("[security] Licensed state detected. Starting backend server...")
                     controller.server_manager.start()
             else:
                 if controller.server_manager.should_be_running:
-                    print("[security] Unlicensed state detected. Stopping backend server...")
-                    controller.stop_backend()
+                    if unlicensed_since is None:
+                        unlicensed_since = time.time()
+                        print("[security] Unlicensed state detected. Grace period started (60s)...")
+                    elif time.time() - unlicensed_since >= 60:
+                        print("[security] Unlicensed state detected for 60s. Stopping backend server...")
+                        controller.stop_backend()
+                        unlicensed_since = None
+                else:
+                    unlicensed_since = None
         except Exception as e:
             print(f"[security] Enforcer error: {e}")
         time.sleep(2.0)

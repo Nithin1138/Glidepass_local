@@ -899,8 +899,8 @@ export default function Home() {
               <div>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Legal</h4>
                 <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</a></li>
-                  <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</a></li>
+                  <li><a href="/privacy" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</a></li>
+                  <li><a href="/terms" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</a></li>
                   <li><a href="#" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</a></li>
                 </ul>
               </div>

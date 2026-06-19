@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — LANpad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0D0D10;
+            --border-color: rgba(199, 238, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: #A0AEC0;
+            --accent-color: #0077C0;
+            --accent-sky: #C7EEFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 40px 20px;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 119, 192, 0.15) 0%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-b: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(199, 238, 255, 0.08);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--accent-sky) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .content {
+            line-height: 1.7;
+            font-size: 0.95rem;
+            color: rgba(250, 250, 250, 0.9);
+        }
+
+        .content h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--accent-sky);
+        }
+
+        .content h3, .content h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .content p {
+            margin-bottom: 15px;
+        }
+
+        .content ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        .content th, .content td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content th {
+            background: rgba(199, 238, 255, 0.04);
+            font-weight: 600;
+            color: var(--accent-sky);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            transition: color 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .back-btn:hover {
+            color: var(--text-main);
+        }
+
+        .highlight-box {
+            background: rgba(199, 238, 255, 0.02);
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: var(--text-muted);
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-glow"></div>
+    <div style="width: 100%; max-width: 800px;">
+        <button onclick="window.history.back()" class="back-btn">
+            &larr; Go Back
+        </button>
+        <div class="container">
+            <header>
+                <h1>Terms of Service</h1>
+                <div class="meta">Last Updated: June 19, 2026</div>
+            </header>
+            <div class="content">
+                <h2>1. ACCEPTANCE OF TERMS</h2>
+                <p>By downloading, installing, or using LANpad (including any updates, mobile apps, desktop applications) (collectively, "<strong>LANpad</strong>"), you agree to be bound by these Terms of Service ("<strong>Terms</strong>"). If you do not agree to these Terms, do not use LANpad.</p>
+                <p>LANpad is provided by Developer ("<strong>we</strong>"). These Terms apply to all users of LANpad regardless of platform (macOS, Windows, mobile, web application).</p>
+
+                <hr>
+
+                <h2>2. LICENSE GRANT</h2>
+                <p>We grant you a limited, non-exclusive, non-transferable, revocable license to use LANpad for personal, non-commercial purposes. You may not:</p>
+                <ul>
+                    <li>Rent, lease, lend, sell, redistribute, or sublicense LANpad</li>
+                    <li>Reverse-engineer, decompile, or extract source code (except as permitted by applicable law)</li>
+                    <li>Create derivative works or adaptations</li>
+                    <li>Use LANpad to provide services to third parties</li>
+                    <li>Remove or obscure any copyright, trademark, or proprietary notice</li>
+                </ul>
+
+                <hr>
+
+                <h2>3. ACCEPTABLE USE & PROHIBITED CONDUCT</h2>
+                <p>You MUST NOT use LANpad to:</p>
+                
+                <h3>❌ Academic Integrity Violations</h3>
+                <ul>
+                    <li>Bypass proctoring software, exam monitoring, or assessment security measures</li>
+                    <li>Cheat on exams, quizzes, tests, or academic assignments</li>
+                    <li>Circumvent paste-block or keyboard-lock features on exam platforms</li>
+                    <li>Violate your school's, university's, or institution's honor code or academic integrity policy</li>
+                </ul>
+
+                <h3>❌ Unauthorized Computer Access</h3>
+                <ul>
+                    <li>Gain unauthorized access to computer systems or networks (violating CFAA in US, ITA § 66 in India)</li>
+                    <li>Bypass authentication systems, firewalls, or security controls on systems you do not own or have explicit permission to access</li>
+                    <li>Access, modify, or delete data without authorization</li>
+                    <li>Disrupt or damage computer systems or networks</li>
+                </ul>
+
+                <h3>❌ Fraud & Identity Theft</h3>
+                <ul>
+                    <li>Steal, phish, or harvest credentials (usernames, passwords, API keys, authentication tokens)</li>
+                    <li>Perform credential stuffing or brute-force attacks</li>
+                    <li>Impersonate others or commit identity fraud</li>
+                    <li>Use LANpad to facilitate money laundering, wire fraud, or financial crimes</li>
+                </ul>
+
+                <h3>❌ Privacy & Security Violations</h3>
+                <ul>
+                    <li>Capture, intercept, or sniff other users' data or communications</li>
+                    <li>Deploy keystroke loggers or malware</li>
+                    <li>Participate in man-in-the-middle (MITM) attacks</li>
+                    <li>Exploit vulnerabilities in LANpad or other software for unauthorized gain</li>
+                </ul>
+
+                <h3>❌ Institutional Policy Violations</h3>
+                <ul>
+                    <li>Violate your workplace, school, government, or any institutional policies</li>
+                    <li>Use LANpad on restricted networks without authorization</li>
+                    <li>Bypass corporate or educational security controls</li>
+                    <li>Circumvent data loss prevention (DLP) or information security measures</li>
+                </ul>
+
+                <h3>❌ Harassment, Malware, & Illegal Activity</h3>
+                <ul>
+                    <li>Use LANpad to harass, threaten, abuse, or defame others</li>
+                    <li>Distribute malware, viruses, or malicious code</li>
+                    <li>Violate any local, state, national, or international laws</li>
+                    <li>Facilitate or promote any illegal activity</li>
+                </ul>
+
+                <h3>✅ PERMITTED USES (with appropriate authorization):</h3>
+                <ul>
+                    <li>Accessibility: Users with disabilities may use LANpad with proper institutional approval</li>
+                    <li>Personal productivity: Moving your own text between your own devices</li>
+                    <li>Authorized business: Using LANpad on systems you own or have explicit written permission to use</li>
+                    <li>Development & testing: Testing LANpad on systems under your control</li>
+                </ul>
+
+                <hr>
+
+                <h2>4. DISCLAIMERS & "AS-IS" WARRANTY</h2>
+                <h3>4.1 NO WARRANTY</h3>
+                <p><strong>LANpad is provided "AS-IS" and "AS-AVAILABLE" without warranty of any kind</strong>, either express or implied. To the maximum extent permitted by law, Developer disclaims all warranties, including merchantability, fitness for a particular purpose, non-infringement, security, privacy, accuracy, and uninterrupted operation.</p>
+
+                <h3>4.2 NO GUARANTEE OF SECURITY</h3>
+                <p>You acknowledge that: keystroke injection is inherently risky, local networks are not encrypted by default (HTTP plaintext), and weak tokens could allow eavesdropping by attackers on your network. Secure your Wi-Fi using password protection and WPA3 encryption.</p>
+
+                <h3>4.3 NO LIABILITY FOR MISUSE</h3>
+                <p>Developer is NOT LIABLE if LANpad is misused. You assume 100% responsibility for your use of LANpad.</p>
+
+                <hr>
+
+                <h2>5. LIMITATION OF LIABILITY</h2>
+                <p>IN NO EVENT shall Developer be liable for any direct, indirect, incidental, special, consequential, or punitive damages (including loss of profits, data, academic integrity violations, or criminal prosecution) resulting from your use or misuse of LANpad.</p>
+
+                <hr>
+
+                <h2>6. DATA & PRIVACY</h2>
+                <p>LANpad processes clipboard data only on your local network. No data is synced to the cloud or to Developer's servers. For details, refer to the Privacy Policy.</p>
+
+                <hr>
+
+                <h2>7. INTELLECTUAL PROPERTY</h2>
+                <p>LANpad core code is Copyright &copy; 2026 Developer and licensed under the MIT License.</p>
+
+                <hr>
+
+                <h2>8. TERMINATION</h2>
+                <p>Developer may terminate your license immediately if you violate these Terms, use the app for illegal purposes, or violate academic integrity policies.</p>
+
+                <hr>
+
+                <h2>9. JURISDICTION & DISPUTE RESOLUTION</h2>
+                <p>These Terms are governed by the laws of India, without regard to its conflict-of-law provisions. You irrevocably consent to the exclusive jurisdiction of the local courts.</p>
+
+                <hr>
+
+                <h2>10. CONTACT</h2>
+                <p>For questions about these Terms, contact us at legal@example.com.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
