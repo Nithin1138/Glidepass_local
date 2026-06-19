@@ -464,11 +464,18 @@ export default function GlidePassAdmin() {
     }
   ]);
 
-  const [referralStats] = useState([
-    { code: "VITAP50", email: "student.referral@vitap.ac.in", count: 42 },
-    { code: "FREEWEEK", email: "free.week@vitstudent.ac.in", count: 118 },
-    { code: "REWARD_PASS", email: "contributor.vip@vitap.ac.in", count: 24 }
-  ]);
+  const referralStats = useMemo(() => {
+    return referralCodesList.map((rc) => {
+      const count = referralsList.filter(
+        (r) => r.referrer_email.trim().toLowerCase() === rc.email.trim().toLowerCase()
+      ).length;
+      return {
+        code: rc.referral_code,
+        email: rc.email,
+        count
+      };
+    });
+  }, [referralCodesList, referralsList]);
 
   const [freeTierLimits, setFreeTierLimits] = useState({
     dailyCopyLimit: 3,
