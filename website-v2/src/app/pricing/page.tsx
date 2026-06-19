@@ -341,7 +341,6 @@ export default function PricingPage() {
                 instruments: [
                   {
                     method: "upi",
-                    flows: ["qr", "intent", "collect"],
                   },
                 ],
               },
