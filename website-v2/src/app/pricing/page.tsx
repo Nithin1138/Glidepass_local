@@ -329,27 +329,10 @@ export default function PricingPage() {
         order_id: orderData.orderId,
         prefill: {
           email: checkoutEmail,
+          method: "upi",
         },
         theme: {
           color: P.blue,
-        },
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: "UPI / QR Code Scanner",
-                instruments: [
-                  {
-                    method: "upi",
-                  },
-                ],
-              },
-            },
-            sequence: ["block.upi"],
-            preferences: {
-              show_default_blocks: false,
-            },
-          },
         },
         handler: async function (response: any) {
           try {
