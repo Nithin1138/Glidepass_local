@@ -57,12 +57,52 @@ const StatCountUp = ({ to, duration = 1.5 }: { to: number; duration?: number }) 
   return <span>{val.toFixed(1)}</span>;
 };
 
+const renderStaggeredHeadline = (text: string) => {
+  const words = text.split(" ");
+  return (
+    <span className="block flex flex-wrap">
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.6,
+            delay: i * 0.08,
+            ease: [0.16, 1, 0.3, 1]
+          }}
+          className="inline-block mr-4 select-none"
+        >
+          {word}
+        </motion.span>
+      ))}
+    </span>
+  );
+};
+
 // --- COMPONENTS ---
 
 const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouseY: any }) => {
   const [isOpen, setIsOpen] = useState(false);
   const desktopDragRef = useRef<HTMLAnchorElement>(null);
   const mobileDragRef = useRef<HTMLAnchorElement>(null);
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setShowNavbar(false);
+      } else {
+        setShowNavbar(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   const bookmarkletCode = `javascript:(function(){if(window.__lanpad_active){showN("ALREADY ACTIVE","#f59e0b");return;}window.__lanpad_active=true;window.__gp_abort=false;const op=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type))return;return op.apply(this,arguments)};function ul(r){const ev=["copy","paste","cut","contextmenu","selectstart","beforeinput"];ev.forEach(t=>r.addEventListener(t,e=>e.stopImmediatePropagation(),true));const al=r.querySelectorAll?r.querySelectorAll("*"):[];al.forEach(el=>{if(el.shadowRoot)ul(el.shadowRoot)})};ul(document);const ob=new MutationObserver(()=>ul(document));ob.observe(document.documentElement,{childList:true,subtree:true});const s=document.createElement("style");s.innerHTML="*{-webkit-user-select:text!important;user-select:text!important;pointer-events:auto!important;}";document.head.appendChild(s);const n=document.createElement("div");n.id="__gp_container";n.innerHTML='<div id="__gp_note" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(5,5,5,0.85);color:#fff;padding:14px 24px;border-radius:16px;border:1px solid rgba(0,119,192,0.3);backdrop-filter:blur(12px);font-family:sans-serif;font-weight:900;font-size:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,119,192,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.4s cubic-bezier(0.18,0.89,0.32,1.28);opacity:0;transform:translate(-50%,-40px);"><span style="color:#0077c0;font-size:18px;">🛰️</span> LANPAD ACTIVATED</div>';document.body.appendChild(n);function showN(t,c="#0077c0"){const e=document.getElementById("__gp_note");if(!e)return;e.innerHTML=\`<span style="color:\${c};font-size:18px;">🛰️</span> \${t}\`;e.style.opacity="1";e.style.transform="translate(-50%,0)";setTimeout(()=>{e.style.opacity="0";e.style.transform="translate(-50%,-40px)"},3000)}setTimeout(()=>showN("LANPAD ACTIVATED"),10);let lastId=localStorage.getItem("__gp_last_id")||"";let seenIds=new Set();let seenTxt=new Map();let queue=[];const wait=(ms)=>new Promise(res=>setTimeout(res,ms));async function poller(){while(true){if(window.__gp_abort_poller)break;try{const res=await fetch("http://127.0.0.1:8000/api/v1/paste/poll?last_id="+lastId+"&t="+Date.now(),{headers:{"x-device-id":"b8b989d6-dca0-4d98-a0e4-2556c5fbc4a1"},cache:"no-store",mode:"cors",credentials:"omit"});const data=await res.json();if(data.status==="success"){lastId=data.id;localStorage.setItem("__gp_last_id",lastId);const txt=data.text||"";const mode=data.mode||"";if(mode==="system"||txt.indexOf("STOP_PASTE")!==-1){window.__gp_abort=true;queue=[];showN("PASTING STOPPED","#ef4444");continue;}const now=Date.now();const txtHash=btoa(txt.substring(0,100)).replace(/=/g,"");if(seenIds.has(data.id)||(seenTxt.has(txtHash)&&now-seenTxt.get(txtHash)<2000))continue;seenIds.add(data.id);seenTxt.set(txtHash,now);queue.push(data);}else{await wait(500)}}catch(e){console.log("GP Poll Error:",e);await wait(2000)}}}async function executor(){while(true){if(window.__gp_abort){queue=[];window.__gp_abort=false;await wait(100);continue;}if(queue.length>0){const data=queue.shift();if(!data)continue;let wpm=data.wpm||40;let txt=data.text;let isRealistic=data.realistic||false;const el=document.activeElement;if(el&&("value" in el||el.isContentEditable)){const inject=(c)=>{if("value" in el){const start=el.selectionStart;const end=el.selectionEnd;if(start!==undefined&&start!==null){el.value=el.value.substring(0,start)+c+el.value.substring(end);el.selectionStart=el.selectionEnd=start+c.length;}else{el.value+=c;}}else{const sel=window.getSelection();if(sel.rangeCount){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(document.createTextNode(c));range.collapse(false);sel.removeAllRanges();sel.addRange(range)}}el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}))};if(isRealistic){for(let i=0;i<txt.length;i++){if(window.__gp_abort)break;inject(txt[i]);let d=60000/(wpm*5);if(txt[i]===' ')d*=1.2;await wait(d*(0.8+Math.random()*0.4))}}else{if(!window.__gp_abort)inject(txt)}}}await wait(100)}}poller();executor();})()`;
 
@@ -76,7 +116,12 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
   }, [bookmarkletCode]);
 
   return (
-    <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/75 rounded-[32px] border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] font-dmsans">
+    <motion.nav
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: showNavbar ? 0 : -100, opacity: showNavbar ? 1 : 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed top-6 left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/75 rounded-[32px] border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] font-dmsans"
+    >
       <div className="clay-card px-6 py-2.5 flex items-center gap-2.5">
         <img src="/logo.png" alt="LANpad Logo" className="w-8 h-8 object-contain rounded-full shadow-sm" />
         <span className="font-rubik font-black text-xl tracking-tight text-gray-900">LANpad</span>
@@ -160,7 +205,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 };
 
@@ -211,21 +256,17 @@ const Hero = ({
               </div>
             </motion.div>
 
-            {/* Title */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            <h1
               className="text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
             >
-              Your Phone
-              <br />
-              as an Intelligent
-              <br />
+              {renderStaggeredHeadline("Your Phone")}
+              <div className="h-2" />
+              {renderStaggeredHeadline("as an Intelligent")}
+              <div className="h-2" />
               <span className="text-[#0f172a]">
-                Layer
+                {renderStaggeredHeadline("Layer")}
               </span>
-            </motion.h1>
+            </h1>
 
             {/* Subtitle */}
             <motion.p
@@ -739,13 +780,14 @@ const Features = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ delay: i * 0.1, duration: 0.8 }}
+              whileHover={{ y: -4, scale: 1.01 }}
+              transition={{ delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               onMouseMove={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                 e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
               }}
-              className={`relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden transition-all duration-700 ${f.span}`}
+              className={`relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden ${f.span}`}
             >
               {/* Spotlight overlay inside card */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.05)_0%,_transparent_60%)]" />
@@ -1205,13 +1247,14 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
-                  transition={{ delay: i * 0.1, duration: 0.8 }}
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  transition={{ delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
                   }}
-                  className={`group/card relative p-6 border border-white/20 clay-card-blue-bg rounded-[28px] overflow-hidden transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] ${d.borderHover} min-h-[290px] flex flex-col justify-between`}
+                  className={`group/card relative p-6 border border-white/20 clay-card-blue-bg rounded-[28px] overflow-hidden ${d.borderHover} min-h-[290px] flex flex-col justify-between`}
                 >
                   {/* Spotlight inside download card */}
                   <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.04)_0%,_transparent_60%)]" />
