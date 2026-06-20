@@ -78,9 +78,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
   return (
     <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/75 rounded-[32px] border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] font-dmsans">
       <div className="clay-card px-6 py-2.5 flex items-center gap-2.5">
-        <div className="w-8 h-8 clay-orange rounded-full flex items-center justify-center">
-          <span className="text-white font-black font-rubik text-sm">L</span>
-        </div>
+        <img src="/logo.png" alt="LANpad Logo" className="w-8 h-8 object-contain rounded-full shadow-sm" />
         <span className="font-rubik font-black text-xl tracking-tight text-gray-900">LANpad</span>
       </div>
 
@@ -1468,9 +1466,7 @@ export default function Home() {
             {/* Brand Column */}
             <div className="col-span-2">
               <div className="flex items-center gap-4 font-rubik font-black text-xl md:text-2xl tracking-tighter mb-8 text-gray-900">
-                <div className="w-12 h-12 clay-orange rounded-[12px] flex items-center justify-center shadow-lg">
-                  <span className="text-white font-black text-lg">L</span>
-                </div>
+                <img src="/logo.png" alt="LANpad Logo" className="w-12 h-12 object-contain rounded-xl shadow-md" />
                 <span className="mt-1">LANPAD</span>
               </div>
               <p className="text-sm text-gray-500 font-bold max-w-xs leading-relaxed mb-8">
