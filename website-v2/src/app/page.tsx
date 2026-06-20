@@ -707,7 +707,7 @@ export default function Home() {
         <Navbar />
 
         {/* Floating Sticky Bookmarklet Bar Guide */}
-        <div className={`fixed bottom-6 right-6 z-45 p-4 rounded-[20px] border ${dk ? "bg-[#050505]/90 border-white/[0.08] text-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]" : "bg-white/95 border-black/[0.08] text-black shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)]"} backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-amber-500/40`}>
+        <div className={`fixed top-16 md:top-20 right-6 md:right-12 z-45 p-4 rounded-[20px] border ${dk ? "bg-[#050505]/90 border-white/[0.08] text-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]" : "bg-white/95 border-black/[0.08] text-black shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)]"} backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-amber-500/40`}>
           <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
           <div className="flex items-center gap-2">
             <span className="text-amber-500 text-xs">🛰️</span>
