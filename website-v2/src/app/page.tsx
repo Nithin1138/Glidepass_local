@@ -278,6 +278,7 @@ const ThreeDConduit = () => {
     container.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
+    group.position.x = -0.6; // Shift laptop and mobile little bit left
     scene.add(group);
 
     // Light Setup
