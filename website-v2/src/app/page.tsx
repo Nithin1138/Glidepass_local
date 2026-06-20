@@ -1395,19 +1395,19 @@ export default function Home() {
               {[
                 {
                   q: "What is LANpad and how does it work?",
-                  a: "LANpad is a simple tool that lets you send text from your phone directly to your computer. It uses your local Wi-Fi connection, so it is super fast and does not use the internet."
+                  a: "LANpad is a simple app that lets you send text from your phone directly to your computer. It runs over your local Wi-Fi, making it very fast and secure."
                 },
                 {
-                  q: "How can I contribute to the project?",
-                  a: "LANpad is fully open-source! You can contribute code, suggest new features, or report bugs by visiting our GitHub repository. We welcome helpers of all skill levels."
+                  q: "What does a contributor do?",
+                  a: "A contributor is a student who uploads helpful code solutions and exam answers to our database. If you contribute code, you help other students sync solutions directly to their screens during study sessions."
                 },
                 {
-                  q: "Do I need a license key to run LANpad?",
-                  a: "No, you do not need any license key or registration. Just download the app and install it on your devices to start using it immediately."
+                  q: "How do I get a license key for premium?",
+                  a: "You can buy a premium pass (like a Week, Monthly, or Sem Pass) on our pricing page to get a license key. Paste this key into the desktop app to unlock advanced features like live character sync, fast custom typing speeds, and special campus tunnels."
                 },
                 {
-                  q: "Is LANpad free to use?",
-                  a: "Yes, LANpad is 100% free and open-source. There are no hidden fees, subscriptions, or ads."
+                  q: "How does payment work?",
+                  a: "Payments are processed securely through Razorpay. You can pay using UPI, cards, or net banking. Once paid, your premium license key will appear on your screen and will also be sent to your email."
                 }
               ].map((item, idx) => {
                 const isOpen = openFaqIdx === idx;
