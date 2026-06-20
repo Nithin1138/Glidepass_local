@@ -609,7 +609,7 @@
         let currentSubView = 'types'; // 'types' or 'sessions'
         let currentSessionId = null;
         let currentExamType = null;
-        let currentYear = '1st Year';
+        let currentYear = localStorage.getItem('vit_mobile_pinned_year') || '1st Year';
 
         // Restore state if history.state exists
         if (history.state) {
@@ -991,12 +991,22 @@
 
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
+            // Set active class based on currentYear on load
+            document.querySelectorAll('.year-tab').forEach(t => {
+                if (t.getAttribute('data-year') === currentYear) {
+                    t.classList.add('active');
+                } else {
+                    t.classList.remove('active');
+                }
+            });
+
             // Setup year tab listeners
             document.querySelectorAll('.year-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     currentYear = tab.getAttribute('data-year');
+                    localStorage.setItem('vit_mobile_pinned_year', currentYear);
                     if (currentView === 'detail') {
                         showOverview();
                     }
