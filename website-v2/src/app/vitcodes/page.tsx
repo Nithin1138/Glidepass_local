@@ -66,6 +66,13 @@ function VitCodesContent() {
 
   const examTypes = Object.keys(sessionsByExamType);
 
+  const pinnedExamType = examRules["ACTIVE_PINNED_EXAM"] || "";
+  const sortedExamTypes = [...examTypes].sort((a, b) => {
+    if (a === pinnedExamType) return -1;
+    if (b === pinnedExamType) return 1;
+    return 0;
+  });
+
   const getExamTypeDates = (type: string) => {
     const list = sessionsByExamType[type] || [];
     if (list.length === 0) return "";
@@ -90,7 +97,7 @@ function VitCodesContent() {
 
         if (rulesRes.ok) {
           const rulesData = await rulesRes.json();
-          setExamRules(rulesData);
+          setExamRules(rulesData.rules || {});
         }
       } catch (err: any) {
         setError(err.message || "Failed to load VIT-AP codes.");
@@ -235,7 +242,7 @@ function VitCodesContent() {
           </div>
         ) : selectedExamType === null ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {examTypes.map((type, index) => {
+            {sortedExamTypes.map((type, index) => {
               const sessions = sessionsByExamType[type] || [];
               const count = sessions.length;
               const daysInfo = getExamTypeDates(type);
@@ -252,12 +259,19 @@ function VitCodesContent() {
                   <div className={`block w-full p-6 rounded-2xl ${cardBg} ${cardBorder} transition-all duration-300 group flex flex-col justify-between`}>
                     <div>
                       <div className="flex justify-between items-start mb-6">
-                        <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${dk
-                            ? 'border-blue-400/30 bg-blue-500/10 text-blue-300'
-                            : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
-                          }`}>
-                          <Award size={10} />
-                          <span>{type}</span>
+                        <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border ${
+                          type === pinnedExamType
+                            ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                            : dk
+                              ? 'border-blue-400/30 bg-blue-500/10 text-blue-300'
+                              : 'border-blue-500/30 bg-blue-500/10 text-blue-700'
+                        }`}>
+                          {type === pinnedExamType ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pin rotate-45"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.25V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5.84c0 .44-.15.87-.43 1.25L4.24 14a2 2 0 0 0-.44 1.24Z"/></svg>
+                          ) : (
+                            <Award size={10} />
+                          )}
+                          <span>{type === pinnedExamType ? 'Pinned' : type}</span>
                         </div>
                       </div>
                       <h3 className={`text-lg font-black font-outfit ${txt1} group-hover:${txt2} transition-colors duration-300 mb-4`}>

@@ -429,7 +429,7 @@ export default function GlidePassAdmin() {
   const [showApprovalQueue, setShowApprovalQueue] = useState(false);
   const [spamFilterActive, setSpamFilterActive] = useState(true);
   const [newQTags, setNewQTags] = useState("");
-  const [pinnedExamType, setPinnedExamType] = useState("NERD");
+  const [pinnedExamType, setPinnedExamType] = useState("");
 
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([
     {
@@ -1023,6 +1023,7 @@ export default function GlidePassAdmin() {
          if (rulesData) {
            if (rulesData.rules) {
              setExamRules(prev => JSON.stringify(prev) === JSON.stringify(rulesData.rules) ? prev : rulesData.rules);
+              setPinnedExamType(rulesData.rules["ACTIVE_PINNED_EXAM"] || "");
            }
            if (rulesData.sessionLimits) {
              setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);

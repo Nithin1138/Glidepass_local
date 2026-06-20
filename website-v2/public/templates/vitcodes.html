@@ -503,6 +503,53 @@
             display: none;
         }
 
+        /* Year selector styles */
+        .year-selector {
+            display: flex;
+            justify-content: space-around;
+            position: relative;
+            padding: 10px 0 4px 0;
+            margin: 5px 0 10px 0;
+        }
+        .year-selector::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .year-tab {
+            background: none;
+            border: none;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        .year-tab.active {
+            color: var(--accent-color);
+        }
+        .year-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #38bdf8, #3b82f6, #6366f1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+            z-index: 5;
+        }
+
         @media (max-width: 480px) {
             .dispatch-text-desktop {
                 display: none !important;
@@ -542,6 +589,15 @@
                 <p>Select your exam session, copy questions directly, or dispatch code straight to your laptop's clipboard.</p>
             </div>
 
+            <div class="year-selector" id="year-selector">
+                <div class="year-indicator" id="year-indicator"></div>
+                <div class="year-tab active" data-year="1st Year">1st</div>
+                <div class="year-tab" data-year="2nd Year">2nd</div>
+                <div class="year-tab" data-year="3rd Year">3rd</div>
+                <div class="year-tab" data-year="4th Year">4th</div>
+                <div class="year-tab" data-year="5th Year">5th</div>
+            </div>
+
             <div class="sessions-grid" id="sessions-grid">
                 <!-- Loaded dynamically -->
             </div>
@@ -568,6 +624,8 @@
         let currentSubView = 'types'; // 'types' or 'sessions'
         let currentSessionId = null;
         let currentExamType = null;
+        let currentYear = localStorage.getItem('vit_mobile_pinned_year') || '1st Year';
+        let pinnedExamType = '';
 
         // Restore state if history.state exists
         if (history.state) {
@@ -770,16 +828,33 @@
             currentSubView = 'types';
             currentExamType = null;
             document.getElementById('overview-hero').style.display = 'flex';
+            document.getElementById('year-selector').style.display = 'flex';
+            setTimeout(updateYearIndicator, 50);
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
             
             const groups = {};
             allSessions.forEach(s => {
+                if ((s.year || '1st Year') !== currentYear) return;
                 if (!groups[s.examType]) groups[s.examType] = [];
                 groups[s.examType].push(s);
             });
 
-            Object.entries(groups).forEach(([type, sessions]) => {
+            const entries = Object.entries(groups);
+            if (entries.length === 0) {
+                grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No exam sessions available for ${currentYear} today.</span></div>`;
+                return;
+            }
+
+            if (pinnedExamType) {
+                entries.sort((a, b) => {
+                    if (a[0] === pinnedExamType) return -1;
+                    if (b[0] === pinnedExamType) return 1;
+                    return 0;
+                });
+            }
+
+            entries.forEach(([type, sessions]) => {
                 const typeCard = document.createElement('div');
                 typeCard.className = 'session-card';
                 const count = sessions.length;
@@ -787,11 +862,17 @@
                 const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
                 const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
                 const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
+                
+                const isPinned = type === pinnedExamType;
+                const badgeStyle = isPinned ? 'border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.15); color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.15);' : '';
+                const badgeIcon = isPinned ? `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin" style="transform: rotate(45deg);"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.25V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5.84c0 .44-.15.87-.43 1.25L4.24 14a2 2 0 0 0-.44 1.24Z"/></svg>` : getIcon('award-10');
+                const badgeText = isPinned ? 'Pinned' : 'Exam Type';
+
                 typeCard.innerHTML = `
                     <div class="card-top">
-                        <div class="exam-badge">
-                            ${getIcon('award-10')}
-                            <span>Exam Type</span>
+                        <div class="exam-badge" style="${badgeStyle}">
+                            ${badgeIcon}
+                            <span>${badgeText}</span>
                         </div>
                     </div>
                     <h3 class="session-title">${type}</h3>
@@ -815,13 +896,15 @@
         function renderSessions(sessions) {
             currentSubView = 'sessions';
             document.getElementById('overview-hero').style.display = 'none';
+            document.getElementById('year-selector').style.display = 'none';
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
-            if (sessions.length === 0) {
+            const filteredSessions = sessions.filter(s => (s.year || '1st Year') === currentYear);
+            if (filteredSessions.length === 0) {
                 grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
                 return;
             }
-            sessions.forEach(session => {
+            filteredSessions.forEach(session => {
                 const card = document.createElement('div');
                 card.className = 'session-card';
                 const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
@@ -860,34 +943,42 @@
                 `;
             }
 
-            fetch('/api/vitcodes')
-                .then(r => {
+            Promise.all([
+                fetch('/api/vitcodes').then(r => {
                     if (!r.ok) throw new Error('Failed to load session codes');
                     return r.json();
-                })
-                .then(data => {
-                    if (data && data.error) {
-                        throw new Error(data.error);
-                    }
-                    if (!Array.isArray(data)) {
-                        throw new Error('Invalid data format received');
-                    }
-                    const changed = JSON.stringify(allSessions) !== JSON.stringify(data);
-                    if (changed || !isSilent) {
-                        allSessions = data;
-                        initHistoryState();
-                        if (currentView === 'overview') {
-                            if (currentSubView === 'types') {
-                                renderExamTypes();
-                            } else if (currentSubView === 'sessions') {
-                                const sessions = allSessions.filter(s => s.examType === currentExamType);
-                                renderSessions(sessions);
-                            }
-                        } else if (currentView === 'detail') {
-                            showDetail(currentSessionId, false);
+                }),
+                fetch('/api/vitcodes/rules').then(r => {
+                    if (!r.ok) return { rules: {} };
+                    return r.json();
+                }).catch(() => ({ rules: {} }))
+            ])
+            .then(([data, rulesData]) => {
+                if (data && data.error) {
+                    throw new Error(data.error);
+                }
+                if (!Array.isArray(data)) {
+                    throw new Error('Invalid data format received');
+                }
+                
+                pinnedExamType = (rulesData && rulesData.rules) ? (rulesData.rules["ACTIVE_PINNED_EXAM"] || "") : "";
+
+                const changed = JSON.stringify(allSessions) !== JSON.stringify(data);
+                if (changed || !isSilent) {
+                    allSessions = data;
+                    initHistoryState();
+                    if (currentView === 'overview') {
+                        if (currentSubView === 'types') {
+                            renderExamTypes();
+                        } else if (currentSubView === 'sessions') {
+                            const sessions = allSessions.filter(s => s.examType === currentExamType);
+                            renderSessions(sessions);
                         }
+                    } else if (currentView === 'detail') {
+                        showDetail(currentSessionId, false);
                     }
-                })
+                }
+            })
                 .catch(err => {
                     if (!isSilent) {
                         grid.innerHTML = `
@@ -939,8 +1030,51 @@
             }
         });
 
+        function updateYearIndicator() {
+            const activeTab = document.querySelector('.year-tab.active');
+            const indicator = document.getElementById('year-indicator');
+            if (activeTab && indicator) {
+                const selectorRect = document.getElementById('year-selector').getBoundingClientRect();
+                const tabRect = activeTab.getBoundingClientRect();
+                const left = tabRect.left - selectorRect.left;
+                const width = tabRect.width;
+                const inset = width * 0.2;
+                indicator.style.left = `${left + inset}px`;
+                indicator.style.width = `${width - (inset * 2)}px`;
+            }
+        }
+
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
+            // Set active class based on currentYear on load
+            document.querySelectorAll('.year-tab').forEach(t => {
+                if (t.getAttribute('data-year') === currentYear) {
+                    t.classList.add('active');
+                } else {
+                    t.classList.remove('active');
+                }
+            });
+            setTimeout(updateYearIndicator, 100);
+            window.addEventListener('resize', updateYearIndicator);
+
+            // Setup year tab listeners
+            document.querySelectorAll('.year-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    updateYearIndicator();
+                    currentYear = tab.getAttribute('data-year');
+                    localStorage.setItem('vit_mobile_pinned_year', currentYear);
+                    if (currentView === 'detail') {
+                        showOverview();
+                    }
+                    currentSubView = 'types';
+                    currentExamType = null;
+                    renderExamTypes();
+                    history.pushState({ view: 'overview', subView: 'types', examType: null, sessionId: null }, '', window.location.pathname);
+                });
+            });
+
             loadSessions(false);
             refreshIcons();
             // Real-time synchronization poller
