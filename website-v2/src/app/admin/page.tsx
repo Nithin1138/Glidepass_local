@@ -796,6 +796,10 @@ export default function GlidePassAdmin() {
   const [deleteTargetType, setDeleteTargetType] = useState<string | null>(null);
   const [deleteTypeConfirmText, setDeleteTypeConfirmText] = useState("");
 
+  // Batch Year Mappings Modal
+  const [showBatchMappingsModal, setShowBatchMappingsModal] = useState(false);
+  const [tempBatchMappings, setTempBatchMappings] = useState<Record<string, string>>({});
+
   // New session form
   const [newDate, setNewDate] = useState(() => {
     const d = new Date();
@@ -901,18 +905,27 @@ export default function GlidePassAdmin() {
     } catch (e) {}
   };
 
-  const handleUpdateBatchMapping = async (batch: string, year: string) => {
-    const updated = { ...batchMappings, [batch]: year };
-    setBatchMappings(updated);
+  const handleOpenBatchMappingsModal = () => {
+    setTempBatchMappings({ ...batchMappings });
+    setShowBatchMappingsModal(true);
+  };
+
+  const handleSaveBatchMappings = async () => {
+    setBatchMappings(tempBatchMappings);
     try {
-      await fetch("/api/admin/batch-mappings", {
+      const res = await fetch("/api/admin/batch-mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated)
+        body: JSON.stringify(tempBatchMappings)
       });
-      showToast("success", `Updated default year for prefix ${batch} to ${year}`);
+      if (res.ok) {
+        showToast("success", "Batch year mappings saved successfully");
+        setShowBatchMappingsModal(false);
+      } else {
+        throw new Error("Failed to save");
+      }
     } catch (e) {
-      showToast("error", "Failed to update batch mapping");
+      showToast("error", "Failed to save batch mappings");
     }
   };
 
@@ -4330,32 +4343,16 @@ export default function GlidePassAdmin() {
                         <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} /></div>
                       ) : !selectedContributor ? (
                         <div className="space-y-8">
-                          {/* Batch Year Mappings Panel */}
-                          <div className="p-6 rounded-[28px] border relative overflow-hidden"
-                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                            <h3 className="text-xs font-extrabold tracking-wider uppercase mb-4" style={{ color: P.blue }}>Default Year Batch Mappings</h3>
-                            <p className="text-[10px] text-white/60 mb-4">Set the default year classification based on the contributor's registration ID prefix (e.g. 23bce... starts with '23').</p>
-                            
-                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                              {["22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"].map(batch => (
-                                <div key={batch} className="flex flex-col gap-1">
-                                  <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">ID Prefix {batch}</span>
-                                  <select
-                                    value={batchMappings[batch] || "1st Year"}
-                                    onChange={e => handleUpdateBatchMapping(batch, e.target.value)}
-                                    className={`text-[10px] rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`}
-                                    style={{ color: dk ? P.sky : P.black }}
-                                  >
-                                    <option value="1st Year">1st Year</option>
-                                    <option value="2nd Year">2nd Year</option>
-                                    <option value="3rd Year">3rd Year</option>
-                                    <option value="4th Year">4th Year</option>
-                                    <option value="5th Year">5th Year</option>
-                                  </select>
-                                </div>
-                              ))}
-                            </div>
+                          {/* Batch Year Mappings Button Trigger */}
+                          <div className="flex justify-end mb-4">
+                            <button
+                              onClick={handleOpenBatchMappingsModal}
+                              className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all hover:opacity-90 flex items-center gap-2"
+                              style={{ background: P.blue }}
+                            >
+                              <Settings size={14} />
+                              Default Year Batch Mappings
+                            </button>
                           </div>
 
                           {/* Top 3 Podium */}
@@ -6513,6 +6510,73 @@ export default function GlidePassAdmin() {
                         >
                           <Trash2 size={12} />
                           Delete Type
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* ═══ BATCH YEAR MAPPINGS MODAL ═══ */}
+            <AnimatePresence>
+              {showBatchMappingsModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBatchMappingsModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    className="relative w-[95%] sm:max-w-2xl p-1 rounded-[24px] border bg-black shadow-2xl z-10"
+                    style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="p-5 sm:p-6 rounded-[20px] space-y-5" style={{ background: dk ? "rgba(5,5,5,0.98)" : "rgba(255,255,255,0.98)" }}>
+                      <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                        <div>
+                          <h3 className="text-sm font-black uppercase tracking-wide" style={{ color: P.blue }}>Default Year Batch Mappings</h3>
+                          <p className="text-[10px] text-white/50">Set the default year classification based on register number prefixes (22 to 32)</p>
+                        </div>
+                        <button onClick={() => setShowBatchMappingsModal(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-1">
+                        {["22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"].map(batch => (
+                          <div key={batch} className="flex flex-col gap-1.5 p-3 rounded-xl border"
+                            style={{ background: dk ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.01)", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">ID Prefix {batch}</span>
+                            <select
+                              value={tempBatchMappings[batch] || "1st Year"}
+                              onChange={e => setTempBatchMappings(prev => ({ ...prev, [batch]: e.target.value }))}
+                              className={`text-xs rounded-lg px-2.5 py-1.5 border focus:outline-none ${inputBg}`}
+                              style={{ color: dk ? P.sky : P.black }}
+                            >
+                              <option value="1st Year">1st Year</option>
+                              <option value="2nd Year">2nd Year</option>
+                              <option value="3rd Year">3rd Year</option>
+                              <option value="4th Year">4th Year</option>
+                              <option value="5th Year">5th Year</option>
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                        <button
+                          onClick={() => setShowBatchMappingsModal(false)}
+                          className="px-4 py-2 rounded-xl text-xs font-bold border"
+                          style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)", color: dk ? "white" : "black" }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveBatchMappings}
+                          className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg active:scale-[0.98] transition-all"
+                          style={{ background: P.blue }}
+                        >
+                          Save Changes
                         </button>
                       </div>
                     </div>
