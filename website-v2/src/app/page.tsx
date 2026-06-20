@@ -235,8 +235,8 @@ const Hero = ({
           </div>
 
           {/* Right Column: Interactive 3D Canvas replacing the QR Synchronizer */}
-          <div className="lg:col-span-5 flex justify-center relative w-full h-[450px]">
-            <div className="relative w-full max-w-[420px] h-full flex items-center justify-center">
+          <div className="lg:col-span-5 flex justify-center relative w-full h-[450px] lg:-translate-x-20">
+            <div className="relative w-full max-w-[560px] h-full flex items-center justify-center">
               {/* Outer Clay Frame Card Container (Removed card grid background highlight) */}
               <div className="absolute inset-0 z-10">
                 <ThreeDConduit />
@@ -278,7 +278,7 @@ const ThreeDConduit = () => {
     container.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
-    group.position.x = -1.4; // Shift laptop and mobile more left
+    group.position.x = -0.2; // Centered slightly left inside canvas to avoid clipping
     scene.add(group);
 
     // Light Setup
