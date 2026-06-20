@@ -85,7 +85,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
       </div>
 
       <div className="hidden lg:flex items-center gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
-        <a href="#visualization" className="hover:text-[#468FEA] transition-colors duration-300">Technology</a>
+        <a href="#technology" className="hover:text-[#468FEA] transition-colors duration-300">Technology</a>
         <a href="#features" className="hover:text-[#468FEA] transition-colors duration-300">Features</a>
         <a href="#setup" className="hover:text-[#F28500] transition-colors duration-300">How to Use</a>
         <a href="#downloads" className="hover:text-[#F28500] transition-colors duration-300">Downloads</a>
@@ -121,7 +121,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
             className="absolute top-[75px] left-0 w-full overflow-hidden rounded-2xl border border-white/20 bg-[#EDEAE0] shadow-xl lg:hidden z-50 font-dmsans"
           >
             <div className="flex flex-col p-6 gap-4 uppercase text-xs font-bold tracking-widest text-gray-700">
-              <a href="#visualization" onClick={() => setIsOpen(false)}>Technology</a>
+              <a href="#technology" onClick={() => setIsOpen(false)}>Technology</a>
               <a href="#features" onClick={() => setIsOpen(false)}>Features</a>
               <a href="#setup" onClick={() => setIsOpen(false)}>How to Use</a>
               <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
@@ -237,8 +237,8 @@ const Hero = ({
           {/* Right Column: Interactive 3D Canvas replacing the QR Synchronizer */}
           <div className="lg:col-span-5 flex justify-center relative w-full h-[450px]">
             <div className="relative w-full max-w-[420px] h-full flex items-center justify-center">
-              {/* Outer Clay Frame Card Container */}
-              <div className="absolute inset-0 border border-white/20 clay-card rounded-[32px] overflow-hidden flex flex-col items-center justify-center p-2 z-10">
+              {/* Outer Clay Frame Card Container (Removed card grid background highlight) */}
+              <div className="absolute inset-0 z-10">
                 <ThreeDConduit />
               </div>
             </div>
@@ -266,7 +266,7 @@ const ThreeDConduit = () => {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.set(0, 2.5, 12);
+    camera.position.set(0, 2.0, 8.5);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -619,111 +619,6 @@ const ThreeDConduit = () => {
       ref={containerRef} 
       className="w-full h-full min-h-[360px] relative cursor-pointer"
     />
-  );
-};
-
-const Visualization = () => {
-  const [text, setText] = useState("");
-  const fullText = "Hello from my phone! _";
-
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setText(fullText.slice(0, i));
-      i++;
-      if (i > fullText.length) i = 0;
-    }, 120);
-    return () => clearInterval(interval);
-  }, []);
-
-  const sectionRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "center center"]
-  });
-
-  const phoneRotate = useTransform(scrollYProgress, [0, 1], [0, 20]);
-  const laptopRotate = useTransform(scrollYProgress, [0, 1], [0, -20]);
-
-  return (
-    <section id="visualization" ref={sectionRef} className="min-h-screen flex items-center py-24 px-6 relative overflow-hidden font-dmsans">
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-16">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA] bg-[#468FEA]/10 px-3.5 py-1.5 rounded-full border border-[#468FEA]/20">
-              Technology Stack
-            </span>
-            <h2 className="text-4xl md:text-5xl font-rubik font-black tracking-tighter mt-4 mb-2 text-gray-900">LOCAL TUNNEL ARCHITECTURE</h2>
-            <p className="text-gray-500 max-w-sm font-bold text-sm leading-relaxed">Direct WebSocket pipeline optimized for zero-packet loss and absolute privacy.</p>
-          </div>
-          <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-4 ml-12" />
-        </div>
-
-        {/* 3D Tech Architecture Board Grid */}
-        <div className="relative clay-card p-8 md:p-12 overflow-hidden border border-white/20">
-          {/* Ambient background glows */}
-          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-[#468FEA]/10 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-[#F28500]/5 rounded-full blur-[100px] pointer-events-none" />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-            
-            {/* Step 1 Node: Local Discovery */}
-            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
-              <div>
-                <div className="w-10 h-10 rounded-lg clay-blue text-white flex items-center justify-center mb-4">
-                  <Globe size={18} />
-                </div>
-                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">1. Local Host Binding</h4>
-                <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                  LANpad initiates a secure WebSocket handshake on your local subnet host (`127.0.0.1:8000`). It establishes device handshake rules using high-grade credentials.
-                </p>
-              </div>
-              <div className="font-mono text-[9px] text-[#468FEA] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
-                WS://127.0.0.1:8000/api/v1/paste/poll
-              </div>
-            </div>
-
-            {/* Step 2 Node: Secure RAM Cache */}
-            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
-              <div>
-                <div className="w-10 h-10 rounded-lg clay-orange text-white flex items-center justify-center mb-4">
-                  <ShieldCheck size={18} />
-                </div>
-                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">2. Zero-Cloud RAM Cache</h4>
-                <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                  Data packets live exclusively in volatile RAM cache. Synced clips are deleted instantly on socket close, leaving no database records or log footprints.
-                </p>
-              </div>
-              <div className="font-mono text-[9px] text-[#F28500] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
-                RAM CACHE: SECURE_MEM_ALLOC(100MB)
-              </div>
-            </div>
-
-            {/* Step 3 Node: Keystroke Injector */}
-            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
-              <div>
-                <div className="w-10 h-10 rounded-lg clay-blue text-white flex items-center justify-center mb-4">
-                  <Keyboard size={18} />
-                </div>
-                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">3. Hardware Keystroke Emulation</h4>
-                <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                  Converts synced text inputs into humanized virtual keypress streams via hardware-level Quartz / Win32 API overrides to bypass strict input portals.
-                </p>
-              </div>
-              <div className="font-mono text-[9px] text-[#468FEA] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
-                INPUT: EMULATE_KEY_DOWN_UP(15WPM)
-              </div>
-            </div>
-
-          </div>
-
-          {/* Connected Data flow vector overlay */}
-          <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#468FEA]/20 to-transparent pointer-events-none hidden lg:block" />
-        </div>
-      </div>
-    </section>
   );
 };
 
@@ -1144,10 +1039,8 @@ export default function Home() {
         handleQrSync={handleQrSync}
       />
 
-      <Visualization />
-
       {/* ─── LATENCY SLABS SECTION (IMAGE 1) ─── */}
-      <section className="min-h-screen flex items-center py-24 px-12 relative overflow-hidden font-dmsans">
+      <section id="technology" className="min-h-screen flex items-center py-24 px-12 relative overflow-hidden font-dmsans">
         <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 space-y-12">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
