@@ -763,7 +763,7 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="min-h-screen flex items-center py-12 px-4 sm:px-8 relative overflow-hidden font-dmsans">
+    <section id="features" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
@@ -834,7 +834,7 @@ const SetupGuide = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 sm:px-12 font-dmsans">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-28">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-12 md:mb-20">
         <div>
           <h3 className="text-5xl md:text-6xl font-black font-rubik tracking-tighter uppercase mb-3 text-gray-900">Setup Guide</h3>
           <p className="text-gray-500 text-base md:text-lg font-bold">Follow the steps below to initialize your link.</p>
@@ -849,7 +849,7 @@ const SetupGuide = () => {
           {deviceSteps.map((s, i) => (
             <div key={i} className="relative">
               {/* Increased size from w-12 h-12 to w-16 h-16, and text-xs to text-sm */}
-              <div className="w-16 h-16 rounded-full clay-orange text-white flex items-center justify-center font-black text-sm mb-10 relative z-10 shadow-[0_6px_16px_rgba(242,133,0,0.25)] font-rubik">
+              <div className="w-16 h-16 rounded-full clay-orange text-white flex items-center justify-center font-black text-sm mb-6 md:mb-10 relative z-10 shadow-[0_6px_16px_rgba(242,133,0,0.25)] font-rubik">
                 {s.step}
               </div>
               {/* Increased size from text-xl to text-2xl */}
@@ -1101,7 +1101,7 @@ export default function Home() {
       />
 
       {/* ─── LATENCY SLABS SECTION (IMAGE 1) ─── */}
-      <section id="technology" className="min-h-screen flex items-center py-24 px-12 relative overflow-hidden font-dmsans">
+      <section id="technology" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans">
         <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 space-y-12">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
@@ -1157,7 +1157,7 @@ export default function Home() {
           </div>
 
           {/* Interactive Isometric Stack */}
-          <div className="lg:w-1/2 h-[500px] relative isometric-stack flex items-center justify-center group cursor-pointer">
+          <div className="lg:w-1/2 h-[320px] md:h-[500px] relative isometric-stack flex items-center justify-center group cursor-pointer scale-[0.65] sm:scale-75 md:scale-90 lg:scale-100 transition-transform duration-500">
             {/* Top Slab: Stalled Legacy Cloud */}
             <div
               className="slab slab-top bg-gray-300 shadow-[10px_10px_20px_rgba(0,0,0,0.08)] border border-white/20"
@@ -1308,7 +1308,7 @@ export default function Home() {
             onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
             transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
-            className="absolute top-0 bottom-0 left-0 w-1/2 bg-[#EDEAE0] border-r-[12px] border-white/20 shadow-[20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-end z-20 pointer-events-auto cursor-pointer"
+            className="hidden md:flex absolute top-0 bottom-0 left-0 w-1/2 bg-[#EDEAE0] border-r-[12px] border-white/20 shadow-[20px_0_40px_rgba(0,0,0,0.12)] items-center justify-end z-20 pointer-events-auto cursor-pointer"
           >
             {/* Pull Handle */}
             <div className="mr-8 w-8 h-32 clay-card shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] flex items-center justify-center">
@@ -1323,7 +1323,7 @@ export default function Home() {
             onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
             transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
-            className="absolute top-0 bottom-0 right-0 w-1/2 bg-[#EDEAE0] border-l-[12px] border-white/20 shadow-[-20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-start z-20 pointer-events-auto cursor-pointer"
+            className="hidden md:flex absolute top-0 bottom-0 right-0 w-1/2 bg-[#EDEAE0] border-l-[12px] border-white/20 shadow-[-20px_0_40px_rgba(0,0,0,0.12)] items-center justify-start z-20 pointer-events-auto cursor-pointer"
           >
             {/* Pull Handle */}
             <div className="ml-8 w-8 h-32 clay-card shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] flex items-center justify-center">
@@ -1334,7 +1334,7 @@ export default function Home() {
       </section>
 
       {/* ─── REVIEWS AND FAQS SECTION (IMAGE 3) ─── */}
-      <section className="min-h-screen flex items-center py-32 px-12 relative overflow-hidden font-dmsans">
+      <section className="min-h-screen flex items-center py-16 md:py-32 px-6 md:px-12 relative overflow-hidden font-dmsans">
         <div className="max-w-7xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
           {/* Left Column: Client Reviews Scroller */}
