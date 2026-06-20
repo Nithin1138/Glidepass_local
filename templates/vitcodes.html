@@ -506,35 +506,47 @@
         /* Year selector styles */
         .year-selector {
             display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 5px 20px 15px 20px;
-            margin: 0 -20px 15px -20px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            justify-content: space-around;
+            position: relative;
+            padding: 15px 0 5px 0;
+            margin: 10px 0 20px 0;
         }
-        .year-selector::-webkit-scrollbar {
-            display: none;
+        .year-selector::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
         }
         .year-tab {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 8px 18px;
-            font-size: 0.8rem;
+            background: none;
+            border: none;
+            padding: 8px 0;
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-muted);
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            text-align: center;
+            flex: 1;
+            position: relative;
         }
         .year-tab.active {
-            background: linear-gradient(135deg, var(--accent-color) 0%, #009BF5 100%);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 15px var(--accent-glow);
+            color: var(--accent-color);
+        }
+        .year-tab.active::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 15%;
+            right: 15%;
+            height: 2px;
+            background: linear-gradient(90deg, #38bdf8, #3b82f6, #6366f1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            border-radius: 2px;
         }
 
         @media (max-width: 480px) {
@@ -577,10 +589,11 @@
             </div>
 
             <div class="year-selector" id="year-selector">
-                <div class="year-tab active" data-year="1st Year">1st Year</div>
-                <div class="year-tab" data-year="2nd Year">2nd Year</div>
-                <div class="year-tab" data-year="3rd Year">3rd Year</div>
-                <div class="year-tab" data-year="4th Year">4th Year</div>
+                <div class="year-tab active" data-year="1st Year">1st</div>
+                <div class="year-tab" data-year="2nd Year">2nd</div>
+                <div class="year-tab" data-year="3rd Year">3rd</div>
+                <div class="year-tab" data-year="4th Year">4th</div>
+                <div class="year-tab" data-year="5th Year">5th</div>
             </div>
 
             <div class="sessions-grid" id="sessions-grid">
