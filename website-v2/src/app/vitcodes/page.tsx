@@ -66,10 +66,18 @@ function VitCodesContent() {
 
   const examTypes = Object.keys(sessionsByExamType);
 
-  const pinnedExamType = examRules["ACTIVE_PINNED_EXAM"] || "";
+  const pinnedExamTypeForYear = (type: string): boolean => {
+    const rulesObj = (examRules as any).rules || {};
+    const yearsObj = (examRules as any).examYears || {};
+    const year = yearsObj[type] || "1st Year";
+    return rulesObj[`ACTIVE_PINNED_EXAM_${year}`] === type;
+  };
+
   const sortedExamTypes = [...examTypes].sort((a, b) => {
-    if (a === pinnedExamType) return -1;
-    if (b === pinnedExamType) return 1;
+    const aPinned = pinnedExamTypeForYear(a);
+    const bPinned = pinnedExamTypeForYear(b);
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
     return 0;
   });
 
@@ -97,7 +105,7 @@ function VitCodesContent() {
 
         if (rulesRes.ok) {
           const rulesData = await rulesRes.json();
-          setExamRules(rulesData.rules || {});
+          setExamRules(rulesData);
         }
       } catch (err: any) {
         setError(err.message || "Failed to load VIT-AP codes.");
@@ -267,7 +275,7 @@ function VitCodesContent() {
                           <Award size={10} />
                           <span>{type}</span>
                         </div>
-                        {type === pinnedExamType && (
+                        {pinnedExamTypeForYear(type) && (
                           <div className="flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.15)]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pin rotate-45"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.25V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5.84c0 .44-.15.87-.43 1.25L4.24 14a2 2 0 0 0-.44 1.24Z"/></svg>
                             <span>PINNED</span>

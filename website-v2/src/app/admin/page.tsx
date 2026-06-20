@@ -754,15 +754,17 @@ export default function GlidePassAdmin() {
   };
 
   const handleToggleActiveExamType = async (type: string) => {
-    const nextVal = pinnedExamType === type ? "" : type;
-    setPinnedExamType(nextVal);
+    const year = examYears[type] || "1st Year";
+    const currentPinned = examRules[`ACTIVE_PINNED_EXAM_${year}`] || "";
+    const nextVal = currentPinned === type ? "" : type;
     try {
       await fetch("/api/vitcodes/rules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ examType: "ACTIVE_PINNED_EXAM", rule: nextVal })
+        body: JSON.stringify({ examType: `ACTIVE_PINNED_EXAM_${year}`, rule: nextVal })
       });
-      showToast("success", nextVal ? `Pinned ${nextVal} to Home hero screen.` : "Unpinned exam type from Home screen.");
+      showToast("success", nextVal ? `Pinned ${nextVal} to ${year} list.` : `Unpinned exam type from ${year} list.`);
+      fetchVitCodes(true);
     } catch (e) {}
   };
 
@@ -6379,12 +6381,12 @@ export default function GlidePassAdmin() {
                                     onClick={() => handleToggleActiveExamType(t)}
                                     className="px-1.5 py-0.5 rounded text-[8px] font-bold border transition-all uppercase tracking-wider"
                                     style={{ 
-                                      background: pinnedExamType === t ? `${P.blue}15` : "transparent",
-                                      borderColor: pinnedExamType === t ? `${P.blue}30` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
-                                      color: pinnedExamType === t ? P.blue : dk ? `${P.sky}60` : `${P.black}40`
+                                      background: (examRules[`ACTIVE_PINNED_EXAM_${examYears[t] || "1st Year"}`] === t) ? `${P.blue}15` : "transparent",
+                                      borderColor: (examRules[`ACTIVE_PINNED_EXAM_${examYears[t] || "1st Year"}`] === t) ? `${P.blue}30` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+                                      color: (examRules[`ACTIVE_PINNED_EXAM_${examYears[t] || "1st Year"}`] === t) ? P.blue : dk ? `${P.sky}60` : `${P.black}40`
                                     }}
                                   >
-                                    {pinnedExamType === t ? "Pinned" : "Pin"}
+                                    {(examRules[`ACTIVE_PINNED_EXAM_${examYears[t] || "1st Year"}`] === t) ? "Pinned" : "Pin"}
                                   </button>
                                 </div>
                               </div>

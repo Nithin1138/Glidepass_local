@@ -625,7 +625,7 @@
         let currentSessionId = null;
         let currentExamType = null;
         let currentYear = localStorage.getItem('vit_mobile_pinned_year') || '1st Year';
-        let pinnedExamType = '';
+        let examRules = {};
 
         // Restore state if history.state exists
         if (history.state) {
@@ -846,10 +846,11 @@
                 return;
             }
 
-            if (pinnedExamType) {
+            const pinnedForYear = examRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
+            if (pinnedForYear) {
                 entries.sort((a, b) => {
-                    if (a[0] === pinnedExamType) return -1;
-                    if (b[0] === pinnedExamType) return 1;
+                    if (a[0] === pinnedForYear) return -1;
+                    if (b[0] === pinnedForYear) return 1;
                     return 0;
                 });
             }
@@ -862,7 +863,7 @@
                 const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
                 const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
                 const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
-                               const isPinned = type === pinnedExamType;
+                               const isPinned = type === (examRules['ACTIVE_PINNED_EXAM_' + currentYear] || '');
 
                 typeCard.innerHTML = `
                     <div class="card-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -963,7 +964,7 @@
                     throw new Error('Invalid data format received');
                 }
                 
-                pinnedExamType = (rulesData && rulesData.rules) ? (rulesData.rules["ACTIVE_PINNED_EXAM"] || "") : "";
+                examRules = (rulesData && rulesData.rules) ? rulesData.rules : {};
 
                 const changed = JSON.stringify(allSessions) !== JSON.stringify(data);
                 if (changed || !isSilent) {
