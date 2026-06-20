@@ -1287,9 +1287,9 @@ export default function Home() {
           {/* Left Column: Client Reviews Scroller */}
           <div className="lg:col-span-5 space-y-12">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA]">Client Reviews</span>
-              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">WHAT THEY TYPE.</h2>
-              <p className="text-gray-500 font-bold text-sm mt-1">Real reviews from local-first power developers.</p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA]">Reviews</span>
+              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">USER REVIEWS</h2>
+              <p className="text-gray-500 font-bold text-sm mt-1">What people say about using LANpad.</p>
             </div>
 
             {/* Vertical scrolling testimonials marquee container */}
@@ -1386,28 +1386,28 @@ export default function Home() {
             className="lg:col-span-7 space-y-12"
           >
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">Support Knowledge</span>
-              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">COMMON RUN LOOPS.</h2>
-              <p className="text-gray-500 font-medium text-sm mt-1">Answers to key operational architecture queries.</p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">FAQ</span>
+              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">GOT QUESTIONS?</h2>
+              <p className="text-gray-500 font-medium text-sm mt-1">Simple answers to common questions about LANpad.</p>
             </div>
 
             <div className="space-y-4">
               {[
                 {
-                  q: "How is the connection kept at 1.2ms latency?",
-                  a: "LANpad communicates strictly via local WebSockets using your home router. By skipping the external internet entirely, packets travel instantly between your phone and host PC without round-tripping to cloud servers."
+                  q: "What is LANpad and how does it work?",
+                  a: "LANpad is a simple tool that lets you send text from your phone directly to your computer. It uses your local Wi-Fi connection, so it is super fast and does not use the internet."
                 },
                 {
-                  q: "Is my keystroke history logged or sent to any server?",
-                  a: "Never. LANpad runs 100% locally and is completely open-source. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
+                  q: "How can I contribute to the project?",
+                  a: "LANpad is fully open-source! You can contribute code, suggest new features, or report bugs by visiting our GitHub repository. We welcome helpers of all skill levels."
                 },
                 {
-                  q: "Do I need standard user permissions or administrator privileges?",
-                  a: "LANpad runs under standard system user privileges. On macOS, it requires standard Accessibility privileges to send virtual keystroke inputs (via Quartz CGEvent). On Windows, it binds locally via ctypes to user32.dll."
+                  q: "Do I need a license key to run LANpad?",
+                  a: "No, you do not need any license key or registration. Just download the app and install it on your devices to start using it immediately."
                 },
                 {
-                  q: "Can I map custom keyboard shortcut macros?",
-                  a: "Yes! Through our simple config, you can map arbitrary string payloads, shell scripts, or keystroke combinations (e.g. Cmd+Alt+Z) to custom preset buttons."
+                  q: "Is LANpad free to use?",
+                  a: "Yes, LANpad is 100% free and open-source. There are no hidden fees, subscriptions, or ads."
                 }
               ].map((item, idx) => {
                 const isOpen = openFaqIdx === idx;
