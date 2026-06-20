@@ -96,8 +96,8 @@ function VitCodesContent() {
     const fetchCodes = async () => {
       try {
         const [codesRes, rulesRes] = await Promise.all([
-          fetch("/api/vitcodes"),
-          fetch("/api/vitcodes/rules")
+          fetch("/api/vitcodes", { cache: "no-store" }),
+          fetch("/api/vitcodes/rules", { cache: "no-store" })
         ]);
         if (!codesRes.ok) throw new Error("Failed to fetch codes");
 
