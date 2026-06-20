@@ -537,16 +537,17 @@
         .year-tab.active {
             color: var(--accent-color);
         }
-        .year-tab.active::before {
-            content: '';
+        .year-indicator {
             position: absolute;
-            top: -10px;
-            left: 20%;
-            right: 20%;
+            top: 0;
+            left: 0;
             height: 2px;
             background: linear-gradient(90deg, #38bdf8, #3b82f6, #6366f1);
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
             border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+            z-index: 5;
         }
 
         @media (max-width: 480px) {
@@ -589,6 +590,7 @@
             </div>
 
             <div class="year-selector" id="year-selector">
+                <div class="year-indicator" id="year-indicator"></div>
                 <div class="year-tab active" data-year="1st Year">1st</div>
                 <div class="year-tab" data-year="2nd Year">2nd</div>
                 <div class="year-tab" data-year="3rd Year">3rd</div>
@@ -826,6 +828,7 @@
             currentExamType = null;
             document.getElementById('overview-hero').style.display = 'flex';
             document.getElementById('year-selector').style.display = 'flex';
+            setTimeout(updateYearIndicator, 50);
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
             
@@ -1004,6 +1007,20 @@
             }
         });
 
+        function updateYearIndicator() {
+            const activeTab = document.querySelector('.year-tab.active');
+            const indicator = document.getElementById('year-indicator');
+            if (activeTab && indicator) {
+                const selectorRect = document.getElementById('year-selector').getBoundingClientRect();
+                const tabRect = activeTab.getBoundingClientRect();
+                const left = tabRect.left - selectorRect.left;
+                const width = tabRect.width;
+                const inset = width * 0.2;
+                indicator.style.left = `${left + inset}px`;
+                indicator.style.width = `${width - (inset * 2)}px`;
+            }
+        }
+
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
             // Set active class based on currentYear on load
@@ -1014,12 +1031,15 @@
                     t.classList.remove('active');
                 }
             });
+            setTimeout(updateYearIndicator, 100);
+            window.addEventListener('resize', updateYearIndicator);
 
             // Setup year tab listeners
             document.querySelectorAll('.year-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
+                    updateYearIndicator();
                     currentYear = tab.getAttribute('data-year');
                     localStorage.setItem('vit_mobile_pinned_year', currentYear);
                     if (currentView === 'detail') {
