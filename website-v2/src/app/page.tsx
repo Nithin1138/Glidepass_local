@@ -139,9 +139,9 @@ const Navbar = () => {
             onClick={(e) => {
               e.preventDefault();
             }}
-            className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.45)]"
+            className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[0px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.455)] after:content-['Drag_Me'] after:text-[10px] after:relative after:z-10"
           >
-            <span className="relative z-10">LANpad</span>
+            LANpad
             <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
           </a>
         </div>
@@ -170,9 +170,9 @@ const Navbar = () => {
                   ref={mobileDragRef}
                   draggable
                   onClick={(e) => e.preventDefault()}
-                  className="inline-block px-4 py-2 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider"
+                  className="inline-block px-4 py-2 bg-amber-500 text-white rounded-lg text-[0px] font-black uppercase tracking-wider after:content-['🚀_Drag_Me'] after:text-[9px] after:relative after:z-10"
                 >
-                  🚀 LANpad
+                  LANpad
                 </a>
               </div>
               <Link href="/contributors" className="text-amber-500" onClick={() => setIsOpen(false)}>Contribute</Link>
