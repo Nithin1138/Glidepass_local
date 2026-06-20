@@ -41,6 +41,7 @@ interface VitCode {
   examType: string;
   title?: string;
   questions: Question[];
+  year?: string;
 }
 
 function ContributorsDashboard() {
@@ -89,6 +90,8 @@ function ContributorsDashboard() {
 
   const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
+  const [examYears, setExamYears] = useState<Record<string, string>>({});
+  const [selectedYear, setSelectedYear] = useState<string>("1st Year");
 
   useEffect(() => {
     fetch("/api/vitcodes/rules")
@@ -96,9 +99,11 @@ function ContributorsDashboard() {
       .then(data => {
         if (data.rules) setExamRules(data.rules);
         if (data.sessionLimits) setSessionLimits(data.sessionLimits);
+        if (data.examYears) setExamYears(data.examYears);
       })
       .catch(() => { });
   }, []);
+
 
   const getRuleForType = (type: string | null | undefined): string | null => {
     if (!type) return null;
@@ -167,6 +172,20 @@ function ContributorsDashboard() {
   const [newExamType, setNewExamType] = useState("NERD");
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [examTypes, setExamTypes] = useState(["NERD", "Daily Assessment", "Mid Term Exam", "Final Term Exam", "Coding Challenge"]);
+
+  const examTypesForYear = useMemo(() => {
+    return examTypes.filter(t => (examYears[t] || "1st Year") === selectedYear);
+  }, [examTypes, examYears, selectedYear]);
+
+  useEffect(() => {
+    if (examTypesForYear.length > 0) {
+      if (!examTypesForYear.includes(newExamType)) {
+        setNewExamType(examTypesForYear[0]);
+      }
+    } else {
+      setNewExamType("");
+    }
+  }, [selectedYear, examTypesForYear, newExamType]);
 
   const [qTitle, setQTitle] = useState("");
   const [qCode, setQCode] = useState("");
@@ -333,6 +352,9 @@ function ContributorsDashboard() {
           if (rulesData.sessionLimits) {
             setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);
           }
+          if (rulesData.examYears) {
+            setExamYears(prev => JSON.stringify(prev) === JSON.stringify(rulesData.examYears) ? prev : rulesData.examYears);
+          }
         }
       }
     } catch (err: any) {
@@ -427,14 +449,15 @@ function ContributorsDashboard() {
   const activeSession = useMemo(() => vitSessions.find(s => s.id === activeSessionId) || null, [vitSessions, activeSessionId]);
 
   const { filteredSessions, groupedSessions } = useMemo(() => {
-    const filtered = examTypeFilter === "all" ? vitSessions : vitSessions.filter(s => s.examType === examTypeFilter);
+    const yearedSessions = vitSessions.filter(s => (s.year || "1st Year") === selectedYear);
+    const filtered = examTypeFilter === "all" ? yearedSessions : yearedSessions.filter(s => s.examType === examTypeFilter);
     const grouped = filtered.reduce((acc, s) => {
       if (!acc[s.examType]) acc[s.examType] = [];
       acc[s.examType].push(s);
       return acc;
     }, {} as Record<string, VitCode[]>);
     return { filteredSessions: filtered, groupedSessions: grouped };
-  }, [vitSessions, examTypeFilter]);
+  }, [vitSessions, examTypeFilter, selectedYear]);
 
   const cardBg = dk ? "bg-black" : "bg-white";
   const textPrimary = dk ? "text-white" : "text-black";
@@ -642,9 +665,15 @@ function ContributorsDashboard() {
                     <p className={`text-[10px] ${textSecondary}`}>Manage exam sessions and code questions</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <select value={selectedYear} onChange={e => { setSelectedYear(e.target.value); setExamTypeFilter("all"); }} className={`text-xs rounded-xl px-2.5 py-1.5 border focus:outline-none ${inputBg}`}>
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                    </select>
                     <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-2.5 py-1.5 border focus:outline-none ${inputBg}`}>
-                      <option value="all">All</option>
-                      {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                      <option value="all">All Types</option>
+                      {examTypesForYear.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     <button onClick={() => {
                       setNewExamType(selectedExamType || examTypes[0] || "");
@@ -921,7 +950,7 @@ function ContributorsDashboard() {
                       <label className={`block text-[9px] uppercase font-bold tracking-wider mb-1.5 ${textSecondary}`}>Exam Type</label>
                       <div className="flex gap-2">
                         <select value={newExamType} onChange={e => setNewExamType(e.target.value)} className={`flex-1 text-xs rounded-xl px-4 py-3 border focus:outline-none ${inputBg}`}>
-                          {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                          {examTypesForYear.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
                     </div>

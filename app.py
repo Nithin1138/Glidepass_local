@@ -474,11 +474,20 @@ app = FastAPI(lifespan=lifespan)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Extension origins are chrome-extension://...
+    allow_origins=[],  # No public API access (local-only)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
 
 print("\n--- LANPAD BACKEND RUNNING ---")
 print(f"Local Access:  http://localhost:8000")
@@ -532,7 +541,12 @@ async def privacy_page():
 
 
 @app.get("/api/vitcodes")
-async def get_api_vitcodes():
+async def get_api_vitcodes(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(client_ip, "/api/vitcodes", limit=60, window=60):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limited. Max 60 requests per minute."})
+        
     limits = get_cloud_limits(get_license_tier())
     allow_val = limits.get("allow_vitcode", 0)
     # Block only if explicitly disabled (-1 or False)
@@ -625,13 +639,23 @@ async def terminate_server(data: dict):
 
 
 @app.post("/session/create")
-async def create_session():
+async def create_session(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(client_ip, "/session/create", limit=10, window=60):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limited. Max 10 requests per minute."})
     return await get_config()
 
 
 @app.get("/session/create")
 @app.get("/get_config")
-async def get_config():
+async def get_config(request: Request = None):
+    if request:
+        client_ip = request.client.host if request.client else "unknown"
+        if is_rate_limited(client_ip, "/session/create", limit=10, window=60):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limited. Max 10 requests per minute."})
+            
     ip = get_local_ip()
     return {
         "status": "success",
@@ -785,7 +809,12 @@ async def api_use_feature(data: dict):
     return {"status": "success"}
 
 @app.get("/copy")
-async def copy_from_laptop():
+async def copy_from_laptop(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(client_ip, "/copy", limit=60, window=60):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limited. Max 60 requests per minute."})
+        
     tier = get_license_tier()
     allowed, err = check_feature_usage("allow_select_copy", "Select Copy")
     if not allowed:
@@ -1027,7 +1056,7 @@ async def websocket_endpoint(websocket: WebSocket):
     now = time.time()
     if client_ip in _ws_connect_attempts:
         recent = [t for t in _ws_connect_attempts[client_ip] if now - t < 60]
-        if len(recent) >= 5:
+        if len(recent) >= 10:
             await websocket.accept()
             await websocket.send_text(json.dumps({"error": "Rate limited"}))
             await websocket.close(code=1008)
@@ -1097,7 +1126,7 @@ async def get_connections():
 async def paste(request: Request, data: dict):
     # Rate limit check
     client_ip = request.client.host if request.client else "unknown"
-    if is_rate_limited(client_ip, "/paste", limit=60):
+    if is_rate_limited(client_ip, "/paste", limit=10, window=60):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limit exceeded"})
 

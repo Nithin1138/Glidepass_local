@@ -109,6 +109,7 @@ interface VitCode {
   title?: string;
   questions: Question[];
   isDeleted?: boolean;
+  year?: string;
 }
 
 interface UserRecord {
@@ -839,6 +840,7 @@ export default function GlidePassAdmin() {
 
   const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
+  const [examYears, setExamYears] = useState<Record<string, string>>({});
   const [selectedRuleType, setSelectedRuleType] = useState("NERD");
 
   useEffect(() => {
@@ -847,6 +849,7 @@ export default function GlidePassAdmin() {
       .then(data => {
         if (data.rules) setExamRules(data.rules);
         if (data.sessionLimits) setSessionLimits(data.sessionLimits);
+        if (data.examYears) setExamYears(data.examYears);
       })
       .catch(() => {});
   }, []);
@@ -871,6 +874,18 @@ export default function GlidePassAdmin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ examType: type, sessionLimit: val })
+      });
+    } catch (e) {}
+  };
+
+  const handleUpdateExamYear = async (type: string, val: string) => {
+    const updated = { ...examYears, [type]: val };
+    setExamYears(updated);
+    try {
+      await fetch("/api/vitcodes/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examType: type, year: val })
       });
     } catch (e) {}
   };
@@ -971,6 +986,9 @@ export default function GlidePassAdmin() {
            }
            if (rulesData.sessionLimits) {
              setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);
+           }
+           if (rulesData.examYears) {
+             setExamYears(prev => JSON.stringify(prev) === JSON.stringify(rulesData.examYears) ? prev : rulesData.examYears);
            }
          }
        }
@@ -6278,6 +6296,20 @@ export default function GlidePassAdmin() {
                                     onChange={e => handleUpdateSessionLimit(t, parseInt(e.target.value, 10) || 1)}
                                     className={`w-10 text-[10px] rounded-lg px-1 py-0.5 border focus:outline-none ${inputBg}`} 
                                   />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Year:</span>
+                                  <select
+                                    value={examYears[t] || "1st Year"}
+                                    onChange={e => handleUpdateExamYear(t, e.target.value)}
+                                    className={`text-[9px] rounded-lg px-1 py-0.5 border focus:outline-none ${inputBg}`}
+                                    style={{ color: dk ? P.sky : P.black }}
+                                  >
+                                    <option value="1st Year">1st Year</option>
+                                    <option value="2nd Year">2nd Year</option>
+                                    <option value="3rd Year">3rd Year</option>
+                                    <option value="4th Year">4th Year</option>
+                                  </select>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Pin:</span>

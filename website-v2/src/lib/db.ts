@@ -120,6 +120,11 @@ export async function initDb() {
       ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS session_limit INTEGER DEFAULT 1;
     `);
 
+    // Ensure year column exists
+    await client.query(`
+      ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '1st Year';
+    `);
+
     // Ensure is_deleted column exists
     await client.query(`
       ALTER TABLE vit_sessions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
@@ -402,9 +407,13 @@ export interface VitCode {
   title?: string;
   questions: Question[];
   isDeleted?: boolean;
+  year?: string;
 }
 
 export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
+  const settings = await readRules();
+  const examYears = settings.examYears || {};
+
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -462,6 +471,7 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
         examType: row.exam_type,
         title: row.title || undefined,
         isDeleted: !!row.is_deleted,
+        year: examYears[row.exam_type] || "1st Year",
         questions: questionsBySession[row.id] || [],
       }));
     } catch (error) {
@@ -484,6 +494,7 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
           const sessions = data.map((s: any) => ({
             ...s,
             isDeleted: !!s.isDeleted,
+            year: examYears[s.examType] || s.year || "1st Year",
             questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
               ...q,
               isDeleted: !!q.isDeleted,
@@ -509,6 +520,7 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
       const sessions = data.map((s: any) => ({
         ...s,
         isDeleted: !!s.isDeleted,
+        year: examYears[s.examType] || s.year || "1st Year",
         questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
           ...q,
           isDeleted: !!q.isDeleted,
@@ -957,6 +969,7 @@ export async function restoreQuestion(qId: string): Promise<void> {
 export interface ExamSettings {
   rules: Record<string, string>;
   sessionLimits: Record<string, number>;
+  examYears: Record<string, string>;
 }
 
 export async function readRules(): Promise<ExamSettings> {
@@ -967,37 +980,46 @@ export async function readRules(): Promise<ExamSettings> {
       const res = await client.query("SELECT * FROM vit_exam_rules");
       const rules: Record<string, string> = {};
       const sessionLimits: Record<string, number> = {};
+      const examYears: Record<string, string> = {};
       res.rows.forEach(row => {
         rules[row.exam_type] = row.rule;
         sessionLimits[row.exam_type] = row.session_limit !== null ? row.session_limit : 1;
+        examYears[row.exam_type] = row.year || '1st Year';
       });
-      return { rules, sessionLimits };
+      return { rules, sessionLimits, examYears };
     } finally {
       client.release();
     }
   } else {
     const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
-    if (!fs.existsSync(filePath)) return { rules: {}, sessionLimits: {} };
+    if (!fs.existsSync(filePath)) return { rules: {}, sessionLimits: {}, examYears: {} };
     try {
       const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      if (data.rules && data.sessionLimits) {
+      if (data.rules && data.sessionLimits && data.examYears) {
         return data as ExamSettings;
       } else {
         const rules: Record<string, string> = {};
         const sessionLimits: Record<string, number> = {};
-        Object.keys(data).forEach(k => {
-          rules[k] = data[k];
-          sessionLimits[k] = 1;
+        const examYears: Record<string, string> = {};
+        
+        const srcRules = data.rules || data;
+        const srcLimits = data.sessionLimits || {};
+        const srcYears = data.examYears || {};
+        
+        Object.keys(srcRules).forEach(k => {
+          rules[k] = srcRules[k];
+          sessionLimits[k] = srcLimits[k] !== undefined ? srcLimits[k] : 1;
+          examYears[k] = srcYears[k] !== undefined ? srcYears[k] : '1st Year';
         });
-        return { rules, sessionLimits };
+        return { rules, sessionLimits, examYears };
       }
     } catch (e) {
-      return { rules: {}, sessionLimits: {} };
+      return { rules: {}, sessionLimits: {}, examYears: {} };
     }
   }
 }
 
-export async function writeRule(examType: string, rule?: string, sessionLimit?: number): Promise<void> {
+export async function writeRule(examType: string, rule?: string, sessionLimit?: number, year?: string): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -1014,6 +1036,12 @@ export async function writeRule(examType: string, rule?: string, sessionLimit?: 
           [examType, sessionLimit]
         );
       }
+      if (year !== undefined) {
+        await client.query(
+          "INSERT INTO vit_exam_rules (exam_type, rule, year) VALUES ($1, '1', $2) ON CONFLICT (exam_type) DO UPDATE SET year = $2",
+          [examType, year]
+        );
+      }
     } finally {
       client.release();
     }
@@ -1024,6 +1052,10 @@ export async function writeRule(examType: string, rule?: string, sessionLimit?: 
     }
     if (sessionLimit !== undefined) {
       settings.sessionLimits[examType] = sessionLimit;
+    }
+    if (year !== undefined) {
+      settings.examYears = settings.examYears || {};
+      settings.examYears[examType] = year;
     }
     const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
     fs.mkdirSync(path.dirname(filePath), { recursive: true });

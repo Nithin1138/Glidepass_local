@@ -4,6 +4,7 @@ import {
   generateLicenseKey, getEmailByReferralCode, addReferral, rewardReferrer 
 } from "@/lib/db";
 import crypto from "crypto";
+import { sendEmail } from "@/lib/mail";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,30 @@ export async function POST(req: NextRequest) {
     const durationDays = plan && !isNaN(parseInt(plan.validity_days, 10)) ? parseInt(plan.validity_days, 10) : 30;
 
     const licenseKey = await generateLicenseKey(tier, email, durationDays);
+
+    // 6. Send the license key via Email
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Your GlidePass License Key",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #333;">Thank you for your purchase!</h2>
+            <p>You have successfully purchased the <strong>${tier}</strong> plan.</p>
+            <p>Your license key is valid for ${durationDays} days.</p>
+            <div style="background-color: #f4f4f4; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 18px; margin: 20px 0; text-align: center;">
+              <strong>${licenseKey}</strong>
+            </div>
+            <p>To activate your license, open the GlidePass app, go to the settings or license section, and paste this key.</p>
+            <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #777;">If you have any questions, please reply to this email.</p>
+          </div>
+        `,
+        text: `Thank you for your purchase! You have successfully purchased the ${tier} plan.\n\nYour license key is: ${licenseKey}\n\nIt is valid for ${durationDays} days.`
+      });
+    } catch (err) {
+      console.error("Failed to send license email:", err);
+    }
 
     return NextResponse.json({
       success: true,

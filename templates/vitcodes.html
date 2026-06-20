@@ -503,6 +503,40 @@
             display: none;
         }
 
+        /* Year selector styles */
+        .year-selector {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 5px 20px 15px 20px;
+            margin: 0 -20px 15px -20px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .year-selector::-webkit-scrollbar {
+            display: none;
+        }
+        .year-tab {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 8px 18px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .year-tab.active {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #009BF5 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
         @media (max-width: 480px) {
             .dispatch-text-desktop {
                 display: none !important;
@@ -542,6 +576,13 @@
                 <p>Select your exam session, copy questions directly, or dispatch code straight to your laptop's clipboard.</p>
             </div>
 
+            <div class="year-selector" id="year-selector">
+                <div class="year-tab active" data-year="1st Year">1st Year</div>
+                <div class="year-tab" data-year="2nd Year">2nd Year</div>
+                <div class="year-tab" data-year="3rd Year">3rd Year</div>
+                <div class="year-tab" data-year="4th Year">4th Year</div>
+            </div>
+
             <div class="sessions-grid" id="sessions-grid">
                 <!-- Loaded dynamically -->
             </div>
@@ -568,6 +609,7 @@
         let currentSubView = 'types'; // 'types' or 'sessions'
         let currentSessionId = null;
         let currentExamType = null;
+        let currentYear = '1st Year';
 
         // Restore state if history.state exists
         if (history.state) {
@@ -775,11 +817,18 @@
             
             const groups = {};
             allSessions.forEach(s => {
+                if ((s.year || '1st Year') !== currentYear) return;
                 if (!groups[s.examType]) groups[s.examType] = [];
                 groups[s.examType].push(s);
             });
 
-            Object.entries(groups).forEach(([type, sessions]) => {
+            const entries = Object.entries(groups);
+            if (entries.length === 0) {
+                grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No exam sessions available for ${currentYear} today.</span></div>`;
+                return;
+            }
+
+            entries.forEach(([type, sessions]) => {
                 const typeCard = document.createElement('div');
                 typeCard.className = 'session-card';
                 const count = sessions.length;
@@ -817,11 +866,12 @@
             document.getElementById('overview-hero').style.display = 'none';
             const grid = document.getElementById('sessions-grid');
             grid.innerHTML = '';
-            if (sessions.length === 0) {
+            const filteredSessions = sessions.filter(s => (s.year || '1st Year') === currentYear);
+            if (filteredSessions.length === 0) {
                 grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
                 return;
             }
-            sessions.forEach(session => {
+            filteredSessions.forEach(session => {
                 const card = document.createElement('div');
                 card.className = 'session-card';
                 const titleHTML = session.title ? `<h3 class="session-title">${session.title}</h3>` : `<h3 class="session-title">${session.date}</h3>`;
@@ -941,6 +991,22 @@
 
         // Boot
         window.addEventListener('DOMContentLoaded', () => {
+            // Setup year tab listeners
+            document.querySelectorAll('.year-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentYear = tab.getAttribute('data-year');
+                    if (currentView === 'detail') {
+                        showOverview();
+                    }
+                    currentSubView = 'types';
+                    currentExamType = null;
+                    renderExamTypes();
+                    history.pushState({ view: 'overview', subView: 'types', examType: null, sessionId: null }, '', window.location.pathname);
+                });
+            });
+
             loadSessions(false);
             refreshIcons();
             // Real-time synchronization poller

@@ -14,16 +14,16 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { examType, rule, sessionLimit } = await request.json();
+    const { examType, rule, sessionLimit, year } = await request.json();
     if (!examType) {
       return NextResponse.json({ error: "Exam type required" }, { status: 400 });
     }
-    if (rule === undefined && sessionLimit === undefined) {
-      return NextResponse.json({ error: "Rule or Session Limit value required" }, { status: 400 });
+    if (rule === undefined && sessionLimit === undefined && year === undefined) {
+      return NextResponse.json({ error: "Rule, Session Limit or Year value required" }, { status: 400 });
     }
 
-    await writeRule(examType, rule, sessionLimit);
-    await logAudit(`Exam Settings Modified for ${examType}: limit=${sessionLimit}`, "Nithin", "127.0.0.1", "success");
+    await writeRule(examType, rule, sessionLimit, year);
+    await logAudit(`Exam Settings Modified for ${examType}: limit=${sessionLimit}, year=${year}`, "Nithin", "127.0.0.1", "success");
     return NextResponse.json({ success: true, message: "Settings saved successfully" });
   } catch (error: any) {
     await logAudit("Failed Exam Settings Modification", "Nithin", "127.0.0.1", "failed");
