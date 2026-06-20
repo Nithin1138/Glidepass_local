@@ -843,6 +843,17 @@ export default function GlidePassAdmin() {
   const [examYears, setExamYears] = useState<Record<string, string>>({});
   const [selectedRuleType, setSelectedRuleType] = useState("NERD");
 
+  const [batchMappings, setBatchMappings] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/admin/batch-mappings")
+      .then(r => r.json())
+      .then(data => {
+        if (data) setBatchMappings(data);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch("/api/vitcodes/rules")
       .then(r => r.json())
@@ -888,6 +899,21 @@ export default function GlidePassAdmin() {
         body: JSON.stringify({ examType: type, year: val })
       });
     } catch (e) {}
+  };
+
+  const handleUpdateBatchMapping = async (batch: string, year: string) => {
+    const updated = { ...batchMappings, [batch]: year };
+    setBatchMappings(updated);
+    try {
+      await fetch("/api/admin/batch-mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      showToast("success", `Updated default year for prefix ${batch} to ${year}`);
+    } catch (e) {
+      showToast("error", "Failed to update batch mapping");
+    }
   };
 
   useEffect(() => {
@@ -4304,6 +4330,34 @@ export default function GlidePassAdmin() {
                         <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} /></div>
                       ) : !selectedContributor ? (
                         <div className="space-y-8">
+                          {/* Batch Year Mappings Panel */}
+                          <div className="p-6 rounded-[28px] border relative overflow-hidden"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <h3 className="text-xs font-extrabold tracking-wider uppercase mb-4" style={{ color: P.blue }}>Default Year Batch Mappings</h3>
+                            <p className="text-[10px] text-white/60 mb-4">Set the default year classification based on the contributor's registration ID prefix (e.g. 23bce... starts with '23').</p>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                              {["22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"].map(batch => (
+                                <div key={batch} className="flex flex-col gap-1">
+                                  <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">ID Prefix {batch}</span>
+                                  <select
+                                    value={batchMappings[batch] || "1st Year"}
+                                    onChange={e => handleUpdateBatchMapping(batch, e.target.value)}
+                                    className={`text-[10px] rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`}
+                                    style={{ color: dk ? P.sky : P.black }}
+                                  >
+                                    <option value="1st Year">1st Year</option>
+                                    <option value="2nd Year">2nd Year</option>
+                                    <option value="3rd Year">3rd Year</option>
+                                    <option value="4th Year">4th Year</option>
+                                    <option value="5th Year">5th Year</option>
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
                           {/* Top 3 Podium */}
                           {contributorStats.length > 0 && (
                             <div className="p-6 rounded-[28px] border relative overflow-hidden"

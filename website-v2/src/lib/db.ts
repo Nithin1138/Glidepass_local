@@ -1997,3 +1997,51 @@ export async function rewardReferrer(referredEmail: string): Promise<void> {
   }
 }
 
+export async function getSetting(key: string, defaultValue: string): Promise<string> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const res = await client.query("SELECT value FROM vit_settings WHERE key = $1", [key]);
+      if (res.rows.length > 0) {
+        return res.rows[0].value;
+      }
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "settings.json");
+    if (fs.existsSync(filePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        if (data[key] !== undefined) return data[key];
+      } catch (e) {}
+    }
+  }
+  return defaultValue;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "INSERT INTO vit_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        [key, value]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "settings.json");
+    let data: any = {};
+    if (fs.existsSync(filePath)) {
+      try { data = JSON.parse(fs.readFileSync(filePath, "utf8")); } catch (e) {}
+    }
+    data[key] = value;
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  }
+}
+

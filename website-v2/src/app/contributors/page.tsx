@@ -299,6 +299,10 @@ function ContributorsDashboard() {
           if (d.sayMyName !== undefined) {
             setSayMyName(d.sayMyName);
           }
+          const savedYear = localStorage.getItem("vit_selected_year");
+          if (!savedYear && d.defaultYear) {
+            setSelectedYear(d.defaultYear);
+          }
           if (d.status !== "blocked") {
             fetchVitCodes();
             // Poll for real-time updates every 1 second (quiet mode)

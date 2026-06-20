@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Pool } from "pg";
-import { parseVitEmail } from "@/lib/db";
+import { parseVitEmail, getSetting } from "@/lib/db";
 
 const pool = process.env.DATABASE_URL ? new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,11 +18,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: "unauthorized" }, { status: 401 });
     }
 
-    if (!pool) {
-      return NextResponse.json({ status: "active", sayMyName: false, message: "Database not configured, assuming active" });
+    const { name, regno, college } = parseVitEmail(session.user.email);
+
+    // Fetch batch mapping settings
+    let batchMappings: Record<string, string> = {
+      "22": "4th Year",
+      "23": "3rd Year",
+      "24": "2nd Year",
+      "25": "1st Year"
+    };
+    try {
+      const mappingsRes = await getSetting("batch_year_mappings", "{}");
+      const parsed = JSON.parse(mappingsRes);
+      if (Object.keys(parsed).length > 0) {
+        batchMappings = parsed;
+      }
+    } catch (e) {}
+
+    let defaultYear = "1st Year";
+    if (regno && regno.length >= 2) {
+      const prefix = regno.substring(0, 2);
+      if (batchMappings[prefix]) {
+        defaultYear = batchMappings[prefix];
+      }
     }
 
-    const { name, regno, college } = parseVitEmail(session.user.email);
+    if (!pool) {
+      return NextResponse.json({ status: "active", sayMyName: false, defaultYear, message: "Database not configured, assuming active" });
+    }
 
     const client = await pool.connect();
     try {
@@ -39,10 +62,11 @@ export async function GET(request: NextRequest) {
       if (res.rows.length > 0) {
         return NextResponse.json({ 
           status: res.rows[0].status,
-          sayMyName: !!res.rows[0].say_my_name
+          sayMyName: !!res.rows[0].say_my_name,
+          defaultYear
         });
       } else {
-        return NextResponse.json({ status: "active", sayMyName: false });
+        return NextResponse.json({ status: "active", sayMyName: false, defaultYear });
       }
     } finally {
       client.release();
