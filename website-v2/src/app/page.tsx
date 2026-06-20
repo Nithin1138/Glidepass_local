@@ -1,25 +1,17 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import React, { createContext, useContext } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 
 const RippleGrid = dynamic(() => import("../components/RippleGrid"), { ssr: false });
 
-import React, { createContext, useContext } from "react";
-const ThemeContext = createContext({ dk: true, setTheme: (t: string) => { } });
+const ThemeContext = createContext({ dk: false, setTheme: (t: string) => { } });
 const useTheme = () => useContext(ThemeContext);
-
-const P = {
-  white: "#FAFAFA",
-  sky: "#C7EEFF",
-  blue: "#0077C0",
-  black: "#050505",
-  error: "#C62828"
-};
-
 
 // --- UI UTILITIES ---
 
@@ -35,63 +27,39 @@ const CountUp = ({ to }: { to: number }) => {
   return <motion.span>{rounded}</motion.span>;
 };
 
-const CursorSpotlight = () => {
-  const { dk } = useTheme();
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+const StatCountUp = ({ to, duration = 1.5 }: { to: number; duration?: number }) => {
+  const [val, setVal] = useState(0);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
+    let start = 0;
+    const end = to;
+    const totalMiliseconds = duration * 1000;
+    const stepTime = 16; // ~60fps
+    const totalSteps = totalMiliseconds / stepTime;
+    const increment = (end - start) / totalSteps;
 
-  return (
-    <motion.div
-      className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300"
-      style={{
-        background: useTransform(
-          [mouseX, mouseY],
-          ([x, y]) => `radial-gradient(400px at ${x}px ${y}px, ${dk ? "rgba(0, 119, 192, 0.12), rgba(199, 238, 255, 0.04)" : "rgba(0, 119, 192, 0.05), rgba(199, 238, 255, 0.02)"}, transparent 80%)`
-        ),
-      }}
-    />
-  );
-};
+    let currentStep = 0;
+    const timer = setInterval(() => {
+      currentStep++;
+      setVal(prev => {
+        const next = prev + increment;
+        if (currentStep >= totalSteps) {
+          clearInterval(timer);
+          return end;
+        }
+        return next;
+      });
+    }, stepTime);
 
-const BackgroundOrbs = () => {
-  const { dk } = useTheme();
-  return (
-    <div className="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
-      <motion.div
-        animate={{
-          x: [0, 100, 0],
-          y: [0, 50, 0],
-          scale: [1, 1.2, 1]
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 blur-[120px] rounded-full`}
-      />
-      <motion.div
-        animate={{
-          x: [0, -100, 0],
-          y: [0, 100, 0],
-          scale: [1, 1.3, 1]
-        }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-        className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-sky-500/10 blur-[120px] rounded-full`}
-      />
-    </div>
-  );
+    return () => clearInterval(timer);
+  }, [to, duration]);
+
+  return <span>{val.toFixed(1)}</span>;
 };
 
 // --- COMPONENTS ---
 
-const Navbar = () => {
-  const { dk, setTheme } = useTheme();
+const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouseY: any }) => {
   const [isOpen, setIsOpen] = useState(false);
   const desktopDragRef = useRef<HTMLAnchorElement>(null);
   const mobileDragRef = useRef<HTMLAnchorElement>(null);
@@ -108,48 +76,41 @@ const Navbar = () => {
   }, [bookmarkletCode]);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 border-b border-white/[0.03] ${dk ? "bg-black" : "bg-white"}/40 backdrop-blur-xl`}>
-      <div className="w-full px-6 md:px-12 h-14 md:h-16 flex items-center justify-between relative">
-        <div className="flex items-center gap-3.5 font-outfit font-black text-lg md:text-xl tracking-tighter shrink-0 relative z-10">
-          <div className={`w-9 h-9 md:w-10 md:h-10 ${dk ? "bg-black" : "bg-white"} rounded-[10px] border ${dk ? "border-white/10" : "border-black/10"} flex items-center justify-center overflow-hidden shadow-2xl group/logo transition-transform duration-500 hover:scale-110`}>
-            <img
-              src={dk ? "/logo_dark_theme.png" : "/logo.png"}
-              alt="LANpad Icon"
-              className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${!dk ? "invert hue-rotate-180 brightness-110 contrast-125" : ""}`}
-            />
-          </div>
-          <span className={`mt-1 bg-clip-text text-transparent bg-gradient-to-r ${dk ? "from-white to-white/60" : "from-black to-black/60"}`}>LANPAD</span>
+    <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/75 rounded-[32px] border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] font-dmsans">
+      <div className="clay-card px-6 py-2.5 flex items-center gap-2.5">
+        <div className="w-8 h-8 clay-orange rounded-full flex items-center justify-center">
+          <span className="text-white font-black font-rubik text-sm">L</span>
         </div>
-
-        <div className={`hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-[10px] font-bold tracking-[0.2em] uppercase ${dk ? "text-white/30" : "text-black/60"}`}>
-          <a href="#visualization" className={`hover:text-sky-400 transition-colors duration-300`}>Technology</a>
-          <a href="#features" className={`hover:text-blue-400 transition-colors duration-300`}>Features</a>
-          <a href="#downloads" className="hover:text-amber-400 transition-colors duration-300">Downloads</a>
-          <a href="#setup" className="hover:text-orange-500 transition-colors duration-300">How to Use</a>
-        </div>
-
-        <div className="hidden lg:flex shrink-0 relative z-10 items-center gap-3 md:gap-6">
-          <Link href="/contributors" className={`relative group ${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"} px-2 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-300`}>
-            Contribute
-          </Link>
-          
-          <a
-            ref={desktopDragRef}
-            draggable
-            onClick={(e) => {
-              e.preventDefault();
-            }}
-            className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[0px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.455)] after:content-['Drag_Me'] after:text-[10px] after:relative after:z-10"
-          >
-            LANpad
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
-          </a>
-        </div>
-
-        <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X className={dk ? "text-white" : "text-black"} /> : <Menu className={dk ? "text-white" : "text-black"} />}
-        </button>
+        <span className="font-rubik font-black text-xl tracking-tight text-gray-900">LANpad</span>
       </div>
+
+      <div className="hidden lg:flex items-center gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
+        <a href="#visualization" className="hover:text-[#468FEA] transition-colors duration-300">Technology</a>
+        <a href="#features" className="hover:text-[#468FEA] transition-colors duration-300">Features</a>
+        <a href="#setup" className="hover:text-[#F28500] transition-colors duration-300">How to Use</a>
+        <a href="#downloads" className="hover:text-[#F28500] transition-colors duration-300">Downloads</a>
+      </div>
+
+      <div className="hidden lg:flex items-center gap-3 md:gap-6">
+        <Link href="/contributors" className="relative group text-gray-500 hover:text-gray-800 px-2 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 font-rubik">
+          Contribute
+        </Link>
+
+        <a
+          ref={desktopDragRef}
+          draggable
+          onClick={(e) => {
+            e.preventDefault();
+          }}
+          className="relative group clay-orange text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_4px_12px_rgba(242,133,0,0.15)] cursor-grab active:cursor-grabbing font-rubik"
+        >
+          Drag Me
+        </a>
+      </div>
+
+      <button className="lg:hidden p-2 text-gray-700" onClick={() => setIsOpen(!isOpen)}>
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
 
       <AnimatePresence>
         {isOpen && (
@@ -157,25 +118,25 @@ const Navbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className={`lg:hidden overflow-hidden border-b ${dk ? "border-white/10 bg-black" : "border-black/10 bg-white"}`}
+            className="absolute top-[75px] left-0 w-full overflow-hidden rounded-2xl border border-white/20 bg-[#EDEAE0] shadow-xl lg:hidden z-50 font-dmsans"
           >
-            <div className="flex flex-col p-6 gap-4 uppercase text-xs font-bold tracking-widest">
+            <div className="flex flex-col p-6 gap-4 uppercase text-xs font-bold tracking-widest text-gray-700">
               <a href="#visualization" onClick={() => setIsOpen(false)}>Technology</a>
               <a href="#features" onClick={() => setIsOpen(false)}>Features</a>
-              <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
               <a href="#setup" onClick={() => setIsOpen(false)}>How to Use</a>
-              <div className="border-t border-white/5 pt-3 my-1">
-                <div className="text-[9px] text-amber-500 font-mono mb-2">Show Bookmarks (Ctrl+Shift+B / ⌘+Shift+B)</div>
+              <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
+              <div className="border-t border-gray-200/40 pt-3 my-1">
+                <div className="text-[9px] text-[#F28500] font-mono mb-2">Show Bookmarks (Ctrl+Shift+B / ⌘+Shift+B)</div>
                 <a
                   ref={mobileDragRef}
                   draggable
                   onClick={(e) => e.preventDefault()}
-                  className="inline-block px-4 py-2 bg-amber-500 text-white rounded-lg text-[0px] font-black uppercase tracking-wider after:content-['🚀_Drag_Me'] after:text-[9px] after:relative after:z-10"
+                  className="inline-block px-4 py-2 clay-orange text-white rounded-lg text-[9px] font-black uppercase tracking-wider"
                 >
-                  LANpad
+                  🚀 Drag Me
                 </a>
               </div>
-              <Link href="/contributors" className="text-amber-500" onClick={() => setIsOpen(false)}>Contribute</Link>
+              <Link href="/contributors" className="text-[#F28500] font-bold" onClick={() => setIsOpen(false)}>Contribute</Link>
             </div>
           </motion.div>
         )}
@@ -184,114 +145,484 @@ const Navbar = () => {
   );
 };
 
-const Hero = () => {
-  const { dk } = useTheme();
+const Hero = ({
+  qrSyncStatus,
+  setQrSyncStatus,
+  handleQrSync
+}: {
+  qrSyncStatus: "unlinked" | "scanning" | "linked";
+  setQrSyncStatus: React.Dispatch<React.SetStateAction<"unlinked" | "scanning" | "linked">>;
+  handleQrSync: () => void;
+}) => {
   return (
-    <section className="relative pt-20 pb-12 sm:pt-40 sm:pb-24 px-4 sm:px-6 overflow-hidden">
-      <div className="max-w-6xl mx-auto text-center relative z-10">
+    <section className="relative min-h-screen flex items-center pt-24 pb-12 px-6 overflow-hidden font-dmsans">
+      {/* Ambient background glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#468FEA]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#F28500]/10 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Social Proof Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className={`inline-flex items-center gap-4 px-4 py-2 rounded-full ${dk ? "bg-white/[0.03] border-white/[0.08]" : "bg-black/[0.03] border-black/[0.08]"} backdrop-blur-md mb-6`}
-        >
-          <div className="flex -space-x-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`w-7 h-7 rounded-full border-2 border-background bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center text-[8px] font-bold`}>
-                {String.fromCharCode(64 + i)}
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+
+          {/* Left Column: Text & CTA */}
+          <div className="lg:col-span-7 text-left space-y-8">
+
+            {/* Social Proof Badge at the top */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="inline-flex items-center gap-3"
+            >
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-7 h-7 rounded-full border-2 border-[#EDEAE0] bg-[#468FEA] flex items-center justify-center text-[8px] font-black text-white font-rubik shadow-sm">
+                    {String.fromCharCode(64 + i)}
+                  </div>
+                ))}
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Zap key={i} size={10} className="text-[#F28500] fill-[#F28500]" />
+                  ))}
+                </div>
+                <span className="text-[11px] font-bold tracking-tight text-gray-600">
+                  Joined by <span className="text-gray-900"><CountUp to={2481} />+</span> professionals
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              className="text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
+            >
+              Your Phone
+              <br />
+              as an Intelligent
+              <br />
+              <span className="text-[#0f172a]">
+                Layer
+              </span>
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 1 }}
+              className="text-base md:text-lg text-gray-600 max-w-xl leading-relaxed tracking-tight"
+            >
+              Instant local text transfer, human-like typing simulation, and real-time input orchestration. Built for power users who demand zero-lag productivity.
+            </motion.p>
+
+            {/* Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-col sm:flex-row items-center gap-4 pt-2"
+            >
+              <a href="#setup" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-white clay-blue shadow-[0_4px_12px_rgba(70,143,234,0.25)] hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
+                Setup Guide
+              </a>
+              <a href="#downloads" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-gray-700 clay-card hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
+                Download Assets
+              </a>
+            </motion.div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Zap key={i} size={10} className="text-amber-400 fill-amber-400" />
-              ))}
+
+          {/* Right Column: Interactive 3D Canvas replacing the QR Synchronizer */}
+          <div className="lg:col-span-5 flex justify-center relative w-full h-[450px]">
+            <div className="relative w-full max-w-[420px] h-full flex items-center justify-center">
+              {/* Outer Clay Frame Card Container */}
+              <div className="absolute inset-0 border border-white/20 clay-card rounded-[32px] overflow-hidden flex flex-col items-center justify-center p-2 z-10">
+                <ThreeDConduit />
+              </div>
             </div>
-            <span className={`text-[11px] font-bold tracking-tight ${dk ? "text-white/60" : "text-black/70"}`}>
-              Joined by <span className={`${dk ? "text-white" : "text-black"}`}><CountUp to={2481} />+</span> professionals
-            </span>
           </div>
-        </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-5xl md:text-7xl lg:text-[100px] font-outfit font-black tracking-tighter leading-[0.9] mb-8"
-        >
-          <span className={`inline-block py-2 ${dk ? "text-white" : "text-black"}`}>
-            Your Phone as a
-          </span>
-          <br />
-          <div className="relative inline-block py-2">
-            {/* The "Downshadow" Stack Layer (No Blur) */}
-            <span className="absolute inset-0 translate-y-[3px] md:translate-y-[5px] text-amber-500/20 select-none">
-              {"Intelligent Layer".split("").map((char, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 + i * 0.1, duration: 0.05 }}
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </span>
-            {/* The Main Gradient Layer */}
-            <span className={`relative text-transparent bg-clip-text bg-gradient-to-r ${dk ? "from-white via-white to-amber-500" : "from-black via-black to-amber-600"}`}>
-              {"Intelligent Layer".split("").map((char, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 + i * 0.05, duration: 0.1 }}
-                >
-                  {char}
-                </motion.span>
-              ))}
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut", delay: 2 }}
-                className="inline-block w-[3px] h-[0.8em] bg-amber-500 ml-1 translate-y-[10%]"
-              />
-            </span>
-          </div>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className={`text-base md:text-xl ${dk ? "text-white/75" : "text-black/75"} max-w-xl mx-auto mb-12 font-inter leading-relaxed tracking-tight`}
-        >
-          Instant local text transfer, human-like typing simulation, and real-time input orchestration. Built for power users who demand zero-lag productivity.
-        </motion.p>
-
-        <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0"
-        >
-          <a href="#setup" className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden shadow-2xl w-full sm:w-auto">
-            <div className={`absolute inset-0 transition-transform group-hover:scale-110 duration-500 ${dk ? "bg-white" : "bg-black"}`} />
-            <span className={`relative flex items-center justify-center gap-2 text-sm ${dk ? "text-black" : "text-white"}`}>
-              Setup Guide
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </span>
-          </a>
-          <a href="#downloads" className={`px-8 py-4 rounded-xl font-bold text-sm border ${dk ? "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20" : "border-black/10 bg-black/[0.02] hover:bg-black/[0.05] hover:border-black/20"} transition-all duration-300 w-full sm:w-auto text-center ${dk ? "text-white" : "text-black"}`}>
-            Download Assets
-          </a>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 };
 
+// --- INTERACTIVE 3D CONDUIT COMPONENT ---
+const ThreeDConduit = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof window === "undefined") return;
+
+    const THREE = require("three");
+
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(0, 2.5, 12);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Light Setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    // --- 1. BUILD 3D LAPTOP ---
+    const laptopGroup = new THREE.Group();
+    laptopGroup.position.set(2.2, -0.5, 0);
+    laptopGroup.rotation.y = -0.3;
+    group.add(laptopGroup);
+
+    // Laptop Base
+    const baseGeom = new THREE.BoxGeometry(3.6, 0.1, 2.4);
+    const baseMat = new THREE.MeshPhysicalMaterial({
+      color: 0xe2e8f0,
+      roughness: 0.1,
+      metalness: 0.8,
+      clearcoat: 1.0
+    });
+    const laptopBase = new THREE.Mesh(baseGeom, baseMat);
+    laptopGroup.add(laptopBase);
+
+    // Laptop Screen (Lid)
+    const screenGroup = new THREE.Group();
+    screenGroup.position.set(0, 0.05, -1.15); // pivot point at hinge
+    laptopGroup.add(screenGroup);
+
+    const lidGeom = new THREE.BoxGeometry(3.6, 2.2, 0.08);
+    const lidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xe2e8f0,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const laptopLid = new THREE.Mesh(lidGeom, lidMat);
+    laptopLid.position.set(0, 1.1, 0);
+    screenGroup.add(laptopLid);
+
+    // Laptop Screen Canvas for dynamic code text
+    const laptopCanvas = document.createElement("canvas");
+    laptopCanvas.width = 512;
+    laptopCanvas.height = 300;
+    const laptopCtx = laptopCanvas.getContext("2d");
+    const laptopTexture = new THREE.CanvasTexture(laptopCanvas);
+
+    // Laptop Inner Screen Panel
+    const innerScreenGeom = new THREE.PlaneGeometry(3.4, 2.0);
+    const innerScreenMat = new THREE.MeshBasicMaterial({
+      map: laptopTexture
+    });
+    const innerScreen = new THREE.Mesh(innerScreenGeom, innerScreenMat);
+    innerScreen.position.set(0, 1.1, 0.045);
+    screenGroup.add(innerScreen);
+
+    // --- 2. BUILD 3D PHONE ---
+    const phoneGroup = new THREE.Group();
+    phoneGroup.position.set(-2.2, -0.2, 1);
+    phoneGroup.rotation.y = 0.4;
+    group.add(phoneGroup);
+
+    // Phone Body shape with rounded corners (using Extrude)
+    const phoneShape = new THREE.Shape();
+    const w = 1.0, h = 2.0, r = 0.15;
+    phoneShape.moveTo(-w/2 + r, -h/2);
+    phoneShape.lineTo(w/2 - r, -h/2);
+    phoneShape.quadraticCurveTo(w/2, -h/2, w/2, -h/2 + r);
+    phoneShape.lineTo(w/2, h/2 - r);
+    phoneShape.quadraticCurveTo(w/2, h/2, w/2 - r, h/2);
+    phoneShape.lineTo(-w/2 + r, h/2);
+    phoneShape.quadraticCurveTo(-w/2, h/2, -w/2, h/2 - r);
+    phoneShape.lineTo(-w/2, -h/2 + r);
+    phoneShape.quadraticCurveTo(-w/2, -h/2, -w/2 + r, -h/2);
+
+    const extrudeSettings = { depth: 0.12, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+    const phoneGeom = new THREE.ExtrudeGeometry(phoneShape, extrudeSettings);
+    const phoneMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1e293b,
+      roughness: 0.2,
+      metalness: 0.5,
+      clearcoat: 1.0
+    });
+    const phoneMesh = new THREE.Mesh(phoneGeom, phoneMat);
+    phoneMesh.position.set(0, 0, -0.06);
+    phoneGroup.add(phoneMesh);
+
+    // Phone Screen Canvas for dynamic text
+    const phoneCanvas = document.createElement("canvas");
+    phoneCanvas.width = 256;
+    phoneCanvas.height = 512;
+    const phoneCtx = phoneCanvas.getContext("2d");
+    const phoneTexture = new THREE.CanvasTexture(phoneCanvas);
+
+    // Phone Screen
+    const phoneScreenGeom = new THREE.PlaneGeometry(0.92, 1.9);
+    const phoneScreenMat = new THREE.MeshBasicMaterial({
+      map: phoneTexture
+    });
+    const phoneScreen = new THREE.Mesh(phoneScreenGeom, phoneScreenMat);
+    phoneScreen.position.set(0, 0, 0.082);
+    phoneGroup.add(phoneScreen);
+
+    // --- 3. DYNAMIC DATA BRIDGE / CONNECTIONS ---
+    // Curved bridge spline from Phone center to Laptop screen center
+    const startPoint = new THREE.Vector3(-2.2, 0, 1);
+    const endPoint = new THREE.Vector3(2.2, 0.6, 0);
+    const controlPoint = new THREE.Vector3(0, 2.5, 0.5);
+
+    const curve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
+
+    // Visual Conduit Line
+    const points = curve.getPoints(50);
+    const lineGeom = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMat = new THREE.LineBasicMaterial({
+      color: 0x468fea,
+      transparent: true,
+      opacity: 0.35
+    });
+    const connectionLine = new THREE.Line(lineGeom, lineMat);
+    group.add(connectionLine);
+
+    // Flying Data Packets (Points moving along the Bezier curve)
+    const packetCount = 8;
+    const packets: any[] = [];
+    const packetColors = [0x468fea, 0xf28500];
+
+    for (let i = 0; i < packetCount; i++) {
+      const pGeom = new THREE.SphereGeometry(0.08, 16, 16);
+      const pMat = new THREE.MeshBasicMaterial({
+        color: packetColors[i % 2],
+        transparent: true,
+        opacity: 0.9
+      });
+      const packetMesh = new THREE.Mesh(pGeom, pMat);
+      
+      // Random starting offsets along curve
+      const progress = i / packetCount;
+      const pos = curve.getPointAt(progress);
+      packetMesh.position.copy(pos);
+
+      group.add(packetMesh);
+      packets.push({ mesh: packetMesh, progress });
+    }
+
+    // --- 4. MOUSE TRACKING ROTATION ---
+    let targetX = 0;
+    let targetY = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left - width / 2;
+      const y = e.clientY - rect.top - height / 2;
+      targetX = (x / (width / 2)) * 0.3;
+      targetY = (y / (height / 2)) * 0.2;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    // --- 5. ANIMATION LOOP ---
+    let clock = new THREE.Clock();
+    let animationFrameId: number;
+
+    const animateScene = () => {
+      animationFrameId = requestAnimationFrame(animateScene);
+
+      const elapsedTime = clock.getElapsedTime();
+
+      // Smooth Camera / Scene Easing
+      mouseX += (targetX - mouseX) * 0.05;
+      mouseY += (targetY - mouseY) * 0.05;
+
+      group.rotation.y = mouseX;
+      group.rotation.x = mouseY;
+
+      // Animate screen hinge angle slightly over time
+      screenGroup.rotation.x = -0.2 + Math.sin(elapsedTime * 1.5) * 0.04;
+
+      // Float phone up and down slightly
+      phoneGroup.position.y = -0.2 + Math.sin(elapsedTime * 2.0) * 0.08;
+      phoneGroup.rotation.y = 0.4 + Math.cos(elapsedTime * 1.0) * 0.05;
+
+      // --- ANIMATED CANVAS TEXT DRAWING ---
+      const totalLetters = 15;
+      const textToType = "SYNC_ACTIVE...";
+      const charsTyped = Math.floor((elapsedTime * 6) % (textToType.length + 5));
+      const activeText = textToType.slice(0, Math.min(charsTyped, textToType.length));
+
+      // Draw Phone screen UI & Text
+      if (phoneCtx) {
+        phoneCtx.fillStyle = "#0a0e17";
+        phoneCtx.fillRect(0, 0, 256, 512);
+
+        // Header info
+        phoneCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        phoneCtx.font = "bold 14px monospace";
+        phoneCtx.fillText("9:41", 20, 35);
+        phoneCtx.fillText("100% 🔋", 180, 35);
+
+        // Connection Pill
+        phoneCtx.fillStyle = "rgba(70, 143, 234, 0.15)";
+        phoneCtx.strokeStyle = "rgba(70, 143, 234, 0.3)";
+        phoneCtx.lineWidth = 1.5;
+        phoneCtx.beginPath();
+        phoneCtx.roundRect(40, 60, 176, 32, 16);
+        phoneCtx.fill();
+        phoneCtx.stroke();
+
+        phoneCtx.fillStyle = "#468FEA";
+        phoneCtx.font = "black 10px sans-serif";
+        phoneCtx.textAlign = "center";
+        phoneCtx.fillText("TUNNEL CONNECTED", 128, 80);
+
+        // Text Box
+        phoneCtx.fillStyle = "#111827";
+        phoneCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        phoneCtx.beginPath();
+        phoneCtx.roundRect(20, 180, 216, 120, 16);
+        phoneCtx.fill();
+        phoneCtx.stroke();
+
+        // Phone Input Value
+        phoneCtx.fillStyle = "#ffffff";
+        phoneCtx.font = "bold 15px monospace";
+        phoneCtx.textAlign = "left";
+        phoneCtx.fillText(activeText + (Math.floor(elapsedTime * 3) % 2 === 0 ? "_" : ""), 35, 245);
+
+        phoneTexture.needsUpdate = true;
+      }
+
+      // Draw Laptop screen UI & Terminal Code
+      if (laptopCtx) {
+        laptopCtx.fillStyle = "#0a0e17";
+        laptopCtx.fillRect(0, 0, 512, 300);
+
+        // Fake Title Bar
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        laptopCtx.fillRect(0, 0, 512, 35);
+
+        // Red Yellow Green Window Buttons
+        laptopCtx.fillStyle = "#ff5f56";
+        laptopCtx.beginPath(); laptopCtx.arc(20, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        laptopCtx.fillStyle = "#ffbd2e";
+        laptopCtx.beginPath(); laptopCtx.arc(38, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        laptopCtx.fillStyle = "#27c93f";
+        laptopCtx.beginPath(); laptopCtx.arc(56, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+
+        // Terminal path
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        laptopCtx.font = "11px monospace";
+        laptopCtx.textAlign = "center";
+        laptopCtx.fillText("lanpad — local_node", 256, 21);
+
+        // Editor Code Output
+        laptopCtx.textAlign = "left";
+        laptopCtx.font = "14px monospace";
+        
+        // Line 1: setup bridge
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        laptopCtx.fillText("1  const bridge = new LANpadBridge();", 24, 75);
+
+        // Line 2: compiling log
+        laptopCtx.fillStyle = "#468FEA";
+        laptopCtx.fillText("2  bridge.connect('LocalServer');", 24, 110);
+
+        // Line 3: receiving keystrokes
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        laptopCtx.fillText("3  // Sync Stream input", 24, 145);
+
+        // Line 4: output matching typed phone value
+        laptopCtx.fillStyle = "#f59e0b";
+        laptopCtx.fillText("4  > " + activeText, 24, 180);
+
+        laptopTexture.needsUpdate = true;
+      }
+
+      // Animate packet movements along Bezier Curve
+      packets.forEach((p) => {
+        p.progress += 0.006;
+        if (p.progress > 1) {
+          p.progress = 0;
+        }
+        const pos = curve.getPointAt(p.progress);
+        p.mesh.position.copy(pos);
+
+        // Scale pulses slightly
+        const scaleVal = 1 + Math.sin(elapsedTime * 8 + p.progress * 10) * 0.15;
+        p.mesh.scale.set(scaleVal, scaleVal, scaleVal);
+      });
+
+      renderer.render(scene, camera);
+    };
+
+    animateScene();
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const w = entry.contentRect.width;
+        const h = entry.contentRect.height;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+      
+      // Cleanup geometries and materials
+      baseGeom.dispose();
+      baseMat.dispose();
+      lidGeom.dispose();
+      lidMat.dispose();
+      innerScreenGeom.dispose();
+      innerScreenMat.dispose();
+      phoneGeom.dispose();
+      phoneMat.dispose();
+      phoneScreenGeom.dispose();
+      phoneScreenMat.dispose();
+      lineGeom.dispose();
+      lineMat.dispose();
+      packets.forEach(p => {
+        p.mesh.geometry.dispose();
+        p.mesh.material.dispose();
+      });
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full h-full min-h-[360px] relative cursor-pointer"
+    />
+  );
+};
+
 const Visualization = () => {
-  const { dk } = useTheme();
   const [text, setText] = useState("");
   const fullText = "Hello from my phone! _";
 
@@ -315,139 +646,109 @@ const Visualization = () => {
   const laptopRotate = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
   return (
-    <section id="visualization" ref={sectionRef} className="py-24 px-6 relative">
-      <div className="max-w-7xl mx-auto">
-        <div className={`relative bg-white/[0.01] border border-white/[0.05] rounded-[32px] md:rounded-[64px] pt-12 pb-8 md:pt-40 md:pb-24 px-4 sm:px-12 md:px-24 overflow-hidden group`}>
+    <section id="visualization" ref={sectionRef} className="min-h-screen flex items-center py-24 px-6 relative font-dmsans">
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="relative clay-card pt-12 pb-8 md:pt-40 md:pb-24 px-4 sm:px-12 md:px-24 overflow-hidden group border border-white/20">
+
+          {/* Ambient background glow objects */}
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-[#468FEA]/15 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-[#F28500]/10 rounded-full blur-[100px] pointer-events-none" />
+
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
 
-            {/* Phone Side (iPhone 16 Pro Style) */}
+            {/* Phone Side (Neumorphic Clay style phone frame) */}
             <div className="flex justify-center origin-center scale-[0.85] sm:scale-100" style={{ perspective: "1200px" }}>
               <motion.div
                 style={{ transformStyle: "preserve-3d", rotateY: phoneRotate }}
-                className={`w-[220px] h-[440px] bg-[#050505] border-[10px] border-[#1a1a1a] rounded-[48px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9),0_0_20px_rgba(163,106,82,0.1)] relative`}
+                className="w-[260px] h-[480px] clay-card p-6 flex flex-col justify-between border-4 border-white/45 shadow-[10px_10px_30px_rgba(0,0,0,0.04),inset_4px_4px_10px_rgba(255,255,255,0.8)] relative z-10"
               >
                 {/* Dynamic Island */}
-                <div className={`absolute top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-[#000] rounded-full flex items-center justify-center border ${dk ? "border-white/5" : "border-black/5"}`}>
-                  <div className={`w-1 h-1 rounded-full bg-blue-500/40 ml-auto mr-4`} />
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-zinc-800 rounded-full flex items-center justify-center shadow-[inset_1px_1px_3px_rgba(0,0,0,0.4)]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-900/60 ml-auto mr-3" />
                 </div>
 
-                {/* Status Bar */}
-                <div className={`absolute top-12 left-8 right-8 flex justify-between items-center text-[10px] font-bold ${dk ? "text-white" : "text-black"}/40`}>
-                  <span>9:41</span>
-                  <div className="flex gap-1.5">
-                    <div className={`w-3 h-1.5 rounded-sm border ${dk ? "border-white/20" : "border-black/20"} relative`}>
-                      <div className="absolute left-0 top-0 h-full w-[80%] bg-white/40" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Screen UI */}
-                <div className="mt-28 px-6 text-center">
-                  <div className="mb-10">
-                    <p className={`text-[10px] text-blue-400 font-black tracking-[0.2em] uppercase mb-1`}>LANpad</p>
-                    <p className={`text-[8px] ${dk ? "text-white" : "text-black"}/20 font-medium`}>Secure Tunnel Active</p>
+                {/* Screen UI Inset - Colored Dark for premium contrast */}
+                <div className="w-full h-full rounded-[28px] p-6 flex flex-col justify-between relative overflow-hidden bg-[#0A0E17] border border-black/40 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6)]">
+                  {/* Status Bar */}
+                  <div className="flex justify-between items-center text-[7.5px] font-bold text-white/50 px-1 pt-1.5">
+                    <span>9:41</span>
+                    <span className="text-emerald-500 font-extrabold">🔋 100%</span>
                   </div>
 
-                  <div className="relative group/input">
-                    <div className={`absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-sky-500/20 rounded-2xl blur opacity-40`} />
-                    <div className={`relative bg-[#111] border ${dk ? "border-white/10" : "border-black/10"} p-5 rounded-2xl ${dk ? "text-white" : "text-black"} text-sm font-semibold shadow-inner leading-snug`}>
+                  <div className="mt-6 text-center">
+                    <p className="text-[10px] text-[#468FEA] font-black tracking-[0.2em] uppercase mb-1 font-rubik drop-shadow-[0_0_8px_rgba(70,143,234,0.4)]">LANpad</p>
+                    <p className="text-[8px] text-emerald-400 font-bold tracking-wider">SECURE TUNNEL LIVE</p>
+                  </div>
+
+                  <div className="relative group/input my-auto">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#468FEA]/30 to-[#F28500]/30 rounded-2xl blur-md opacity-70" />
+                    <div className="relative bg-[#111622] border border-white/10 p-5 rounded-2xl text-white text-sm font-semibold leading-snug shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3)]">
                       {text}
                     </div>
                   </div>
 
-                  <div className="mt-12 flex justify-center gap-4">
-                    {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/5" />)}
+                  <div className="flex justify-center gap-4 mb-1">
+                    {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#468FEA]/30" />)}
                   </div>
                 </div>
 
                 {/* Home Indicator */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-24 h-1 bg-white/10 rounded-full" />
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-gray-300 rounded-full" />
               </motion.div>
             </div>
 
-            {/* Laptop Side (MacBook Style) */}
+            {/* Laptop Side (Neumorphic Clay style Laptop frame) */}
             <div className="flex flex-col items-center justify-center w-full max-w-lg origin-center scale-[0.9] sm:scale-100 mt-[-40px] lg:mt-0" style={{ perspective: "1200px" }}>
               <motion.div
                 style={{ transformStyle: "preserve-3d", rotateY: laptopRotate }}
                 className="w-full flex flex-col items-center"
               >
                 {/* Screen (Lid) */}
-                <div className={`w-full aspect-[1.6/1] bg-[#050505] border-[8px] md:border-[12px] border-[#1a1a1a] rounded-t-[16px] md:rounded-t-[24px] shadow-2xl relative overflow-hidden`}>
-                  {/* Aluminum Screen Reflection */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+                <div className="w-full aspect-[1.6/1] clay-card border-4 border-white/40 p-4 flex flex-col overflow-hidden relative shadow-[15px_15px_35px_rgba(0,0,0,0.04)]">
+                  {/* Screen reflection highlight */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none z-10" />
 
-                  {/* macOS Header */}
-                  <div className={`h-10 bg-white/[0.03] border-b border-white/[0.05] flex items-center px-5 gap-2`}>
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-lg" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e] shadow-lg" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-lg" />
-                    </div>
-                    <div className="flex-1 text-center">
-                      <span className={`text-[9px] font-mono ${dk ? "text-white" : "text-black"}/20 tracking-widest uppercase`}>lanpad — local_node</span>
-                    </div>
-                  </div>
-
-                  {/* Editor UI */}
-                  <div className="p-8 font-mono text-sm leading-relaxed relative">
-                    <div className="flex gap-6">
-                      <div className={`${dk ? "text-white" : "text-black"}/10 text-right space-y-1 hidden sm:block`}>
-                        {Array.from({ length: 6 }).map((_, i) => <div key={i}>{i + 1}</div>)}
+                  {/* macOS Editor Screen Inset - Colored Dark for premium contrast */}
+                  <div className="flex-1 rounded-[24px] overflow-hidden flex flex-col relative bg-[#0A0E17] border border-black/40 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6)] p-4">
+                    {/* Header */}
+                    <div className="flex items-center pb-3 border-b border-white/5 mb-4">
+                      <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-[0_0_6px_rgba(255,95,87,0.4)]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e] shadow-[0_0_6px_rgba(254,188,46,0.4)]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-[0_0_6px_rgba(40,200,64,0.4)]" />
                       </div>
-                      <div className="space-y-1">
-                        <p className={`${dk ? "text-white" : "text-black"}/20`}>const tunnel = <span className={`text-blue-400`}>new</span> Glide(<span className={`text-sky-400`}>"secure"</span>);</p>
-                        <p className={`${dk ? "text-white" : "text-black"}/80 tracking-tight`}>
-                          {text}
-                          <span className={`inline-block w-[1px] h-4 bg-blue-500 ml-1 animate-pulse`} />
-                        </p>
+                      <div className="flex-1 text-center">
+                        <span className="text-[9px] font-mono text-white/30 tracking-widest uppercase">lanpad — local_node</span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Data Stream Animation (Visible on LG and above) */}
-                  <div className={`absolute -left-[200px] top-1/2 -translate-y-1/2 w-[200px] h-[2px] bg-gradient-to-r from-blue-500/60 via-sky-500/40 to-transparent hidden lg:block overflow-visible`}>
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ left: "-10%", opacity: 0 }}
-                        animate={{
-                          left: ["-10%", "110%"],
-                          opacity: [0, 1, 1, 0],
-                          scale: [1, 1.5, 1]
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          delay: i * 0.8,
-                          ease: "linear"
-                        }}
-                        className={`absolute -top-2 w-6 h-4 bg-gradient-to-r from-blue-500 to-sky-500 rounded-full blur-[1px] shadow-[0_0_25px_rgba(244,63,94,0.8)] flex items-center justify-center`}
-                      >
-                        <div className="w-full h-[1px] bg-white/60" />
-                      </motion.div>
-                    ))}
-
-                    {/* Glowing Path Pulse */}
-                    <motion.div
-                      animate={{ opacity: [0.2, 0.5, 0.2] }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                      className={`absolute inset-0 bg-blue-500/30 blur-md`}
-                    />
+                    {/* Editor Code UI */}
+                    <div className="p-2 font-mono text-xs leading-relaxed relative text-white/80">
+                      <div className="flex gap-4">
+                        <div className="text-white/20 text-right space-y-1 hidden sm:block select-none">
+                          {Array.from({ length: 4 }).map((_, i) => <div key={i}>{i + 1}</div>)}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-white/40"><span className="text-[#468FEA]">const</span> tunnel = <span className="text-[#F28500]">new</span> <span className="text-yellow-300">Glide</span>(<span className="text-emerald-400">"secure"</span>);</p>
+                          <p className="text-white tracking-tight font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]">
+                            {text}
+                            <span className="inline-block w-[2px] h-3.5 bg-[#468FEA] ml-1 animate-pulse shadow-[0_0_8px_rgba(70,143,234,0.8)]" />
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Hinge & Base */}
-                <div className="w-[101.5%] h-3 md:h-4 bg-[#141414] border-t border-white/[0.08] relative z-20 flex items-center justify-center shadow-2xl rounded-b-[6px]" style={{ transform: 'perspective(500px) rotateX(15deg)', transformOrigin: 'top center' }}>
-                  {/* Trackpad notch */}
-                  <div className="w-16 md:w-24 h-1 bg-[#0a0a0a] rounded-b-md border-t border-white/[0.05]" />
+                {/* Base */}
+                <div className="w-[101.5%] h-3.5 bg-gray-300 border-t border-white/60 relative z-20 flex items-center justify-center shadow-lg rounded-b-[10px]">
+                  <div className="w-20 h-1 bg-gray-400/40 rounded-b-md" />
                 </div>
-                {/* Thin base bottom edge shadow */}
-                <div className="w-[102%] h-[3px] bg-[#0c0c0c] rounded-b-lg shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
               </motion.div>
             </div>
           </div>
 
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent blur-[120px] -z-10`} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-[#468FEA]/10 via-[#F28500]/5 to-transparent blur-[120px] -z-10" />
         </div>
       </div>
     </section>
@@ -455,24 +756,23 @@ const Visualization = () => {
 };
 
 const Features = () => {
-  const { dk } = useTheme();
   const features = [
     {
       title: "Sub-ms WebSocket Tunnel",
       desc: "Zero-latency text synchronization. Instantly sync text from your mobile screen to your desktop clipboard over secure local WebSockets.",
-      icon: <RefreshCw size={22} />,
+      icon: <RefreshCw size={22} className="text-[#468FEA]" />,
       span: "md:col-span-2",
       visual: (
         <div className="absolute right-10 bottom-6 flex items-center gap-6">
           <div className="hidden lg:flex flex-col items-end gap-1.5 mr-2">
-            <div className={`text-[7px] font-mono text-sky-500/60 tracking-[0.2em] uppercase`}>link_status</div>
+            <div className="text-[7px] font-mono text-[#468FEA]/60 tracking-[0.2em] uppercase">link_status</div>
             <div className="flex gap-1">
-              {[1, 2, 3].map(i => <div key={i} className={`w-1 h-1 rounded-full bg-sky-500/40`} />)}
-              <div className={`w-1 h-1 rounded-full bg-sky-500 animate-pulse`} />
+              {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-[#468FEA]/40" />)}
+              <div className="w-1 h-1 rounded-full bg-[#468FEA] animate-pulse" />
             </div>
           </div>
           <div className="relative w-32 h-10 flex items-center">
-            <svg className={`absolute inset-0 w-full h-full text-sky-500/20`} viewBox="0 0 100 20">
+            <svg className="absolute inset-0 w-full h-full text-[#468FEA]/20" viewBox="0 0 100 20">
               <motion.path
                 d="M 0 10 Q 25 20 50 10 T 100 10"
                 fill="none"
@@ -482,18 +782,17 @@ const Features = () => {
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
             </svg>
-            <div className={`flex-1 h-[1px] bg-gradient-to-r from-transparent via-sky-500/40 to-transparent relative z-10`}>
+            <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-[#468FEA]/40 to-transparent relative z-10">
               <motion.div
                 animate={{ left: ["0%", "100%"] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className={`absolute -top-1 w-2 h-2 bg-sky-500 rounded-full blur-[2px]`}
+                className="absolute -top-1 w-2 h-2 bg-[#468FEA] rounded-full blur-[1px]"
               />
             </div>
-            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[6px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-tighter whitespace-nowrap`}>id: 0x4f2a_tunnel</div>
           </div>
-          <div className={`px-3 py-2 rounded-lg bg-sky-500/5 border border-sky-500/10 flex items-center gap-2`}>
-            <Lock size={10} className={`text-sky-500`} />
-            <span className={`text-[8px] font-black uppercase tracking-widest text-sky-500/80`}>Secure</span>
+          <div className="px-3 py-2 rounded-lg clay-card-inset flex items-center gap-2">
+            <Lock size={10} className="text-[#468FEA]" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-[#468FEA]/80">Secure</span>
           </div>
         </div>
       )
@@ -501,12 +800,12 @@ const Features = () => {
     {
       title: "Humanized Auto-Type",
       desc: "Keystroke level simulation. Bypasses paste limits on secure portals or exam windows by typing characters with variable speed patterns.",
-      icon: <Keyboard size={22} />,
+      icon: <Keyboard size={22} className="text-[#F28500]" />,
       span: "md:col-span-1",
       visual: (
-        <div className="mt-auto pt-6 flex flex-wrap gap-1 opacity-20 group-hover:opacity-40 transition-opacity">
+        <div className="mt-auto pt-6 flex flex-wrap gap-1 opacity-40 group-hover:opacity-80 transition-opacity">
           {["SHIFT", "CMD", "V", "↵"].map(key => (
-            <div key={key} className={`px-1.5 py-1 rounded-sm border ${dk ? "border-white/20" : "border-black/20"} text-[6px] font-mono`}>{key}</div>
+            <div key={key} className="px-1.5 py-1 rounded-sm border border-gray-300 text-[6px] font-mono text-gray-500 font-bold">{key}</div>
           ))}
         </div>
       )
@@ -514,35 +813,35 @@ const Features = () => {
     {
       title: "Zero-Cloud RAM Cache",
       desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
-      icon: <ShieldCheck size={22} />,
+      icon: <ShieldCheck size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
       title: "Instant Web Controller",
       desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
-      icon: <Smartphone size={22} />,
+      icon: <Smartphone size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     },
     {
       title: "VIT-AP Exam Code Vault",
       desc: "Instant academic sharing. Access verified exam solutions uploaded in real-time by trusted campus contributors. Zero exam-day stress, synced right to your screen.",
-      icon: <FileCode size={22} />,
+      icon: <FileCode size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     }
   ];
 
   return (
-    <section id="features" className="py-16 px-4 sm:px-8 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-10">
+    <section id="features" className="min-h-screen flex items-center py-12 px-4 sm:px-8 relative overflow-hidden font-dmsans">
+      <div className="max-w-6xl mx-auto w-full relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
-            <h2 className="text-4xl md:text-5xl font-outfit font-black tracking-tighter mb-2">The Input Standard</h2>
-            <p className={`${dk ? "text-white/70" : "text-black/70"} max-w-sm font-medium text-sm leading-relaxed font-inter`}>Engineered to eliminate friction between your ideas and your machine.</p>
+            <h2 className="text-3xl md:text-4xl font-rubik font-black tracking-tighter mb-1.5 text-gray-900">The Input Standard</h2>
+            <p className="text-gray-500 max-w-sm font-bold text-xs leading-relaxed">Engineered to eliminate friction between your ideas and your machine.</p>
           </div>
-          <div className={`h-[1px] flex-1 bg-gradient-to-r from-blue-500/10 to-transparent hidden md:block mb-4 ml-12`} />
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-3 ml-12" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {features.map((f, i) => (
             <motion.div
               key={i}
@@ -554,24 +853,21 @@ const Features = () => {
                 e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                 e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
               }}
-              className={`relative group p-6 md:p-8 bg-white/[0.01] border border-white/[0.05] rounded-[32px] overflow-hidden transition-all duration-700 ${f.span}`}
+              className={`relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden transition-all duration-700 ${f.span}`}
             >
-              {/* Cursor Follow Glow (Inherits vars from parent) */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(99,102,241,0.06)_0%,_transparent_50%)]" />
+              {/* Spotlight overlay inside card */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.05)_0%,_transparent_60%)]" />
 
               <div className="relative z-10 h-full flex flex-col">
-                <div className={`w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-5 ${dk ? "text-white" : "text-black"} group-hover:text-blue-400 group-hover:scale-110 transition-all duration-500`}>
+                <div className="w-10 h-10 rounded-lg clay-card-inset flex items-center justify-center mb-4 group-hover:scale-105 transition-all duration-500">
                   {f.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-2 font-outfit tracking-tight">{f.title}</h3>
-                <p className={`text-sm ${dk ? "text-white/60" : "text-black/60"} leading-relaxed font-inter max-w-[280px]`}>
+                <h3 className="text-lg font-black mb-1.5 font-rubik tracking-tight text-gray-900">{f.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed font-bold max-w-[280px]">
                   {f.desc}
                 </p>
                 {f.visual}
               </div>
-
-              {/* Decorative Border Glow */}
-              <div className={`absolute inset-0 border ${dk ? "border-white/0" : "border-black/0"} group-hover:border-blue-500/20 rounded-[32px] transition-colors duration-700`} />
             </motion.div>
           ))}
         </div>
@@ -581,51 +877,53 @@ const Features = () => {
 };
 
 const SetupGuide = () => {
-  const { dk } = useTheme();
-
   const deviceSteps = [
     {
       step: "01",
       title: "Open & Start",
       desc: "Open the app and start the backend. A QR code or session link will display for your mobile.",
-      icon: <Monitor size={20} />
+      icon: <Monitor size={24} />
     },
     {
       step: "02",
       title: "Scan to Connect",
       desc: "Scan the QR code or open the link on your mobile to connect your devices directly.",
-      icon: <Smartphone size={20} />
+      icon: <Smartphone size={24} />
     },
     {
       step: "03",
       title: "Ready to Use",
       desc: "That's it! Use all features as needed and experience the intelligent layer.",
-      icon: <Zap size={20} />
+      icon: <Zap size={24} />
     }
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
+    <div className="max-w-7xl mx-auto px-6 sm:px-12 font-dmsans">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-28">
         <div>
-          <h3 className="text-4xl font-black font-outfit tracking-tighter uppercase mb-2">Setup Guide</h3>
-          <p className={`${dk ? "text-white" : "text-black"}/30 text-sm font-medium font-inter`}>Follow the steps below to initialize your link.</p>
+          <h3 className="text-5xl md:text-6xl font-black font-rubik tracking-tighter uppercase mb-3 text-gray-900">Setup Guide</h3>
+          <p className="text-gray-500 text-base md:text-lg font-bold">Follow the steps below to initialize your link.</p>
         </div>
       </div>
 
-      <div className="relative min-h-[280px]">
-        <div className={`absolute top-12 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500/20 via-sky-500/20 to-transparent hidden md:block`} />
+      <div className="relative min-h-[340px]">
+        {/* Adjusted connecting line for larger badges */}
+        <div className="absolute top-16 left-0 w-full h-[1px] bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block" />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-20">
           {deviceSteps.map((s, i) => (
             <div key={i} className="relative">
-              <div className={`w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-black text-xs mb-8 relative z-10 shadow-[0_0_30px_rgba(255,255,255,0.3)]`}>
+              {/* Increased size from w-12 h-12 to w-16 h-16, and text-xs to text-sm */}
+              <div className="w-16 h-16 rounded-full clay-orange text-white flex items-center justify-center font-black text-sm mb-10 relative z-10 shadow-[0_6px_16px_rgba(242,133,0,0.25)] font-rubik">
                 {s.step}
               </div>
-              <h4 className="text-xl font-bold mb-4 font-outfit tracking-tight flex items-center gap-3">
+              {/* Increased size from text-xl to text-2xl */}
+              <h4 className="text-2xl font-black mb-5 font-rubik tracking-tight flex items-center gap-3 text-gray-900">
                 {s.title}
               </h4>
-              <p className={`text-sm ${dk ? "text-white" : "text-black"}/40 leading-relaxed font-inter`}>
+              {/* Increased size from text-sm to text-base */}
+              <p className="text-base text-gray-500 leading-relaxed font-bold">
                 {s.desc}
               </p>
             </div>
@@ -637,146 +935,380 @@ const SetupGuide = () => {
 };
 
 export default function Home() {
-  const [theme, setTheme] = useState("dark");
-  const dk = theme === "dark";
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const globalMouseX = useMotionValue(0);
+  const globalMouseY = useMotionValue(0);
+
+  // FAQ state
+  const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
+
+  // QR state
+  const [qrSyncStatus, setQrSyncStatus] = useState<"unlinked" | "scanning" | "linked">("unlinked");
+
+  // Tactile suite bridge status and toggles states
+  const [bridgeStatus, setBridgeStatus] = useState<"offline" | "connecting" | "online">("offline");
+  const [toggles, setToggles] = useState({
+    flashMode: true,
+    injectMode: false,
+    liveSync: true
+  });
+
+  const handleInitBridge = () => {
+    if (bridgeStatus !== "offline") return;
+    setBridgeStatus("connecting");
+    setTimeout(() => {
+      setBridgeStatus("online");
+    }, 1500);
+  };
+
+  const handleQrSync = () => {
+    if (qrSyncStatus !== "unlinked") return;
+    setQrSyncStatus("scanning");
+    setTimeout(() => {
+      setQrSyncStatus("linked");
+    }, 1200);
+  };
+
+  const handleGlobalMouseMove = (e: React.MouseEvent) => {
+    globalMouseX.set(e.clientX);
+    globalMouseY.set(e.clientY);
+  };
 
   return (
-    <ThemeContext.Provider value={{ dk, setTheme }}>
-      <main className={`relative min-h-screen transition-colors duration-500 ${dk ? "bg-[#050505] text-white" : "bg-[#FAFAFA] text-black"}`}>
-        <AnimatePresence>
-          {showComingSoon && (
+    <div
+      onMouseMove={handleGlobalMouseMove}
+      className="min-h-screen bg-[#EDEAE0] text-gray-900 font-dmsans relative overflow-x-hidden antialiased"
+    >
+      {/* Dynamic Clay Style Injections */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap');
+        
+        .font-rubik {
+          font-family: 'Rubik', sans-serif;
+        }
+        .font-dmsans {
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .clay-card {
+          background: #EDEAE0;
+          border-radius: 40px;
+          box-shadow: 
+            20px 20px 40px rgba(0,0,0,0.06), 
+            -20px -20px 40px rgba(255,255,255,1),
+            inset 6px 6px 12px rgba(255,255,255,0.9),
+            inset -6px -6px 12px rgba(0,0,0,0.04);
+        }
+
+        .clay-card-blue-bg {
+          background: #EDEAE0;
+          border-radius: 40px;
+          box-shadow: 
+            20px 20px 40px rgba(0,0,0,0.08), 
+            inset 6px 6px 12px rgba(255,255,255,0.9),
+            inset -6px -6px 12px rgba(0,0,0,0.04);
+        }
+
+        .clay-card-inset {
+          background: #EDEAE0;
+          box-shadow: 
+            inset 4px 4px 8px rgba(0,0,0,0.04),
+            inset -4px -4px 8px rgba(255,255,255,0.8);
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .clay-blue {
+          background: #468FEA;
+          box-shadow: 
+            16px 16px 32px rgba(70, 143, 234, 0.2),
+            inset 8px 8px 16px rgba(255,255,255,0.3),
+            inset -8px -8px 16px rgba(0,0,0,0.12);
+        }
+
+        .clay-orange {
+          background: #F28500;
+          box-shadow: 
+            16px 16px 32px rgba(242, 133, 0, 0.2),
+            inset 10px 10px 20px rgba(255,255,255,0.4),
+            inset -10px -10px 20px rgba(0,0,0,0.15);
+        }
+
+        .isometric-stack {
+          perspective: 1500px;
+          transform-style: preserve-3d;
+        }
+
+        .slab {
+          width: 280px;
+          height: 180px;
+          position: absolute;
+          border-radius: 32px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          transform: rotateX(45deg) rotateZ(-35deg);
+          transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .isometric-stack:hover .slab-top {
+          transform: rotateX(45deg) rotateZ(-35deg) translateZ(150px) translateY(-15px) translateX(15px) !important;
+        }
+        .isometric-stack:hover .slab-mid {
+          transform: rotateX(45deg) rotateZ(-35deg) translateZ(30px) !important;
+        }
+        .isometric-stack:hover .slab-bot {
+          transform: rotateX(45deg) rotateZ(-35deg) translateZ(-90px) translateY(15px) translateX(-15px) !important;
+        }
+
+        @keyframes marquee-vertical {
+          0% { transform: translateY(0%); }
+          100% { transform: translateY(-50%); }
+        }
+        .animate-marquee-vertical {
+          animation: marquee-vertical 24s linear infinite;
+        }
+        .animate-marquee-vertical:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
+      {/* Premium Cursor Spotlight Overlay */}
+      <motion.div
+        className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300 hidden md:block"
+        style={{
+          background: useTransform(
+            [globalMouseX, globalMouseY],
+            ([x, y]) => `radial-gradient(400px at ${x}px ${y}px, rgba(70, 143, 234, 0.08) 0%, rgba(242, 133, 0, 0.02) 45%, transparent 80%)`
+          )
+        }}
+      />
+
+      <AnimatePresence>
+        {showComingSoon && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md"
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className={`fixed inset-0 z-[100] flex items-center justify-center p-6 ${dk ? "bg-black" : "bg-white"}/80 backdrop-blur-md`}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative max-w-sm w-full clay-card p-8 border border-white/20 shadow-2xl text-center overflow-hidden"
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className={`relative max-w-sm w-full bg-[#080808] border ${dk ? "border-white/10" : "border-black/10"} p-8 rounded-[32px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] text-center overflow-hidden`}
-              >
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/20 rounded-full blur-[60px] pointer-events-none" />
-
-                <div className="relative z-10">
-                  <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-[20px] flex items-center justify-center text-amber-500 mx-auto mb-6 shadow-[0_0_40px_rgba(245,158,11,0.1)]">
-                    <Globe size={32} className="animate-pulse" />
-                  </div>
-
-                  <h4 className={`text-2xl font-black font-outfit uppercase tracking-tighter mb-4 ${dk ? "text-white" : "text-black"}`}>Thank You!</h4>
-                  <p className={`${dk ? "text-white" : "text-black"}/40 font-medium font-inter leading-relaxed mb-10`}>
-                    The Chrome extension is currently under development and is <span className="text-amber-500 font-bold">Coming Soon</span>.
-                    <br /><br />
-                    For now, please use the <span className={`${dk ? "text-white" : "text-black"}`}>Windows</span> or <span className={`${dk ? "text-white" : "text-black"}`}>macOS</span> backend to bridge your devices.
-                  </p>
-
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={() => setShowComingSoon(false)}
-                      className={`w-full py-4 rounded-full bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] hover:bg-amber-500 hover:${dk ? "text-white" : "text-black"} transition-all duration-500`}
-                    >
-                      Got It
-                    </button>
-                    <Link
-                      href="#downloads"
-                      onClick={() => setShowComingSoon(false)}
-                      className={`text-[10px] font-black uppercase tracking-[0.2em] ${dk ? "text-white" : "text-black"}/20 hover:${dk ? "text-white" : "text-black"} transition-colors py-2`}
-                    >
-                      View Backends
-                    </Link>
-                  </div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 clay-orange rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg">
+                  <Globe size={32} className="animate-pulse" />
                 </div>
 
-                <button
-                  onClick={() => setShowComingSoon(false)}
-                  className={`absolute top-6 right-6 ${dk ? "text-white" : "text-black"}/20 hover:${dk ? "text-white" : "text-black"} transition-colors`}
-                >
-                  <X size={20} />
-                </button>
-              </motion.div>
+                <h4 className="text-2xl font-black font-rubik uppercase tracking-tighter mb-4 text-gray-900">Thank You!</h4>
+                <p className="text-gray-500 font-bold leading-relaxed mb-10 text-sm">
+                  The Chrome extension is currently under development and is <span className="text-[#F28500] font-black">Coming Soon</span>.
+                  <br /><br />
+                  For now, please use the <span className="text-gray-800">Windows</span> or <span className="text-gray-800">macOS</span> backend to bridge your devices.
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setShowComingSoon(false)}
+                    className="w-full py-4 rounded-full clay-blue text-white font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 font-rubik"
+                  >
+                    Got It
+                  </button>
+                  <Link
+                    href="#downloads"
+                    onClick={() => setShowComingSoon(false)}
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-700 transition-colors py-2 font-rubik"
+                  >
+                    View Backends
+                  </Link>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowComingSoon(false)}
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="mesh-gradient" />
-        <div className="absolute top-0 left-0 w-full h-[120vh] overflow-hidden pointer-events-none z-0">
-          <RippleGrid
-            enableRainbow={false}
-            gridColor={dk ? "#ffffff" : "#000000"}
-            rippleIntensity={0.02}
-            gridSize={12}
-            gridThickness={15}
-            mouseInteraction={true}
-            mouseInteractionRadius={1.2}
-            opacity={dk ? 0.25 : 0.08}
-          />
+      <div className="absolute top-0 left-0 w-full h-[120vh] overflow-hidden pointer-events-none z-0 opacity-[0.03]">
+        <RippleGrid
+          enableRainbow={false}
+          gridColor="#000000"
+          rippleIntensity={0.02}
+          gridSize={12}
+          gridThickness={15}
+          mouseInteraction={true}
+          mouseInteractionRadius={1.2}
+          opacity={0.08}
+        />
+      </div>
+
+      <Navbar globalMouseX={globalMouseX} globalMouseY={globalMouseY} />
+
+      {/* Floating Sticky Bookmarklet Bar Guide */}
+      <div className="fixed top-24 right-6 md:right-12 z-40 p-4 rounded-[20px] clay-card border border-white/20 backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-[#F28500]/40">
+        <div className="flex items-center gap-2">
+          <span className="text-[#F28500] text-xs">🛰️</span>
+          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#F28500] font-rubik">Show Bookmarks Bar</span>
         </div>
-        <BackgroundOrbs />
-        <CursorSpotlight />
-        <Navbar />
-
-        {/* Floating Sticky Bookmarklet Bar Guide */}
-        <div className={`fixed top-16 md:top-20 right-6 md:right-12 z-45 p-4 rounded-[20px] border ${dk ? "bg-[#050505]/90 border-white/[0.08] text-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]" : "bg-white/95 border-black/[0.08] text-black shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)]"} backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-amber-500/40`}>
-          <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-          <div className="flex items-center gap-2">
-            <span className="text-amber-500 text-xs">🛰️</span>
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black text-amber-500">Show Bookmarks Bar</span>
-          </div>
-          <div className="flex items-center gap-3 text-[10px] font-mono opacity-80 mt-0.5">
-            <div>Win: <span className="font-semibold text-sky-400">Ctrl + Shift + B</span></div>
-            <div className="opacity-35 font-sans">|</div>
-            <div>Mac: <span className="font-semibold text-sky-400">⌘ + Shift + B</span></div>
-          </div>
+        <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 font-bold mt-0.5">
+          <div>Win: <span className="font-bold text-[#468FEA]">Ctrl + Shift + B</span></div>
+          <div className="opacity-35 font-sans">|</div>
+          <div>Mac: <span className="font-bold text-[#468FEA]">⌘ + Shift + B</span></div>
         </div>
-        <Hero />
-        <Visualization />
-        <Features />
+      </div>
 
-        {/* Downloads */}
-        <section id="downloads" className="py-40 px-4 sm:px-8 relative overflow-hidden">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-24">
-              <h2 className={`text-4xl md:text-6xl font-outfit font-black tracking-tighter mb-4 ${dk ? "text-white" : "text-black"}`}>Ready to Sync?</h2>
-              <p className={`${dk ? "text-white" : "text-black"}/30 max-w-lg mx-auto font-medium text-base font-inter`}>Download the backend for your OS and install the extension to start your local sync tunnel.</p>
+      <Hero
+        qrSyncStatus={qrSyncStatus}
+        setQrSyncStatus={setQrSyncStatus}
+        handleQrSync={handleQrSync}
+      />
+
+      <Visualization />
+
+      {/* ─── LATENCY SLABS SECTION (IMAGE 1) ─── */}
+      <section className="min-h-screen flex items-center py-24 px-12 relative overflow-hidden font-dmsans">
+        <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row items-center gap-16">
+          <div className="lg:w-1/2 space-y-12">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
+              Latency Engine
+            </span>
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="font-rubik text-5xl lg:text-6xl font-black tracking-tighter leading-none"
+            >
+              1.2ms local speed.
+            </motion.h2>
+            <p className="text-xl text-gray-500 leading-relaxed max-w-md font-medium">
+              No slow cloud networks. LANpad sends your keys directly using your local Wi-Fi at maximum speed.
+            </p>
+            <div className="space-y-8">
+              {[
+                {
+                  title: "Fast Local Connection",
+                  desc: "Sends text instantly using your local Wi-Fi router without using the internet."
+                },
+                {
+                  title: "100% Private (No Cloud)",
+                  desc: "Your typing stays in your room. There are no server logs and no data tracking."
+                },
+                {
+                  title: "Works Everywhere",
+                  desc: "Works like a real physical keyboard on Mac and Windows to bypass any typing blocks."
+                }
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex gap-4"
+                >
+                  <div className="w-12 h-12 clay-card shrink-0 flex items-center justify-center shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8)] border border-white/40">
+                    <Check className="text-orange-500" size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-gray-800 text-lg">{item.title}</h4>
+                    <p className="text-sm text-gray-500 font-medium mt-1 leading-normal">
+                      {item.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Interactive Isometric Stack */}
+          <div className="lg:w-1/2 h-[500px] relative isometric-stack flex items-center justify-center group cursor-pointer">
+            {/* Top Slab: Stalled Legacy Cloud */}
+            <div
+              className="slab slab-top bg-gray-300 shadow-[10px_10px_20px_rgba(0,0,0,0.08)] border border-white/20"
+              style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(100px)" }}
+            >
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Cloud Input</span>
+              <span className="text-gray-700 text-3xl font-black font-rubik">STALLED</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Middle Slab: Arrow separator */}
+            <div
+              className="slab slab-mid clay-blue"
+              style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(0px)" }}
+            >
+              <svg className="w-12 h-12 text-white animate-pulse" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+              </svg>
+            </div>
+
+            {/* Bottom Slab: Speedup */}
+            <div
+              className="slab slab-bot clay-orange"
+              style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(-90px)" }}
+            >
+              <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Local Engine</span>
+              <span className="text-white text-3xl font-black font-rubik tracking-tighter"><StatCountUp to={1.2} />ms LATENCY</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Features />
+
+
+
+      {/* Setup Guide */}
+      <section id="setup" className="min-h-screen flex items-center py-24 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full">
+          <SetupGuide />
+        </div>
+      </section>
+
+      {/* Downloads */}
+      <section id="downloads" className="min-h-screen flex flex-col justify-center py-24 relative overflow-hidden font-dmsans">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 mb-20 text-center w-full">
+          <h2 className="text-3xl md:text-5xl font-rubik font-black tracking-tighter mb-4 text-gray-900 leading-none">READY TO TYPE<br />WITHOUT BOUNDS?</h2>
+          <p className="text-gray-500 max-w-lg mx-auto font-bold text-sm mt-4">Download the backend for your OS and install the extension to start your local sync tunnel.</p>
+        </div>
+
+        {/* Full-width Curtain Container (Slightly reduced padding and height) */}
+        <div className="relative overflow-hidden w-full py-16 group/curtain bg-[#468FEA] border-t-8 border-white/30 min-h-[420px] flex items-center justify-center">
+          <div className="max-w-3xl mx-auto px-6 w-full z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 {
                   title: "macOS Backend",
-                  icon: <Monitor size={28} />,
+                  icon: <Monitor size={24} />,
                   label: "Copy Install Cmd",
                   installCommand: "curl -sSL https://lanpad.vercel.app/install-mac.sh | bash",
                   version: "v1.5.8.7",
                   supported: "macOS 12.0+",
-                  size: "",
                   theme: "amber",
-                  gradient: "from-amber-500/30 to-transparent",
-                  btnGradient: "hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-400",
-                  borderHover: "group-hover/card:border-amber-500/40",
-                  iconGlow: "group-hover/card:text-amber-400 group-hover/card:border-amber-500/30 group-hover/card:bg-amber-500/10",
-                  secondaryLabel: "Copy Install Cmd",
-                  topLineColor: "via-amber-500/40"
+                  btnClass: "clay-orange text-white",
+                  borderHover: "hover:border-[#F28500]/40",
                 },
                 {
                   title: "Windows Backend",
-                  icon: <Monitor size={28} />,
+                  icon: <Monitor size={24} />,
                   label: "Copy Install Cmd",
                   installCommand: "powershell -c \"irm https://lanpad.vercel.app/install-windows.ps1 | iex\"",
                   version: "v1.5.8.7",
                   supported: "Windows 10/11",
-                  size: "",
                   theme: "indigo",
-                  gradient: "from-indigo-500/30 to-transparent",
-                  btnGradient: "hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-400",
-                  borderHover: "group-hover/card:border-indigo-500/40",
-                  iconGlow: "group-hover/card:text-indigo-400 group-hover/card:border-indigo-500/30 group-hover/card:bg-indigo-500/10",
-                  topLineColor: "via-indigo-500/40"
+                  btnClass: "clay-blue text-white",
+                  borderHover: "hover:border-[#468FEA]/40",
                 }
-
-              ].map((d: any, i) => (
+              ].map((d, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -787,189 +1319,334 @@ export default function Home() {
                     e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
                   }}
-                  style={{
-                    background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
-                    borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
-                    backdropFilter: "blur(40px)"
-                  }}
-                  className={`group/card relative p-8 border rounded-[32px] overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]`}
+                  className={`group/card relative p-6 border border-white/20 clay-card-blue-bg rounded-[28px] overflow-hidden transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] ${d.borderHover} min-h-[290px] flex flex-col justify-between`}
                 >
-                  {/* Top Highlight Line */}
-                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent ${d.topLineColor} to-transparent`} />
+                  {/* Spotlight inside download card */}
+                  <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.04)_0%,_transparent_60%)]" />
 
-                  {/* Cursor Spotlight Glow */}
-                  <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(255,255,255,0.03)_0%,_transparent_60%)]" />
-
-                  {/* Corner Gradient Blob */}
-                  <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${d.gradient} rounded-full blur-[40px] opacity-30 group-hover/card:opacity-80 transition-opacity duration-700 pointer-events-none`} />
-
-                  <div className="relative z-10 flex flex-col h-full">
-                    {/* Header / Meta */}
-                    <div className="flex justify-between items-start mb-16">
-                      <div className={`w-14 h-14 bg-white/[0.02] border border-white/[0.05] rounded-2xl flex items-center justify-center text-white/30 transition-all duration-500 group-hover/card:scale-110 ${d.iconGlow}`}>
+                  <div className="relative z-10 flex flex-col h-full justify-between">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-11 h-11 clay-card-inset rounded-xl flex items-center justify-center text-gray-500">
                         {d.icon}
                       </div>
-                      <div className="text-right">
-                        <div className={`text-[10px] font-black uppercase tracking-widest ${dk ? "text-white" : "text-black"}/60 mb-1`}>{d.version}</div>
-                        <div className={`text-[9px] font-mono uppercase tracking-widest ${dk ? "text-white" : "text-black"}/40 mb-1`}>{d.supported}</div>
-                        <div className={`text-[9px] font-mono uppercase tracking-widest ${dk ? "text-white" : "text-black"}/20`}>{d.size}</div>
+                      <div className="text-right font-mono">
+                        <div className="text-[9px] font-bold text-gray-600 mb-0.5">{d.version}</div>
+                        <div className="text-[8px] text-gray-400 uppercase tracking-widest">{d.supported}</div>
                       </div>
                     </div>
 
                     {/* Title & Action */}
                     <div className="mt-auto">
-                      <h3 className={`text-2xl font-black font-outfit tracking-tighter ${dk ? "text-white" : "text-black"}/70 group-hover/card:${dk ? "text-white" : "text-black"} transition-colors duration-500 mb-6`}>{d.title}</h3>
+                      <h3 className="text-xl font-black font-rubik tracking-tighter text-gray-700 group-hover/card:text-gray-900 transition-colors duration-500 mb-4">{d.title}</h3>
 
                       <button
                         onClick={() => {
-                          if (d.title === "Chrome Extension") {
-                            setShowComingSoon(true);
-                          } else if (d.href) {
-                            window.location.href = d.href;
-                          } else if (d.installCommand) {
+                          if (d.installCommand) {
                             navigator.clipboard.writeText(d.installCommand);
                             alert("Install command copied to clipboard! Paste it in your Terminal.");
                           }
                         }}
-                        className={`group/btn relative w-full overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.02] p-4 flex items-center justify-between transition-all duration-500 hover:border-white/40 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] ${d.btnGradient}`}
+                        className={`group/btn relative w-full overflow-hidden rounded-full p-3 flex items-center justify-between transition-all duration-500 shadow-sm ${d.btnClass}`}
                       >
-                        {/* Shimmer Effect */}
-                        <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] pointer-events-none" />
-
                         <div className="flex items-center gap-3 ml-2 z-10">
-                          <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${dk ? "text-white" : "text-black"} group-hover/btn:scale-105 transition-all duration-500`}>
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em] font-rubik">
                             {d.label}
                           </span>
                         </div>
 
-                        <div className={`w-8 h-8 rounded-full bg-white/10 border ${dk ? "border-white/10" : "border-black/10"} flex items-center justify-center group-hover/btn:bg-white group-hover/btn:shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all duration-500 z-10`}>
-                          <ArrowRight size={14} className={`${dk ? "text-white" : "text-black"} group-hover/btn:text-black group-hover/btn:-rotate-45 transition-all duration-500`} />
+                        <div className="w-7 h-7 rounded-full bg-white/20 border border-white/10 flex items-center justify-center group-hover/btn:bg-white transition-all duration-500 z-10">
+                          <ArrowRight size={12} className="text-white group-hover/btn:text-gray-900 group-hover/btn:-rotate-45 transition-all duration-500" />
                         </div>
                       </button>
-
-                      {d.installCommand && d.href && (
-                        <div className="mt-4 flex flex-col items-center gap-1">
-                          <span className={`text-[9px] font-mono ${dk ? "text-white/40" : "text-black/40"}`}>
-                            {d.commandLabel || "If Gatekeeper blocks the app, run:"}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(d.installCommand);
-                              alert("Command copied!");
-                            }}
-                            className={`text-[9px] font-mono px-3 py-1.5 rounded-lg border ${dk ? "border-white/10 hover:border-white/30 text-white/60 bg-white/[0.02] hover:bg-white/[0.05]" : "border-black/10 hover:border-black/30 text-black/60 bg-black/[0.02] hover:bg-black/[0.05]"} transition-all duration-300 w-full text-center truncate`}
-                            title="Click to copy command"
-                          >
-                            Copy Install Cmd
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
-
-                  {/* Outer Active Border */}
-                  <div className={`absolute inset-0 border border-transparent rounded-[32px] pointer-events-none transition-colors duration-700 ${d.borderHover}`} />
                 </motion.div>
               ))}
             </div>
           </div>
 
-          {/* Setup Guide */}
-          <div id="setup" className={`mt-20 pt-20 border-t border-white/[0.03]`}>
-            <SetupGuide />
-          </div>
-        </section>
+          {/* Left Curtain Panel */}
+          <motion.div
+            initial={{ x: "0%" }}
+            whileInView={{ x: "-90%" }}
+            whileHover={{ x: "-96%" }}
+            viewport={{ once: true, margin: "-120px" }}
+            transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
+            className="absolute top-0 bottom-0 left-0 w-1/2 bg-[#EDEAE0] border-r-[12px] border-white/20 shadow-[20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-end z-20 pointer-events-auto cursor-pointer"
+          >
+            {/* Pull Handle */}
+            <div className="mr-8 w-8 h-32 clay-card shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] flex items-center justify-center">
+              <span className="text-[10px] font-black text-gray-400 rotate-90 select-none">PULL</span>
+            </div>
+          </motion.div>
 
-        {/* Footer */}
-        <footer className={`pt-32 pb-16 border-t border-white/[0.03] bg-white/[0.01] relative overflow-hidden`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-24">
+          {/* Right Curtain Panel */}
+          <motion.div
+            initial={{ x: "0%" }}
+            whileInView={{ x: "90%" }}
+            whileHover={{ x: "96%" }}
+            viewport={{ once: true, margin: "-120px" }}
+            transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
+            className="absolute top-0 bottom-0 right-0 w-1/2 bg-[#EDEAE0] border-l-[12px] border-white/20 shadow-[-20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-start z-20 pointer-events-auto cursor-pointer"
+          >
+            {/* Pull Handle */}
+            <div className="ml-8 w-8 h-32 clay-card shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] flex items-center justify-center">
+              <span className="text-[10px] font-black text-gray-400 -rotate-90 select-none">PULL</span>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-              {/* Brand Column */}
-              <div className="col-span-2">
-                <div className="flex items-center gap-4 font-outfit font-black text-xl md:text-2xl tracking-tighter mb-8">
-                  <div className={`w-12 h-12 ${dk ? "bg-black" : "bg-white"} rounded-[12px] border ${dk ? "border-white/10" : "border-black/10"} flex items-center justify-center overflow-hidden shadow-2xl`}>
-                    <img
-                      src={dk ? "/logo_dark_theme.png" : "/logo.png"}
-                      alt="LANpad Icon"
-                      className={`w-[120%] h-[120%] object-contain scale-125 ${!dk ? "invert hue-rotate-180 brightness-110 contrast-125" : ""}`}
-                    />
-                  </div>
-                  <span className="mt-1">LANPAD</span>
-                </div>
-                <p className={`text-sm ${dk ? "text-white" : "text-black"}/30 font-medium font-inter max-w-xs leading-relaxed mb-8`}>
-                  Building the intelligent layer between your phone and your machine. Zero-lag, local-first synchronization for power users.
-                </p>
-                <div className="flex gap-5">
-                  {[
-                    { icon: <Globe size={18} />, label: "Web" },
-                    { icon: <Star size={18} />, label: "GitHub" },
-                    { icon: <ShieldCheck size={18} />, label: "Discord" }
-                  ].map((s, i) => (
-                    <button key={i} className={`group/social relative w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.05] flex items-center justify-center ${dk ? "text-white" : "text-black"}/20 transition-all duration-500 hover:${dk ? "text-white" : "text-black"} hover:border-blue-500/50 hover:bg-blue-500/10`}>
-                      {/* Outer Pulse Ring */}
-                      <div className={`absolute inset-0 rounded-full border border-blue-500/0 group-hover/social:border-blue-500/40 group-hover/social:scale-125 transition-all duration-700 pointer-events-none`} />
+      {/* ─── REVIEWS AND FAQS SECTION (IMAGE 3) ─── */}
+      <section className="min-h-screen flex items-center py-32 px-12 relative overflow-hidden font-dmsans">
+        <div className="max-w-7xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
-                      <div className="relative z-10 group-hover/social:scale-110 transition-transform duration-500">
-                        {s.icon}
+          {/* Left Column: Client Reviews Scroller */}
+          <div className="lg:col-span-5 space-y-12">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA]">Client Reviews</span>
+              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">WHAT THEY TYPE.</h2>
+              <p className="text-gray-500 font-bold text-sm mt-1">Real reviews from local-first power developers.</p>
+            </div>
+
+            {/* Vertical scrolling testimonials marquee container */}
+            <div className="relative h-[460px] overflow-hidden rounded-[32px] clay-card p-6 border border-white/20">
+              {/* Fade masks */}
+              <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
+
+              <div className="space-y-4 animate-marquee-vertical hover:[animation-play-state:paused] flex flex-col">
+
+                {[
+                  {
+                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
+                    author: "Sarah Chen",
+                    role: "Creative Director"
+                  },
+                  {
+                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
+                    author: "Vikram Malhotra",
+                    role: "DevOps & Crypt Architect"
+                  },
+                  {
+                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
+                    author: "Alex Rivera",
+                    role: "Lead Platform Engineer"
+                  }
+                ].map((t, idx) => (
+                  <div
+                    key={`l1-${idx}`}
+                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
+                  >
+                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
+                      "{t.quote}"
+                    </p>
+                    <div className="flex items-center gap-3 font-dmsans">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase border border-white/30">
+                        {t.author[0]}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <div>
+                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
+                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-              {/* Product Column */}
-              <div>
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Product</h4>
-                <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><a href="#features" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Features</a></li>
-                  <li><a href="#visualization" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Technology</a></li>
-                  <li><a href="#downloads" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Download</a></li>
-                </ul>
-              </div>
+                {/* Duplicate loop of cards for seamless infinite animation */}
+                {[
+                  {
+                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
+                    author: "Alex Rivera",
+                    role: "Lead Platform Engineer"
+                  },
+                  {
+                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
+                    author: "Sarah Chen",
+                    role: "Creative Director"
+                  },
+                  {
+                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
+                    author: "Vikram Malhotra",
+                    role: "DevOps & Crypt Architect"
+                  }
+                ].map((t, idx) => (
+                  <div
+                    key={`l2-${idx}`}
+                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
+                  >
+                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
+                      "{t.quote}"
+                    </p>
+                    <div className="flex items-center gap-3 font-dmsans">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase border border-white/30">
+                        {t.author[0]}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
+                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-              {/* Resources Column */}
-              <div>
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Resources</h4>
-                <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><a href="/docs" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Documentation</a></li>
-                  <li><a href="/setup" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Setup Guide</a></li>
-                  <li><a href="/status" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>API Status</a></li>
-                </ul>
               </div>
-
-              {/* Legal Column */}
-              <div>
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] ${dk ? "text-white" : "text-black"}/20 mb-8`}>Legal</h4>
-                <ul className={`space-y-4 text-sm font-medium ${dk ? "text-white" : "text-black"}/40 font-inter`}>
-                  <li><a href="/privacy" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Privacy Policy</a></li>
-                  <li><a href="/terms" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Terms of Service</a></li>
-                  <li><a href="/cookies" className={`hover:${dk ? "text-white" : "text-black"} transition-colors`}>Cookie Policy</a></li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Legal Disclaimer */}
-            <div className={`mt-12 p-6 rounded-2xl border text-[11px] leading-relaxed font-inter transition-all duration-300 ${dk ? "bg-white/[0.01] border-white/[0.04] text-white/40" : "bg-black/[0.01] border-black/[0.04] text-black/50"}`}>
-              <p className="font-bold uppercase tracking-wider mb-2 text-amber-500">Legal Disclaimer</p>
-              LANpad is provided as an open-source productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
-            </div>
-
-            {/* Bottom Bar */}
-            <div className={`pt-12 border-t border-white/[0.03] flex flex-col md:flex-row justify-between items-center gap-8`}>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">All Systems Operational</span>
-                </div>
-                <span className={`text-[10px] font-mono ${dk ? "text-white" : "text-black"}/10 uppercase tracking-widest`}>v1.5.8.7-stable</span>
-              </div>
-              <p className={`text-[10px] ${dk ? "text-white" : "text-black"}/10 font-mono tracking-widest`}>© 2026 LANPAD. ALL RIGHTS RESERVED.</p>
             </div>
           </div>
-        </footer>
-      </main>
-    </ThemeContext.Provider>
+
+          {/* Right Column: FAQ Accordion (Matches Image 3 right column!) */}
+          <motion.div
+            initial={{ opacity: 0, y: 35 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-7 space-y-12"
+          >
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">Support Knowledge</span>
+              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">COMMON RUN LOOPS.</h2>
+              <p className="text-gray-500 font-medium text-sm mt-1">Answers to key operational architecture queries.</p>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                {
+                  q: "How is the connection kept at 1.2ms latency?",
+                  a: "LANpad communicates strictly via local WebSockets using your home router. By skipping the external internet entirely, packets travel instantly between your phone and host PC without round-tripping to cloud servers."
+                },
+                {
+                  q: "Is my keystroke history logged or sent to any server?",
+                  a: "Never. LANpad runs 100% locally and is completely open-source. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
+                },
+                {
+                  q: "Do I need standard user permissions or administrator privileges?",
+                  a: "LANpad runs under standard system user privileges. On macOS, it requires standard Accessibility privileges to send virtual keystroke inputs (via Quartz CGEvent). On Windows, it binds locally via ctypes to user32.dll."
+                },
+                {
+                  q: "Can I map custom keyboard shortcut macros?",
+                  a: "Yes! Through our simple config, you can map arbitrary string payloads, shell scripts, or keystroke combinations (e.g. Cmd+Alt+Z) to custom preset buttons."
+                }
+              ].map((item, idx) => {
+                const isOpen = openFaqIdx === idx;
+                return (
+                  <div key={idx} className="clay-card overflow-hidden transition-all duration-300 border border-white/20">
+                    <button
+                      onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                      className="w-full text-left p-6 flex justify-between items-center hover:bg-white/10 transition-colors"
+                    >
+                      <span className="font-extrabold text-sm text-gray-800">{item.q}</span>
+                      <motion.span
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-gray-400"
+                      >
+                        ▼
+                      </motion.span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          className="border-t border-dashed border-gray-200/50"
+                        >
+                          <p className="p-6 text-xs text-gray-500 font-bold leading-relaxed bg-[#EDEAE0]/30">
+                            {item.a}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="pt-24 pb-16 border-t border-gray-200/40 relative overflow-hidden font-dmsans">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
+
+            {/* Brand Column */}
+            <div className="col-span-2">
+              <div className="flex items-center gap-4 font-rubik font-black text-xl md:text-2xl tracking-tighter mb-8 text-gray-900">
+                <div className="w-12 h-12 clay-orange rounded-[12px] flex items-center justify-center shadow-lg">
+                  <span className="text-white font-black text-lg">L</span>
+                </div>
+                <span className="mt-1">LANPAD</span>
+              </div>
+              <p className="text-sm text-gray-500 font-bold max-w-xs leading-relaxed mb-8">
+                Building the intelligent layer between your phone and your machine. Zero-lag, local-first synchronization for power users.
+              </p>
+              <div className="flex gap-5">
+                {[
+                  { icon: <Globe size={18} />, label: "Web" },
+                  { icon: <Star size={18} />, label: "GitHub" },
+                  { icon: <ShieldCheck size={18} />, label: "Security" }
+                ].map((s, i) => (
+                  <button key={i} className="group/social relative w-12 h-12 rounded-full clay-card flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all hover:scale-110 shadow-sm border border-white/20">
+                    <div className="relative z-10">{s.icon}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Product Column */}
+            <div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-8 font-rubik">Product</h4>
+              <ul className="space-y-4 text-sm font-bold text-gray-500">
+                <li><a href="#features" className="hover:text-gray-800 transition-colors">Features</a></li>
+                <li><a href="#visualization" className="hover:text-gray-800 transition-colors">Technology</a></li>
+                <li><a href="#downloads" className="hover:text-gray-800 transition-colors">Downloads</a></li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-8 font-rubik">Resources</h4>
+              <ul className="space-y-4 text-sm font-bold text-gray-500 font-dmsans">
+                <li><Link href="/docs" className="hover:text-gray-800 transition-colors">Documentation</Link></li>
+                <li><Link href="/setup" className="hover:text-gray-800 transition-colors">Setup Guide</Link></li>
+                <li><Link href="/status" className="hover:text-gray-800 transition-colors">API Status</Link></li>
+              </ul>
+            </div>
+
+            {/* Legal Column */}
+            <div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-8 font-rubik">Legal</h4>
+              <ul className="space-y-4 text-sm font-bold text-gray-500">
+                <li><Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-gray-800 transition-colors">Terms of Service</Link></li>
+                <li><Link href="/cookies" className="hover:text-gray-800 transition-colors">Cookie Policy</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Legal Disclaimer Box */}
+          <div className="mt-12 p-6 clay-card shadow-inner border border-white/20 rounded-2xl text-[11px] leading-relaxed text-gray-500 font-bold">
+            <p className="font-black uppercase tracking-wider mb-2 text-orange-500 font-rubik">Legal Disclaimer</p>
+            LANpad is provided as an open-source productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
+          </div>
+
+          {/* Bottom Row */}
+          <div className="mt-16 pt-12 border-t border-gray-200/40 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full clay-card text-[10px] font-black uppercase tracking-widest text-emerald-600 border border-white/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                All Systems Operational
+              </div>
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">v1.5.8.7-stable</span>
+            </div>
+            <p className="text-[10px] text-gray-400 font-mono tracking-widest">© 2026 LANPAD. ALL RIGHTS RESERVED.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
