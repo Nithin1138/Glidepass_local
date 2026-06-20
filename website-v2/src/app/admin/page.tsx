@@ -773,6 +773,7 @@ export default function GlidePassAdmin() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [vitDetailView, setVitDetailView] = useState(false);
   const [examTypeFilter, setExamTypeFilter] = useState<string>("all");
+  const [selectedYearFilter, setSelectedYearFilter] = useState<string>("all");
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
@@ -1351,10 +1352,13 @@ export default function GlidePassAdmin() {
   }, [contributors, contributorCodes, vitSessions]);
 
   const filteredSessions = useMemo(() => {
-    const active = vitSessions.filter(s => !s.isDeleted);
+    let active = vitSessions.filter(s => !s.isDeleted);
+    if (selectedYearFilter !== "all") {
+      active = active.filter(s => (s.year || "1st Year") === selectedYearFilter);
+    }
     if (examTypeFilter === "all") return active;
     return active.filter(s => s.examType === examTypeFilter);
-  }, [vitSessions, examTypeFilter]);
+  }, [vitSessions, examTypeFilter, selectedYearFilter]);
 
   const groupedSessions = useMemo(() => {
     const groups: Record<string, VitCode[]> = {};
@@ -3919,6 +3923,15 @@ export default function GlidePassAdmin() {
                                 <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam sessions and code questions</p>
                               </div>
                               <div className="flex items-center gap-3 flex-wrap">
+                                <select value={selectedYearFilter} onChange={e => setSelectedYearFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                                  <option value="all">All Years</option>
+                                  <option value="1st Year">1st Year</option>
+                                  <option value="2nd Year">2nd Year</option>
+                                  <option value="3rd Year">3rd Year</option>
+                                  <option value="4th Year">4th Year</option>
+                                  <option value="5th Year">5th Year</option>
+                                </select>
+
                                 <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
                                   <option value="all">All Types</option>
                                   {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
