@@ -717,6 +717,7 @@ const Features = () => {
               key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: i * 0.1, duration: 0.8 }}
               onMouseMove={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -1193,6 +1194,7 @@ export default function Home() {
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
                   transition={{ delay: i * 0.1, duration: 0.8 }}
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
