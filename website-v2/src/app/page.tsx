@@ -701,7 +701,7 @@ export default function Home() {
         </AnimatePresence>
 
         <div className="mesh-gradient" />
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-full h-[120vh] overflow-hidden pointer-events-none z-0">
           <RippleGrid
             enableRainbow={false}
             gridColor={dk ? "#ffffff" : "#000000"}
