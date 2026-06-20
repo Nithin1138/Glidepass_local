@@ -94,6 +94,15 @@ function ContributorsDashboard() {
   const [selectedYear, setSelectedYear] = useState<string>("1st Year");
 
   useEffect(() => {
+    const saved = localStorage.getItem("vit_selected_year");
+    if (saved) setSelectedYear(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("vit_selected_year", selectedYear);
+  }, [selectedYear]);
+
+  useEffect(() => {
     fetch("/api/vitcodes/rules")
       .then(r => r.json())
       .then(data => {
