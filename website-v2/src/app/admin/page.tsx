@@ -4350,23 +4350,20 @@ export default function GlidePassAdmin() {
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Contributor Management</h2>
                           <p className="text-xs text-white/60">Monitor code submissions and control access</p>
                         </div>
+                        <button
+                          onClick={handleOpenBatchMappingsModal}
+                          className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all hover:opacity-90 flex items-center gap-2"
+                          style={{ background: P.blue }}
+                        >
+                          <Settings size={14} />
+                          Default Year Batch Mappings
+                        </button>
                       </div>
 
                       {loadingContributors ? (
                         <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} /></div>
                       ) : !selectedContributor ? (
                         <div className="space-y-8">
-                          {/* Batch Year Mappings Button Trigger */}
-                          <div className="flex justify-end mb-4">
-                            <button
-                              onClick={handleOpenBatchMappingsModal}
-                              className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all hover:opacity-90 flex items-center gap-2"
-                              style={{ background: P.blue }}
-                            >
-                              <Settings size={14} />
-                              Default Year Batch Mappings
-                            </button>
-                          </div>
 
                           {/* Top 3 Podium */}
                           {contributorStats.length > 0 && (
