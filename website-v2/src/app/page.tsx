@@ -1151,7 +1151,7 @@ export default function Home() {
       <section id="downloads" className="min-h-screen flex flex-col justify-center py-24 relative overflow-hidden font-dmsans">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 mb-20 text-center w-full">
           <h2 className="text-3xl md:text-5xl font-rubik font-black tracking-tighter mb-4 text-gray-900 leading-none">READY TO TYPE<br />WITHOUT BOUNDS?</h2>
-          <p className="text-gray-500 max-w-lg mx-auto font-bold text-sm mt-4">Download the backend for your OS and install the extension to start your local sync tunnel.</p>
+          <p className="text-gray-500 max-w-lg mx-auto font-bold text-sm mt-4">Download and run the backend for your OS to start your local sync tunnel.</p>
         </div>
 
         {/* Full-width Curtain Container (Slightly reduced padding and height) */}
