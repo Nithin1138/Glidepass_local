@@ -122,26 +122,17 @@ const Navbar = () => {
             Contribute
           </Link>
           
-          <div className="flex flex-col items-end relative mt-2">
-            <a
-              href={bookmarkletCode}
-              draggable
-              onClick={(e) => {
-                e.preventDefault();
-              }}
-              className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.45)]"
-            >
-              <span className="relative z-10">Drag Me</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
-            </a>
-            
-            {/* Fixed instructions for bookmarklet bar */}
-            <div className={`mt-1.5 flex gap-2.5 text-[8px] font-mono whitespace-nowrap tracking-wider ${dk ? "text-white/40" : "text-black/55"}`}>
-              <span>Win: <span className={dk ? "text-white/60" : "text-black/80 font-bold"}>Ctrl+Shift+B</span></span>
-              <span className="opacity-30">|</span>
-              <span>Mac: <span className={dk ? "text-white/60" : "text-black/80 font-bold"}>⌘+Shift+B</span></span>
-            </div>
-          </div>
+          <a
+            href={bookmarkletCode}
+            draggable
+            onClick={(e) => {
+              e.preventDefault();
+            }}
+            className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.45)]"
+          >
+            <span className="relative z-10">Drag Me</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
+          </a>
         </div>
 
         <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
@@ -714,6 +705,20 @@ export default function Home() {
         <BackgroundOrbs />
         <CursorSpotlight />
         <Navbar />
+
+        {/* Floating Sticky Bookmarklet Bar Guide */}
+        <div className={`fixed bottom-6 right-6 z-45 p-4 rounded-[20px] border ${dk ? "bg-[#050505]/90 border-white/[0.08] text-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]" : "bg-white/95 border-black/[0.08] text-black shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)]"} backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-amber-500/40`}>
+          <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+          <div className="flex items-center gap-2">
+            <span className="text-amber-500 text-xs">🛰️</span>
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black text-amber-500">Show Bookmarks Bar</span>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] font-mono opacity-80 mt-0.5">
+            <div>Win: <span className="font-semibold text-sky-400">Ctrl + Shift + B</span></div>
+            <div className="opacity-35 font-sans">|</div>
+            <div>Mac: <span className="font-semibold text-sky-400">⌘ + Shift + B</span></div>
+          </div>
+        </div>
         <Hero />
         <Visualization />
         <Features />
