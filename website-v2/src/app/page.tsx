@@ -272,6 +272,9 @@ const ThreeDConduit = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.border = "none";
+    renderer.domElement.style.outline = "none";
+    renderer.domElement.style.boxShadow = "none";
     container.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
@@ -617,7 +620,8 @@ const ThreeDConduit = () => {
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full min-h-[360px] relative cursor-pointer"
+      className="w-full h-full min-h-[360px] relative cursor-pointer border-0 outline-none select-none"
+      style={{ border: "none", outline: "none", boxShadow: "none" }}
     />
   );
 };
