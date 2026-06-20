@@ -1303,18 +1303,23 @@ export default function Home() {
                 {[
                   {
                     quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Sarah Chen",
+                    author: "Alekhya",
                     role: "Creative Director"
                   },
                   {
                     quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Vikram Malhotra",
+                    author: "Chandrakala",
                     role: "DevOps & Crypt Architect"
                   },
                   {
                     quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Alex Rivera",
+                    author: "Veera Nithin",
                     role: "Lead Platform Engineer"
+                  },
+                  {
+                    quote: "The ability to sync text instantly over local Wi-Fi without cloud reliance makes input orchestration a breeze. Safe and secure.",
+                    author: "Sumanth",
+                    role: "Senior Full Stack Dev"
                   }
                 ].map((t, idx) => (
                   <div
@@ -1339,19 +1344,24 @@ export default function Home() {
                 {/* Duplicate loop of cards for seamless infinite animation */}
                 {[
                   {
-                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Alex Rivera",
-                    role: "Lead Platform Engineer"
-                  },
-                  {
                     quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Sarah Chen",
+                    author: "Alekhya",
                     role: "Creative Director"
                   },
                   {
                     quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Vikram Malhotra",
+                    author: "Chandrakala",
                     role: "DevOps & Crypt Architect"
+                  },
+                  {
+                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
+                    author: "Veera Nithin",
+                    role: "Lead Platform Engineer"
+                  },
+                  {
+                    quote: "The ability to sync text instantly over local Wi-Fi without cloud reliance makes input orchestration a breeze. Safe and secure.",
+                    author: "Sumanth",
+                    role: "Senior Full Stack Dev"
                   }
                 ].map((t, idx) => (
                   <div
