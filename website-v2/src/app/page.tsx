@@ -94,6 +94,8 @@ const Navbar = () => {
   const { dk, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
+  const bookmarkletCode = `javascript:(function(){if(window.__lanpad_active){showN("ALREADY ACTIVE","#f59e0b");return;}window.__lanpad_active=true;window.__gp_abort=false;const op=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type))return;return op.apply(this,arguments)};function ul(r){const ev=["copy","paste","cut","contextmenu","selectstart","beforeinput"];ev.forEach(t=>r.addEventListener(t,e=>e.stopImmediatePropagation(),true));const al=r.querySelectorAll?r.querySelectorAll("*"):[];al.forEach(el=>{if(el.shadowRoot)ul(el.shadowRoot)})};ul(document);const ob=new MutationObserver(()=>ul(document));ob.observe(document.documentElement,{childList:true,subtree:true});const s=document.createElement("style");s.innerHTML="*{-webkit-user-select:text!important;user-select:text!important;pointer-events:auto!important;}";document.head.appendChild(s);const n=document.createElement("div");n.id="__gp_container";n.innerHTML='<div id="__gp_note" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(5,5,5,0.85);color:#fff;padding:14px 24px;border-radius:16px;border:1px solid rgba(0,119,192,0.3);backdrop-filter:blur(12px);font-family:sans-serif;font-weight:900;font-size:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,119,192,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.4s cubic-bezier(0.18,0.89,0.32,1.28);opacity:0;transform:translate(-50%,-40px);"><span style="color:#0077c0;font-size:18px;">🛰️</span> LANPAD ACTIVATED</div>';document.body.appendChild(n);function showN(t,c="#0077c0"){const e=document.getElementById("__gp_note");if(!e)return;e.innerHTML=\`<span style="color:\${c};font-size:18px;">🛰️</span> \${t}\`;e.style.opacity="1";e.style.transform="translate(-50%,0)";setTimeout(()=>{e.style.opacity="0";e.style.transform="translate(-50%,-40px)"},3000)}setTimeout(()=>showN("LANPAD ACTIVATED"),10);let lastId=localStorage.getItem("__gp_last_id")||"";let seenIds=new Set();let seenTxt=new Map();let queue=[];const wait=(ms)=>new Promise(res=>setTimeout(res,ms));async function poller(){while(true){if(window.__gp_abort_poller)break;try{const res=await fetch("http://127.0.0.1:8000/api/v1/paste/poll?last_id="+lastId+"&t="+Date.now(),{headers:{"x-device-id":"b8b989d6-dca0-4d98-a0e4-2556c5fbc4a1"},cache:"no-store",mode:"cors",credentials:"omit"});const data=await res.json();if(data.status==="success"){lastId=data.id;localStorage.setItem("__gp_last_id",lastId);const txt=data.text||"";const mode=data.mode||"";if(mode==="system"||txt.indexOf("STOP_PASTE")!==-1){window.__gp_abort=true;queue=[];showN("PASTING STOPPED","#ef4444");continue;}const now=Date.now();const txtHash=btoa(txt.substring(0,100)).replace(/=/g,"");if(seenIds.has(data.id)||(seenTxt.has(txtHash)&&now-seenTxt.get(txtHash)<2000))continue;seenIds.add(data.id);seenTxt.set(txtHash,now);queue.push(data);}else{await wait(500)}}catch(e){console.log("GP Poll Error:",e);await wait(2000)}}}async function executor(){while(true){if(window.__gp_abort){queue=[];window.__gp_abort=false;await wait(100);continue;}if(queue.length>0){const data=queue.shift();if(!data)continue;let wpm=data.wpm||40;let txt=data.text;let isRealistic=data.realistic||false;const el=document.activeElement;if(el&&("value" in el||el.isContentEditable)){const inject=(c)=>{if("value" in el){const start=el.selectionStart;const end=el.selectionEnd;if(start!==undefined&&start!==null){el.value=el.value.substring(0,start)+c+el.value.substring(end);el.selectionStart=el.selectionEnd=start+c.length;}else{el.value+=c;}}else{const sel=window.getSelection();if(sel.rangeCount){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(document.createTextNode(c));range.collapse(false);sel.removeAllRanges();sel.addRange(range)}}el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}))};if(isRealistic){for(let i=0;i<txt.length;i++){if(window.__gp_abort)break;inject(txt[i]);let d=60000/(wpm*5);if(txt[i]===' ')d*=1.2;await wait(d*(0.8+Math.random()*0.4))}}else{if(!window.__gp_abort)inject(txt)}}}await wait(100)}}poller();executor();})()`;
+
   return (
     <nav className={`fixed top-0 w-full z-50 border-b border-white/[0.03] ${dk ? "bg-black" : "bg-white"}/40 backdrop-blur-xl`}>
       <div className="w-full px-6 md:px-12 h-14 md:h-16 flex items-center justify-between relative">
@@ -119,10 +121,50 @@ const Navbar = () => {
           <Link href="/contributors" className={`relative group ${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"} px-2 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-300`}>
             Contribute
           </Link>
-          <a href="#setup" className={`relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block`}>
-            <span className={`relative z-10 group-hover:${dk ? "text-white" : "text-black"} transition-colors duration-500`}>How to Use</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
-          </a>
+          
+          <div className="relative group/howtouse">
+            <a href="#setup" className={`relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block`}>
+              <span className={`relative z-10 transition-colors duration-500`}>How to Use</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500 translate-y-[100%] group-hover/howtouse:translate-y-0 transition-transform duration-500" />
+            </a>
+            
+            {/* Improvised Dropdown Card */}
+            <div className={`absolute right-0 mt-3 w-64 p-5 rounded-2xl border ${dk ? "bg-[#0a0a0a]/95 border-white/[0.08] text-white" : "bg-white/95 border-black/[0.08] text-black"} shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl opacity-0 translate-y-3 pointer-events-none group-hover/howtouse:opacity-100 group-hover/howtouse:translate-y-0 group-hover/howtouse:pointer-events-auto transition-all duration-300 z-50`}>
+              {/* Highlight bar */}
+              <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Show Bookmarks Bar</h4>
+                  <div className="space-y-1 text-[9px] font-mono opacity-80">
+                    <div className="flex justify-between">
+                      <span className="opacity-50">Win:</span>
+                      <span className="font-semibold text-sky-400">Ctrl + Shift + B</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="opacity-50">Mac:</span>
+                      <span className="font-semibold text-sky-400">⌘ + Shift + B</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-white/[0.06] pt-3">
+                  <p className="text-[9px] opacity-50 leading-relaxed mb-3">Drag this button to your Bookmarks bar:</p>
+                  <a
+                    href={bookmarkletCode}
+                    draggable
+                    onClick={(e) => {
+                      // Prevent navigation if clicked directly
+                      e.preventDefault();
+                    }}
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-[0.15em] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all duration-300 cursor-grab active:cursor-grabbing border border-white/10"
+                  >
+                    🛰️ Drag Me
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
@@ -143,6 +185,17 @@ const Navbar = () => {
               <a href="#features" onClick={() => setIsOpen(false)}>Features</a>
               <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
               <a href="#setup" onClick={() => setIsOpen(false)}>How to Use</a>
+              <div className="border-t border-white/5 pt-3 my-1">
+                <div className="text-[9px] text-amber-500 font-mono mb-2">Show Bookmarks (Ctrl+Shift+B / ⌘+Shift+B)</div>
+                <a
+                  href={bookmarkletCode}
+                  draggable
+                  onClick={(e) => e.preventDefault()}
+                  className="inline-block px-4 py-2 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider"
+                >
+                  🚀 Drag Me
+                </a>
+              </div>
               <Link href="/contributors" className="text-amber-500" onClick={() => setIsOpen(false)}>Contribute</Link>
             </div>
           </motion.div>
