@@ -814,6 +814,11 @@ export default function Home() {
 
   // Tactile suite bridge status and toggles states
   const [bridgeStatus, setBridgeStatus] = useState<"offline" | "connecting" | "online">("offline");
+  // Curtain animation states
+  const [isCurtainHovered, setIsCurtainHovered] = useState(false);
+  const [curtainsInView, setCurtainsInView] = useState(false);
+  const [hasHovered, setHasHovered] = useState(false);
+
   const [toggles, setToggles] = useState({
     flashMode: true,
     injectMode: false,
@@ -1147,7 +1152,14 @@ export default function Home() {
         </div>
 
         {/* Full-width Curtain Container (Slightly reduced padding and height) */}
-        <div className="relative overflow-hidden w-full py-16 group/curtain bg-[#468FEA] border-t-8 border-white/30 min-h-[420px] flex items-center justify-center">
+        <div 
+          onMouseEnter={() => {
+            setIsCurtainHovered(true);
+            setHasHovered(true);
+          }}
+          onMouseLeave={() => setIsCurtainHovered(false)}
+          className="relative overflow-hidden w-full py-16 group/curtain bg-[#468FEA] border-t-8 border-white/30 min-h-[420px] flex items-center justify-center"
+        >
           <div className="max-w-3xl mx-auto px-6 w-full z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
@@ -1234,10 +1246,13 @@ export default function Home() {
           {/* Left Curtain Panel */}
           <motion.div
             initial={{ x: "0%" }}
-            whileInView={{ x: "-90%" }}
-            whileHover={{ x: "-96%" }}
+            animate={curtainsInView ? { x: isCurtainHovered ? "-96%" : "-90%" } : { x: "0%" }}
+            onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
+            transition={isCurtainHovered || hasHovered
+              ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+              : { duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }
+            }
             className="absolute top-0 bottom-0 left-0 w-1/2 bg-[#EDEAE0] border-r-[12px] border-white/20 shadow-[20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-end z-20 pointer-events-auto cursor-pointer"
           >
             {/* Pull Handle */}
@@ -1249,10 +1264,13 @@ export default function Home() {
           {/* Right Curtain Panel */}
           <motion.div
             initial={{ x: "0%" }}
-            whileInView={{ x: "90%" }}
-            whileHover={{ x: "96%" }}
+            animate={curtainsInView ? { x: isCurtainHovered ? "96%" : "90%" } : { x: "0%" }}
+            onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
+            transition={isCurtainHovered || hasHovered
+              ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+              : { duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }
+            }
             className="absolute top-0 bottom-0 right-0 w-1/2 bg-[#EDEAE0] border-l-[12px] border-white/20 shadow-[-20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-start z-20 pointer-events-auto cursor-pointer"
           >
             {/* Pull Handle */}
