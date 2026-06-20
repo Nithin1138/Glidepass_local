@@ -289,7 +289,7 @@ const ThreeDConduit = () => {
 
     // --- 1. BUILD 3D LAPTOP ---
     const laptopGroup = new THREE.Group();
-    laptopGroup.position.set(2.2, -0.5, 0);
+    laptopGroup.position.set(1.7, -0.5, 0);
     laptopGroup.rotation.y = -0.3;
     group.add(laptopGroup);
 
@@ -337,7 +337,7 @@ const ThreeDConduit = () => {
 
     // --- 2. BUILD 3D PHONE ---
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(-2.2, -0.2, 1);
+    phoneGroup.position.set(-1.8, -0.2, 1);
     phoneGroup.rotation.y = 0.4;
     group.add(phoneGroup);
 
@@ -384,8 +384,8 @@ const ThreeDConduit = () => {
 
     // --- 3. DYNAMIC DATA BRIDGE / CONNECTIONS ---
     // Curved bridge spline from Phone center to Laptop screen center
-    const startPoint = new THREE.Vector3(-2.2, 0, 1);
-    const endPoint = new THREE.Vector3(2.2, 0.6, 0);
+    const startPoint = new THREE.Vector3(-1.8, 0, 1);
+    const endPoint = new THREE.Vector3(1.7, 0.6, 0);
     const controlPoint = new THREE.Vector3(0, 2.5, 0.5);
 
     const curve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
