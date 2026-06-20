@@ -89,7 +89,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
         <a href="#downloads" className="hover:text-[#F28500] transition-colors duration-300">Downloads</a>
       </div>
 
-      <div className="hidden lg:flex items-center gap-3 md:gap-6">
+      <div className="hidden lg:flex items-center gap-3 md:gap-6 relative">
         <Link href="/contributors" className="relative group text-gray-500 hover:text-gray-800 px-2 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 font-rubik">
           Contribute
         </Link>
@@ -100,10 +100,31 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
           onClick={(e) => {
             e.preventDefault();
           }}
-          className="relative group clay-orange text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_4px_12px_rgba(242,133,0,0.15)] cursor-grab active:cursor-grabbing font-rubik"
+          className="relative group clay-orange text-transparent px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_4px_12px_rgba(242,133,0,0.15)] cursor-grab active:cursor-grabbing font-rubik after:content-['Drag_Me'] after:text-white after:absolute after:inset-0 after:flex after:items-center after:justify-center"
         >
-          Drag Me
+          LANpad
         </a>
+
+        {/* Floating Tooltip Bookmarklet Bar Guide */}
+        <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 p-2 rounded-[14px] clay-card border border-white/20 backdrop-blur-xl flex flex-col gap-1 transition-all duration-300 hover:scale-105 group w-[135px] select-none shadow-[0_8px_24px_rgba(0,0,0,0.04)] z-50">
+          {/* Tooltip pointer pointing left to the button */}
+          <div className="absolute right-full top-1/2 -translate-y-1/2 translate-x-[4px] w-2 h-2 rotate-45 bg-[#EDEAE0] border-l border-b border-white/20 shadow-[-1px_1px_2px_rgba(0,0,0,0.01)]" />
+
+          <div className="flex items-center justify-center gap-1 text-[8px] uppercase tracking-[0.05em] font-black text-[#F28500] font-rubik">
+            <span>🛰️</span>
+            <span>Bookmarks Bar</span>
+          </div>
+          <div className="flex flex-col gap-0.5 font-medium text-gray-700 font-sans">
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500 text-[8px] font-bold uppercase w-6 shrink-0">Win:</span>
+              <kbd className="px-1 py-0.2 bg-white/40 border border-black/5 rounded text-[#1d4ed8] font-bold font-mono text-[8.5px] whitespace-nowrap">Ctrl+Shift+B</kbd>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500 text-[8px] font-bold uppercase w-6 shrink-0">Mac:</span>
+              <kbd className="px-1 py-0.2 bg-white/40 border border-black/5 rounded text-[#1d4ed8] font-bold font-mono text-[8.5px] whitespace-nowrap">⌘+Shift+B</kbd>
+            </div>
+          </div>
+        </div>
       </div>
 
       <button className="lg:hidden p-2 text-gray-700" onClick={() => setIsOpen(!isOpen)}>
@@ -129,9 +150,9 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
                   ref={mobileDragRef}
                   draggable
                   onClick={(e) => e.preventDefault()}
-                  className="inline-block px-4 py-2 clay-orange text-white rounded-lg text-[9px] font-black uppercase tracking-wider"
+                  className="inline-block px-4 py-2 clay-orange text-transparent rounded-lg text-[9px] font-black uppercase tracking-wider relative after:content-['🚀_Drag_Me'] after:text-white after:absolute after:inset-0 after:flex after:items-center after:justify-center"
                 >
-                  🚀 Drag Me
+                  LANpad
                 </a>
               </div>
               <Link href="/contributors" className="text-[#F28500] font-bold" onClick={() => setIsOpen(false)}>Contribute</Link>
@@ -628,8 +649,8 @@ const ThreeDConduit = () => {
 const Features = () => {
   const features = [
     {
-      title: "Sub-ms WebSocket Tunnel",
-      desc: "Zero-latency text synchronization. Instantly sync text from your mobile screen to your desktop clipboard over secure local WebSockets.",
+      title: "Instant Text Sync",
+      desc: "Send text from your phone to your computer instantly. No lag, works over your local network.",
       icon: <RefreshCw size={22} className="text-[#468FEA]" />,
       span: "md:col-span-2",
       visual: (
@@ -668,8 +689,8 @@ const Features = () => {
       )
     },
     {
-      title: "Humanized Auto-Type",
-      desc: "Keystroke level simulation. Bypasses paste limits on secure portals or exam windows by typing characters with variable speed patterns.",
+      title: "Realistic Auto-Type",
+      desc: "Type your text letter by letter automatically. Perfect for websites or windows that block copy-paste.",
       icon: <Keyboard size={22} className="text-[#F28500]" />,
       span: "md:col-span-1",
       visual: (
@@ -681,20 +702,20 @@ const Features = () => {
       )
     },
     {
-      title: "Zero-Cloud RAM Cache",
-      desc: "100% data privacy. All synced messages live purely inside temporary RAM over your Wi-Fi. No databases or logs are saved online.",
+      title: "100% Private Cache",
+      desc: "Your data is never saved online. All messages stay temporarily in memory and only travel over your Wi-Fi.",
       icon: <ShieldCheck size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
-      title: "Instant Web Controller",
-      desc: "No mobile setup. Scan the generated QR code to immediately launch the controller interface on any phone or tablet browser.",
+      title: "Phone Controller",
+      desc: "No app setup needed. Just scan the QR code to use your phone or tablet browser as a remote keyboard.",
       icon: <Smartphone size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     },
     {
-      title: "VIT-AP Exam Code Vault",
-      desc: "Instant academic sharing. Access verified exam solutions uploaded in real-time by trusted campus contributors. Zero exam-day stress, synced right to your screen.",
+      title: "Campus Code Vault",
+      desc: "Share and access verified exam codes in real time with trusted classmates. Get codes directly on your screen.",
       icon: <FileCode size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     }
@@ -705,8 +726,8 @@ const Features = () => {
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
-            <h2 className="text-3xl md:text-4xl font-rubik font-black tracking-tighter mb-1.5 text-gray-900">The Input Standard</h2>
-            <p className="text-gray-500 max-w-sm font-bold text-xs leading-relaxed">Engineered to eliminate friction between your ideas and your machine.</p>
+            <h2 className="text-3xl md:text-4xl font-rubik font-black tracking-tighter mb-1.5 text-gray-900">Core Features</h2>
+            <p className="text-gray-500 max-w-sm font-bold text-xs leading-relaxed">Simple tools to connect your phone and computer seamlessly.</p>
           </div>
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-3 ml-12" />
         </div>
@@ -871,8 +892,8 @@ export default function Home() {
           border-radius: 40px;
           box-shadow: 
             20px 20px 40px rgba(0,0,0,0.06), 
-            -20px -20px 40px rgba(255,255,255,1),
-            inset 6px 6px 12px rgba(255,255,255,0.9),
+            -20px -20px 40px rgba(255,255,255,0.4),
+            inset 6px 6px 12px rgba(255,255,255,0.4),
             inset -6px -6px 12px rgba(0,0,0,0.04);
         }
 
@@ -881,7 +902,7 @@ export default function Home() {
           border-radius: 40px;
           box-shadow: 
             20px 20px 40px rgba(0,0,0,0.08), 
-            inset 6px 6px 12px rgba(255,255,255,0.9),
+            inset 6px 6px 12px rgba(255,255,255,0.4),
             inset -6px -6px 12px rgba(0,0,0,0.04);
         }
 
@@ -889,8 +910,8 @@ export default function Home() {
           background: #EDEAE0;
           box-shadow: 
             inset 4px 4px 8px rgba(0,0,0,0.04),
-            inset -4px -4px 8px rgba(255,255,255,0.8);
-          border: 1px solid rgba(255,255,255,0.2);
+            inset -4px -4px 8px rgba(255,255,255,0.3);
+          border: 1px solid rgba(255,255,255,0.15);
         }
 
         .clay-blue {
@@ -1029,18 +1050,7 @@ export default function Home() {
 
       <Navbar globalMouseX={globalMouseX} globalMouseY={globalMouseY} />
 
-      {/* Floating Sticky Bookmarklet Bar Guide */}
-      <div className="fixed top-24 right-6 md:right-12 z-40 p-4 rounded-[20px] clay-card border border-white/20 backdrop-blur-xl flex flex-col gap-1.5 transition-all duration-300 hover:scale-105 group hover:border-[#F28500]/40">
-        <div className="flex items-center gap-2">
-          <span className="text-[#F28500] text-xs">🛰️</span>
-          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#F28500] font-rubik">Show Bookmarks Bar</span>
-        </div>
-        <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 font-bold mt-0.5">
-          <div>Win: <span className="font-bold text-[#468FEA]">Ctrl + Shift + B</span></div>
-          <div className="opacity-35 font-sans">|</div>
-          <div>Mac: <span className="font-bold text-[#468FEA]">⌘ + Shift + B</span></div>
-        </div>
-      </div>
+
 
       <Hero
         qrSyncStatus={qrSyncStatus}
@@ -1537,6 +1547,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
