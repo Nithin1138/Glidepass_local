@@ -236,7 +236,7 @@ const Hero = ({
 
           {/* Right Column: Interactive 3D Canvas replacing the QR Synchronizer */}
           <div className="lg:col-span-5 flex justify-center relative w-full h-[450px] lg:-translate-x-20">
-            <div className="relative w-full max-w-[560px] h-full flex items-center justify-center">
+            <div className="relative w-full max-w-[650px] h-full flex items-center justify-center">
               {/* Outer Clay Frame Card Container (Removed card grid background highlight) */}
               <div className="absolute inset-0 z-10">
                 <ThreeDConduit />
@@ -266,7 +266,7 @@ const ThreeDConduit = () => {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.set(0, 2.0, 8.5);
+    camera.position.set(0, 2.0, 9.2);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
