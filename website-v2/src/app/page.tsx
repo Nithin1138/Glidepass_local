@@ -646,109 +646,81 @@ const Visualization = () => {
   const laptopRotate = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
   return (
-    <section id="visualization" ref={sectionRef} className="min-h-screen flex items-center py-24 px-6 relative font-dmsans">
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="relative clay-card pt-12 pb-8 md:pt-40 md:pb-24 px-4 sm:px-12 md:px-24 overflow-hidden group border border-white/20">
+    <section id="visualization" ref={sectionRef} className="min-h-screen flex items-center py-24 px-6 relative overflow-hidden font-dmsans">
+      <div className="max-w-7xl mx-auto w-full relative z-10">
+        
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-16">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA] bg-[#468FEA]/10 px-3.5 py-1.5 rounded-full border border-[#468FEA]/20">
+              Technology Stack
+            </span>
+            <h2 className="text-4xl md:text-5xl font-rubik font-black tracking-tighter mt-4 mb-2 text-gray-900">LOCAL TUNNEL ARCHITECTURE</h2>
+            <p className="text-gray-500 max-w-sm font-bold text-sm leading-relaxed">Direct WebSocket pipeline optimized for zero-packet loss and absolute privacy.</p>
+          </div>
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-4 ml-12" />
+        </div>
 
-          {/* Ambient background glow objects */}
-          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-[#468FEA]/15 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-[#F28500]/10 rounded-full blur-[100px] pointer-events-none" />
+        {/* 3D Tech Architecture Board Grid */}
+        <div className="relative clay-card p-8 md:p-12 overflow-hidden border border-white/20">
+          {/* Ambient background glows */}
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-[#468FEA]/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-[#F28500]/5 rounded-full blur-[100px] pointer-events-none" />
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
-
-            {/* Phone Side (Neumorphic Clay style phone frame) */}
-            <div className="flex justify-center origin-center scale-[0.85] sm:scale-100" style={{ perspective: "1200px" }}>
-              <motion.div
-                style={{ transformStyle: "preserve-3d", rotateY: phoneRotate }}
-                className="w-[260px] h-[480px] clay-card p-6 flex flex-col justify-between border-4 border-white/45 shadow-[10px_10px_30px_rgba(0,0,0,0.04),inset_4px_4px_10px_rgba(255,255,255,0.8)] relative z-10"
-              >
-                {/* Dynamic Island */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-zinc-800 rounded-full flex items-center justify-center shadow-[inset_1px_1px_3px_rgba(0,0,0,0.4)]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-900/60 ml-auto mr-3" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+            
+            {/* Step 1 Node: Local Discovery */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
+              <div>
+                <div className="w-10 h-10 rounded-lg clay-blue text-white flex items-center justify-center mb-4">
+                  <Globe size={18} />
                 </div>
-
-                {/* Screen UI Inset - Colored Dark for premium contrast */}
-                <div className="w-full h-full rounded-[28px] p-6 flex flex-col justify-between relative overflow-hidden bg-[#0A0E17] border border-black/40 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6)]">
-                  {/* Status Bar */}
-                  <div className="flex justify-between items-center text-[7.5px] font-bold text-white/50 px-1 pt-1.5">
-                    <span>9:41</span>
-                    <span className="text-emerald-500 font-extrabold">🔋 100%</span>
-                  </div>
-
-                  <div className="mt-6 text-center">
-                    <p className="text-[10px] text-[#468FEA] font-black tracking-[0.2em] uppercase mb-1 font-rubik drop-shadow-[0_0_8px_rgba(70,143,234,0.4)]">LANpad</p>
-                    <p className="text-[8px] text-emerald-400 font-bold tracking-wider">SECURE TUNNEL LIVE</p>
-                  </div>
-
-                  <div className="relative group/input my-auto">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#468FEA]/30 to-[#F28500]/30 rounded-2xl blur-md opacity-70" />
-                    <div className="relative bg-[#111622] border border-white/10 p-5 rounded-2xl text-white text-sm font-semibold leading-snug shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3)]">
-                      {text}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-center gap-4 mb-1">
-                    {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#468FEA]/30" />)}
-                  </div>
-                </div>
-
-                {/* Home Indicator */}
-                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-gray-300 rounded-full" />
-              </motion.div>
+                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">1. Local Host Binding</h4>
+                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                  LANpad initiates a secure WebSocket handshake on your local subnet host (`127.0.0.1:8000`). It establishes device handshake rules using high-grade credentials.
+                </p>
+              </div>
+              <div className="font-mono text-[9px] text-[#468FEA] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
+                WS://127.0.0.1:8000/api/v1/paste/poll
+              </div>
             </div>
 
-            {/* Laptop Side (Neumorphic Clay style Laptop frame) */}
-            <div className="flex flex-col items-center justify-center w-full max-w-lg origin-center scale-[0.9] sm:scale-100 mt-[-40px] lg:mt-0" style={{ perspective: "1200px" }}>
-              <motion.div
-                style={{ transformStyle: "preserve-3d", rotateY: laptopRotate }}
-                className="w-full flex flex-col items-center"
-              >
-                {/* Screen (Lid) */}
-                <div className="w-full aspect-[1.6/1] clay-card border-4 border-white/40 p-4 flex flex-col overflow-hidden relative shadow-[15px_15px_35px_rgba(0,0,0,0.04)]">
-                  {/* Screen reflection highlight */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none z-10" />
-
-                  {/* macOS Editor Screen Inset - Colored Dark for premium contrast */}
-                  <div className="flex-1 rounded-[24px] overflow-hidden flex flex-col relative bg-[#0A0E17] border border-black/40 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6)] p-4">
-                    {/* Header */}
-                    <div className="flex items-center pb-3 border-b border-white/5 mb-4">
-                      <div className="flex gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-[0_0_6px_rgba(255,95,87,0.4)]" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e] shadow-[0_0_6px_rgba(254,188,46,0.4)]" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-[0_0_6px_rgba(40,200,64,0.4)]" />
-                      </div>
-                      <div className="flex-1 text-center">
-                        <span className="text-[9px] font-mono text-white/30 tracking-widest uppercase">lanpad — local_node</span>
-                      </div>
-                    </div>
-
-                    {/* Editor Code UI */}
-                    <div className="p-2 font-mono text-xs leading-relaxed relative text-white/80">
-                      <div className="flex gap-4">
-                        <div className="text-white/20 text-right space-y-1 hidden sm:block select-none">
-                          {Array.from({ length: 4 }).map((_, i) => <div key={i}>{i + 1}</div>)}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-white/40"><span className="text-[#468FEA]">const</span> tunnel = <span className="text-[#F28500]">new</span> <span className="text-yellow-300">Glide</span>(<span className="text-emerald-400">"secure"</span>);</p>
-                          <p className="text-white tracking-tight font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]">
-                            {text}
-                            <span className="inline-block w-[2px] h-3.5 bg-[#468FEA] ml-1 animate-pulse shadow-[0_0_8px_rgba(70,143,234,0.8)]" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Step 2 Node: Secure RAM Cache */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
+              <div>
+                <div className="w-10 h-10 rounded-lg clay-orange text-white flex items-center justify-center mb-4">
+                  <ShieldCheck size={18} />
                 </div>
-
-                {/* Base */}
-                <div className="w-[101.5%] h-3.5 bg-gray-300 border-t border-white/60 relative z-20 flex items-center justify-center shadow-lg rounded-b-[10px]">
-                  <div className="w-20 h-1 bg-gray-400/40 rounded-b-md" />
-                </div>
-              </motion.div>
+                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">2. Zero-Cloud RAM Cache</h4>
+                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                  Data packets live exclusively in volatile RAM cache. Synced clips are deleted instantly on socket close, leaving no database records or log footprints.
+                </p>
+              </div>
+              <div className="font-mono text-[9px] text-[#F28500] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
+                RAM CACHE: SECURE_MEM_ALLOC(100MB)
+              </div>
             </div>
+
+            {/* Step 3 Node: Keystroke Injector */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl clay-card-inset border border-white/10 min-h-[220px]">
+              <div>
+                <div className="w-10 h-10 rounded-lg clay-blue text-white flex items-center justify-center mb-4">
+                  <Keyboard size={18} />
+                </div>
+                <h4 className="text-lg font-black font-rubik text-gray-800 mb-2">3. Hardware Keystroke Emulation</h4>
+                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                  Converts synced text inputs into humanized virtual keypress streams via hardware-level Quartz / Win32 API overrides to bypass strict input portals.
+                </p>
+              </div>
+              <div className="font-mono text-[9px] text-[#468FEA] mt-4 p-2 bg-[#0A0E17]/10 rounded-md border border-white/20">
+                INPUT: EMULATE_KEY_DOWN_UP(15WPM)
+              </div>
+            </div>
+
           </div>
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-[#468FEA]/10 via-[#F28500]/5 to-transparent blur-[120px] -z-10" />
+          {/* Connected Data flow vector overlay */}
+          <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#468FEA]/20 to-transparent pointer-events-none hidden lg:block" />
         </div>
       </div>
     </section>
