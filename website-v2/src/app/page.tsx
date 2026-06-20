@@ -264,7 +264,7 @@ const ThreeDConduit = () => {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.set(0, 2.0, 9.2);
+    camera.position.set(0, 2.0, 7.8);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
