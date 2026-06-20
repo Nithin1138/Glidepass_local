@@ -1067,6 +1067,7 @@
                     tab.classList.add('active');
                     updateYearIndicator();
                     currentYear = tab.getAttribute('data-year');
+                    pinnedExamType = allRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
                     localStorage.setItem('vit_mobile_pinned_year', currentYear);
                     if (currentView === 'detail') {
                         showOverview();

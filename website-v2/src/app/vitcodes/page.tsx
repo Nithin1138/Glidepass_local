@@ -51,6 +51,7 @@ function VitCodesContent() {
   const [codes, setCodes] = useState<VitCode[]>([]);
   const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
   const [examRules, setExamRules] = useState<Record<string, string>>({});
+  const [examYears, setExamYears] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
