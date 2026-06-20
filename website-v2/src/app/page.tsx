@@ -117,52 +117,29 @@ const Navbar = () => {
           <a href="#setup" className="hover:text-orange-500 transition-colors duration-300">How to Use</a>
         </div>
 
-        <div className="hidden lg:flex shrink-0 relative z-10 items-center gap-3 md:gap-4">
+        <div className="hidden lg:flex shrink-0 relative z-10 items-center gap-3 md:gap-6">
           <Link href="/contributors" className={`relative group ${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"} px-2 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-300`}>
             Contribute
           </Link>
           
-          <div className="relative group/howtouse">
-            <a href="#setup" className={`relative group bg-white text-black px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block`}>
-              <span className={`relative z-10 transition-colors duration-500`}>How to Use</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500 translate-y-[100%] group-hover/howtouse:translate-y-0 transition-transform duration-500" />
+          <div className="flex flex-col items-end relative mt-2">
+            <a
+              href={bookmarkletCode}
+              draggable
+              onClick={(e) => {
+                e.preventDefault();
+              }}
+              className="relative group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest overflow-hidden transition-all duration-500 block border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-grab active:cursor-grabbing hover:shadow-[0_0_30px_rgba(245,158,11,0.45)]"
+            >
+              <span className="relative z-10">Drag Me</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500" />
             </a>
             
-            {/* Improvised Dropdown Card */}
-            <div className={`absolute right-0 mt-3 w-64 p-5 rounded-2xl border ${dk ? "bg-[#0a0a0a]/95 border-white/[0.08] text-white" : "bg-white/95 border-black/[0.08] text-black"} shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl opacity-0 translate-y-3 pointer-events-none group-hover/howtouse:opacity-100 group-hover/howtouse:translate-y-0 group-hover/howtouse:pointer-events-auto transition-all duration-300 z-50`}>
-              {/* Highlight bar */}
-              <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Show Bookmarks Bar</h4>
-                  <div className="space-y-1 text-[9px] font-mono opacity-80">
-                    <div className="flex justify-between">
-                      <span className="opacity-50">Win:</span>
-                      <span className="font-semibold text-sky-400">Ctrl + Shift + B</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-50">Mac:</span>
-                      <span className="font-semibold text-sky-400">⌘ + Shift + B</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="border-t border-white/[0.06] pt-3">
-                  <p className="text-[9px] opacity-50 leading-relaxed mb-3">Drag this button to your Bookmarks bar:</p>
-                  <a
-                    href={bookmarkletCode}
-                    draggable
-                    onClick={(e) => {
-                      // Prevent navigation if clicked directly
-                      e.preventDefault();
-                    }}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-[0.15em] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all duration-300 cursor-grab active:cursor-grabbing border border-white/10"
-                  >
-                    🛰️ Drag Me
-                  </a>
-                </div>
-              </div>
+            {/* Fixed instructions for bookmarklet bar */}
+            <div className={`mt-1.5 flex gap-2.5 text-[8px] font-mono whitespace-nowrap tracking-wider ${dk ? "text-white/40" : "text-black/55"}`}>
+              <span>Win: <span className={dk ? "text-white/60" : "text-black/80 font-bold"}>Ctrl+Shift+B</span></span>
+              <span className="opacity-30">|</span>
+              <span>Mac: <span className={dk ? "text-white/60" : "text-black/80 font-bold"}>⌘+Shift+B</span></span>
             </div>
           </div>
         </div>
