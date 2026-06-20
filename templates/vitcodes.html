@@ -862,19 +862,22 @@
                 const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
                 const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
                 const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
-                
-                const isPinned = type === pinnedExamType;
-                const badgeStyle = isPinned ? 'border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.15); color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.15);' : '';
-                const badgeIcon = isPinned ? `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin" style="transform: rotate(45deg);"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.25V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5.84c0 .44-.15.87-.43 1.25L4.24 14a2 2 0 0 0-.44 1.24Z"/></svg>` : getIcon('award-10');
-                const badgeText = isPinned ? 'Pinned' : 'Exam Type';
+                               const isPinned = type === pinnedExamType;
 
                 typeCard.innerHTML = `
-                    <div class="card-top">
-                        <div class="exam-badge" style="${badgeStyle}">
-                            ${badgeIcon}
-                            <span>${badgeText}</span>
+                    <div class="card-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div class="exam-badge">
+                            ${getIcon('award-10')}
+                            <span>Exam Type</span>
                         </div>
+                        ${isPinned ? `
+                        <div class="exam-badge" style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.15); color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.15);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin" style="transform: rotate(45deg);"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.25V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5.84c0 .44-.15.87-.43 1.25L4.24 14a2 2 0 0 0-.44 1.24Z"/></svg>
+                            <span>PINNED</span>
+                        </div>
+                        ` : ''}
                     </div>
+                `;
                     <h3 class="session-title">${type}</h3>
                     <p class="session-date">${getIcon('calendar-12')} ${daysInfo}</p>
                     <div class="card-footer">
