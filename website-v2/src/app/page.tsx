@@ -1250,7 +1250,7 @@ export default function Home() {
             onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
             transition={isCurtainHovered || hasHovered
-              ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+              ? { duration: 1.2, ease: [0.25, 1, 0.5, 1] }
               : { duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }
             }
             className="absolute top-0 bottom-0 left-0 w-1/2 bg-[#EDEAE0] border-r-[12px] border-white/20 shadow-[20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-end z-20 pointer-events-auto cursor-pointer"
@@ -1268,7 +1268,7 @@ export default function Home() {
             onViewportEnter={() => setCurtainsInView(true)}
             viewport={{ once: true, margin: "-120px" }}
             transition={isCurtainHovered || hasHovered
-              ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+              ? { duration: 1.2, ease: [0.25, 1, 0.5, 1] }
               : { duration: 1.6, ease: [0.77, 0, 0.175, 1], delay: 0.2 }
             }
             className="absolute top-0 bottom-0 right-0 w-1/2 bg-[#EDEAE0] border-l-[12px] border-white/20 shadow-[-20px_0_40px_rgba(0,0,0,0.12)] flex items-center justify-start z-20 pointer-events-auto cursor-pointer"
