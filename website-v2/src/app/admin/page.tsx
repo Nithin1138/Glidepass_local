@@ -5177,7 +5177,7 @@ export default function GlidePassAdmin() {
                       </div>
 
                       {/* Monetization KPI Cards */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         {[
                           { 
                             title: "Total Revenue", 
@@ -5192,7 +5192,6 @@ export default function GlidePassAdmin() {
                             label: "Payment gateway health", 
                             color: P.blue 
                           },
-                          { title: "Active Coupons", val: String(promoCodes.filter(c => c.status === "active").length), label: "Running promotions", color: P.blue },
                         ].map((c, i) => (
                           <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -5206,9 +5205,9 @@ export default function GlidePassAdmin() {
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                      <div className="space-y-8">
                         {/* Transaction History Logs */}
-                        <div className="lg:col-span-8 space-y-8">
+                        <div className="space-y-8">
                           <div className="rounded-[28px] border overflow-hidden"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                             <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
@@ -5289,96 +5288,6 @@ export default function GlidePassAdmin() {
                               </button>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Promo Codes Manager */}
-                        <div className="lg:col-span-4 space-y-6">
-                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
-                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Generate Promo Code</h3>
-                            <div className="space-y-4">
-                              <div>
-                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Coupon Code</label>
-                                <input type="text" value={newPromoCode} onChange={e => setNewPromoCode(e.target.value.toUpperCase())} placeholder="e.g. VITAP50"
-                                  className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} />
-                              </div>
-                              <div>
-                                <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Discount Percent</label>
-                                <select value={newPromoDiscount} onChange={e => setNewPromoDiscount(e.target.value)}
-                                  className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
-                                  <option value="20%">20%</option>
-                                  <option value="50%">50%</option>
-                                  <option value="100%">100% (Free Pass)</option>
-                                </select>
-                              </div>
-                              <button onClick={handleGeneratePromo} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
-                                Create Promo Code
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
-                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Coupons</h3>
-                            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                              {promoCodes.map(c => (
-                                <div key={c.code} className="flex justify-between items-center p-3 rounded-xl border transition-all hover:bg-neutral-500/5"
-                                  style={{ background: dk ? "rgba(5,5,5,0.3)" : "rgba(250,250,250,0.5)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                                  <div>
-                                    <p className="text-xs font-mono font-bold">{c.code}</p>
-                                    <p className="text-[9px] uppercase font-bold" style={{ color: P.blue }}>{c.discount} Off • {c.usage} Uses</p>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button onClick={() => handleTogglePromo(c.code, c.status)} className="text-[8px] font-bold uppercase px-2 py-0.5 rounded border hover:opacity-75 transition-all"
-                                      style={{
-                                        background: c.status === "active" ? `${P.blue}15` : `${P.error}15`,
-                                        color: c.status === "active" ? P.blue : P.error,
-                                        borderColor: c.status === "active" ? `${P.blue}25` : `${P.error}25`
-                                      }}>
-                                      {c.status}
-                                    </button>
-                                    <button onClick={() => handleDeletePromo(c.code)} className="p-1 rounded text-red-500 hover:bg-red-500/10 transition-colors" title="Delete Coupon">
-                                      <Trash2 size={11} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              {promoCodes.length === 0 && (
-                                <div className="text-center py-4 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
-                                  No coupons created.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Referral Engine Statistics */}
-                      <div className="rounded-[28px] border overflow-hidden p-6 relative mt-8"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                        <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: P.blue }}>Referral Engine Statistics</h3>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referral Code</th>
-                                <th className="p-3 text-[9px] uppercase font-bold" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Referrer Email</th>
-                                <th className="p-3 text-[9px] uppercase font-bold text-right" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Signups Referred</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {referralStats.map((r, i) => (
-                                <tr key={i} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                  <td className="p-3 font-mono font-bold" style={{ color: P.blue }}>{r.code}</td>
-                                  <td className="p-3">{r.email}</td>
-                                  <td className="p-3 text-right font-mono font-bold" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{r.count}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
                         </div>
                       </div>
 
