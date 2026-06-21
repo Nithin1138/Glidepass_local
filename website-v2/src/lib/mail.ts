@@ -30,7 +30,7 @@ export async function sendEmail({
 
   try {
     const info = await transporter.sendMail({
-      from: `"GlidePass" <${process.env.EMAIL_USER}>`, // sender address
+      from: process.env.EMAIL_USER, // Set directly to prevent mismatch spam triggers
       to, // list of receivers
       subject, // Subject line
       text, // plain text body
