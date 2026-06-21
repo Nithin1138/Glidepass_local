@@ -1587,6 +1587,9 @@ export async function deleteDbUser(id: string): Promise<void> {
 }
 
 export async function updateDbRbac(role: string, permissions: any): Promise<void> {
+  if (role === "ADMIN MASTER") {
+    throw new Error("ADMIN MASTER role permissions are frozen and cannot be modified.");
+  }
   if (pool) {
     await pool.query(
       "INSERT INTO vit_rbac (role, permissions) VALUES ($1, $2) ON CONFLICT (role) DO UPDATE SET permissions = EXCLUDED.permissions",

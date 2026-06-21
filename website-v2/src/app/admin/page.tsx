@@ -2156,6 +2156,10 @@ export default function GlidePassAdmin() {
   });
 
   const toggleRbac = async (role: string, mod: string) => {
+    if (role === "ADMIN MASTER") {
+      showToast("error", "ADMIN MASTER role permissions are frozen and cannot be modified.");
+      return;
+    }
     const updatedPermissions = { ...rbac[role], [mod]: !rbac[role][mod] };
     try {
       const res = await fetch("/api/admin/users-rbac", {
@@ -2756,25 +2760,13 @@ export default function GlidePassAdmin() {
                     </button>
                   )}
                 </div>
-
-                {/* Search */}
-                {sidebarOpen && (
-                  <div className="px-6 py-4">
-                    <button onClick={() => setCmdOpen(true)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs transition-colors`}
-                      style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                      <span className="flex items-center gap-2"><Search size={12} /> Search...</span>
-                      <kbd className="font-mono text-[9px] px-1.5 py-0.5 rounded-md" style={{ background: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)", borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.06)" }}>⌘K</kbd>
-                    </button>
-                  </div>
-                )}
-
                 {/* Nav */}
                 <nav className="px-4 py-6 space-y-6">
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -3287,7 +3279,10 @@ export default function GlidePassAdmin() {
                                   <td className="p-5 pl-6 font-bold">{role}</td>
                                   {Object.entries(perms).map(([mod, has]) => (
                                     <td key={mod} className="p-5 text-center">
-                                      <button onClick={() => toggleRbac(role, mod)} className="w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all"
+                                      <button 
+                                        disabled={role === "ADMIN MASTER"}
+                                        onClick={() => toggleRbac(role, mod)} 
+                                        className={`w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all ${role === "ADMIN MASTER" ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                         style={{ background: has ? `${P.blue}15` : `${P.error}10`, borderColor: has ? `${P.blue}30` : `${P.error}20`, color: has ? P.blue : P.error }}>
                                         {has ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
                                       </button>
