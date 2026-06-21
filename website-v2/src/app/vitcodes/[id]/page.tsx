@@ -62,7 +62,7 @@ function SessionCodesContent({ params }: PageProps) {
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSessionData = async () => {
+    const fetchSessionData = async (isSilent = false) => {
       try {
         const [res, rulesRes] = await Promise.all([
           fetch("/api/vitcodes", { cache: "no-store" }),
@@ -79,12 +79,24 @@ function SessionCodesContent({ params }: PageProps) {
           setExamRules(rulesData);
         }
       } catch (err: any) {
-        setError(err.message || "Failed to load session details.");
+        if (!isSilent) {
+          setError(err.message || "Failed to load session details.");
+        }
       } finally {
-        setLoading(false);
+        if (!isSilent) {
+          setLoading(false);
+        }
       }
     };
+    
     fetchSessionData();
+
+    // Poll every 3 seconds to get newly added codes in real-time
+    const interval = setInterval(() => {
+      fetchSessionData(true);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [sessionId]);
 
   const getRuleForType = (type: string | null | undefined): string | null => {

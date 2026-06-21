@@ -93,7 +93,7 @@ function VitCodesContent() {
   };
 
   useEffect(() => {
-    const fetchCodes = async () => {
+    const fetchCodes = async (isSilent = false) => {
       try {
         const [codesRes, rulesRes] = await Promise.all([
           fetch("/api/vitcodes", { cache: "no-store" }),
@@ -109,12 +109,24 @@ function VitCodesContent() {
           setExamRules(rulesData);
         }
       } catch (err: any) {
-        setError(err.message || "Failed to load VIT-AP codes.");
+        if (!isSilent) {
+          setError(err.message || "Failed to load VIT-AP codes.");
+        }
       } finally {
-        setLoading(false);
+        if (!isSilent) {
+          setLoading(false);
+        }
       }
     };
+    
     fetchCodes();
+
+    // Poll every 3 seconds for new sessions/codes
+    const interval = setInterval(() => {
+      fetchCodes(true);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const getRuleForType = (type: string | null | undefined): string | null => {
