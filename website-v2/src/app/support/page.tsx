@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Mail, MessageSquare, Send, ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
 
 export default function SupportPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +14,29 @@ export default function SupportPage() {
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // 3D Parallax Tracking
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  // Set up spring physics for smooth, natural movement
+  const rotateX = useSpring(useTransform(y, [-100, 100], [15, -15]), { damping: 25, stiffness: 200 });
+  const rotateY = useSpring(useTransform(x, [-100, 100], [-15, 15]), { damping: 25, stiffness: 200 });
+
+  function handleMouse(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = event.clientX - rect.left - width / 2;
+    const mouseY = event.clientY - rect.top - height / 2;
+    x.set(mouseX);
+    y.set(mouseY);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,18 +135,27 @@ export default function SupportPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-            className="w-40 h-40 sm:w-48 sm:h-48 md:w-80 md:h-80 shrink-0 relative flex items-center justify-center"
+            onMouseMove={handleMouse}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              rotateX,
+              rotateY,
+              transformStyle: "preserve-3d",
+              perspective: 1000,
+            }}
+            className="w-40 h-40 sm:w-48 sm:h-48 md:w-80 md:h-80 shrink-0 relative flex items-center justify-center cursor-pointer"
           >
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              whileHover={{ scale: 1.03, rotate: 1 }}
+              style={{ transformStyle: "preserve-3d" }}
               className="w-full h-full relative"
             >
               <img
                 src="/support_character.png"
                 alt="Support 3D Character"
-                className="w-full h-full object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.06)]"
+                style={{ transform: "translateZ(40px)" }}
+                className="w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.12)]"
               />
             </motion.div>
           </motion.div>
