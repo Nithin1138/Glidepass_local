@@ -265,16 +265,7 @@ export async function initDb() {
       `);
     }
 
-    const subsCountRes = await client.query("SELECT COUNT(*) FROM vit_subscriptions");
-    if (parseInt(subsCountRes.rows[0].count, 10) === 0) {
-      await client.query(`
-        INSERT INTO vit_subscriptions (id, email, plan, amount, status, date) VALUES
-        ('TXN_001', 'student1@vitap.ac.in', 'Monthly Pass', '₹99', 'success', '2026-06-14 10:15'),
-        ('TXN_002', 'student2@vitap.ac.in', 'Yearly Pass', '₹499', 'success', '2026-06-14 09:30'),
-        ('TXN_003', 'student3@vitstudent.ac.in', 'Monthly Pass', '₹99', 'failed', '2026-06-13 18:45'),
-        ('TXN_004', 'student4@vit.ac.in', 'Semester Pass', '₹249', 'success', '2026-06-13 14:20');
-      `);
-    }
+    // Subscriptions seeding omitted to work in real-time
 
     const couponsCountRes = await client.query("SELECT COUNT(*) FROM vit_coupons");
     if (parseInt(couponsCountRes.rows[0].count, 10) === 0) {
