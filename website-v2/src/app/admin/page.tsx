@@ -2824,6 +2824,20 @@ export default function GlidePassAdmin() {
                   <LogOut size={14} />
                   {sidebarOpen && <span>Sign Out</span>}
                 </button>
+                {sidebarOpen && (
+                  <div className="flex sm:hidden border p-0.5 rounded-xl justify-around mt-2" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)" }}>
+                    {([["light", Sun], ["dark", Moon], ["system", Monitor]] as const).map(([t, Icon]) => (
+                      <button key={t} onClick={() => setTheme(t)} title={t}
+                        className="p-1.5 rounded-lg transition-colors flex-1 flex justify-center"
+                        style={{
+                          background: theme === t ? (dk ? "rgba(199,238,255,0.1)" : "white") : "transparent",
+                          color: theme === t ? (dk ? P.white : P.black) : (dk ? `${P.sky}60` : `${P.black}40`),
+                        }}>
+                        <Icon size={12} />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </aside>
 
@@ -2848,10 +2862,10 @@ export default function GlidePassAdmin() {
                       <Menu size={16} />
                     </button>
                   )}
-                  <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-mono">
-                    <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>admin</span>
-                    <ChevronRight size={10} style={{ color: dk ? `${P.sky}40` : `${P.black}30` }} />
-                    <span className="font-bold uppercase" style={{ color: P.blue }}>{view}</span>
+                  <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-mono select-none">
+                    <span className="hidden sm:inline" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>admin</span>
+                    <ChevronRight size={10} className="hidden sm:inline" style={{ color: dk ? `${P.sky}40` : `${P.black}30` }} />
+                    <span className="font-bold uppercase text-[9px] min-[360px]:text-[10px] md:text-xs" style={{ color: P.blue }}>{view}</span>
                   </div>
                 </div>
 
@@ -2867,7 +2881,7 @@ export default function GlidePassAdmin() {
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: P.blue }} />
                   </button>
 
-                  <div className="flex border p-0.5 rounded-xl" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)" }}>
+                  <div className="hidden sm:flex border p-0.5 rounded-xl" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)" }}>
                     {([["light", Sun], ["dark", Moon], ["system", Monitor]] as const).map(([t, Icon]) => (
                       <button key={t} onClick={() => setTheme(t)} title={t}
                         className={`p-1.5 rounded-lg transition-colors`}
@@ -3524,7 +3538,7 @@ export default function GlidePassAdmin() {
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                           <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                           <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-6" style={{ color: P.blue }}>Device Retention Cohorts</h3>
-                          <div className="grid grid-cols-4 gap-4 text-center text-[10px] font-mono">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center text-[10px] font-mono">
                             {[
                               { label: "Day 1", val: analytics.retention.day1 },
                               { label: "Day 3", val: analytics.retention.day3 },
