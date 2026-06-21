@@ -1426,16 +1426,24 @@ export default function GlidePassAdmin() {
     const mau = getUniqueUsersInPastDays(30);
 
     // 3. Hourly Heatmap (Hour of Day 0-23 vs Day of Week 0-6: Sun=0, Mon=1...)
-    const heatmap: number[][] = Array(7).fill(0).map(() => Array(24).fill(0));
-    let maxHeatmapVal = 1;
+    const heatmapSets: Set<string>[][] = Array(7).fill(0).map(() => Array(24).fill(0).map(() => new Set<string>()));
     heartbeatsList.forEach((hb: any) => {
       const d = new Date(hb.timestamp);
       const day = d.getDay(); // 0-6
       const hour = d.getHours(); // 0-23
-      heatmap[day][hour]++;
-      if (heatmap[day][hour] > maxHeatmapVal) {
-        maxHeatmapVal = heatmap[day][hour];
+      if (hb.uuid) {
+        heatmapSets[day][hour].add(hb.uuid);
       }
+    });
+
+    const heatmap: number[][] = heatmapSets.map(row => row.map(s => s.size));
+    let maxHeatmapVal = 1;
+    heatmap.forEach(row => {
+      row.forEach(val => {
+        if (val > maxHeatmapVal) {
+          maxHeatmapVal = val;
+        }
+      });
     });
 
     // 4. App Version Adoption
@@ -3484,7 +3492,7 @@ export default function GlidePassAdmin() {
                                     {analytics.heatmap[dIdx].map((val, hIdx) => (
                                       <div
                                         key={hIdx}
-                                        title={`${dayName} at ${hIdx.toString().padStart(2, "0")}:00 — ${val} heartbeats`}
+                                        title={`${dayName} at ${hIdx.toString().padStart(2, "0")}:00 — ${val} active users`}
                                         className="group h-6 w-full rounded-sm transition-all hover:scale-125 cursor-pointer border flex items-center justify-center relative overflow-visible"
                                         style={{
                                           background: val > 0 
