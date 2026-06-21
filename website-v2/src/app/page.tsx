@@ -1215,7 +1215,7 @@ export default function Home() {
                   title: "Windows Backend",
                   icon: <Monitor size={24} />,
                   label: "Copy Install Cmd",
-                  installCommand: "powershell -c \"irm lanpad.app/win | iex\"",
+                  installCommand: "powershell -c \"irm https://lanpad.app/install-windows.ps1 | iex\"",
                   version: "v1.5.8.7",
                   supported: "Windows 10/11",
                   theme: "indigo",
