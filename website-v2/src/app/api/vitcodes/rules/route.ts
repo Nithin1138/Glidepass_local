@@ -6,12 +6,23 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const rules = await readRules();
-    return NextResponse.json({
-      rules: rules.rules,
-      sessionLimits: rules.sessionLimits,
-      examYears: rules.examYears,
-      collectionYears: rules.examYears
-    });
+    return new NextResponse(
+      JSON.stringify({
+        rules: rules.rules,
+        sessionLimits: rules.sessionLimits,
+        examYears: rules.examYears,
+        collectionYears: rules.examYears
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        }
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -65,8 +65,8 @@ function SessionCodesContent({ params }: PageProps) {
     const fetchSessionData = async (isSilent = false) => {
       try {
         const [res, rulesRes] = await Promise.all([
-          fetch("/api/vitcodes", { cache: "no-store" }),
-          fetch("/api/vitcodes/rules", { cache: "no-store" })
+          fetch(`/api/vitcodes?t=${Date.now()}`, { cache: "no-store" }),
+          fetch(`/api/vitcodes/rules?t=${Date.now()}`, { cache: "no-store" })
         ]);
         if (!res.ok) throw new Error("Failed to load session codes");
         const data: VitCode[] = await res.json();

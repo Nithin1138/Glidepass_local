@@ -8,7 +8,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeDeleted = searchParams.get("includeDeleted") === "true";
     const data = await readCodes(includeDeleted);
-    return NextResponse.json(data);
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
