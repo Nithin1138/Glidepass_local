@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       subject: `[LANpad Support] ${subject}`,
       html: emailBody,
       text: `New support query from ${name} (${email}):\n\nSubject: ${subject}\n\nMessage:\n${message}`,
+      replyTo: email,
     });
 
     if (!result.success) {

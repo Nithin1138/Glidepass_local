@@ -17,11 +17,13 @@ export async function sendEmail({
   subject,
   html,
   text,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html?: string;
   text?: string;
+  replyTo?: string;
 }) {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.error("Missing EMAIL_USER or EMAIL_PASS in environment variables.");
@@ -35,6 +37,7 @@ export async function sendEmail({
       subject, // Subject line
       text, // plain text body
       html, // html body
+      replyTo, // Reply-to header
     });
 
     console.log("Message sent: %s", info.messageId);
