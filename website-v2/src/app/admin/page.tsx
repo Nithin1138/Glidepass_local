@@ -3917,13 +3917,13 @@ export default function GlidePassAdmin() {
                         ) : !vitDetailView ? (
                           <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
                             {/* Header */}
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="space-y-4">
                               <div>
-                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">VIT-AP Code Sessions</h2>
-                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam sessions and code questions</p>
+                                <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase text-[#FAFAFA]">VIT-AP Code Sessions</h2>
+                                <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam sessions and code questions</p>
                               </div>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <select value={selectedYearFilter} onChange={e => setSelectedYearFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                              <div className="flex items-center gap-3 flex-wrap pt-3 border-t" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                                <select value={selectedYearFilter} onChange={e => setSelectedYearFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
                                   <option value="all">All Years</option>
                                   <option value="1st Year">1st Year</option>
                                   <option value="2nd Year">2nd Year</option>
@@ -3932,19 +3932,19 @@ export default function GlidePassAdmin() {
                                   <option value="5th Year">5th Year</option>
                                 </select>
 
-                                <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                                <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
                                   <option value="all">All Types</option>
                                   {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
 
-                                <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80"
+                                <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80 cursor-pointer"
                                   style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}>
                                   <Settings size={14} />
                                 </button>
-                                <button onClick={() => setShowBin(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs shadow-md active:scale-[0.98] transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5">
+                                <button onClick={() => setShowBin(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs shadow-md active:scale-[0.98] transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer">
                                   <Trash2 size={13} /> VIT Bin ({binnedSessionsCount + binnedQuestionsCount})
                                 </button>
-                                <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                                <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all cursor-pointer"
                                   style={{ background: P.blue }}>
                                   <Plus size={13} /> New Session
                                 </button>
