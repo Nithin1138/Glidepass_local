@@ -7,7 +7,7 @@ import {
   Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
   Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail,
-  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders, Gift, Tag
+  AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders, Gift, Tag, FileText
 } from "lucide-react";
 import Link from "next/link";
 
@@ -332,7 +332,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning" | "coupons" | "referrals"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning" | "coupons" | "referrals" | "legal_acceptances"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -377,6 +377,10 @@ export default function GlidePassAdmin() {
   const [newUserRole, setNewUserRole] = useState("Contributor");
   const [newUserVerified, setNewUserVerified] = useState(false);
   const [newUserPremium, setNewUserPremium] = useState(false);
+
+  // Legal Acceptance Search & Filters
+  const [legalSearch, setLegalSearch] = useState("");
+  const [legalPlatformFilter, setLegalPlatformFilter] = useState("all");
 
   // ─── Version & Telemetry ───
   const [appVersionData, setAppVersionData] = useState({
@@ -1796,6 +1800,13 @@ export default function GlidePassAdmin() {
         }, 3000);
         return () => clearInterval(interval);
       }
+      if (view === "legal_acceptances") {
+        fetchLegalAcceptances();
+        const interval = setInterval(() => {
+          fetchLegalAcceptances();
+        }, 15000);
+        return () => clearInterval(interval);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, selectedFile, isAuth]);
@@ -2192,6 +2203,29 @@ export default function GlidePassAdmin() {
   const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
 
+  interface LegalAcceptance {
+    id: number | string;
+    hwid: string;
+    event: string;
+    timestamp: string;
+    email: string | null;
+  }
+
+  const [legalAcceptances, setLegalAcceptances] = useState<LegalAcceptance[]>([]);
+  const [loadingLegal, setLoadingLegal] = useState(false);
+
+  const fetchLegalAcceptances = async () => {
+    setLoadingLegal(true);
+    try {
+      const res = await fetch("/api/admin/legal-acceptances");
+      if (res.ok) {
+        const data = await res.json();
+        setLegalAcceptances(data);
+      }
+    } catch (e) {}
+    setLoadingLegal(false);
+  };
+
   const fetchDiagnostics = async () => {
     setLoadingDiagnostics(true);
     try {
@@ -2364,7 +2398,7 @@ export default function GlidePassAdmin() {
     if (key === "rbac") return !!perms.rbac;
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
     if (key === "system") return !!perms.system;
-    if (key === "security") return !!perms.security;
+    if (key === "security" || key === "legal_acceptances") return !!perms.security;
     if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
     return true;
   };
@@ -2774,7 +2808,7 @@ export default function GlidePassAdmin() {
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
-                    { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }] },
+                    { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -6194,6 +6228,111 @@ export default function GlidePassAdmin() {
                               ))}
                             </div>
                           </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ LEGAL ACCEPTANCES ═══ */}
+                  {view === "legal_acceptances" && (
+                    <motion.div key="legal" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Legal Acceptances</h2>
+                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Audit trail of terms and policy agreements by client devices</p>
+                        </div>
+                      </div>
+
+                      {/* Filters and Search */}
+                      <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="relative w-full md:w-80">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                          <input type="text" value={legalSearch} onChange={e => setLegalSearch(e.target.value)} placeholder="Search Hardware ID or User Email..."
+                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Platform:</span>
+                          <select value={legalPlatformFilter} onChange={e => setLegalPlatformFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                            <option value="all">All</option>
+                            <option value="windows">Windows</option>
+                            <option value="macos">macOS</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Acceptances Table */}
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "900px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Timestamp", "User Email", "Platform", "App Version", "Full Hardware ID"].map(h => (
+                                  <th key={h} className="p-4 text-[10px] uppercase font-extrabold tracking-widest pl-6"
+                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {legalAcceptances
+                                .filter(item => {
+                                  const parts = item.event ? item.event.split(":") : [];
+                                  const platform = parts[2] ? parts[2].toLowerCase() : "";
+                                  
+                                  const matchesSearch = 
+                                    item.hwid.toLowerCase().includes(legalSearch.toLowerCase()) || 
+                                    (item.email && item.email.toLowerCase().includes(legalSearch.toLowerCase()));
+                                  const matchesPlatform = 
+                                    legalPlatformFilter === "all" || 
+                                    platform === legalPlatformFilter;
+                                    
+                                  return matchesSearch && matchesPlatform;
+                                })
+                                .map(item => {
+                                  const parts = item.event ? item.event.split(":") : [];
+                                  const version = parts[1] || "1.0.0";
+                                  const platform = parts[2] || "Unknown";
+                                  
+                                  return (
+                                    <tr key={item.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 pl-6 font-mono text-[10px] whitespace-nowrap" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                        {formatLocalTime(item.timestamp)}
+                                      </td>
+                                      <td className="p-4 pl-6 font-bold">
+                                        {item.email || (
+                                          <span className="text-[10px] italic font-normal" style={{ color: dk ? `${P.sky}40` : `${P.black}30` }}>
+                                            Anonymous / Trial
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-4 pl-6">
+                                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" 
+                                          style={{ 
+                                            background: platform.toLowerCase() === "windows" ? `${P.blue}15` : `${P.sky}15`, 
+                                            color: platform.toLowerCase() === "windows" ? P.blue : (dk ? P.sky : P.black), 
+                                            borderColor: platform.toLowerCase() === "windows" ? `${P.blue}25` : `${P.sky}25` 
+                                          }}>
+                                          {platform}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                                        v{version}
+                                      </td>
+                                      <td className="p-4 pl-6 font-mono text-[10px] tracking-tight whitespace-nowrap pr-6 select-all font-semibold" style={{ color: dk ? P.white : P.black }}>
+                                        {item.hwid}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              {legalAcceptances.length === 0 && (
+                                <tr>
+                                  <td colSpan={5} className="text-center py-8 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                    {loadingLegal ? "Loading acceptances..." : "No legal acceptance logs recorded."}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </motion.div>

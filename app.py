@@ -423,12 +423,20 @@ async def lifespan(app: FastAPI):
         
         while True:
             try:
-                legal_path = os.path.expanduser("~/.lanpad_legal.json")
-                if os.path.exists(legal_path):
-                    with open(legal_path, "r", encoding="utf-8") as f:
-                        legal_data = json.load(f)
-                    if legal_data.get("accepted", False):
-                        hwid = get_hardware_id()
+                is_accepted = False
+                for path_str in ["~/.lanpad/legal.json", "~/.lanpad_legal.json"]:
+                    try:
+                        p = os.path.expanduser(path_str)
+                        if os.path.exists(p):
+                            with open(p, "r", encoding="utf-8") as f:
+                                legal_data = json.load(f)
+                            if legal_data.get("accepted", False):
+                                is_accepted = True
+                                break
+                    except Exception:
+                        pass
+                if is_accepted:
+                    hwid = get_hardware_id()
                         platform_str = "macOS" if IS_MAC else "Windows"
                         version = VERSION
                         

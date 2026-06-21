@@ -1517,15 +1517,17 @@ class LANpadLauncher:
         threading.Thread(target=_task, daemon=True).start()
 
     def _is_legal_accepted(self):
-        try:
-            path = os.path.expanduser("~/.lanpad_legal.json")
-            if os.path.exists(path):
-                import json
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                return data.get("accepted", False)
-        except Exception:
-            pass
+        for path_str in ["~/.lanpad/legal.json", "~/.lanpad_legal.json"]:
+            try:
+                path = os.path.expanduser(path_str)
+                if os.path.exists(path):
+                    import json
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if data.get("accepted", False):
+                        return True
+            except Exception:
+                pass
         return False
 
     def show_view(self, name: str):
@@ -2047,13 +2049,15 @@ class LANpadLauncher:
                 )
                 return
 
-            try:
-                path = os.path.expanduser("~/.lanpad_legal.json")
-                import json
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump({"accepted": True, "timestamp": time.time()}, f)
-            except Exception as e:
-                print(f"Error saving legal acceptance: {e}")
+            for path_str in ["~/.lanpad/legal.json", "~/.lanpad_legal.json"]:
+                try:
+                    path = os.path.expanduser(path_str)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    import json
+                    with open(path, "w", encoding="utf-8") as f:
+                        json.dump({"accepted": True, "timestamp": time.time()}, f)
+                except Exception as e:
+                    print(f"Error saving legal acceptance to {path_str}: {e}")
             
             # Send consent telemetry asynchronously in the background
             import threading

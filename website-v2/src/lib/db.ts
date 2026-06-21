@@ -2080,4 +2080,49 @@ export async function hasSubscription(id: string): Promise<boolean> {
   }
 }
 
+export async function getLegalAcceptances(): Promise<any[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query(`
+      SELECT 
+        e.id, 
+        e.uuid as hwid, 
+        e.event, 
+        e.timestamp,
+        l.email
+      FROM vit_telemetry_events e
+      LEFT JOIN vit_licenses l ON e.uuid = l.hwid
+      WHERE e.event LIKE 'terms_acceptance:%'
+      ORDER BY e.timestamp DESC
+    `);
+    return res.rows;
+  }
+  
+  const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "telemetry.json");
+  let events: any[] = [];
+  if (fs.existsSync(filePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      events = data.events || [];
+    } catch (e) {}
+  }
+  
+  const licenses = await getAllLicenses();
+  
+  return events
+    .filter((e: any) => e.event && e.event.startsWith("terms_acceptance:"))
+    .map((e: any, idx: number) => {
+      const matchedLic = licenses.find((l: any) => l.hwid === e.uuid);
+      return {
+        id: idx + 1,
+        hwid: e.uuid,
+        event: e.event,
+        timestamp: e.timestamp,
+        email: matchedLic ? matchedLic.email : null
+      };
+    })
+    .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+
 
