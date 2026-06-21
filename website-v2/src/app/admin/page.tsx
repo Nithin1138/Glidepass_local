@@ -3485,7 +3485,7 @@ export default function GlidePassAdmin() {
                                       <div
                                         key={hIdx}
                                         title={`${dayName} at ${hIdx.toString().padStart(2, "0")}:00 — ${val} heartbeats`}
-                                        className="h-6 w-full rounded-sm transition-all hover:scale-115 cursor-pointer border"
+                                        className="group h-6 w-full rounded-sm transition-all hover:scale-125 cursor-pointer border flex items-center justify-center relative overflow-visible"
                                         style={{
                                           background: val > 0 
                                             ? `rgba(0, 119, 192, ${0.15 + (val / analytics.maxHeatmapVal) * 0.85})` 
@@ -3494,7 +3494,13 @@ export default function GlidePassAdmin() {
                                             ? "rgba(0, 119, 192, 0.4)" 
                                             : dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"
                                         }}
-                                      />
+                                      >
+                                        {val > 0 && (
+                                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-black select-none pointer-events-none text-white font-mono drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-10">
+                                            {val}
+                                          </span>
+                                        )}
+                                      </div>
                                     ))}
                                   </div>
                                 </div>
