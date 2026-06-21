@@ -585,8 +585,8 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" style="color: var(--accent-color);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5.5z"/><path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/></svg>
                     <span>Over-The-Air Code Repository</span>
                 </div>
-                <h1>VIT-AP Today's Codes</h1>
-                <p>Select your exam session, copy questions directly, or dispatch code straight to your laptop's clipboard.</p>
+                <h1>Today's Snippets</h1>
+                <p>Select your team's collection, copy snippets directly, or dispatch code straight to your workstation's clipboard.</p>
             </div>
 
             <div class="year-selector" id="year-selector">
@@ -609,7 +609,7 @@
                 <div class="session-meta-row">
                     <span class="accent" id="detail-exam-type">--</span>
                 </div>
-                <h1 class="session-heading" id="detail-heading">Session Questions</h1>
+                <h1 class="session-heading" id="detail-heading">Session Snippets</h1>
             </div>
 
             <div class="questions-list" id="questions-list">
@@ -715,7 +715,7 @@
 
             // Fill meta info
             document.getElementById('detail-exam-type').textContent = session.examType;
-            document.getElementById('detail-heading').textContent = `${session.title || session.examType} Questions`;
+            document.getElementById('detail-heading').textContent = `${session.title || session.examType} Snippets`;
 
             const qListDiv = document.getElementById('questions-list');
             qListDiv.innerHTML = '';
@@ -727,7 +727,7 @@
                     <div class="q-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                         <div class="q-title-wrap" style="display: flex; align-items: center; gap: 8px; min-w-0; margin-right: 12px;">
                             ${getIcon('terminal-14')}
-                            <span class="q-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Question ${idx + 1}: ${q.title}</span>
+                            <span class="q-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Snippet ${idx + 1}: ${q.title}</span>
                         </div>
                         <div class="q-header-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                             <button class="copy-btn-header" data-code="${encodeURIComponent(q.code)}" data-qid="${q.id}" style="background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); padding: 4px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
@@ -846,7 +846,7 @@
                 return;
             }
 
-            const pinnedForYear = examRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
+            const pinnedForYear = examRules["PINNED_COLLECTION_" + currentYear] || examRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
             if (pinnedForYear) {
                 entries.sort((a, b) => {
                     if (a[0] === pinnedForYear) return -1;
@@ -863,13 +863,13 @@
                 const earliest = dates.reduce((a,b) => a < b ? a : b, dates[0]);
                 const latest = dates.reduce((a,b) => a > b ? a : b, dates[0]);
                 const daysInfo = earliest && latest ? `${earliest} → ${latest}` : '';
-                               const isPinned = type === (examRules['ACTIVE_PINNED_EXAM_' + currentYear] || '');
+                               const isPinned = type === (examRules['PINNED_COLLECTION_' + currentYear] || examRules['ACTIVE_PINNED_EXAM_' + currentYear] || '');
 
                 typeCard.innerHTML = `
                     <div class="card-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <div class="exam-badge">
                             ${getIcon('award-10')}
-                            <span>Exam Type</span>
+                            <span>Collection</span>
                         </div>
                         ${isPinned ? `
                         <div class="exam-badge" style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.15); color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.15);">
@@ -904,7 +904,7 @@
             grid.innerHTML = '';
             const filteredSessions = sessions.filter(s => (s.year || '1st Year') === currentYear);
             if (filteredSessions.length === 0) {
-                grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No sessions for this exam type.</span></div>`;
+                grid.innerHTML = `<div class="empty-message"><span style="font-size: 0.85rem;">No workspaces for this collection.</span></div>`;
                 return;
             }
             filteredSessions.forEach(session => {
@@ -924,7 +924,7 @@
                     <div class="card-footer">
                         <span>
                             ${getIcon('code-2-12')}
-                            ${session.questions.length} Question${session.questions.length > 1 ? 's' : ''} Available
+                            ${session.questions.length} Snippet${session.questions.length > 1 ? 's' : ''} Available
                         </span>
                         ${getIcon('chevron-right-14')}
                     </div>
@@ -986,7 +986,7 @@
                     if (!isSilent) {
                         grid.innerHTML = `
                             <div class="error-message">
-                                <span style="font-size: 0.85rem;">${err.message || 'Failed to load VIT-AP codes.'}</span>
+                                <span style="font-size: 0.85rem;">${err.message || 'Failed to load code snippets.'}</span>
                             </div>
                         `;
                     }
@@ -1067,7 +1067,7 @@
                     tab.classList.add('active');
                     updateYearIndicator();
                     currentYear = tab.getAttribute('data-year');
-                    pinnedExamType = allRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
+                    pinnedExamType = allRules["PINNED_COLLECTION_" + currentYear] || allRules["ACTIVE_PINNED_EXAM_" + currentYear] || "";
                     localStorage.setItem('vit_mobile_pinned_year', currentYear);
                     if (currentView === 'detail') {
                         showOverview();

@@ -396,7 +396,7 @@ export default function Landing2() {
       setBridgeStatus("online");
       setTerminalLines(prev => [
         ...prev,
-        "[Bridge] Status: SECURE_TUNNEL_ESTABLISHED (1.2ms latency)"
+        "[Bridge] Status: SECURE_TUNNEL_ESTABLISHED (sub-50ms latency)"
       ]);
     }, 1500);
   };
@@ -586,7 +586,7 @@ export default function Landing2() {
           setTerminalLines(prev => [
             ...prev,
             activeVariant === "developer" 
-              ? `[LANpad] Sent text in 1.2ms` 
+              ? `[LANpad] Sent text in sub-50ms` 
               : activeVariant === "creative"
               ? `[Shortcuts] Done: ${text}`
               : `[Secure] Sent safely (memory cleared)`
@@ -1165,7 +1165,7 @@ export default function Landing2() {
               style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(-100px)" }}
             >
               <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Local Engine</span>
-              <span className="text-white text-4xl font-black font-rubik tracking-tighter"><StatCountUp to={1.2} />ms LATENCY</span>
+              <span className="text-white text-4xl font-black font-rubik tracking-tighter">SUB-50ms SYNC LATENCY</span>
             </div>
           </div>
         </div>
@@ -1291,7 +1291,7 @@ export default function Landing2() {
             <div className="border-t border-dashed border-gray-300 pt-6 flex justify-between items-end">
               <div>
                 <p className="text-gray-400 text-[10px] font-black uppercase mb-1">Response Time</p>
-                <h3 className="font-rubik text-4xl font-black text-emerald-500"><StatCountUp to={1.2} />ms</h3>
+                <h3 className="font-rubik text-3xl font-black text-emerald-500">SUB-50ms</h3>
               </div>
               <span className="text-[#468FEA] font-extrabold text-xs">SAFE NETWORK</span>
             </div>
@@ -1362,7 +1362,7 @@ export default function Landing2() {
               SYNC & DISPATCH.
             </h2>
             <p className="text-gray-500 font-medium text-base max-w-lg mx-auto mt-2">
-              Connect your phone instantly. Pick codes from the bank and send them to your laptop in 1.2ms.
+              Connect your phone instantly. Pick codes from the vault and send them to your laptop with sub-50ms local sync latency.
             </p>
           </div>
 
@@ -1672,7 +1672,7 @@ export default function Landing2() {
         <div className="text-center mb-20">
           <h2 className="font-rubik text-5xl lg:text-7xl font-black mb-4 tracking-tighter">READY TO SYNC?</h2>
           <p className="text-gray-500 font-medium text-lg max-w-xl mx-auto">
-            Download the native local backend client for your host operating system. Free, open-source, and offline.
+            Download the native local backend client for your host operating system. Free, secure, and offline.
           </p>
         </div>
 
@@ -1875,12 +1875,12 @@ export default function Landing2() {
             <div className="space-y-4">
               {[
                 {
-                  q: "How is the connection kept at 1.2ms latency?",
+                  q: "How is the connection kept at sub-50ms local sync latency?",
                   a: "LANpad communicates strictly via local WebSockets using your home router. By skipping the external internet entirely, packets travel instantly between your phone and host PC without round-tripping to cloud servers."
                 },
                 {
                   q: "Is my keystroke history logged or sent to any server?",
-                  a: "Never. LANpad runs 100% locally and is completely open-source. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
+                  a: "Never. LANpad runs 100% locally. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
                 },
                 {
                   q: "Do I need standard user permissions or administrator privileges?",
@@ -2033,7 +2033,7 @@ export default function Landing2() {
           {/* Legal Disclaimer Box */}
           <div className="mt-12 p-6 clay-card shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] border border-white/20 rounded-2xl text-[11px] leading-relaxed text-gray-500 font-bold">
             <p className="font-black uppercase tracking-wider mb-2 text-orange-500 font-rubik">Legal Disclaimer</p>
-            LANpad is provided as an open-source productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
+            LANpad is provided as a productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
           </div>
 
           {/* Bottom Row */}

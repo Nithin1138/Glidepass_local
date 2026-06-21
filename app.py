@@ -639,7 +639,7 @@ async def get_api_vitcodes_rules(request: Request):
             if res is not None:
                 return res
 
-    return {"rules": {}, "sessionLimits": {}, "examYears": {}}
+    return {"rules": {}, "sessionLimits": {}, "collectionYears": {}}
 
 
 def _cached_file_response(filename: str):

@@ -507,7 +507,7 @@ class LANpadLauncher:
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
 
-        self._pill_button(tb, "Blocked in site?", self.WHITE, self.BG2,
+        self._pill_button(tb, "Can't paste here?", self.WHITE, self.BG2,
                           cmd=lambda: self.show_view("bypass"))
 
         # ── Status row ───────────────────────────────────────────────────────
@@ -1217,9 +1217,9 @@ class LANpadLauncher:
         # Title block
         ti = tk.Frame(hdr, bg=self.BG)
         ti.pack(side="left", padx=12)
-        tk.Label(ti, text="LANpad Master",
+        tk.Label(ti, text="Restricted Field Helper",
                  font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE, bd=0, highlightthickness=0).pack(anchor="w")
-        tk.Label(ti, text="Neutralize restrictions in seconds",
+        tk.Label(ti, text="Type into fields that block pasting",
                  font=(self.FU, 10), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).pack(anchor="w", pady=(2, 0))
 
 
@@ -1318,14 +1318,14 @@ class LANpadLauncher:
             "display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,0,0,0.5);"
             "transition:all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);opacity:0;"
             "transform:translate(-50%25, -40px);\"><span style=\"color:%23d97757;"
-            "font-size:18px;\">🛰️</span> BYPASS ACTIVATED</div>';"
+            "font-size:18px;\">🛰️</span> Helper Active</div>';"
             "document.body.appendChild(n);"
             "function showN(t,c=\"%23d97757\")%7Bconst e=document.getElementById(\"__gp_note\");"
             "if(!e)return;e.innerHTML=`<span style=\"color:${c};font-size:18px;\">🛰️</span> ${t}`;"
             "e.style.opacity=\"1\";e.style.transform=\"translate(-50%25, 0)\";"
             "setTimeout(()=>%7Be.style.opacity=\"0\";"
             "e.style.transform=\"translate(-50%25, -40px)\"%7D,3000)%7D"
-            "setTimeout(()=>showN(\"BYPASS ACTIVATED\"),10);"
+            "setTimeout(()=>showN(\"Helper Active\"),10);"
             "let lastId=localStorage.getItem(\"__gp_last_id\")||\"\";"
             "let seenIds=new Set();let seenTxt=new Map();let queue=%5B%5D;"
             "const wait=(ms)=>new Promise(res=>setTimeout(res,ms));"

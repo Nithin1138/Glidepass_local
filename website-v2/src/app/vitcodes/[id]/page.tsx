@@ -176,7 +176,7 @@ function SessionCodesContent({ params }: PageProps) {
                 LANPAD
               </span>
               <span className={`text-[9px] uppercase tracking-[0.2em] font-bold px-2 py-0.5 rounded-full border ${dk ? 'border-[#C7EEFF]/30 bg-[#C7EEFF]/10 text-[#C7EEFF]' : 'border-[#0077C0]/30 bg-[#0077C0]/10 text-[#0077C0]'}`}>
-                Session Questions
+                Session Snippets
               </span>
             </div>
           </div>
@@ -200,7 +200,7 @@ function SessionCodesContent({ params }: PageProps) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-            <span className={`text-xs ${txt3}`}>Loading session questions...</span>
+            <span className={`text-xs ${txt3}`}>Loading session snippets...</span>
           </div>
         ) : error || !session ? (
           <div className={`text-center py-20 border ${borderLight} ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'} rounded-3xl max-w-lg mx-auto shadow-xl`}>
@@ -235,7 +235,7 @@ function SessionCodesContent({ params }: PageProps) {
                   })()}
                 </div>
                 <h1 className={`text-3xl font-outfit font-black tracking-tight ${txt1}`}>
-                  {session.examType} Questions
+                  {session.examType} Snippets
                 </h1>
               </div>
             </div>
@@ -254,7 +254,7 @@ function SessionCodesContent({ params }: PageProps) {
                   <div className={`px-6 py-4 border-b ${borderLight} flex items-center justify-between ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'}`}>
                     <div className="flex items-center gap-2 min-w-0 mr-3">
                       <Terminal size={14} className="text-blue-400 shrink-0" />
-                      <span className={`text-xs font-bold ${dk ? "text-white/80" : "text-black/80"} font-mono truncate`}>Question {idx + 1}: {q.title}</span>
+                      <span className={`text-xs font-bold ${dk ? "text-white/80" : "text-black/80"} font-mono truncate`}>Snippet {idx + 1}: {q.title}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button

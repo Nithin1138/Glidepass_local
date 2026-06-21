@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const rules = await readRules();
-    return NextResponse.json(rules);
+    return NextResponse.json({
+      rules: rules.rules,
+      sessionLimits: rules.sessionLimits,
+      examYears: rules.examYears,
+      collectionYears: rules.examYears
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,6 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     await writeRule(examType, rule, sessionLimit, year);
+    if (examType.startsWith("PINNED_COLLECTION_")) {
+      const fallback = examType.replace("PINNED_COLLECTION_", "ACTIVE_PINNED_EXAM_");
+      await writeRule(fallback, rule, sessionLimit, year);
+    } else if (examType.startsWith("ACTIVE_PINNED_EXAM_")) {
+      const fallback = examType.replace("ACTIVE_PINNED_EXAM_", "PINNED_COLLECTION_");
+      await writeRule(fallback, rule, sessionLimit, year);
+    }
+
     await logAudit(`Exam Settings Modified for ${examType}: limit=${sessionLimit}, year=${year}`, "Nithin", "127.0.0.1", "success");
     return NextResponse.json({ success: true, message: "Settings saved successfully" });
   } catch (error: any) {

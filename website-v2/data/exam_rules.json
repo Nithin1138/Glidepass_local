@@ -5,7 +5,7 @@
   "sessionLimits": {
     "NERD": 1
   },
-  "examYears": {
+  "collectionYears": {
     "NERD": "4th Year",
     "Daily Assessment": "4th Year",
     "Coding Challenge": "4th Year"

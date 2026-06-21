@@ -1,0 +1,26 @@
+[
+  {
+    "id": "103",
+    "event": "Exam Settings Modified for Coding Challenge: limit=undefined, year=4th Year",
+    "user": "Nithin",
+    "ip": "127.0.0.1",
+    "status": "success",
+    "timestamp": "2026-06-20T08:41:43.692Z"
+  },
+  {
+    "id": "102",
+    "event": "Exam Settings Modified for Daily Assessment: limit=undefined, year=4th Year",
+    "user": "Nithin",
+    "ip": "127.0.0.1",
+    "status": "success",
+    "timestamp": "2026-06-20T08:41:21.828Z"
+  },
+  {
+    "id": "101",
+    "event": "Exam Settings Modified for NERD: limit=undefined, year=4th Year",
+    "user": "Nithin",
+    "ip": "127.0.0.1",
+    "status": "success",
+    "timestamp": "2026-06-20T08:41:20.148Z"
+  }
+]

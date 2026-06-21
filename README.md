@@ -2,15 +2,15 @@
 
 LANpad (also known as GlidePass) is a powerful, zero-configuration cross-device productivity tool that bridges the gap between your mobile device and your computer. It allows you to use your phone as a remote clipboard, a code repository viewer, and a "virtual keyboard" for your computer. 
 
-Built specifically to help students and developers manage code snippets and work efficiently under strict local network conditions.
+Built specifically to help developers and system administrators manage code snippets and work efficiently under strict local network conditions.
 
 ---
 
 ## ✨ Key Features
 
-*   ⌨️ **Smart Type Mode (Paste-Block Bypass)**: Simulate real-time physical keyboard typing at varying speeds to safely inject text/code into platforms that disable standard clipboards or paste shortcuts (e.g., HackerRank, safe-lock browsers).
-*   📲 **Zero-Config Mobile Portal**: Scan a dynamically generated local QR code to sync your phone and laptop instantly over campus Wi-Fi (even through AP isolation firewalls).
-*   📚 **Integrated VIT Code Bank**: Built-in repository viewer on the mobile dashboard allowing users to search, view, and paste contributed codes for active sessions instantly.
+*   ⌨️ **Smart Type Mode (Restricted Field Helper)**: Simulate real-time physical keyboard typing at varying speeds to safely inject text/code into platforms that disable standard clipboards or paste shortcuts (e.g., restricted VDI environments, secure command-line interfaces, terminal lockouts).
+*   📲 **Zero-Config Mobile Portal**: Scan a dynamically generated local QR code to sync your phone and laptop instantly over the local Wi-Fi (even through AP isolation firewalls).
+*   📚 **Integrated Snippet Vault**: Built-in repository viewer on the mobile dashboard allowing users to search, view, and paste contributed codes for active sessions instantly.
 *   📊 **Real-time Synchronization**: Transfer clipboard contents bidirectionally between your phone and laptop in under 50ms.
 *   🔒 **Secure & Local-First**: Operates primarily over your local network. Connections are direct, fast, and keep your data private.
 
@@ -34,7 +34,7 @@ The system consists of three main components:
 ### 2. Connect Your Mobile Device
 *   On startup, the desktop app will show a dashboard containing a **QR Code**.
 *   Scan the QR code with your phone (both devices must be on the same local network/Wi-Fi).
-*   Select your session/exam, search for code snippets, or use the input box to send custom text.
+*   Select your workspace/collection, search for code snippets, or use the input box to send custom text.
 
 ---
 
@@ -95,7 +95,7 @@ This generates a portable Disk Image (`LANpad_Installer.dmg`) in your root direc
 
 ## 🤝 Contributing & Admin Controls
 
-Administrators can manage active exam sessions, telemetry, and contributor details at the `/admin` portal of the web application. 
+Administrators can manage active workspaces, telemetry, and contributor details at the `/admin` portal of the web application. 
 
 Top contributors are rewarded with premium features and free passes for helping maintain the repository code libraries. If you want to contribute, log in to the web interface and click **Contributors**.
 

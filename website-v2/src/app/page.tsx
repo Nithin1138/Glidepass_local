@@ -230,31 +230,7 @@ const Hero = ({
           {/* Left Column: Text & CTA */}
           <div className="lg:col-span-7 text-left space-y-8">
 
-            {/* Social Proof Badge at the top */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="inline-flex items-center gap-3"
-            >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-7 h-7 rounded-full border-2 border-[#EDEAE0] bg-[#468FEA] flex items-center justify-center text-[8px] font-black text-white font-rubik shadow-sm">
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Zap key={i} size={10} className="text-[#F28500] fill-[#F28500]" />
-                  ))}
-                </div>
-                <span className="text-[11px] font-bold tracking-tight text-gray-600">
-                  Joined by <span className="text-gray-900"><CountUp to={2481} />+</span> professionals
-                </span>
-              </div>
-            </motion.div>
+
 
             <h1
               className="text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
@@ -755,8 +731,8 @@ const Features = () => {
       span: "md:col-span-1"
     },
     {
-      title: "Campus Code Vault",
-      desc: "Share and access verified exam codes in real time with trusted classmates. Get codes directly on your screen.",
+      title: "Snippet Vault",
+      desc: "Share and access shared code snippets in real time with trusted team members. Get snippets directly on your screen.",
       icon: <FileCode size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     }
@@ -1114,7 +1090,7 @@ export default function Home() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="font-rubik text-5xl lg:text-6xl font-black tracking-tighter leading-none"
             >
-              1.2ms local speed.
+              sub-50ms sync speed.
             </motion.h2>
             <p className="text-xl text-gray-500 leading-relaxed max-w-md font-medium">
               No slow cloud networks. LANpad sends your keys directly using your local Wi-Fi at maximum speed.
@@ -1183,7 +1159,7 @@ export default function Home() {
               style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(-90px)" }}
             >
               <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Local Engine</span>
-              <span className="text-white text-3xl font-black font-rubik tracking-tighter"><StatCountUp to={1.2} />ms LATENCY</span>
+              <span className="text-white text-3xl font-black font-rubik tracking-tighter">SUB-50ms SYNC LATENCY</span>
             </div>
           </div>
         </div>
@@ -1333,120 +1309,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── REVIEWS AND FAQS SECTION (IMAGE 3) ─── */}
+      {/* ─── FAQS SECTION ─── */}
       <section className="min-h-screen flex items-center py-16 md:py-32 px-6 md:px-12 relative overflow-hidden font-dmsans">
-        <div className="max-w-7xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-
-          {/* Left Column: Client Reviews Scroller */}
-          <div className="lg:col-span-5 space-y-12">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA]">Reviews</span>
-              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">USER REVIEWS</h2>
-              <p className="text-gray-500 font-bold text-sm mt-1">What people say about using LANpad.</p>
-            </div>
-
-            {/* Vertical scrolling testimonials marquee container */}
-            <div className="relative h-[460px] overflow-hidden rounded-[32px] clay-card p-6 border border-white/20">
-              {/* Fade masks */}
-              <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
-
-              <div className="space-y-4 animate-marquee-vertical hover:[animation-play-state:paused] flex flex-col">
-
-                {[
-                  {
-                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Alekhya",
-                    role: "Creative Director"
-                  },
-                  {
-                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Chandrakala",
-                    role: "DevOps & Crypt Architect"
-                  },
-                  {
-                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Veera Nithin",
-                    role: "Lead Platform Engineer"
-                  },
-                  {
-                    quote: "The ability to sync text instantly over local Wi-Fi without cloud reliance makes input orchestration a breeze. Safe and secure.",
-                    author: "Sumanth",
-                    role: "Senior Full Stack Dev"
-                  }
-                ].map((t, idx) => (
-                  <div
-                    key={`l1-${idx}`}
-                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
-                  >
-                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
-                      "{t.quote}"
-                    </p>
-                    <div className="flex items-center gap-3 font-dmsans">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase border border-white/30">
-                        {t.author[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
-                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Duplicate loop of cards for seamless infinite animation */}
-                {[
-                  {
-                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Alekhya",
-                    role: "Creative Director"
-                  },
-                  {
-                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Chandrakala",
-                    role: "DevOps & Crypt Architect"
-                  },
-                  {
-                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Veera Nithin",
-                    role: "Lead Platform Engineer"
-                  },
-                  {
-                    quote: "The ability to sync text instantly over local Wi-Fi without cloud reliance makes input orchestration a breeze. Safe and secure.",
-                    author: "Sumanth",
-                    role: "Senior Full Stack Dev"
-                  }
-                ].map((t, idx) => (
-                  <div
-                    key={`l2-${idx}`}
-                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
-                  >
-                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
-                      "{t.quote}"
-                    </p>
-                    <div className="flex items-center gap-3 font-dmsans">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase border border-white/30">
-                        {t.author[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
-                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: FAQ Accordion (Matches Image 3 right column!) */}
+        <div className="max-w-3xl mx-auto w-full relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 35 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-7 space-y-12"
+            className="space-y-12"
           >
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">FAQ</span>
@@ -1462,7 +1333,7 @@ export default function Home() {
                 },
                 {
                   q: "What does a contributor do?",
-                  a: "A contributor is a student who uploads helpful code solutions and exam answers to our database. If you contribute code, you help other students sync solutions directly to their screens during study sessions."
+                  a: "A contributor is a developer who uploads helpful code solutions and snippets to our database. If you contribute code, you help other developers sync solutions directly to their screens during collaboration sessions."
                 },
                 {
                   q: "How do I get a license key for premium?",
@@ -1574,7 +1445,7 @@ export default function Home() {
           {/* Legal Disclaimer Box */}
           <div className="mt-12 p-6 clay-card shadow-inner border border-white/20 rounded-2xl text-[11px] leading-relaxed text-gray-500 font-bold">
             <p className="font-black uppercase tracking-wider mb-2 text-orange-500 font-rubik">Legal Disclaimer</p>
-            LANpad is provided as an open-source productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to academic misconduct, exam-related violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
+            LANpad is provided as a productivity utility for local network synchronization and keyboard input simulation. The developers, contributors, and founders assume no liability or responsibility for any misuse of this tool, including but not limited to restricted input violations, policy infractions on external platforms, data security compromises arising from user-configured networks, or system disruption. Users are solely responsible for compliance with their local institution rules, terms of service of third-party platforms, and all applicable privacy laws.
           </div>
 
           {/* Bottom Row */}

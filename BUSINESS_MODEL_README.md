@@ -45,7 +45,7 @@ LANpad provides four input modes from a single phone-based controller:
 | Mode | Description | Use Case |
 |---|---|---|
 | ⚡ **Flash Paste** | Clipboard injection for instant transfer | Speed-critical snippets |
-| ⌨️ **Human-like Typing** | WPM-controlled keystroke simulation with 20% variance | Bypass paste-blocked sites (banks, exams, IDE anti-paste) |
+| ⌨️ **Human-like Typing** | WPM-controlled keystroke simulation with 20% variance | Type into fields that block pasting (banking portals, secure command-lines, restricted web forms) |
 | 💻 **Inject** | Cleaned, auto-indent-stripped code injection | Code snippets into IDEs |
 | 🔴 **Live Sync** | Real-time diff-based character streaming | Long-form typing from phone |
 
@@ -76,7 +76,7 @@ LANpad provides four input modes from a single phone-based controller:
 - *Channel:* Privacy-focused communities, infosec podcasts, EFF-aligned influencers
 
 **🏢 Segment D — Enterprise / Restricted-Environment Workers (20%)**
-- *Demographics:* Employees of banks, government, defense contractors, exam proctors
+- *Demographics:* Employees of banks, government, defense contractors, secure operations centers
 - *Jobs-to-be-done:* Work efficiently inside locked-down software that blocks paste
 - *Willingness to pay:* Highest — corporate budgets, compliance-driven
 - *Channel:* B2B sales, IT admins, Slack communities for restricted-workflow workers
@@ -152,7 +152,7 @@ LANpad follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enterpri
 - Affiliate program: 30% recurring for first 12 months
 
 ### Phase 3 — B2B Sales Motion (Months 6–18)
-- Hire first **B2B AE** to target banks, government contractors, exam software
+- Hire first **B2B AE** to target banks, government contractors, security operations
 - Publish a **security whitepaper** and **SOC 2 Type I** (Year 2)
 - Build **admin console** for IT to deploy centrally
 - **University partnerships** for student Pro discounts
@@ -190,7 +190,7 @@ LANpad follows a **Freemium + Tiered SaaS** model with a strong **B2B / Enterpri
 | Browser vendors deprecate WebSocket / custom protocols | Medium | Maintain native mobile apps as backup channel |
 | Users perceive "local-only" as a feature *and* a limitation | Medium | Optional **LANpad Cloud Bridge** (E2EE) for cross-network use — premium-only |
 | Large incumbents (Apple, Microsoft) copy the feature | High | Speed + open-source community + cross-platform parity |
-| Misuse for credential stuffing / bypassing proctoring | Medium | Clear acceptable-use policy, enterprise rate-limits, log-based abuse detection |
+| Misuse for credential stuffing / restricted input evasion | Medium | Clear acceptable-use policy, enterprise rate-limits, log-based abuse detection |
 | Mac/Windows distribution friction (Gatekeeper, SmartScreen) | Medium | Notarization + code signing + detailed install docs |
 
 ---

@@ -541,7 +541,7 @@ function ContributorsDashboard() {
           </h1>
 
           <p className="text-xs md:text-lg text-[#FAFAFA]/60 mb-4 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
-            A community effort to maintain accurate exam exam codes for VIT students. Help your peers by providing the latest exam session questions.
+            A community effort to maintain accurate snippets for VIT students. Help your peers by providing the latest session questions.
           </p>
 
           {/* Info Cards Container (Stack vertically on mobile, row on desktop) */}

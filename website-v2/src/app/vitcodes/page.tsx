@@ -247,7 +247,7 @@ function VitCodesContent() {
           </div>
         ) : codes.length === 0 ? (
           <div className={`text-center py-20 border ${borderLight} ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'} rounded-3xl max-w-lg mx-auto shadow-xl`}>
-            <p className={`${txt3} text-sm`}>No exam codes added yet.</p>
+            <p className={`${txt3} text-sm`}>No snippets added yet.</p>
           </div>
         ) : selectedExamType === null ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -314,7 +314,7 @@ function VitCodesContent() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${borderLight} hover:bg-white/5 text-xs font-semibold transition-all`}
               >
                 <ArrowLeft size={12} />
-                Back to Exam Types
+                Back to Collections
               </button>
               <span className={`text-xs ${txt3}`}>/</span>
               <span className={`text-xs font-bold ${txt2}`}>{selectedExamType}</span>
@@ -365,14 +365,14 @@ function VitCodesContent() {
                       </div>
 
                       <h3 className={`text-lg font-black font-outfit ${txt1} group-hover:${txt2} transition-colors duration-300 mb-4`}>
-                        {session.title || session.examType} Session
+                        {session.title || session.examType} Collection
                       </h3>
                     </div>
 
                     <div className={`flex items-center justify-between text-xs ${txt3} pt-4 border-t ${borderLight} mt-auto`}>
                       <span className="flex items-center gap-1.5 font-medium">
                         <Code2 size={12} className={txt2} />
-                        {session.questions.length} Question{session.questions.length > 1 ? "s" : ""} Available
+                        {session.questions.length} Snippet{session.questions.length > 1 ? "s" : ""} Available
                       </span>
                       <ChevronRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-300" />
                     </div>

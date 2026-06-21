@@ -995,8 +995,12 @@ export async function readRules(): Promise<ExamSettings> {
     if (!fs.existsSync(filePath)) return { rules: {}, sessionLimits: {}, examYears: {} };
     try {
       const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      if (data.rules && data.sessionLimits && data.examYears) {
-        return data as ExamSettings;
+      if (data.rules && data.sessionLimits && (data.collectionYears || data.examYears)) {
+        return {
+          rules: data.rules,
+          sessionLimits: data.sessionLimits,
+          examYears: data.collectionYears || data.examYears
+        };
       } else {
         const rules: Record<string, string> = {};
         const sessionLimits: Record<string, number> = {};
@@ -1004,7 +1008,7 @@ export async function readRules(): Promise<ExamSettings> {
         
         const srcRules = data.rules || data;
         const srcLimits = data.sessionLimits || {};
-        const srcYears = data.examYears || {};
+        const srcYears = data.collectionYears || data.examYears || {};
         
         Object.keys(srcRules).forEach(k => {
           rules[k] = srcRules[k];
@@ -1059,7 +1063,12 @@ export async function writeRule(examType: string, rule?: string, sessionLimit?: 
     }
     const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
+    const output = {
+      rules: settings.rules,
+      sessionLimits: settings.sessionLimits,
+      collectionYears: settings.examYears
+    };
+    fs.writeFileSync(filePath, JSON.stringify(output, null, 2), "utf8");
   }
 }
 
@@ -2044,4 +2053,21 @@ export async function setSetting(key: string, value: string): Promise<void> {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
   }
 }
+
+export async function hasSubscription(id: string): Promise<boolean> {
+  if (pool) {
+    try {
+      await initDb();
+      const res = await pool.query("SELECT 1 FROM vit_subscriptions WHERE id = $1", [id]);
+      return res.rows.length > 0;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  } else {
+    const data = await readMonetization();
+    return data.subscriptions.some((s: any) => s.id === id);
+  }
+}
+
 
