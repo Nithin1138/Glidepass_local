@@ -5177,33 +5177,49 @@ export default function GlidePassAdmin() {
                       </div>
 
                       {/* Monetization KPI Cards */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        {[
-                          { 
-                            title: "Total Revenue", 
-                            val: `₹${subscriptions.filter(s => s.status === "success").reduce((acc, curr) => acc + parseInt(curr.amount.replace(/[^\d]/g, "") || "0"), 0)}`, 
-                            label: "From successful passes", 
-                            color: "#10B981" 
-                          },
-                          { title: "Total Transactions", val: String(subscriptions.length), label: "Logged payment events", color: P.blue },
-                          { 
-                            title: "Success Rate", 
-                            val: `${subscriptions.length > 0 ? Math.round((subscriptions.filter(s => s.status === "success").length / subscriptions.length) * 100) : 100}%`, 
-                            label: "Payment gateway health", 
-                            color: P.blue 
-                          },
-                        ].map((c, i) => (
-                          <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
-                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
-                            </div>
-                            <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black" style={{ color: c.color }}>{c.val}</h3>
-                            <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
+                      {(() => {
+                        const successTxns = subscriptions.filter(s => s.status === "success" || s.status === "active");
+                        const totalRev = successTxns.reduce((acc, curr) => acc + parseFloat(curr.amount.replace(/[^\d.]/g, "") || "0"), 0);
+                        const razorpayFee = totalRev * 0.0236; // 2% Razorpay Fee + 18% GST on the fee
+                        const totalProfit = totalRev - razorpayFee;
+                        const successRate = subscriptions.length > 0 ? Math.round((successTxns.length / subscriptions.length) * 100) : 100;
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                              { 
+                                title: "Total Revenue", 
+                                val: `₹${totalRev.toFixed(2)}`, 
+                                label: "From active & successful passes", 
+                                color: "#10B981" 
+                              },
+                              { 
+                                title: "Total Profit", 
+                                val: `₹${totalProfit.toFixed(2)}`, 
+                                label: "Subtracted Razorpay cost (2.36%)", 
+                                color: "#00E676" 
+                              },
+                              { title: "Total Transactions", val: String(subscriptions.length), label: "Logged payment events", color: P.blue },
+                              { 
+                                title: "Success Rate", 
+                                val: `${successRate}%`, 
+                                label: "Payment gateway health", 
+                                color: P.blue 
+                              },
+                            ].map((c, i) => (
+                              <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
+                                style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                                <div className="flex justify-between items-start mb-3">
+                                  <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
+                                </div>
+                                <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black" style={{ color: c.color }}>{c.val}</h3>
+                                <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
 
                       <div className="space-y-8">
                         {/* Transaction History Logs */}
