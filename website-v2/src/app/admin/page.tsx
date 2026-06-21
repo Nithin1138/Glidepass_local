@@ -5715,6 +5715,55 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
+                      {/* Coupons Stats Cards Grid */}
+                      {(() => {
+                        const totalCoupons = promoCodes.length;
+                        const activeCoupons = promoCodes.filter((c: any) => c.status === "active").length;
+                        const totalUses = promoCodes.reduce((acc: number, c: any) => acc + (c.usage || 0), 0);
+                        const inactiveCoupons = totalCoupons - activeCoupons;
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                              { 
+                                title: "Total Coupons", 
+                                val: String(totalCoupons), 
+                                label: "All registered promo codes", 
+                                color: P.blue 
+                              },
+                              { 
+                                title: "Active Coupons", 
+                                val: String(activeCoupons), 
+                                label: "Coupons available for use", 
+                                color: "#10B981" 
+                              },
+                              { 
+                                title: "Used / Inactive", 
+                                val: String(inactiveCoupons), 
+                                label: "Expired or paused coupons", 
+                                color: "#EF4444" 
+                              },
+                              { 
+                                title: "Total Coupon Redemptions", 
+                                val: String(totalUses), 
+                                label: "Total uses across checkout", 
+                                color: "#3B82F6" 
+                              },
+                            ].map((c, i) => (
+                              <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
+                                style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                                <div className="flex justify-between items-start mb-3">
+                                  <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{c.title}</span>
+                                </div>
+                                <h3 className="text-3xl font-[family-name:var(--font-outfit)] font-black" style={{ color: c.color }}>{c.val}</h3>
+                                <span className="text-[10px] mt-1.5 block" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{c.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         {/* Create Coupon Form */}
                         <div className="lg:col-span-4 p-6 rounded-[28px] border relative overflow-hidden space-y-4"
