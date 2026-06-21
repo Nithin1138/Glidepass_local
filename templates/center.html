@@ -369,7 +369,7 @@
 
         .mode-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
         }
 
@@ -643,6 +643,16 @@
                 </div>
 
                 <div class="mode-grid">
+                    <div class="mode-card active" id="flash-mode">
+                        <div class="mode-header">
+                            <div class="mode-title">
+                                <i data-lucide="zap" size="18"></i>
+                                <span>Flash</span>
+                            </div>
+                            <span class="default-badge" style="font-size: 7px; background: var(--accent-color); color: #000; padding: 1px 3.5px; border-radius: 4px; font-weight: 850; letter-spacing: 0.5px;">DEF</span>
+                        </div>
+                        <p>Instant paste</p>
+                    </div>
                     <div class="mode-card" id="inject-mode">
                         <div class="mode-header">
                             <div class="mode-title">
@@ -758,8 +768,9 @@
         const syncStatusText = document.getElementById('sync-status');
         const injectCard = document.getElementById('inject-mode');
         const typingCard = document.getElementById('typing-mode');
+        const flashCard = document.getElementById('flash-mode');
 
-        let injectionMode = null;
+        let injectionMode = 'flash';
         let liveSync = false;
         let selectedWpm = 40;
         let originalCodeText = '';
@@ -881,16 +892,33 @@
             }
         });
 
+        function setMode(mode) {
+            injectionMode = mode;
+            flashCard.classList.remove('active');
+            injectCard.classList.remove('active');
+            typingCard.classList.remove('active');
+
+            if (mode === 'flash') {
+                flashCard.classList.add('active');
+                document.getElementById('wpm-selector').style.display = 'none';
+            } else if (mode === 'inject') {
+                injectCard.classList.add('active');
+                document.getElementById('wpm-selector').style.display = 'none';
+            } else if (mode === 'typing') {
+                typingCard.classList.add('active');
+                document.getElementById('wpm-selector').style.display = 'block';
+                updateExpectedTime();
+            }
+            updateSyncStatus();
+        }
+
         function resetSession() {
             remoteText.value = '';
             liveSync = false;
-            injectionMode = null;
+            setMode('flash');
             // DO NOT clear originalCodeText so the user can refill recently typed text!
             // DO NOT hide the refill button if it was already shown!
             liveSyncBtn.classList.remove('active');
-            injectCard.classList.remove('active');
-            typingCard.classList.remove('active');
-            document.getElementById('wpm-selector').style.display = 'none';
             updateSyncStatus();
         }
 
@@ -916,30 +944,16 @@
         }
 
         // Mode Selection
+        flashCard.addEventListener('click', () => {
+            setMode('flash');
+        });
+
         injectCard.addEventListener('click', () => {
-            if (injectionMode === 'inject') {
-                injectionMode = null;
-                injectCard.classList.remove('active');
-            } else {
-                injectionMode = 'inject';
-                injectCard.classList.add('active');
-                typingCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'none';
-            }
+            setMode('inject');
         });
 
         typingCard.addEventListener('click', () => {
-            if (injectionMode === 'typing') {
-                injectionMode = null;
-                typingCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'none';
-            } else {
-                injectionMode = 'typing';
-                typingCard.classList.add('active');
-                injectCard.classList.remove('active');
-                document.getElementById('wpm-selector').style.display = 'block';
-                updateExpectedTime();
-            }
+            setMode('typing');
         });
 
         // WPM Selection & Expected Time calculation

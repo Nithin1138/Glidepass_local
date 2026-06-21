@@ -3740,18 +3740,30 @@ export default function GlidePassAdmin() {
                           <div className="text-center py-10 text-xs" style={{ color: dk ? `${P.sky}40` : `${P.black}40` }}>No telemetry events recorded yet.</div>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-56 overflow-y-auto pr-1">
-                            {telemetryData.events.slice().reverse().slice(0, 10).map((ev: any, idx: number) => (
-                              <div key={idx} className="p-3.5 rounded-2xl border flex justify-between items-center text-xs font-mono transition-all hover:bg-neutral-500/5"
-                                style={{ background: dk ? "rgba(5,5,5,0.20)" : "rgba(250,250,250,0.50)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
-                                <div className="space-y-0.5">
-                                  <span className="font-bold text-[11px] block leading-tight" style={{ color: dk ? P.white : P.black }}>{ev.event}</span>
-                                  <span className="text-[9px]" style={{ color: dk ? `${P.sky}65` : `${P.black}55` }}>Device Hash: {ev.uuid.substring(0, 16)}...</span>
+                            {(telemetryData.events || [])
+                              .filter((ev: any) => {
+                                const evName = (ev.event || "").toLowerCase();
+                                return evName.includes("inject") ||
+                                       evName.includes("type") ||
+                                       evName.includes("sync") ||
+                                       evName.includes("mobile") ||
+                                       evName.includes("lice");
+                              })
+                              .slice()
+                              .reverse()
+                              .slice(0, 10)
+                              .map((ev: any, idx: number) => (
+                                <div key={idx} className="p-3.5 rounded-2xl border flex justify-between items-center text-xs font-mono transition-all hover:bg-neutral-500/5"
+                                  style={{ background: dk ? "rgba(5,5,5,0.20)" : "rgba(250,250,250,0.50)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                  <div className="space-y-0.5">
+                                    <span className="font-bold text-[11px] block leading-tight" style={{ color: dk ? P.white : P.black }}>{ev.event}</span>
+                                    <span className="text-[9px]" style={{ color: dk ? `${P.sky}65` : `${P.black}55` }}>Device Hash: {ev.uuid.substring(0, 16)}...</span>
+                                  </div>
+                                  <span className="text-[10px] font-semibold text-right" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                    {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  </span>
                                 </div>
-                                <span className="text-[10px] font-semibold text-right" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
-                                  {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </span>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         )}
                       </div>
