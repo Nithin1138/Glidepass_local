@@ -12,6 +12,11 @@ if (isPostgresEnabled) {
     ssl: {
       rejectUnauthorized: false, // Required for serverless providers like Neon/Supabase
     },
+    // Production pooling configurations
+    max: 20, // Keep active client connections limited to manage serverless connection ceilings
+    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds to release pooled connections
+    connectionTimeoutMillis: 5000, // Error out if connection cannot be made in 5 seconds
+    maxUses: 7500, // Recreate connection after 7500 queries to prevent memory leaks in long-running servers
   });
 }
 
