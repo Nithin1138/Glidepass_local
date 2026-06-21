@@ -977,7 +977,16 @@ export interface ExamSettings {
   examYears: Record<string, string>;
 }
 
+let cachedRules: ExamSettings | null = null;
+let lastRulesFetch = 0;
+const RULES_CACHE_TTL = 60000; // Cache rules for 60 seconds
+
 export async function readRules(): Promise<ExamSettings> {
+  const now = Date.now();
+  if (cachedRules && (now - lastRulesFetch < RULES_CACHE_TTL)) {
+    return cachedRules;
+  }
+
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -991,7 +1000,9 @@ export async function readRules(): Promise<ExamSettings> {
         sessionLimits[row.exam_type] = row.session_limit !== null ? row.session_limit : 1;
         examYears[row.exam_type] = row.year || '1st Year';
       });
-      return { rules, sessionLimits, examYears };
+      cachedRules = { rules, sessionLimits, examYears };
+      lastRulesFetch = now;
+      return cachedRules;
     } finally {
       client.release();
     }
