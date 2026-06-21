@@ -5325,203 +5325,140 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
-                      {/* ═══ MONETIZATION CONFIG & DYNAMIC PLANS ═══ */}
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        {/* Dynamic plans editor */}
-                        <div className="lg:col-span-8 p-6 rounded-[28px] border relative overflow-hidden space-y-6"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>App Monetization Config</h3>
-                              <p className="text-[10px] text-white/50">Configure global monetization switch and customize active plan details</p>
-                            </div>
-                            
-                            {/* Toggles container */}
-                            <div className="flex items-center gap-6">
-                              {/* Monetization Toggle */}
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.monetization_enabled ? P.blue : P.white }}>
-                                  {monetizationSettings.monetization_enabled ? "MONETIZATION ON (LOCKED)" : "MONETIZATION OFF (FREE)"}
-                                </span>
-                                <button 
-                                  onClick={() => handleSaveMonetizationSettings({
-                                    ...monetizationSettings,
-                                    monetization_enabled: !monetizationSettings.monetization_enabled
-                                  })}
-                                  className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
-                                  style={{ backgroundColor: monetizationSettings.monetization_enabled ? P.blue : "rgba(255,255,255,0.15)" }}
-                                >
-                                  <div 
-                                    className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
-                                    style={{ left: monetizationSettings.monetization_enabled ? "26px" : "2px" }}
-                                  />
-                                </button>
-                              </div>
-
-                              {/* Free Tier Toggle */}
-                              <div className="flex items-center gap-3 border-l pl-6" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
-                                <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.free_enabled ? P.sky : P.white }}>
-                                  {monetizationSettings.free_enabled ? "FREE PLAN ON" : "FREE PLAN OFF"}
-                                </span>
-                                <button 
-                                  onClick={() => handleSaveMonetizationSettings({
-                                    ...monetizationSettings,
-                                    free_enabled: !monetizationSettings.free_enabled
-                                  })}
-                                  className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
-                                  style={{ backgroundColor: monetizationSettings.free_enabled ? P.sky : "rgba(255,255,255,0.15)" }}
-                                >
-                                  <div 
-                                    className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
-                                    style={{ left: monetizationSettings.free_enabled ? "26px" : "2px" }}
-                                  />
-                                </button>
-                              </div>
-                            </div>
+                      {/* Dynamic plans editor */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-6 w-full"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>App Monetization Config</h3>
+                            <p className="text-[10px] text-white/50">Configure global monetization switch and customize active plan details</p>
                           </div>
+                          
+                          {/* Toggles container */}
+                          <div className="flex items-center gap-6">
+                            {/* Monetization Toggle */}
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.monetization_enabled ? P.blue : P.white }}>
+                                {monetizationSettings.monetization_enabled ? "MONETIZATION ON (LOCKED)" : "MONETIZATION OFF (FREE)"}
+                              </span>
+                              <button 
+                                onClick={() => handleSaveMonetizationSettings({
+                                  ...monetizationSettings,
+                                  monetization_enabled: !monetizationSettings.monetization_enabled
+                                })}
+                                className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
+                                style={{ backgroundColor: monetizationSettings.monetization_enabled ? P.blue : "rgba(255,255,255,0.15)" }}
+                              >
+                                <div 
+                                  className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
+                                  style={{ left: monetizationSettings.monetization_enabled ? "26px" : "2px" }}
+                                />
+                              </button>
+                            </div>
 
-                          <div className="h-[1px] bg-[rgba(199,238,255,0.06)]" />
-
-                          {/* Plan list input fields */}
-                          <div className="space-y-4">
-                            <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: P.sky }}>Tweak License Plan Packages</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {(monetizationSettings.plans || []).map((plan: any, planIdx: number) => (
-                                <div key={plan.tier} className="p-4 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(250,250,250,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
-                                  <div className="flex justify-between items-center mb-3">
-                                    <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#0077C0]/15 text-[#C7EEFF]">{plan.tier}</span>
-                                  </div>
-                                  <div className="space-y-2.5">
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Package Title</label>
-                                      <input 
-                                        type="text" 
-                                        value={plan.title} 
-                                        onChange={e => {
-                                          const updatedPlans = [...monetizationSettings.plans];
-                                          updatedPlans[planIdx].title = e.target.value;
-                                          handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                        }}
-                                        className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Subtitle</label>
-                                      <input 
-                                        type="text" 
-                                        value={plan.subtitle || ""} 
-                                        onChange={e => {
-                                          const updatedPlans = [...monetizationSettings.plans];
-                                          updatedPlans[planIdx].subtitle = e.target.value;
-                                          handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                        }}
-                                        className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Price</label>
-                                      <input 
-                                        type="text" 
-                                        value={plan.price} 
-                                        onChange={e => {
-                                          const updatedPlans = [...monetizationSettings.plans];
-                                          updatedPlans[planIdx].price = e.target.value;
-                                          handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                        }}
-                                        className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Validity (Days)</label>
-                                      <div className="flex items-center gap-2">
-                                        <input 
-                                          type="number" 
-                                          min="1"
-                                          value={plan.validity_days ?? 30} 
-                                          onChange={e => {
-                                            const updatedPlans = [...monetizationSettings.plans];
-                                            updatedPlans[planIdx].validity_days = parseInt(e.target.value) || 30;
-                                            handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
-                                          }}
-                                          className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
-                                        />
-                                        <span className="text-[9px] font-mono whitespace-nowrap shrink-0" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                          {(() => {
-                                            const d = plan.validity_days ?? 30;
-                                            if (d >= 365) return `≈ ${Math.round(d / 365)}yr`;
-                                            if (d >= 30) return `≈ ${Math.round(d / 30)}mo`;
-                                            return `${d}d`;
-                                          })()}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    
-                                  </div>
-                                </div>
-                              ))}
+                            {/* Free Tier Toggle */}
+                            <div className="flex items-center gap-3 border-l pl-6" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                              <span className="text-xs font-bold font-mono uppercase" style={{ color: monetizationSettings.free_enabled ? P.sky : P.white }}>
+                                {monetizationSettings.free_enabled ? "FREE PLAN ON" : "FREE PLAN OFF"}
+                              </span>
+                              <button 
+                                onClick={() => handleSaveMonetizationSettings({
+                                  ...monetizationSettings,
+                                  free_enabled: !monetizationSettings.free_enabled
+                                })}
+                                className="w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
+                                style={{ backgroundColor: monetizationSettings.free_enabled ? P.sky : "rgba(255,255,255,0.15)" }}
+                              >
+                                <div 
+                                  className="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-md"
+                                  style={{ left: monetizationSettings.free_enabled ? "26px" : "2px" }}
+                                />
+                              </button>
                             </div>
                           </div>
                         </div>
 
-                        {/* License key generator */}
-                        <div className="lg:col-span-4 p-6 rounded-[28px] border relative overflow-hidden space-y-5"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Generate Activation Key</h3>
-                          
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Student Email</label>
-                              <input 
-                                type="email" 
-                                value={newLicenseEmail} 
-                                onChange={e => setNewLicenseEmail(e.target.value)} 
-                                placeholder="e.g. nithin@vitstudent.ac.in"
-                                className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>License Tier</label>
-                              <select 
-                                value={newLicenseTier} 
-                                onChange={e => setNewLicenseTier(e.target.value)}
-                                className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}
-                              >
-                                <option value="Basic">Basic (Week Pass)</option>
-                                <option value="Pro">Pro (Monthly Pass)</option>
-                                <option value="Max">Max (Sem Pass)</option>
-                                <option value="Ultra">Ultra (Yearly Pass)</option>
-                                {(currentUser?.role === "ADMIN MASTER") && (
-                                  <option value="DEVELOPER">DEVELOPER (Hidden All-Access)</option>
-                                )}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity Duration</label>
-                              <div className="flex gap-2">
-                                <input 
-                                  type="number" 
-                                  value={newLicenseDuration} 
-                                  onChange={e => setNewLicenseDuration(e.target.value)} 
-                                  placeholder="30"
-                                  className={`w-2/3 text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
-                                />
-                                <select
-                                  value={newLicenseDurationUnit}
-                                  onChange={e => setNewLicenseDurationUnit(e.target.value as any)}
-                                  className={`w-1/3 text-xs rounded-xl px-2 py-2 border focus:outline-none ${inputBg}`}
-                                >
-                                  <option value="days">Days</option>
-                                  <option value="hours">Hours</option>
-                                  <option value="mins">Mins</option>
-                                </select>
+                        <div className="h-[1px] bg-[rgba(199,238,255,0.06)]" />
+
+                        {/* Plan list input fields */}
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: P.sky }}>Tweak License Plan Packages</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {(monetizationSettings.plans || []).map((plan: any, planIdx: number) => (
+                              <div key={plan.tier} className="p-4 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(250,250,250,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
+                                <div className="flex justify-between items-center mb-3">
+                                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#0077C0]/15 text-[#C7EEFF]">{plan.tier}</span>
+                                </div>
+                                <div className="space-y-2.5">
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Package Title</label>
+                                    <input 
+                                      type="text" 
+                                      value={plan.title} 
+                                      onChange={e => {
+                                        const updatedPlans = [...monetizationSettings.plans];
+                                        updatedPlans[planIdx].title = e.target.value;
+                                        handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                      }}
+                                      className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Subtitle</label>
+                                    <input 
+                                      type="text" 
+                                      value={plan.subtitle || ""} 
+                                      onChange={e => {
+                                        const updatedPlans = [...monetizationSettings.plans];
+                                        updatedPlans[planIdx].subtitle = e.target.value;
+                                        handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                      }}
+                                      className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Price</label>
+                                    <input 
+                                      type="text" 
+                                      value={plan.price} 
+                                      onChange={e => {
+                                        const updatedPlans = [...monetizationSettings.plans];
+                                        updatedPlans[planIdx].price = e.target.value;
+                                        handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                      }}
+                                      className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-0.5 block opacity-60">Validity (Days)</label>
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        type="number" 
+                                        min="1"
+                                        value={plan.validity_days ?? 30} 
+                                        onChange={e => {
+                                          const updatedPlans = [...monetizationSettings.plans];
+                                          updatedPlans[planIdx].validity_days = parseInt(e.target.value) || 30;
+                                          handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
+                                        }}
+                                        className={`w-full text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${inputBg}`} 
+                                      />
+                                      <span className="text-[9px] font-mono whitespace-nowrap shrink-0" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                        {(() => {
+                                          const d = plan.validity_days ?? 30;
+                                          if (d >= 365) return `≈ ${Math.round(d / 365)}yr`;
+                                          if (d >= 30) return `≈ ${Math.round(d / 30)}mo`;
+                                          return `${d}d`;
+                                        })()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                </div>
                               </div>
-                            </div>
-                            <button onClick={handleGenerateLicense} className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
-                              Create Activation Key
-                            </button>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -5646,8 +5583,67 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
+                      {/* License key generator */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                        <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                        <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#0077C0]" style={{ color: P.blue }}>Generate Activation Key</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                          <div>
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Student Email</label>
+                            <input 
+                              type="email" 
+                              value={newLicenseEmail} 
+                              onChange={e => setNewLicenseEmail(e.target.value)} 
+                              placeholder="e.g. nithin@vitstudent.ac.in"
+                              className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>License Tier</label>
+                            <select 
+                              value={newLicenseTier} 
+                              onChange={e => setNewLicenseTier(e.target.value)}
+                              className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}
+                            >
+                              <option value="Basic">Basic (Week Pass)</option>
+                              <option value="Pro">Pro (Monthly Pass)</option>
+                              <option value="Max">Max (Sem Pass)</option>
+                              <option value="Ultra">Ultra (Yearly Pass)</option>
+                              {(currentUser?.role === "ADMIN MASTER") && (
+                                <option value="DEVELOPER">DEVELOPER (Hidden All-Access)</option>
+                              )}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity Duration</label>
+                            <div className="flex gap-2">
+                              <input 
+                                type="number" 
+                                value={newLicenseDuration} 
+                                onChange={e => setNewLicenseDuration(e.target.value)} 
+                                placeholder="30"
+                                className={`w-2/3 text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
+                              />
+                              <select
+                                value={newLicenseDurationUnit}
+                                onChange={e => setNewLicenseDurationUnit(e.target.value as any)}
+                                className={`w-1/3 text-xs rounded-xl px-2 py-2 border focus:outline-none ${inputBg}`}
+                              >
+                                <option value="days">Days</option>
+                                <option value="hours">Hours</option>
+                                <option value="mins">Mins</option>
+                              </select>
+                            </div>
+                          </div>
+                          <button onClick={handleGenerateLicense} className="py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
+                            Create Activation Key
+                          </button>
+                        </div>
+                      </div>
+
                       {/* ═══ ACTIVE LICENSES TABLE ═══ */}
-                      <div className="rounded-[28px] border overflow-hidden"
+                      <div className="rounded-[28px] border overflow-hidden mt-8"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                           <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Activation Keys</h3>
