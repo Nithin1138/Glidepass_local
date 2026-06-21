@@ -2781,7 +2781,14 @@ export default function GlidePassAdmin() {
                       {group.items.map(item => {
                         const active = view === item.key;
                         return (
-                          <button key={item.key} onClick={() => { setView(item.key as any); setVitDetailView(false); setShowBin(false); }}
+                          <button key={item.key} onClick={() => { 
+                            setView(item.key as any); 
+                            setVitDetailView(false); 
+                            setShowBin(false); 
+                            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                              setSidebarOpen(false);
+                            }
+                          }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${active ? "text-white shadow-lg" : "hover:opacity-80"}`}
                             style={{
                               background: active ? P.blue : "transparent",
@@ -2800,7 +2807,13 @@ export default function GlidePassAdmin() {
 
               {/* Profile footer */}
               <div className="p-4 space-y-2" style={{ borderTop: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.05)"}` }}>
-                <button onClick={() => { setView("profile"); setShowBin(false); }} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
+                <button onClick={() => { 
+                  setView("profile"); 
+                  setShowBin(false); 
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    setSidebarOpen(false);
+                  }
+                }} className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:opacity-80 transition-colors">
                   <img src={currentUser?.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=0077C0&color=fff` : adminAvatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border shadow-md shrink-0" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }} />
                   {sidebarOpen && (
                     <div className="flex flex-col min-w-0">
