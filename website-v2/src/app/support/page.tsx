@@ -110,7 +110,7 @@ export default function SupportPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-lg w-full clay-card p-8 md:p-10 border border-white/20 shadow-2xl relative overflow-hidden"
+          className="max-w-2xl w-full clay-card p-8 md:p-10 border border-white/20 shadow-2xl relative overflow-hidden"
         >
           <div className="relative z-10 space-y-8">
             <div className="text-center space-y-2">
