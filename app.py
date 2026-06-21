@@ -437,36 +437,36 @@ async def lifespan(app: FastAPI):
                         pass
                 if is_accepted:
                     hwid = get_hardware_id()
-                        platform_str = "macOS" if IS_MAC else "Windows"
-                        version = VERSION
+                    platform_str = "macOS" if IS_MAC else "Windows"
+                    version = VERSION
+                    
+                    payload = json.dumps({
+                        "type": "heartbeat",
+                        "uuid": hwid,
+                        "platform": platform_str,
+                        "app_version": version
+                    }).encode("utf-8")
+                    
+                    if getattr(sys, 'frozen', False):
+                        urls = ["https://lanpad.app/api/telemetry"]
+                    else:
+                        urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.app/api/telemetry"]
                         
-                        payload = json.dumps({
-                            "type": "heartbeat",
-                            "uuid": hwid,
-                            "platform": platform_str,
-                            "app_version": version
-                        }).encode("utf-8")
-                        
-                        if getattr(sys, 'frozen', False):
-                            urls = ["https://lanpad.app/api/telemetry"]
-                        else:
-                            urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.app/api/telemetry"]
-                            
-                        for url in urls:
-                            try:
-                                req = urllib.request.Request(
-                                    url,
-                                    data=payload,
-                                    headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
-                                    method="POST"
-                                )
-                                with urllib.request.urlopen(req, timeout=5) as resp:
-                                    res = json.loads(resp.read().decode("utf-8"))
-                                    if res.get("success", False):
-                                        print(f"[telemetry] Heartbeat logged successfully to {url}")
-                                        break
-                            except Exception as e:
-                                print(f"[telemetry] Failed to log heartbeat on {url}: {e}")
+                    for url in urls:
+                        try:
+                            req = urllib.request.Request(
+                                url,
+                                data=payload,
+                                headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
+                                method="POST"
+                            )
+                            with urllib.request.urlopen(req, timeout=5) as resp:
+                                res = json.loads(resp.read().decode("utf-8"))
+                                if res.get("success", False):
+                                    print(f"[telemetry] Heartbeat logged successfully to {url}")
+                                    break
+                        except Exception as e:
+                            print(f"[telemetry] Failed to log heartbeat on {url}: {e}")
             except Exception as e:
                 print(f"[telemetry] Error in heartbeat loop: {e}")
             
