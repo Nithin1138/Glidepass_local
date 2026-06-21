@@ -648,6 +648,9 @@
     <div id="app-wrapper">
         <!-- Initial View -->
         <div id="initial-view" class="view active" style="overflow: hidden; position: relative;">
+            <div id="notification-toggle-home" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                <i id="notification-icon-home" data-lucide="bell" size="20"></i>
+            </div>
             <div class="space-bg">
                 <div class="nebula"></div>
                 <div class="stars layer1"></div>
@@ -681,8 +684,69 @@
 
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
         lucide.createIcons();
+
+        // Notification Settings Logic
+        const notifBtn = document.getElementById('notification-toggle-home');
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            toast.style.transform = 'translateX(-50%) scale(1.05)';
+            setTimeout(() => toast.style.transform = 'translateX(-50%) scale(1)', 150);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateX(-50%)';
+            }, 2500);
+        }
+
+        function updateHomeNotificationUI() {
+            const enabled = localStorage.getItem('lanpad_notifications') === 'true';
+            if (enabled) {
+                notifBtn.innerHTML = `<i id="notification-icon-home" data-lucide="bell" size="20" style="color: var(--accent-color);"></i>`;
+                notifBtn.style.borderColor = 'var(--accent-color)';
+                notifBtn.style.boxShadow = '0 0 10px var(--accent-glow)';
+            } else {
+                notifBtn.innerHTML = `<i id="notification-icon-home" data-lucide="bell-off" size="20" style="color: var(--text-muted);"></i>`;
+                notifBtn.style.borderColor = 'var(--border-color)';
+                notifBtn.style.boxShadow = 'none';
+            }
+            lucide.createIcons();
+        }
+
+        if (notifBtn) {
+            notifBtn.addEventListener('click', () => {
+                const currentlyEnabled = localStorage.getItem('lanpad_notifications') !== 'false';
+                const nextState = !currentlyEnabled;
+                localStorage.setItem('lanpad_notifications', nextState ? 'true' : 'false');
+                updateHomeNotificationUI();
+
+                if (nextState) {
+                    if ('Notification' in window) {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                showToast('Notifications enabled!');
+                                localStorage.setItem('lanpad_notifications_asked', 'true');
+                            } else if (permission === 'denied') {
+                                showToast('Audio & Vibe active (Push blocked by browser settings).', 'success');
+                                localStorage.setItem('lanpad_notifications_asked', 'true');
+                            }
+                        });
+                    } else {
+                        showToast('Audio & Vibe active (Push unsupported on HTTP).', 'success');
+                        localStorage.setItem('lanpad_notifications_asked', 'true');
+                    }
+                } else {
+                    showToast('Notifications disabled.');
+                }
+            });
+        }
+
+        updateHomeNotificationUI();
 
         const launchBtn = document.getElementById('launch-btn');
         launchBtn.addEventListener('click', () => {

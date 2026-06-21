@@ -942,7 +942,7 @@ async def typing_status():
 
 # ── Typing engine ─────────────────────────────────────────────────────────────
 
-def perform_typing(text, wpm, is_coding=False):
+def perform_typing(text, wpm, is_coding=False, language=""):
     global stop_typing, is_currently_typing
     is_currently_typing = True
 
@@ -1023,58 +1023,98 @@ def perform_typing(text, wpm, is_coding=False):
         # Check if the code content looks like Python
         is_python = False
         if is_coding:
-            # Look for common Python patterns: def keyword, imports, comments, or colon-block syntax
-            lower_text = text.lower()
-            if "def " in lower_text or "import " in lower_text or "print(" in lower_text or ":" in lower_text:
+            if language.lower() == "python":
                 is_python = True
-
+            else:
+                # Look for common Python patterns: def keyword, imports, comments, or colon-block syntax
+                lower_text = text.lower()
+                python_indicators = [
+                    "def ", "elif ", "lambda ", "list(map(", "int(input(", "list(int(", 
+                    "sys.argv", "if __name__ == ", "__init__", "self.", 
+                    "is None", "= None", "None,", "None)", "isinstance(", 
+                    "nonlocal ", "enumerate(", "zip("
+                ]
+                if any(ind in text for ind in python_indicators):
+                    is_python = True
+                else:
+                    for line in normalized_text.split('\n'):
+                        stripped = line.strip()
+                        if stripped.startswith('#'):
+                            is_python = True
+                            break
+                        if stripped.endswith(':'):
+                            if any(stripped.startswith(k) for k in ["if ", "elif ", "else", "for ", "while ", "def ", "class ", "with ", "try", "except", "finally"]):
+                                is_python = True
+                                break
+        print(f"[typing] is_coding={is_coding}, is_python={is_python}, lines={lines}")
         for i, line in enumerate(lines):
+            print(f"[typing] Loop iteration {i}, stop_typing={stop_typing}")
             if stop_typing:
                 break
 
-            if i > 0:
-                pyautogui.press('enter')
-                time.sleep(0.08)  # Give the IDE a moment to auto-indent
-
             # Process line content
             if not stop_typing:
-                line_to_type = line
-                if is_coding:
-                    if is_python:
-                        # In Python, IDEs auto-indent when Enter is pressed.
-                        # We must first backspace to clear the IDE auto-indents, 
-                        # then type the EXACT literal leading spaces to prevent indentation errors.
-                        # We determine indentation count of current line
-                        leading_whitespace_len = len(line) - len(line.lstrip(' \t'))
-                        
-                        # Backspace a few times to clear auto-indent (typical limit 8-16 tabs)
-                        # Pressing Shift+Tab is safer as it removes a full indentation block.
-                        for _ in range(6):
-                            pyautogui.hotkey('shift', 'tab')
-                            
-                        # If still remaining indents, clear via backspace
-                        pyautogui.press('backspace')
-                        
-                        # Now type the exact leading whitespace of the original line
-                        line_to_type = line
-                    else:
+                if is_coding and is_python:
+                    # If i > 0, we just transitioned to a new line. Clear any auto-indentation to column 0.
+                    if i > 0:
+                        pyautogui.keyDown('shift')
+                        for _ in range(10):
+                            pyautogui.press('tab')
+                        pyautogui.keyUp('shift')
+                        time.sleep(0.03)
+
+                    # Type the line character-by-character (preserving exact leading whitespace)
+                    print(f"[typing] Preserving spaces, typing {len(line)} chars")
+                    for char in line:
+                        if stop_typing:
+                            break
+                        char_start = time.time()
+
+                        if char == '\t':
+                            if not press_key_native(48):
+                                pyautogui.press('tab')
+                        else:
+                            print(f"[typing] Native write char: {repr(char)}")
+                            write_char_native(char)
+
+                        elapsed = time.time() - char_start
+                        sleep_time = max(0, typing_interval - elapsed)
+                        time.sleep(sleep_time)
+
+                    # If this is not the last line, paste a newline to go to the next line safely
+                    # without triggering autocomplete dropdown suggestions.
+                    if i < len(lines) - 1:
+                        _set_clipboard('\n')
+                        time.sleep(0.03)
+                        if IS_MAC:
+                            pyautogui.hotkey('command', 'v')
+                        else:
+                            pyautogui.hotkey('ctrl', 'v')
+                        time.sleep(0.03)
+                else:
+                    if i > 0:
+                        pyautogui.press('enter')
+                        time.sleep(0.05)  # Let the editor process the newline
+
+                    line_to_type = line
+                    if is_coding:
                         # Non-python languages: Strip leading whitespace and let the IDE handle auto-indentation.
                         line_to_type = line.lstrip(' \t')
 
-                for char in line_to_type:
-                    if stop_typing:
-                        break
-                    char_start = time.time()
+                    for char in line_to_type:
+                        if stop_typing:
+                            break
+                        char_start = time.time()
 
-                    if char == '\t':
-                        if not press_key_native(48):
-                            pyautogui.press('tab')
-                    else:
-                        write_char_native(char)
+                        if char == '\t':
+                            if not press_key_native(48):
+                                pyautogui.press('tab')
+                        else:
+                            write_char_native(char)
 
-                    elapsed = time.time() - char_start
-                    sleep_time = max(0, typing_interval - elapsed)
-                    time.sleep(sleep_time)
+                        elapsed = time.time() - char_start
+                        sleep_time = max(0, typing_interval - elapsed)
+                        time.sleep(sleep_time)
 
         # Trigger cleanup if coding mode is active
         if is_coding and not stop_typing:
@@ -1102,7 +1142,10 @@ def perform_typing(text, wpm, is_coding=False):
                     time.sleep(0.1)
                 except Exception as ex:
                     print(f"[typing] Cleanup failed: {ex}")
-
+    except Exception as e:
+        print(f"[typing] Exception in perform_typing: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         # Failsafe: release modifiers ONCE at the very end only
         is_currently_typing = False
@@ -1243,6 +1286,7 @@ async def paste(request: Request, data: dict):
                 return {"status": "error", "message": err}
             
         is_coding = bool(data.get("is_coding", False))
+        language = data.get("language", "")
         
         # Guard checking completed via check_feature_usage above
                 
@@ -1295,7 +1339,7 @@ async def paste(request: Request, data: dict):
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
         threading.Thread(
-            target=perform_typing, args=(text, wpm, is_coding), daemon=True
+            target=perform_typing, args=(text, wpm, is_coding, language), daemon=True
         ).start()
         return {"status": "success", "message": "Typing started"}
 

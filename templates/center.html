@@ -710,6 +710,43 @@
 
     <div id="toast" class="toast"></div>
 
+    <div id="notif-ask-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(10px);">
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 16px;">
+            <div style="width: 56px; height: 56px; background: rgba(0, 119, 192, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                <i data-lucide="bell" style="color: var(--accent-color);" size="28"></i>
+            </div>
+            <h2 style="font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: #fff;">Notify when complete?</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">Get notified when your typing is completed so you can continue what's next.</p>
+            <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <button id="notif-no-btn" style="flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">Later</button>
+                <button id="notif-yes-btn" style="flex: 1; background: var(--accent-color); border: none; color: #000; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 0.85rem;">Enable</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="completion-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2100; padding: 20px; backdrop-filter: blur(10px);">
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 16px;">
+            <div style="width: 56px; height: 56px; background: rgba(0, 119, 192, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                <i data-lucide="check-circle" style="color: var(--accent-color);" size="28"></i>
+            </div>
+            <h2 style="font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: #fff;">Injection Completed!</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">Your text has been typed onto the laptop. Select what you would like to do next:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                <button id="modal-refill-btn" style="width: 100%; background: var(--accent-color); border: none; color: #000; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i data-lucide="rotate-ccw" size="16"></i>
+                    <span>Refill Previous Code</span>
+                </button>
+                <button id="modal-clear-btn" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i data-lucide="trash-2" size="16"></i>
+                    <span>Clear Area</span>
+                </button>
+                <button id="modal-dismiss-btn" style="width: 100%; background: none; border: none; color: var(--text-muted); padding: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem; margin-top: 4px;">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
 
@@ -933,7 +970,7 @@
             
             // Expected time
             const baseTime = typedLength * typingInterval;
-            const lineTime = numLines * 0.1; // Line transition overhead (press enter, wait 0.08s)
+            const lineTime = numLines * (isCoding ? 0.5 : 0.1); // Line transition overhead (press enter, wait 0.08s)
             const timeInSecs = baseTime + lineTime + 0.5; // 0.5s initial startup
             
             if (timeInSecs < 60) {
@@ -979,7 +1016,8 @@
                         text: text,
                         mode: mode,
                         wpm: selectedWpm,
-                        is_coding: document.getElementById('is-coding-checkbox').checked
+                        is_coding: document.getElementById('is-coding-checkbox').checked,
+                        language: languageParam || ''
                     })
                 });
 
@@ -995,6 +1033,22 @@
                         startCountdown(text, selectedWpm);
                     } else {
                         if (!liveSync) remoteText.value = '';
+                        
+                        // Trigger completion flow immediately for instant modes
+                        const notifEnabled = localStorage.getItem('lanpad_notifications') === 'true';
+                        if (notifEnabled) {
+                            playBeepNotification();
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification("LANpad: Injection Completed", {
+                                    body: "Your text was successfully injected.",
+                                    icon: "/logo.png"
+                                });
+                            } else if ('vibrate' in navigator) {
+                                navigator.vibrate([200, 100, 200]);
+                            }
+                        }
+                        // document.getElementById('completion-modal').style.display = 'flex';
+                        // lucide.createIcons();
                     }
                 } else {
                     const data = await response.json();
@@ -1032,8 +1086,8 @@
             const typingInterval = 60 / cpm;
             const numLines = (text.match(/\n/g) || []).length;
             
-            // Total seconds = (chars * interval) + (lines * 0.1) + 0.5s startup
-            let totalSeconds = (typedLength * typingInterval) + (numLines * 0.1) + 0.5;
+            // Total seconds = (chars * interval) + (lines * 0.5 for coding / 0.1 for normal) + 0.5s startup
+            let totalSeconds = (typedLength * typingInterval) + (numLines * (isCoding ? 0.5 : 0.1)) + 0.5;
             totalSeconds = Math.ceil(totalSeconds); 
 
             // UI state: Active typing
@@ -1046,25 +1100,71 @@
 
             if (typingTimer) clearInterval(typingTimer);
 
+            let hasStartedTyping = false;
             typingTimer = setInterval(async () => {
-                remaining--;
-                if (remaining <= 0) {
+                let isTyping = true;
+                try {
+                    const res = await fetch('/typing_status');
+                    const status = await res.json();
+                    isTyping = status.is_typing;
+                    if (isTyping) {
+                        hasStartedTyping = true;
+                    }
+                } catch (e) {}
+
+                if (hasStartedTyping && !isTyping) {
                     stopCountdown();
-                } else {
+                    return;
+                }
+
+                if (remaining > 1) {
+                    remaining--;
                     timerCount.textContent = `${remaining}s`;
-                    // Check if laptop aborted via Esc key
-                    try {
-                        const res = await fetch('/typing_status');
-                        const status = await res.json();
-                        if (!status.is_typing) {
-                            stopCountdown();
-                        }
-                    } catch (e) {}
+                } else {
+                    if (!isTyping) {
+                        stopCountdown();
+                    } else {
+                        timerCount.textContent = `1s`;
+                    }
                 }
             }, 1000);
         }
 
-        function stopCountdown() {
+        function playBeepNotification() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // First beep (A5 note)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.value = 880; 
+                gain1.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain1.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+                gain1.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(audioCtx.currentTime);
+                osc1.stop(audioCtx.currentTime + 0.25);
+                
+                // Second beep (C6 note)
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.value = 1046.50; 
+                gain2.gain.setValueAtTime(0, audioCtx.currentTime + 0.15);
+                gain2.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.2);
+                gain2.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(audioCtx.currentTime + 0.15);
+                osc2.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.error("Web Audio not supported", e);
+            }
+        }
+
+        function stopCountdown(isCancelled = false) {
             if (typingTimer) {
                 clearInterval(typingTimer);
                 typingTimer = null;
@@ -1078,6 +1178,28 @@
             lucide.createIcons();
 
             if (!liveSync) remoteText.value = '';
+
+            // Trigger completion notification if enabled and not cancelled
+            if (!isCancelled) {
+                const notifEnabled = localStorage.getItem('lanpad_notifications') === 'true';
+                if (notifEnabled) {
+                    // Play audio alert (bypasses HTTP push restrictions)
+                    playBeepNotification();
+
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification("LANpad: Typing Completed", {
+                            body: "Your text has been typed onto the laptop. Return to continue.",
+                            icon: "/logo.png"
+                        });
+                    } else if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200]);
+                    }
+                }
+                
+                // Show interactive completion modal
+                // document.getElementById('completion-modal').style.display = 'flex';
+                // lucide.createIcons();
+            }
         }
 
         // Live Typing
@@ -1103,7 +1225,8 @@
                         text: text,
                         mode: 'sync',
                         wpm: selectedWpm,
-                        is_coding: document.getElementById('is-coding-checkbox').checked
+                        is_coding: document.getElementById('is-coding-checkbox').checked,
+                        language: languageParam || ''
                     })
                 });
             } catch (e) { }
@@ -1161,13 +1284,42 @@
             try {
                 await fetch('/stop');
                 showToast('❌ Stopping...', 'error');
-                stopCountdown();
+                stopCountdown(true);
             } catch (e) { }
         });
 
         document.getElementById('reset-btn').addEventListener('click', () => {
             resetSession();
             showToast('Session Reset');
+        });
+
+        // Notification Modal Prompt Initialization
+        const asked = localStorage.getItem('lanpad_notifications_asked');
+        if (!asked) {
+            // document.getElementById('notif-ask-modal').style.display = 'flex';
+        }
+
+        document.getElementById('notif-no-btn').addEventListener('click', () => {
+            localStorage.setItem('lanpad_notifications', 'false');
+            localStorage.setItem('lanpad_notifications_asked', 'true');
+            document.getElementById('notif-ask-modal').style.display = 'none';
+        });
+
+        document.getElementById('notif-yes-btn').addEventListener('click', () => {
+            localStorage.setItem('lanpad_notifications', 'true');
+            localStorage.setItem('lanpad_notifications_asked', 'true');
+            document.getElementById('notif-ask-modal').style.display = 'none';
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        showToast('Notifications enabled!');
+                    } else if (permission === 'denied') {
+                        showToast('Audio & Vibe active (Push blocked by browser settings).', 'success');
+                    }
+                });
+            } else {
+                showToast('Audio & Vibe active (Push unsupported on HTTP).', 'success');
+            }
         });
 
         function showToast(msg, type = 'success') {
@@ -1208,6 +1360,26 @@
 
         // Auto-enter if already linked (optional)
         // setTimeout(() => launchBtn.click(), 500); 
+
+        // Completion Modal Action Handlers
+        document.getElementById('modal-refill-btn').addEventListener('click', () => {
+            document.getElementById('completion-modal').style.display = 'none';
+            if (originalCodeText) {
+                remoteText.value = originalCodeText;
+                remoteText.dispatchEvent(new Event('input'));
+                showToast('Refilled!');
+            }
+        });
+
+        document.getElementById('modal-clear-btn').addEventListener('click', () => {
+            document.getElementById('completion-modal').style.display = 'none';
+            resetSession();
+            showToast('Session Reset');
+        });
+
+        document.getElementById('modal-dismiss-btn').addEventListener('click', () => {
+            document.getElementById('completion-modal').style.display = 'none';
+        });
 
         // Connect to active status websocket
         function connectWebSocket() {

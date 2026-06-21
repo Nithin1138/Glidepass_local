@@ -1,52 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('templates', 'templates'),
-        ('logo.png', '.'),
-        ('logo_final_square.png', '.'),
-        ('menubar_icon.png', '.'),
-        ('LANpad.ico', '.'),
-        ('LANpad.icns', '.')
-    ],
-    hiddenimports=[
-        'uvicorn.logging',
-        'uvicorn.loops',
-        'uvicorn.loops.auto',
-        'uvicorn.protocols',
-        'uvicorn.protocols.http',
-        'uvicorn.protocols.http.auto',
-        'uvicorn.protocols.websockets',
-        'uvicorn.protocols.websockets.auto',
-        'uvicorn.lifespan',
-        'uvicorn.lifespan.on',
-        'fastapi',
-        'pydantic',
-        'pyautogui',
-        'pyperclip',
-        'rumps',
-        'pystray',
-        'PIL',
-        'PIL.Image',
-        'menubar_handler',
-        'qrcode'
-    ],
+    datas=[('templates', 'templates'), ('logo.png', '.'), ('logo_final_square.png', '.'), ('menubar_icon.png', '.'), ('LANpad.icns', '.')],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
     noarchive=False,
+    optimize=0,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
@@ -64,34 +32,20 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='LANpad.ico' if os.name == 'nt' else 'LANpad.icns'
+    icon=['LANpad.icns'],
 )
-
 coll = COLLECT(
     exe,
     a.binaries,
-    a.zipfiles,
     a.datas,
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='LANpad'
+    name='LANpad',
 )
-
 app = BUNDLE(
     coll,
     name='LANpad.app',
     icon='LANpad.icns',
-    bundle_identifier='com.lanpad.macos',
-    info_plist={
-        'CFBundleShortVersionString': '1.5.8.7',
-        'CFBundleVersion': '1.5.8.7',
-        'NSHighResolutionCapable': True,
-        'CFBundleURLTypes': [
-            {
-                'CFBundleURLName': 'LANpad Protocol',
-                'CFBundleURLSchemes': ['lanpad']
-            }
-        ],
-    },
+    bundle_identifier=None,
 )
