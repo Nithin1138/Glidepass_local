@@ -271,7 +271,7 @@ const Hero = ({
           </div>
 
           {/* Right Column: Interactive 3D Canvas replacing the QR Synchronizer */}
-          <div className="lg:col-span-5 flex justify-center relative w-full h-[450px] lg:-translate-x-20">
+          <div className="hidden lg:flex lg:col-span-5 justify-center relative w-full h-[450px] lg:-translate-x-20">
             <div className="relative w-full max-w-[650px] h-full flex items-center justify-center">
               {/* Outer Clay Frame Card Container (Removed card grid background highlight) */}
               <div className="absolute inset-0 z-10">
@@ -292,6 +292,9 @@ const ThreeDConduit = () => {
 
   useEffect(() => {
     if (!containerRef.current || typeof window === "undefined") return;
+
+    // Completely bypass WebGL canvas rendering on mobile/tablet to ensure buttery smooth scrolling
+    if (window.innerWidth < 1024) return;
 
     const THREE = require("three");
 
