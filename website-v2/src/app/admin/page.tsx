@@ -3940,12 +3940,12 @@ export default function GlidePassAdmin() {
                         ) : !vitDetailView ? (
                           <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
                             {/* Header */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                               <div>
                                 <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase text-[#FAFAFA]">VIT-AP Code Sessions</h2>
-                                <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam sessions and code questions</p>
+                                <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam exam sessions and code questions</p>
                               </div>
-                              <div className="flex items-center gap-3 flex-wrap pt-3 border-t" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                              <div className="flex items-center gap-3 flex-wrap md:justify-end">
                                 <select value={selectedYearFilter} onChange={e => setSelectedYearFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
                                   <option value="all">All Years</option>
                                   <option value="1st Year">1st Year</option>
