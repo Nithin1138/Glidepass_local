@@ -30,7 +30,7 @@ export async function sendEmail({
 
   try {
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER, // Set directly to prevent mismatch spam triggers
+      from: `"LANpad" <${process.env.EMAIL_USER}>`, // display name LANpad matching SMTP address
       to, // list of receivers
       subject, // Subject line
       text, // plain text body
