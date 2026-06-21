@@ -512,6 +512,81 @@ def get_template_path(filename):
     return resource_path(f"templates/{filename}")
 
 
+def get_active_site():
+    """Detects the current active website/application to categorize telemetry logs."""
+    try:
+        url = "Other"
+        if IS_MAC:
+            # Check the active application on macOS
+            cmd = "osascript -e 'tell application \"System Events\" to get name of first process whose frontmost is true'"
+            app_name = _sp.check_output(cmd, shell=True).decode("utf-8").strip().lower()
+            if "chrome" in app_name:
+                cmd_url = "osascript -e 'tell application \"Google Chrome\" to get URL of active tab of first window'"
+                url = _sp.check_output(cmd_url, shell=True).decode("utf-8").strip().lower()
+            elif "safari" in app_name:
+                cmd_url = "osascript -e 'tell application \"Safari\" to get URL of current tab of first window'"
+                url = _sp.check_output(cmd_url, shell=True).decode("utf-8").strip().lower()
+            else:
+                url = app_name
+        elif IS_WINDOWS:
+            # Check active window title on Windows
+            import win32gui
+            window = win32gui.GetForegroundWindow()
+            url = win32gui.GetWindowText(window).lower()
+
+        if "hackerrank" in url:
+            return "HackerRank"
+        elif "codechef" in url:
+            return "CodeChef"
+        elif "leetcode" in url:
+            return "LeetCode"
+        elif "moodle" in url:
+            return "Moodle"
+    except Exception:
+        pass
+    return "Other"
+
+
+def log_telemetry_event_async(event):
+    """Logs a telemetry event to the production Vercel database in a background thread."""
+    def run():
+        try:
+            from platform_utils import get_hardware_id
+            hwid = get_hardware_id()
+            payload = json.dumps({
+                "type": "event",
+                "uuid": hwid,
+                "event": event
+            }).encode("utf-8")
+            
+            if getattr(sys, 'frozen', False):
+                urls = ["https://lanpad.vercel.app/api/telemetry"]
+            else:
+                urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                
+            for url in urls:
+                try:
+                    import urllib.request
+                    req = urllib.request.Request(
+                        url,
+                        data=payload,
+                        headers={"Content-Type": "application/json", "User-Agent": "LANpad App"},
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        res = json.loads(resp.read().decode("utf-8"))
+                        if res.get("success", False):
+                            print(f"[telemetry] Event '{event}' logged successfully to {url}")
+                            break
+                except Exception as e:
+                    print(f"[telemetry] Failed to log event on {url}: {e}")
+        except Exception as e:
+            print(f"[telemetry] Error in logging event: {e}")
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+
 # ── Template / static endpoints ────────────────────────────────────────────────
 
 @app.get("/")
@@ -875,6 +950,7 @@ async def copy_from_laptop(request: Request):
         text = pyperclip.paste()
         if text:
             last_synced_text = text
+            log_telemetry_event_async(f"copy:{get_active_site()}")
             return {"status": "success", "text": text}
         return {"status": "error", "message": "Clipboard empty"}
     except Exception as e:
@@ -1295,6 +1371,8 @@ async def paste(request: Request, data: dict):
 
     if text is not None:
         print(f"[PASTE] Triggering {mode} mode | Content: {text[:20]}...")
+        if text and mode in ["inject", "type", "typing", "flash"]:
+            log_telemetry_event_async(f"inject:{get_active_site()}")
         if not text:
             if mode != "sync":
                 last_synced_text = ""
