@@ -493,24 +493,24 @@ export default function PricingPage() {
         {/* ── Pricing Grid ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
           {activePlans.map((plan, index) => {
-            const isHovered = hoveredCard === index;
             return (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.8 }}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className={`relative rounded-2xl border transition-all duration-500 overflow-hidden flex flex-col justify-between`}
+                whileHover={{
+                  scale: 1.02,
+                  borderColor: plan.isPopular ? "rgba(0, 119, 192, 0.6)" : "rgba(199, 238, 255, 0.3)",
+                  boxShadow: plan.isPopular 
+                    ? "0 20px 40px -15px rgba(0, 119, 192, 0.4)" 
+                    : "0 20px 40px -15px rgba(199, 238, 255, 0.2)",
+                  transition: { duration: 0.2 }
+                }}
+                className="relative rounded-2xl border overflow-hidden flex flex-col justify-between"
                 style={{
                   backgroundColor: plan.isPopular ? "rgba(18, 18, 18, 0.85)" : "rgba(5, 5, 5, 0.70)",
-                  borderColor: plan.isPopular 
-                    ? "rgba(0, 119, 192, 0.4)" 
-                    : (isHovered ? "rgba(199, 238, 255, 0.2)" : "rgba(199, 238, 255, 0.08)"),
-                  boxShadow: isHovered 
-                    ? `0 10px 30px -10px ${plan.isPopular ? "rgba(0, 119, 192, 0.3)" : "rgba(199, 238, 255, 0.15)"}`
-                    : "none"
+                  borderColor: plan.isPopular ? "rgba(0, 119, 192, 0.4)" : "rgba(199, 238, 255, 0.08)"
                 }}
               >
                 {plan.isPopular && (

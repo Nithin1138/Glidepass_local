@@ -1725,21 +1725,21 @@ export default function GlidePassAdmin() {
         fetchTelemetry();
         const interval = setInterval(() => {
           fetchTelemetry();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "security") {
         fetchAuditLogs();
         const interval = setInterval(() => {
           fetchAuditLogs();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "system") {
         fetchDiagnostics();
         const interval = setInterval(() => {
           fetchDiagnostics();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "dashboard") {
@@ -1755,31 +1755,28 @@ export default function GlidePassAdmin() {
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
-          fetchMonetization();
-          fetchUsersRbac();
-          fetchAppVersion();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
         fetchMonetization();
         const interval = setInterval(() => {
           fetchMonetization();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "vitcodes" || view === "contributors") {
         fetchVitCodes();
         const interval = setInterval(() => {
           fetchVitCodes(true);
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "users" || view === "rbac") {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
-        }, 1000);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "versioning") {
