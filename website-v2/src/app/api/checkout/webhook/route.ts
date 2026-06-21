@@ -99,16 +99,48 @@ export async function POST(req: NextRequest) {
     try {
       await sendEmail({
         to: email,
-        subject: "Your GlidePass License Key (Confirmed)",
+        subject: "Your LANpad License Key (Confirmed)",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-            <h2>Thank you for your purchase!</h2>
-            <p>Your payment has been verified. The license key for your <strong>${tier}</strong> plan is ready:</p>
-            <div style="background-color: #f4f4f4; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 18px; margin: 20px 0; text-align: center;">
-              <strong>${licenseKey}</strong>
-            </div>
-            <p>Paste this key in the GlidePass application settings window to unlock your workspace.</p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { margin: 0; padding: 0; background-color: #EDEAE0; font-family: 'DM Sans', -apple-system, sans-serif; }
+                .email-container { max-width: 550px; margin: 40px auto; background-color: #EDEAE0; border-radius: 40px; padding: 40px; box-shadow: 20px 20px 40px rgba(0,0,0,0.06), -20px -20px 40px rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.2); text-align: center; }
+                .logo-container { width: 56px; height: 56px; background: #F28500; border-radius: 16px; margin: 0 auto 24px auto; display: flex; align-items: center; justify-content: center; box-shadow: 8px 8px 16px rgba(242, 133, 0, 0.2); }
+                .logo-text { color: white; font-family: 'Rubik', sans-serif; font-weight: 900; font-size: 24px; line-height: 56px; }
+                h2 { color: #0f172a; font-family: 'Rubik', sans-serif; font-weight: 900; font-size: 26px; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: -0.02em; }
+                p { color: #64748b; font-size: 14px; font-weight: 500; line-height: 1.6; margin: 0 0 24px 0; }
+                .key-card { background: #EDEAE0; border-radius: 20px; padding: 24px; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.04), inset -4px -4px 8px rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.15); margin: 30px 0; }
+                .key-label { font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+                .key-value { font-family: monospace; font-size: 20px; font-weight: 700; color: #468FEA; background: #ffffff; padding: 12px 20px; border-radius: 12px; border: 1px dashed rgba(70, 143, 234, 0.3); display: inline-block; letter-spacing: 0.05em; }
+                .copy-button { display: inline-block; padding: 14px 32px; background: #468FEA; color: white; text-decoration: none; border-radius: 9999px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; box-shadow: 8px 8px 16px rgba(70, 143, 234, 0.2); margin-top: 10px; }
+                .footer { border-top: 1px solid rgba(0, 0, 0, 0.05); margin-top: 35px; padding-top: 24px; font-size: 11px; color: #94a3b8; font-weight: bold; }
+              </style>
+            </head>
+            <body>
+              <div class="email-container">
+                <div class="logo-container">
+                  <span class="logo-text">L</span>
+                </div>
+                <h2>Your Premium Key</h2>
+                <p>Thank you for purchasing the <strong>${tier} Pass</strong>. Your workspace is confirmed and active for <strong>${durationDays} days</strong>.</p>
+                
+                <div class="key-card">
+                  <div class="key-label">Active License Key</div>
+                  <div class="key-value">${licenseKey}</div>
+                </div>
+
+                <p style="font-size: 12px;">Copy the key above and paste it inside your LANpad desktop client settings panel to unlock all features.</p>
+                
+                <div class="footer">
+                  © 2026 LANPAD. All rights reserved.<br>
+                  Security sync systems operational.
+                </div>
+              </div>
+            </body>
+          </html>
         `,
         text: `Thank you for your purchase! Your license key is: ${licenseKey}`
       });
