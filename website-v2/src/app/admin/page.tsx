@@ -1725,7 +1725,7 @@ export default function GlidePassAdmin() {
         fetchTelemetry();
         const interval = setInterval(() => {
           fetchTelemetry();
-        }, 15000);
+        }, 3000);
         return () => clearInterval(interval);
       }
       if (view === "security") {
@@ -1755,7 +1755,7 @@ export default function GlidePassAdmin() {
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
-        }, 15000);
+        }, 3000);
         return () => clearInterval(interval);
       }
       if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
@@ -1781,6 +1781,12 @@ export default function GlidePassAdmin() {
       }
       if (view === "versioning") {
         fetchAppVersion();
+        fetchTelemetry();
+        const interval = setInterval(() => {
+          fetchAppVersion();
+          fetchTelemetry();
+        }, 3000);
+        return () => clearInterval(interval);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
