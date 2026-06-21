@@ -5385,7 +5385,7 @@ export default function GlidePassAdmin() {
                         {/* Plan list input fields */}
                         <div className="space-y-4">
                           <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: P.sky }}>Tweak License Plan Packages</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {(monetizationSettings.plans || []).map((plan: any, planIdx: number) => (
                               <div key={plan.tier} className="p-4 rounded-2xl border" style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(250,250,250,0.4)", borderColor: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)" }}>
                                 <div className="flex justify-between items-center mb-3">
