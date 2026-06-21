@@ -129,50 +129,19 @@ export default function SupportPage() {
 
       {/* Main card */}
       <main className="flex-1 flex items-center justify-center py-6 px-4 sm:px-6 relative z-10">
-        <div className="max-w-5xl w-full flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
-          {/* 3D Character Avatar */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-            onMouseMove={handleMouse}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              rotateX,
-              rotateY,
-              transformStyle: "preserve-3d",
-              perspective: 1000,
-            }}
-            className="w-40 h-40 sm:w-48 sm:h-48 md:w-80 md:h-80 shrink-0 relative flex items-center justify-center cursor-pointer"
-          >
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              style={{ transformStyle: "preserve-3d" }}
-              className="w-full h-full relative"
-            >
-              <img
-                src="/support_character.png"
-                alt="Support 3D Character"
-                style={{ transform: "translateZ(40px)" }}
-                className="w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.12)]"
-              />
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-xl w-full clay-card p-6 sm:p-8 md:p-10 border border-white/20 shadow-2xl relative overflow-hidden"
-          >
-            <div className="relative z-10 space-y-6 sm:space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-2xl w-full clay-card p-6 sm:p-8 md:p-10 border border-white/20 shadow-2xl relative overflow-hidden"
+        >
+          <div className="relative z-10 space-y-6 sm:space-y-8">
             <div className="text-center space-y-2">
               <div className="w-11 h-11 sm:w-12 sm:h-12 clay-orange rounded-2xl flex items-center justify-center text-white mx-auto mb-3 sm:mb-4 shadow-md">
                 <MessageSquare size={22} className="sm:w-6 sm:h-6" />
               </div>
               <h2 className="font-rubik text-2xl sm:text-3xl font-black uppercase tracking-tighter text-gray-900">Get in Touch</h2>
-              <p className="text-gray-500 font-bold text-[11px] sm:text-xs max-w-xs mx-auto leading-relaxed">
+              <p className="text-gray-500 font-bold text-[11px] sm:text-xs max-w-sm mx-auto leading-relaxed">
                 Have questions or need support? Fill out the form below and we will get back to you shortly.
               </p>
             </div>
@@ -286,7 +255,6 @@ export default function SupportPage() {
             </AnimatePresence>
           </div>
         </motion.div>
-        </div>
       </main>
 
       {/* Footer bar */}
