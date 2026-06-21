@@ -3177,54 +3177,56 @@ export default function GlidePassAdmin() {
                       </div>
 
                       <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                              {["Verified", "Name", "Email", "Role", "Activity", "Credentials", "Actions"].map(h => (
-                                <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Verified" ? "pl-6" : ""}`}
-                                  style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredUsers.map(u => (
-                              <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                <td className="p-4 pl-6">
-                                  <button onClick={() => toggleVerify(u.id)} className="p-1.5 rounded-lg border"
-                                    style={{ background: u.verified ? `${P.blue}15` : "transparent", borderColor: u.verified ? `${P.blue}30` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: u.verified ? P.blue : dk ? `${P.sky}40` : `${P.black}30` }}>
-                                    <CheckSquare size={13} />
-                                  </button>
-                                </td>
-                                <td className="p-4 font-bold">{u.name}</td>
-                                <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
-                                <td className="p-4">
-                                  <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{u.role}</span>
-                                </td>
-                                <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.activity}</td>
-                                <td className="p-4">
-                                  {u.email !== "veeranithin9@gmail.com" ? (
-                                    <button onClick={() => handleGenerateCredentials(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                      style={{ background: /^\d{6}$/.test(u.name) ? "transparent" : `${P.blue}15`, borderColor: /^\d{6}$/.test(u.name) ? dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" : `${P.blue}25`, color: /^\d{6}$/.test(u.name) ? dk ? `${P.sky}80` : `${P.black}60` : P.blue }}>
-                                      {/^\d{6}$/.test(u.name) ? "Show" : "Generate"}
-                                    </button>
-                                  ) : (
-                                    <span className="text-[10px] opacity-40">Fixed</span>
-                                  )}
-                                </td>
-                                <td className="p-4 pr-6 text-right flex justify-end gap-2">
-                                  <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                    style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
-                                    {u.status === "suspended" ? "Unsuspend" : "Suspend"}
-                                  </button>
-                                  <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                    style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
-                                    Delete
-                                  </button>
-                                </td>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "750px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Verified", "Name", "Email", "Role", "Activity", "Credentials", "Actions"].map(h => (
+                                  <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Verified" ? "pl-6" : ""}`}
+                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {filteredUsers.map(u => (
+                                <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 pl-6">
+                                    <button onClick={() => toggleVerify(u.id)} className="p-1.5 rounded-lg border"
+                                      style={{ background: u.verified ? `${P.blue}15` : "transparent", borderColor: u.verified ? `${P.blue}30` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: u.verified ? P.blue : dk ? `${P.sky}40` : `${P.black}30` }}>
+                                      <CheckSquare size={13} />
+                                    </button>
+                                  </td>
+                                  <td className="p-4 font-bold">{u.name}</td>
+                                  <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
+                                  <td className="p-4">
+                                    <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{u.role}</span>
+                                  </td>
+                                  <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.activity}</td>
+                                  <td className="p-4">
+                                    {u.email !== "veeranithin9@gmail.com" ? (
+                                      <button onClick={() => handleGenerateCredentials(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                        style={{ background: /^\d{6}$/.test(u.name) ? "transparent" : `${P.blue}15`, borderColor: /^\d{6}$/.test(u.name) ? dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" : `${P.blue}25`, color: /^\d{6}$/.test(u.name) ? dk ? `${P.sky}80` : `${P.black}60` : P.blue }}>
+                                        {/^\d{6}$/.test(u.name) ? "Show" : "Generate"}
+                                      </button>
+                                    ) : (
+                                      <span className="text-[10px] opacity-40">Fixed</span>
+                                    )}
+                                  </td>
+                                  <td className="p-4 pr-6 text-right flex justify-end gap-2">
+                                    <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                      style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
+                                      {u.status === "suspended" ? "Unsuspend" : "Suspend"}
+                                    </button>
+                                    <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                      style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -3263,31 +3265,33 @@ export default function GlidePassAdmin() {
                       </div>
 
                       <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                              <th className="p-5 pl-6 text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Role</th>
-                              {["users", "rbac", "analytics", "content", "system", "security", "settings"].map(m => (
-                                <th key={m} className="p-5 text-center text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{m}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(rbac).map(([role, perms]) => (
-                              <tr key={role} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                <td className="p-5 pl-6 font-bold">{role}</td>
-                                {Object.entries(perms).map(([mod, has]) => (
-                                  <td key={mod} className="p-5 text-center">
-                                    <button onClick={() => toggleRbac(role, mod)} className="w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all"
-                                      style={{ background: has ? `${P.blue}15` : `${P.error}10`, borderColor: has ? `${P.blue}30` : `${P.error}20`, color: has ? P.blue : P.error }}>
-                                      {has ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
-                                    </button>
-                                  </td>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "700px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                <th className="p-5 pl-6 text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>Role</th>
+                                {["users", "rbac", "analytics", "content", "system", "security", "settings"].map(m => (
+                                  <th key={m} className="p-5 text-center text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{m}</th>
                                 ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {Object.entries(rbac).map(([role, perms]) => (
+                                <tr key={role} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-5 pl-6 font-bold">{role}</td>
+                                  {Object.entries(perms).map(([mod, has]) => (
+                                    <td key={mod} className="p-5 text-center">
+                                      <button onClick={() => toggleRbac(role, mod)} className="w-6 h-6 rounded-lg flex items-center justify-center border mx-auto transition-all"
+                                        style={{ background: has ? `${P.blue}15` : `${P.error}10`, borderColor: has ? `${P.blue}30` : `${P.error}20`, color: has ? P.blue : P.error }}>
+                                        {has ? <CheckSquare size={13} /> : <AlertTriangle size={13} />}
+                                      </button>
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -4999,35 +5003,37 @@ export default function GlidePassAdmin() {
                         <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System login events and security metrics</p>
                       </div>
                       <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                              {["ID", "Time", "Event", "User", "IP", "Severity"].map(h => (
-                                <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Severity" ? "text-right pr-6" : h === "ID" ? "pl-6" : ""}`}
-                                  style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {secLogs.map(l => (
-                              <tr key={l.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.id}</td>
-                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{formatLocalTime(l.timestamp)}</td>
-                                <td className="p-4 font-bold">{l.event}</td>
-                                <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{l.user}</td>
-                                <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.ip}</td>
-                                <td className="p-4 pr-6 text-right">
-                                  <span className="text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md border"
-                                    style={{
-                                      background: l.status === "failed" ? `${P.error}15` : l.status === "warning" ? `${P.sky}15` : `${P.blue}15`,
-                                      color: l.status === "failed" ? P.error : l.status === "warning" ? (dk ? P.sky : P.black) : P.blue,
-                                      borderColor: l.status === "failed" ? `${P.error}25` : l.status === "warning" ? `${P.sky}25` : `${P.blue}25`,
-                                    }}>{l.status === "failed" ? "Critical" : l.status === "warning" ? "Warning" : "Info"}</span>
-                                </td>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "700px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["ID", "Time", "Event", "User", "IP", "Severity"].map(h => (
+                                  <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Severity" ? "text-right pr-6" : h === "ID" ? "pl-6" : ""}`}
+                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {secLogs.map(l => (
+                                <tr key={l.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.id}</td>
+                                  <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{formatLocalTime(l.timestamp)}</td>
+                                  <td className="p-4 font-bold">{l.event}</td>
+                                  <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{l.user}</td>
+                                  <td className="p-4 font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{l.ip}</td>
+                                  <td className="p-4 pr-6 text-right">
+                                    <span className="text-[8px] tracking-wider uppercase font-bold px-2 py-0.5 rounded-md border"
+                                      style={{
+                                        background: l.status === "failed" ? `${P.error}15` : l.status === "warning" ? `${P.sky}15` : `${P.blue}15`,
+                                        color: l.status === "failed" ? P.error : l.status === "warning" ? (dk ? P.sky : P.black) : P.blue,
+                                        borderColor: l.status === "failed" ? `${P.error}25` : l.status === "warning" ? `${P.sky}25` : `${P.blue}25`,
+                                      }}>{l.status === "failed" ? "Critical" : l.status === "warning" ? "Warning" : "Info"}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </motion.div>
                   )}
