@@ -12,7 +12,7 @@ Write-Host "By continuing, you agree that you use this software at your own risk
 Write-Host ""
 
 # Define paths (uses telemetry redirect for counts)
-$DownloadUrl = "https://lanpad.vercel.app/api/download?platform=windows"
+$DownloadUrl = "https://lanpad.app/api/download?platform=windows"
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
 $ExePath = Join-Path $InstallDir "LANpad.exe"
 

@@ -590,7 +590,7 @@ class LANpadLauncher:
             try:
                 import urllib.request
                 import json
-                req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+                req = urllib.request.Request("https://lanpad.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
                 with urllib.request.urlopen(req, timeout=2) as resp:
                     status_data = json.loads(resp.read().decode("utf-8"))
                     if not status_data.get("monetization_enabled", False):
@@ -1439,9 +1439,9 @@ class LANpadLauncher:
             free_enabled = False
             import sys
             if getattr(sys, 'frozen', False):
-                urls = ["https://lanpad.vercel.app"]
+                urls = ["https://lanpad.app"]
             else:
-                urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                urls = ["http://127.0.0.1:3000", "https://lanpad.app"]
             for base_url in urls:
                 try:
                     req = urllib.request.Request(f"{base_url}/api/monetization/status", headers={"User-Agent": "LANpad App"})
@@ -1879,7 +1879,7 @@ class LANpadLauncher:
         # Web Link
         def open_pricing():
             import webbrowser
-            webbrowser.open("https://lanpad.vercel.app/pricing")
+            webbrowser.open("https://lanpad.app/pricing")
             
         get_btn = tk.Button(v, text="Get Activation Key", fg="#8A8A93", activeforeground=self.WHITE, bg="#0D0D10", activebackground="#0D0D10", font=(self.FU, 11, "underline"), bd=0, highlightthickness=0, command=open_pricing, cursor="hand2")
         get_btn.place(x=48, y=logo_y + 415, width=W - 96, height=30)
@@ -2016,9 +2016,9 @@ class LANpadLauncher:
                 }).encode("utf-8")
                 
                 if getattr(sys, 'frozen', False):
-                    urls = ["https://lanpad.vercel.app/api/telemetry"]
+                    urls = ["https://lanpad.app/api/telemetry"]
                 else:
-                    urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                    urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.app/api/telemetry"]
                     
                 for url in urls:
                     try:
@@ -2167,9 +2167,9 @@ class LANpadLauncher:
                 free_enabled = False
                 import sys
                 if getattr(sys, 'frozen', False):
-                    urls = ["https://lanpad.vercel.app"]
+                    urls = ["https://lanpad.app"]
                 else:
-                    urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                    urls = ["http://127.0.0.1:3000", "https://lanpad.app"]
                 
                 for base_url in urls:
                     try:
@@ -2283,9 +2283,9 @@ class LANpadLauncher:
         hwid = get_hardware_id()
         payload = json.dumps({"key": key, "hwid": hwid}).encode("utf-8")
         if getattr(sys, 'frozen', False):
-            urls = ["https://lanpad.vercel.app/api/monetization/verify"]
+            urls = ["https://lanpad.app/api/monetization/verify"]
         else:
-            urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
+            urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.app/api/monetization/verify"]
         
         last_error = "Invalid or expired activation key"
         for url in urls:
@@ -2320,9 +2320,9 @@ class LANpadLauncher:
                 monetization_enabled = False
                 free_enabled = False
                 if getattr(sys, 'frozen', False):
-                    urls = ["https://lanpad.vercel.app"]
+                    urls = ["https://lanpad.app"]
                 else:
-                    urls = ["http://127.0.0.1:3000", "https://lanpad.vercel.app"]
+                    urls = ["http://127.0.0.1:3000", "https://lanpad.app"]
                 
                 for base_url in urls:
                     try:
@@ -2716,7 +2716,7 @@ class LANpadLauncher:
         def _thread():
             try:
                 import json
-                url = "https://lanpad.vercel.app/downloads/version.json"
+                url = "https://lanpad.app/downloads/version.json"
                 req = urllib.request.Request(
                     url, 
                     headers={'User-Agent': 'Mozilla/5.0'}

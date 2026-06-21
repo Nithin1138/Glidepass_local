@@ -143,7 +143,7 @@ def get_license_tier():
     try:
         import urllib.request
         import json
-        req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+        req = urllib.request.Request("https://lanpad.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
         with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if not data.get("monetization_enabled", False):
@@ -206,7 +206,7 @@ def get_cloud_limits(tier):
         try:
             import urllib.request
             import json
-            req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+            req = urllib.request.Request("https://lanpad.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
             with urllib.request.urlopen(req, timeout=2) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 CLOUD_LIMITS_CACHE = {
@@ -440,9 +440,9 @@ async def lifespan(app: FastAPI):
                         }).encode("utf-8")
                         
                         if getattr(sys, 'frozen', False):
-                            urls = ["https://lanpad.vercel.app/api/telemetry"]
+                            urls = ["https://lanpad.app/api/telemetry"]
                         else:
-                            urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                            urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.app/api/telemetry"]
                             
                         for url in urls:
                             try:
@@ -560,9 +560,9 @@ def log_telemetry_event_async(event):
             }).encode("utf-8")
             
             if getattr(sys, 'frozen', False):
-                urls = ["https://lanpad.vercel.app/api/telemetry"]
+                urls = ["https://lanpad.app/api/telemetry"]
             else:
-                urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.vercel.app/api/telemetry"]
+                urls = ["http://127.0.0.1:3000/api/telemetry", "https://lanpad.app/api/telemetry"]
                 
             for url in urls:
                 try:
@@ -644,7 +644,7 @@ async def get_api_vitcodes(request: Request):
     urls = []
     if custom_url:
       urls.append(custom_url.rstrip("/") + "/api/vitcodes")
-    urls.append("https://lanpad.vercel.app/api/vitcodes")
+    urls.append("https://lanpad.app/api/vitcodes")
     urls.append("http://localhost:3000/api/vitcodes")
 
     async def fetch_one(client, url):
@@ -695,7 +695,7 @@ async def get_api_vitcodes_rules(request: Request):
     urls = []
     if custom_url:
         urls.append(custom_url.rstrip("/") + "/api/vitcodes/rules")
-    urls.append("https://lanpad.vercel.app/api/vitcodes/rules")
+    urls.append("https://lanpad.app/api/vitcodes/rules")
     urls.append("http://localhost:3000/api/vitcodes/rules")
 
     async def fetch_one(client, url):

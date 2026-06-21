@@ -184,7 +184,7 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4. THIRD-PARTY INTEGRATIONS</h2>
             <p>
-              LANpad does not integrate with any external advertisement networks or tracking cookies (e.g. Google Analytics). The application may contact verification servers solely to check license validations (`https://lanpad.vercel.app/api/monetization/status`) or download updated web UI templates from GitHub repository. No private clipboard data is ever sent during these checks.
+              LANpad does not integrate with any external advertisement networks or tracking cookies (e.g. Google Analytics). The application may contact verification servers solely to check license validations (`https://lanpad.app/api/monetization/status`) or download updated web UI templates from GitHub repository. No private clipboard data is ever sent during these checks.
             </p>
           </section>
 

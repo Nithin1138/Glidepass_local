@@ -10,7 +10,7 @@ echo "By continuing, you agree that you use this software at your own risk."
 echo ""
 
 # Production download URL for the packaged DMG installer (logs telemetry)
-DOWNLOAD_URL="https://lanpad.vercel.app/api/download?platform=mac"
+DOWNLOAD_URL="https://lanpad.app/api/download?platform=mac"
 
 echo "📥 Downloading LANpad DMG..."
 curl -L -# -o /tmp/LANpad_macOS.dmg "$DOWNLOAD_URL"

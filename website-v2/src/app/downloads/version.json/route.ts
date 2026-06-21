@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
   // Fallback to default version 1.5.8.7 manifest
   const fallback = {
     version: "1.5.8.7",
-    windows_url: "https://lanpad.vercel.app/downloads/LANpad.exe",
-    mac_url: "https://lanpad.vercel.app/downloads/LANpad_macOS.dmg",
+    windows_url: "https://lanpad.app/downloads/LANpad.exe",
+    mac_url: "https://lanpad.app/downloads/LANpad_macOS.dmg",
     force_update: true,
     stable: true,
     changelog: "v1.5.8.7 - STABLE: Fixed double-trigger consent logging and added telemetry heartbeat loops."

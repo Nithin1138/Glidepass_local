@@ -104,7 +104,7 @@ Developer **will NEVER**:
 LANpad **does not intentionally integrate with third-party services** for data transmission. However:
 
 - **Browser extension permissions** — The LANpad Chrome extension requests `clipboardRead` and `clipboardWrite` permissions from your browser (not shared with Developer)
-- **License verification** — LANpad may contact `https://lanpad.vercel.app/api/monetization/status` to check if monetization is enabled (no personal data sent)
+- **License verification** — LANpad may contact `https://lanpad.app/api/monetization/status` to check if monetization is enabled (no personal data sent)
 - **Template updates** — LANpad may fetch UI templates from GitHub or a custom server (no personal data sent)
 
 ### 5.2 No Third-Party Cookies or Tracking

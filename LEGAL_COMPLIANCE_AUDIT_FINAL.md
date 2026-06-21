@@ -168,7 +168,7 @@ allow_origins=["*"],
 # To:
 allow_origins=[],  # No public API access (local-only)
 # If you need any web access, restrict to specific domains:
-# allow_origins=["http://localhost:3000", "https://lanpad.vercel.app"],
+# allow_origins=["http://localhost:3000", "https://lanpad.app"],
 ```
 
 **Impact of Fix:**

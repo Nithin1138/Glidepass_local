@@ -11,7 +11,7 @@ def safe_urlopen(url_or_req, timeout=4):
             return urllib.request.urlopen(url_or_req, timeout=timeout)
         raise e
 
-urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.vercel.app/api/monetization/verify"]
+urls = ["http://127.0.0.1:3000/api/monetization/verify", "https://lanpad.app/api/monetization/verify"]
 payload = json.dumps({"key": "LP-BASIC-I7XZB4OS-QBGV"}).encode("utf-8")
 
 for url in urls:

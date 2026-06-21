@@ -1705,13 +1705,13 @@ export default function Landing2() {
               <div className="space-y-2 pt-4">
                 <span className="text-[9px] font-mono text-gray-400 font-bold uppercase tracking-wider block">One-Line Terminal Install:</span>
                 <div className="p-3 clay-card shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-xl font-mono text-[9px] text-gray-600 break-all select-all leading-normal border border-white/20">
-                  curl -sSL lanpad.vercel.app/mac | bash
+                  curl -sSL lanpad.app/mac | bash
                 </div>
               </div>
             </div>
 
             <button 
-              onClick={() => copyCommandToClipboard("curl -sSL lanpad.vercel.app/mac | bash")}
+              onClick={() => copyCommandToClipboard("curl -sSL lanpad.app/mac | bash")}
               className="mt-8 w-full clay-orange text-white font-black py-4.5 rounded-2xl text-sm transition-all hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-2"
             >
               COPY MAC INSTALL CMD <ArrowRight size={14} />
@@ -1746,13 +1746,13 @@ export default function Landing2() {
               <div className="space-y-2 pt-4">
                 <span className="text-[9px] font-mono text-gray-400 font-bold uppercase tracking-wider block">One-Line Powershell Install:</span>
                 <div className="p-3 clay-card shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-xl font-mono text-[9px] text-gray-600 break-all select-all leading-normal border border-white/20">
-                  powershell -c "irm lanpad.vercel.app/win | iex"
+                  powershell -c "irm lanpad.app/win | iex"
                 </div>
               </div>
             </div>
 
             <button 
-              onClick={() => copyCommandToClipboard('powershell -c "irm lanpad.vercel.app/win | iex"')}
+              onClick={() => copyCommandToClipboard('powershell -c "irm lanpad.app/win | iex"')}
               className="mt-8 w-full clay-blue text-white font-black py-4.5 rounded-2xl text-sm transition-all hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-2"
             >
               COPY WIN INSTALL CMD <ArrowRight size={14} />

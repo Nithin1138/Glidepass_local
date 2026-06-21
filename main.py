@@ -120,7 +120,7 @@ def is_currently_licensed() -> bool:
     monetization_enabled = False
     free_enabled = False
     try:
-        req = urllib.request.Request("https://lanpad.vercel.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
+        req = urllib.request.Request("https://lanpad.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
         with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             monetization_enabled = data.get("monetization_enabled", False)
