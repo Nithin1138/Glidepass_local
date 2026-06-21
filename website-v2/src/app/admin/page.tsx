@@ -4550,17 +4550,6 @@ export default function GlidePassAdmin() {
                                             });
                                           }
                                         });
-                                      } else if (q.contributorEmail === c.email && q.comment) {
-                                        const tsStr = q.id.replace("q_", "");
-                                        const ts = parseInt(tsStr);
-                                        list.push({
-                                          questionId: q.id,
-                                          questionTitle: q.title,
-                                          language: q.language,
-                                          reason: q.comment,
-                                          timestamp: !isNaN(ts) ? ts : Date.now(),
-                                          previousCode: undefined
-                                        });
                                       }
                                     }
                                   });
