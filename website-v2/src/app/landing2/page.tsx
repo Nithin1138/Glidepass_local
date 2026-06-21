@@ -2016,6 +2016,7 @@ export default function Landing2() {
                 <li><Link href="/docs" className="hover:text-gray-800 transition-colors">Documentation</Link></li>
                 <li><Link href="/setup" className="hover:text-gray-800 transition-colors">Setup Guide</Link></li>
                 <li><Link href="/status" className="hover:text-gray-800 transition-colors">API Status</Link></li>
+                <li><Link href="/support" className="hover:text-gray-800 transition-colors">Support & Queries</Link></li>
               </ul>
             </div>
 

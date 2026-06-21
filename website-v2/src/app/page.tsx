@@ -132,6 +132,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
         <a href="#features" className="hover:text-[#468FEA] transition-colors duration-300">Features</a>
         <a href="#setup" className="hover:text-[#F28500] transition-colors duration-300">How to Use</a>
         <a href="#downloads" className="hover:text-[#F28500] transition-colors duration-300">Downloads</a>
+        <Link href="/support" className="hover:text-[#468FEA] transition-colors duration-300">Support</Link>
       </div>
 
       <div className="hidden lg:flex items-center gap-3 md:gap-6 relative">
@@ -189,6 +190,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
               <a href="#features" onClick={() => setIsOpen(false)}>Features</a>
               <a href="#setup" onClick={() => setIsOpen(false)}>How to Use</a>
               <a href="#downloads" onClick={() => setIsOpen(false)}>Downloads</a>
+              <Link href="/support" onClick={() => setIsOpen(false)}>Support</Link>
               <div className="border-t border-gray-200/40 pt-3 my-1">
                 <div className="text-[9px] text-[#F28500] font-mono mb-2">Show Bookmarks (Ctrl+Shift+B / ⌘+Shift+B)</div>
                 <a
@@ -1431,6 +1433,7 @@ export default function Home() {
                 <li><Link href="/docs" className="hover:text-gray-800 transition-colors">Documentation</Link></li>
                 <li><Link href="/setup" className="hover:text-gray-800 transition-colors">Setup Guide</Link></li>
                 <li><Link href="/status" className="hover:text-gray-800 transition-colors">API Status</Link></li>
+                <li><Link href="/support" className="hover:text-gray-800 transition-colors">Support & Queries</Link></li>
               </ul>
             </div>
 
