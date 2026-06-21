@@ -672,12 +672,12 @@ function ContributorsDashboard() {
             {!vitDetailView ? (
               <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="flex-1 min-h-0 flex flex-col space-y-4">
                 {/* Header */}
-                <div className="shrink-0 space-y-3">
+                <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-white/5">
                   <div>
                     <h2 className="text-xl font-black font-outfit tracking-wide uppercase text-white">VIT-AP Code Sessions</h2>
                     <p className={`text-xs ${textSecondary}`}>Manage exam sessions and code questions</p>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap pt-2.5 border-t border-white/5">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <select value={selectedYear} onChange={e => { setSelectedYear(e.target.value); setExamTypeFilter("all"); }} className={`text-xs rounded-xl px-2.5 py-1.5 border focus:outline-none ${inputBg}`}>
                       <option value="1st Year">1st Year</option>
                       <option value="2nd Year">2nd Year</option>
