@@ -1020,6 +1020,14 @@ def perform_typing(text, wpm, is_coding=False):
     lines = normalized_text.split('\n')
 
     try:
+        # Check if the code content looks like Python
+        is_python = False
+        if is_coding:
+            # Look for common Python patterns: def keyword, imports, comments, or colon-block syntax
+            lower_text = text.lower()
+            if "def " in lower_text or "import " in lower_text or "print(" in lower_text or ":" in lower_text:
+                is_python = True
+
         for i, line in enumerate(lines):
             if stop_typing:
                 break
@@ -1032,9 +1040,26 @@ def perform_typing(text, wpm, is_coding=False):
             if not stop_typing:
                 line_to_type = line
                 if is_coding:
-                    # Strip leading whitespace so we rely on the IDE's
-                    # native auto-indentation instead of literal spaces/tabs.
-                    line_to_type = line.lstrip(' \t')
+                    if is_python:
+                        # In Python, IDEs auto-indent when Enter is pressed.
+                        # We must first backspace to clear the IDE auto-indents, 
+                        # then type the EXACT literal leading spaces to prevent indentation errors.
+                        # We determine indentation count of current line
+                        leading_whitespace_len = len(line) - len(line.lstrip(' \t'))
+                        
+                        # Backspace a few times to clear auto-indent (typical limit 8-16 tabs)
+                        # Pressing Shift+Tab is safer as it removes a full indentation block.
+                        for _ in range(6):
+                            pyautogui.hotkey('shift', 'tab')
+                            
+                        # If still remaining indents, clear via backspace
+                        pyautogui.press('backspace')
+                        
+                        # Now type the exact leading whitespace of the original line
+                        line_to_type = line
+                    else:
+                        # Non-python languages: Strip leading whitespace and let the IDE handle auto-indentation.
+                        line_to_type = line.lstrip(' \t')
 
                 for char in line_to_type:
                     if stop_typing:
