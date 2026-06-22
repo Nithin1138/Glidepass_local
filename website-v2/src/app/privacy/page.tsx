@@ -99,6 +99,11 @@ export default function PrivacyPage() {
                     <td className="py-3 px-4">Temporarily (during active session only)</td>
                   </tr>
                   <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Workspace/Resource metadata</td>
+                    <td className="py-3 px-4">Snippet titles, languages, tags, and timestamps for discovery platform sharing</td>
+                    <td className="py-3 px-4">Indefinitely on database (for shared resources)</td>
+                  </tr>
+                  <tr>
                     <td className="py-3 px-4 font-semibold text-white">Session preferences</td>
                     <td className="py-3 px-4">Remember user settings (WPM speed limit, etc.)</td>
                     <td className="py-3 px-4">Until config file is cleared</td>
@@ -132,6 +137,11 @@ export default function PrivacyPage() {
                     <td className="py-3 px-4 font-semibold text-white">Device hostname</td>
                     <td className="py-3 px-4">Identify target connection terminals in GUI</td>
                     <td className="py-3 px-4">Session-only</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Viewer Fingerprint Hash</td>
+                    <td className="py-3 px-4">Track unique resource views (SHA-256 hash of IP + User-Agent)</td>
+                    <td className="py-3 px-4">30 days (auto-expired)</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-semibold text-white">Platform details</td>
@@ -190,6 +200,16 @@ export default function PrivacyPage() {
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
+          {/* Section 4A */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4A. UNIQUE VIEWER TRACKING</h2>
+            <p>
+              To measure content reach for creators on the discovery platform without compromising privacy, we compute a hashed fingerprint of your IP address and User-Agent (using SHA-256). This hash is stored for 30 days to prevent duplicate view/copy counts. The raw IP address and User-Agent are discarded immediately. You can opt out of this tracking by enabling "Do Not Track" in your browser settings.
+            </p>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
           {/* Section 5 */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">5. YOUR RIGHTS & CONTROLS</h2>
@@ -235,6 +255,11 @@ export default function PrivacyPage() {
                     <td className="py-3 px-4 font-semibold text-white">License keys</td>
                     <td className="py-3 px-4">Until revoked or manually deleted</td>
                     <td className="py-3 px-4">Manual deletion of file</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Viewer Fingerprints</td>
+                    <td className="py-3 px-4">30 days</td>
+                    <td className="py-3 px-4">Automatic database expiration job</td>
                   </tr>
                 </tbody>
               </table>

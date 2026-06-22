@@ -1,60 +1,66 @@
 {
   "monetization_enabled": false,
+  "free_enabled": false,
   "plans": [
     {
       "tier": "Free",
       "title": "Free Pass",
-      "subtitle": "Basic access limits",
+      "subtitle": "Basic local bridging",
       "price": "₹0",
       "validity_days": 365,
-      "max_sessions": 999,
-      "max_vitcodes": 999,
+      "max_sessions": 5,
+      "max_resources_per_month": 5,
       "allow_live_sync": 0,
       "allow_typing": 0,
       "allow_typing_mode": 0,
       "allow_inject": 0,
-      "allow_raw": 0,
+      "allow_raw": 1,
       "allow_select_copy": 0,
       "allow_fetch": 0,
       "allow_refill": 0,
-      "allow_vitcode": 0
-    },
-    {
-      "tier": "Basic",
-      "title": "Week Pass",
-      "subtitle": "Perfect for exam weeks",
-      "price": "₹39",
-      "allow_refill": true,
-      "max_sessions": 0,
-      "allow_inject": 0,
-      "allow_live_sync": 0,
-      "validity_days": 7
+      "allow_resource_access": 1,
+      "allow_resource_analytics": 0,
+      "allow_tunnel": 0
     },
     {
       "tier": "Pro",
-      "title": "Monthly Pass",
-      "subtitle": "Consistent connectivity",
+      "title": "Pro Pass",
+      "subtitle": "Full power for local builders",
       "price": "₹99",
-      "allow_refill": true,
-      "allow_typing": true,
-      "allow_typing_mode": true
+      "validity_days": 30,
+      "max_sessions": 999,
+      "max_resources_per_month": 100,
+      "allow_live_sync": 1,
+      "allow_typing": 1,
+      "allow_typing_mode": 1,
+      "allow_inject": 1,
+      "allow_raw": 1,
+      "allow_select_copy": 1,
+      "allow_fetch": 1,
+      "allow_refill": 1,
+      "allow_resource_access": 1,
+      "allow_resource_analytics": 0,
+      "allow_tunnel": 1
     },
     {
-      "tier": "Max",
-      "title": "Sem Pass",
-      "subtitle": "Semester companion",
+      "tier": "Creator",
+      "title": "Creator Pass",
+      "subtitle": "Publishing and analytics",
       "price": "₹299",
-      "allow_refill": true,
-      "validity_days": 160
-    },
-    {
-      "tier": "Ultra",
-      "title": "Yearly Pass",
-      "subtitle": "Year-round connectivity",
-      "price": "₹499",
-      "allow_refill": true,
-      "validity_days": 300
+      "validity_days": 120,
+      "max_sessions": 999,
+      "max_resources_per_month": 9999,
+      "allow_live_sync": 1,
+      "allow_typing": 1,
+      "allow_typing_mode": 1,
+      "allow_inject": 1,
+      "allow_raw": 1,
+      "allow_select_copy": 1,
+      "allow_fetch": 1,
+      "allow_refill": 1,
+      "allow_resource_access": 1,
+      "allow_resource_analytics": 1,
+      "allow_tunnel": 1
     }
-  ],
-  "free_enabled": false
+  ]
 }

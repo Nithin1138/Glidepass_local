@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -87,22 +87,33 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
   const desktopDragRef = useRef<HTMLAnchorElement>(null);
   const mobileDragRef = useRef<HTMLAnchorElement>(null);
   const [showNavbar, setShowNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0);
 
+  // Use a ref for lastScrollY to avoid re-registering the listener on every scroll
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+      if (currentScrollY > lastScrollYRef.current && currentScrollY > 80) {
         setShowNavbar(false);
       } else {
         setShowNavbar(true);
       }
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []); // empty deps — listener registered once, reads ref (never stale)
+
+  // Lock body scroll when mobile menu is open (prevents page jumping behind menu)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   const bookmarkletCode = `javascript:(function(){if(window.__lanpad_active){showN("ALREADY ACTIVE","#f59e0b");return;}window.__lanpad_active=true;window.__gp_abort=false;const op=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(["copy","paste","cut","beforeinput","selectstart"].includes(this.type))return;return op.apply(this,arguments)};function ul(r){const ev=["copy","paste","cut","contextmenu","selectstart","beforeinput"];ev.forEach(t=>r.addEventListener(t,e=>e.stopImmediatePropagation(),true));const al=r.querySelectorAll?r.querySelectorAll("*"):[];al.forEach(el=>{if(el.shadowRoot)ul(el.shadowRoot)})};ul(document);const ob=new MutationObserver(()=>ul(document));ob.observe(document.documentElement,{childList:true,subtree:true});const s=document.createElement("style");s.innerHTML="*{-webkit-user-select:text!important;user-select:text!important;pointer-events:auto!important;}";document.head.appendChild(s);const n=document.createElement("div");n.id="__gp_container";n.innerHTML='<div id="__gp_note" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(5,5,5,0.85);color:#fff;padding:14px 24px;border-radius:16px;border:1px solid rgba(0,119,192,0.3);backdrop-filter:blur(12px);font-family:sans-serif;font-weight:900;font-size:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,119,192,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.4s cubic-bezier(0.18,0.89,0.32,1.28);opacity:0;transform:translate(-50%,-40px);"><span style="color:#0077c0;font-size:18px;">🛰️</span> LANPAD ACTIVATED</div>';document.body.appendChild(n);function showN(t,c="#0077c0"){const e=document.getElementById("__gp_note");if(!e)return;e.innerHTML=\`<span style="color:\${c};font-size:18px;">🛰️</span> \${t}\`;e.style.opacity="1";e.style.transform="translate(-50%,0)";setTimeout(()=>{e.style.opacity="0";e.style.transform="translate(-50%,-40px)"},3000)}setTimeout(()=>showN("LANPAD ACTIVATED"),10);let lastId=localStorage.getItem("__gp_last_id")||"";let seenIds=new Set();let seenTxt=new Map();let queue=[];const wait=(ms)=>new Promise(res=>setTimeout(res,ms));async function poller(){while(true){if(window.__gp_abort_poller)break;try{const res=await fetch("http://127.0.0.1:8000/api/v1/paste/poll?last_id="+lastId+"&t="+Date.now(),{headers:{"x-device-id":"b8b989d6-dca0-4d98-a0e4-2556c5fbc4a1"},cache:"no-store",mode:"cors",credentials:"omit"});const data=await res.json();if(data.status==="success"){lastId=data.id;localStorage.setItem("__gp_last_id",lastId);const txt=data.text||"";const mode=data.mode||"";if(mode==="system"||txt.indexOf("STOP_PASTE")!==-1){window.__gp_abort=true;queue=[];showN("PASTING STOPPED","#ef4444");continue;}const now=Date.now();const txtHash=btoa(txt.substring(0,100)).replace(/=/g,"");if(seenIds.has(data.id)||(seenTxt.has(txtHash)&&now-seenTxt.get(txtHash)<2000))continue;seenIds.add(data.id);seenTxt.set(txtHash,now);queue.push(data);}else{await wait(500)}}catch(e){console.log("GP Poll Error:",e);await wait(2000)}}}async function executor(){while(true){if(window.__gp_abort){queue=[];window.__gp_abort=false;await wait(100);continue;}if(queue.length>0){const data=queue.shift();if(!data)continue;let wpm=data.wpm||40;let txt=data.text;let isRealistic=data.realistic||false;const el=document.activeElement;if(el&&("value" in el||el.isContentEditable)){const inject=(c)=>{if("value" in el){const start=el.selectionStart;const end=el.selectionEnd;if(start!==undefined&&start!==null){el.value=el.value.substring(0,start)+c+el.value.substring(end);el.selectionStart=el.selectionEnd=start+c.length;}else{el.value+=c;}}else{const sel=window.getSelection();if(sel.rangeCount){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(document.createTextNode(c));range.collapse(false);sel.removeAllRanges();sel.addRange(range)}}el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}))};if(isRealistic){for(let i=0;i<txt.length;i++){if(window.__gp_abort)break;inject(txt[i]);let d=60000/(wpm*5);if(txt[i]===' ')d*=1.2;await wait(d*(0.8+Math.random()*0.4))}}else{if(!window.__gp_abort)inject(txt)}}}await wait(100)}}poller();executor();})()`;
 
@@ -127,18 +138,17 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
         <span className="font-rubik font-black text-xl tracking-tight text-gray-900">LANpad</span>
       </div>
 
-      <div className="hidden lg:flex items-center gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
+      <div className="hidden lg:flex items-center gap-5 xl:gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
         <a href="#technology" className="hover:text-[#468FEA] transition-colors duration-300">Technology</a>
         <a href="#features" className="hover:text-[#468FEA] transition-colors duration-300">Features</a>
         <a href="#setup" className="hover:text-[#F28500] transition-colors duration-300">How to Use</a>
         <a href="#downloads" className="hover:text-[#F28500] transition-colors duration-300">Downloads</a>
         <Link href="/support" className="hover:text-[#468FEA] transition-colors duration-300">Support</Link>
+        <Link href="/resources" className="hover:text-[#468FEA] transition-colors duration-300">Resources</Link>
+        <Link href="/provider" className="hover:text-[#468FEA] transition-colors duration-300 uppercase tracking-[0.2em] font-black text-[10px] font-rubik">Provider</Link>
       </div>
 
       <div className="hidden lg:flex items-center gap-3 md:gap-6 relative">
-        <Link href="/contributors" className="relative group text-gray-500 hover:text-gray-800 px-2 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 font-rubik">
-          Contribute
-        </Link>
 
         <a
           ref={desktopDragRef}
@@ -173,7 +183,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
         </div>
       </div>
 
-      <button className="lg:hidden p-2 text-gray-700" onClick={() => setIsOpen(!isOpen)}>
+      <button className="lg:hidden p-2 text-gray-700 font-rubik" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
@@ -202,7 +212,8 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
                   LANpad
                 </a>
               </div>
-              <Link href="/contributors" className="text-[#F28500] font-bold" onClick={() => setIsOpen(false)}>Contribute</Link>
+              <Link href="/resources" className="text-[#F28500] font-bold" onClick={() => setIsOpen(false)}>Resources</Link>
+              <Link href="/provider" className="text-[#F28500] font-bold text-left uppercase tracking-widest text-xs" onClick={() => setIsOpen(false)}>Provider</Link>
             </div>
           </motion.div>
         )}
@@ -851,6 +862,18 @@ const SetupGuide = () => {
 
 export default function Home() {
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showProviderModal, setShowProviderModal] = useState(false);
+  const [providerStep, setProviderStep] = useState(1);
+  const [providerEmail, setProviderEmail] = useState("");
+  const [providerPassword, setProviderPassword] = useState("");
+  const [providerRole, setProviderRole] = useState<"creator" | "contributor" | null>(null);
+  const [providerName, setProviderName] = useState("");
+  const [providerDob, setProviderDob] = useState("");
+  const [providerOccupation, setProviderOccupation] = useState("Student");
+  const [providerReferral, setProviderReferral] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<"google" | "email" | null>(null);
+
   const globalMouseX = useMotionValue(0);
   const globalMouseY = useMotionValue(0);
 
@@ -893,6 +916,15 @@ export default function Home() {
     globalMouseX.set(e.clientX);
     globalMouseY.set(e.clientY);
   };
+
+  useEffect(() => {
+    if (providerStep === 5) {
+      const timer = setTimeout(() => {
+        window.location.href = providerRole === "creator" ? "/publish" : "/contributors";
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [providerStep, providerRole]);
 
   return (
     <div
@@ -1112,7 +1144,7 @@ export default function Home() {
                 },
                 {
                   title: "Works Everywhere",
-                  desc: "Works like a real physical keyboard on Mac and Windows to bypass any typing blocks."
+                  desc: "Works like a real physical keyboard on Mac and Windows utilizing Native Input Mode."
                 }
               ].map((item, idx) => (
                 <motion.div
@@ -1444,6 +1476,9 @@ export default function Home() {
                 <li><Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-gray-800 transition-colors">Terms of Service</Link></li>
                 <li><Link href="/cookies" className="hover:text-gray-800 transition-colors">Cookie Policy</Link></li>
+                <li><Link href="/legal/content-policy" className="hover:text-gray-800 transition-colors">Content Policy</Link></li>
+                <li><Link href="/legal/copyright-takedown" className="hover:text-gray-800 transition-colors">Copyright Takedown</Link></li>
+                <li><Link href="/legal/refund-policy" className="hover:text-gray-800 transition-colors">Refund Policy</Link></li>
               </ul>
             </div>
           </div>

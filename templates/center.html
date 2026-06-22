@@ -602,7 +602,7 @@
         <div id="command-center-view" class="view active">
             <div class="command-center">
                 <header>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
                             <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
                                 <i data-lucide="arrow-left" size="16"></i>
@@ -610,10 +610,16 @@
                             <i data-lucide="wifi" size="14"></i>
                             <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: bottom;">REMOTE COMMAND CENTER <span class="status-dot"></span></span>
                         </div>
-                        <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; position: relative;">
-                            <i data-lucide="rotate-ccw" size="12"></i>
-                            <span>Refill</span>
-                        </button>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="history-toggle-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
+                                <i data-lucide="history" size="12"></i>
+                                <span>History</span>
+                            </button>
+                            <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; position: relative;">
+                                <i data-lucide="rotate-ccw" size="12"></i>
+                                <span>Refill</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="controls-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div class="header-btn" id="live-sync-toggle" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -756,6 +762,24 @@
         </div>
     </div>
 
+    <!-- Saved History Drawer -->
+    <div id="history-drawer" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: flex-end; z-index: 2200; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+        <!-- Backdrop close area -->
+        <div style="position: absolute; inset: 0; z-index: 1;" onclick="document.getElementById('history-drawer').style.display = 'none';"></div>
+        <div style="position: relative; z-index: 2; background: #0b0b0b; border-top: 1px solid var(--border-color); border-radius: 24px 24px 0 0; padding: 24px; max-height: 80%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="history" style="color: var(--accent-color);"></i>
+                    <span>Saved History</span>
+                </h2>
+                <button onclick="document.getElementById('history-drawer').style.display = 'none';" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <div id="history-items-container" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                <!-- Items populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
 
@@ -852,7 +876,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/vitcodes';
+                    window.location.href = '/resources';
                 }
             });
         }
@@ -863,7 +887,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/vitcodes';
+                    window.location.href = '/resources';
                 }
             }
         });
@@ -1412,6 +1436,56 @@
                 ws.close();
             };
         }
+        // History Drawer Logic
+        const historyDrawer = document.getElementById('history-drawer');
+        const historyToggleBtn = document.getElementById('history-toggle-btn');
+        const historyContainer = document.getElementById('history-items-container');
+
+        if (historyToggleBtn) {
+            historyToggleBtn.addEventListener('click', async () => {
+                historyDrawer.style.display = 'flex';
+                historyContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">Loading history...</div>';
+                try {
+                    const res = await fetch('/history');
+                    const data = await res.json();
+                    if (data.status === 'success' && data.history) {
+                        historyContainer.innerHTML = '';
+                        if (data.history.length === 0) {
+                            historyContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">No history items found.</div>';
+                            return;
+                        }
+                        data.history.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'history-item';
+                            div.style.cssText = 'background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: all 0.2s;';
+                            div.addEventListener('mouseenter', () => div.style.borderColor = 'var(--accent-color)');
+                            div.addEventListener('mouseleave', () => div.style.borderColor = 'var(--border-color)');
+                            
+                            const escapedContent = item.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            const escapedTitle = item.title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                            div.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">${escapedTitle}</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">${item.timestamp} (${item.mode})</span>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">${escapedContent}</p>
+                            `;
+                            div.addEventListener('click', () => {
+                                remoteText.value = item.content;
+                                remoteText.dispatchEvent(new Event('input'));
+                                historyDrawer.style.display = 'none';
+                                showToast('Snippet loaded from history!');
+                            });
+                            historyContainer.appendChild(div);
+                        });
+                    }
+                } catch (e) {
+                    historyContainer.innerHTML = '<div style="color: var(--red-status); font-size: 0.8rem; text-align: center; padding: 20px;">Failed to load history.</div>';
+                }
+            });
+        }
+
         connectWebSocket();
     </script>
 </body>

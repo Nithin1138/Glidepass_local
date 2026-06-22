@@ -75,77 +75,55 @@ export async function initDb() {
   const client = await pool.connect();
   try {
     await client.query(`
-      CREATE TABLE IF NOT EXISTS vit_sessions (
+      CREATE TABLE IF NOT EXISTS vit_resources (
         id TEXT PRIMARY KEY,
-        date TEXT NOT NULL,
-        exam_type TEXT NOT NULL,
-        title TEXT
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS vit_questions (
-        id TEXT PRIMARY KEY,
-        session_id TEXT REFERENCES vit_sessions(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
-        code TEXT NOT NULL,
-        language TEXT NOT NULL,
-        comment TEXT,
-        contributor_email TEXT,
-        contributor_name TEXT,
-        contributor_regno TEXT,
-        contributor_college TEXT
-      );
-    `);
-    
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS vit_contributors (
-        email TEXT PRIMARY KEY,
-        status TEXT DEFAULT 'active',
-        name TEXT,
-        regno TEXT,
-        college TEXT
-      );
-    `);
-
-    // Ensure say_my_name column exists
-    await client.query(`
-      ALTER TABLE vit_contributors ADD COLUMN IF NOT EXISTS say_my_name BOOLEAN DEFAULT false;
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS vit_exam_rules (
-        exam_type TEXT PRIMARY KEY,
-        rule TEXT NOT NULL,
-        session_limit INTEGER DEFAULT 1
+        type TEXT NOT NULL,
+        language TEXT,
+        tags TEXT DEFAULT '[]',
+        content TEXT NOT NULL,
+        description TEXT,
+        views INTEGER DEFAULT 0,
+        copies INTEGER DEFAULT 0,
+        sends INTEGER DEFAULT 0,
+        is_deleted BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        creator_email TEXT,
+        creator_name TEXT,
+        hub_id TEXT,
+        sub_category TEXT,
+        category TEXT,
+        topic TEXT,
+        is_locked BOOLEAN DEFAULT false
       );
     `);
 
-    // Ensure session_limit column exists
-    await client.query(`
-      ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS session_limit INTEGER DEFAULT 1;
-    `);
+    // Alter table to add columns if they don't exist in existing database schemas
+    const checkColumns = [
+      { name: "hub_id", type: "TEXT" },
+      { name: "sub_category", type: "TEXT" },
+      { name: "category", type: "TEXT" },
+      { name: "topic", type: "TEXT" },
+      { name: "is_locked", type: "BOOLEAN DEFAULT false" },
+      { name: "description", type: "TEXT" }
+    ];
+    for (const col of checkColumns) {
+      try {
+        await client.query(`ALTER TABLE vit_resources ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+      } catch (e) {
+        console.error(`Failed to add column ${col.name}:`, e);
+      }
+    }
 
-    // Ensure year column exists
     await client.query(`
-      ALTER TABLE vit_exam_rules ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '1st Year';
-    `);
-
-    // Ensure is_deleted column exists
-    await client.query(`
-      ALTER TABLE vit_sessions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
-    `);
-    await client.query(`
-      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
-    `);
-    
-    // Ensure is_locked column exists for questions
-    await client.query(`
-      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;
-    `);
-
-    // Ensure edits column exists for question edit logging
-    await client.query(`
-      ALTER TABLE vit_questions ADD COLUMN IF NOT EXISTS edits TEXT DEFAULT '[]';
+      CREATE TABLE IF NOT EXISTS vit_collections (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        is_deleted BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        creator_email TEXT
+      );
     `);
 
     await client.query(`
@@ -224,6 +202,8 @@ export async function initDb() {
 
     await client.query(`
       ALTER TABLE vit_users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'check';
+      ALTER TABLE vit_users ADD COLUMN IF NOT EXISTS consent_emails BOOLEAN DEFAULT false;
+      ALTER TABLE vit_users ADD COLUMN IF NOT EXISTS referral TEXT DEFAULT NULL;
     `);
 
     await client.query(`
@@ -330,6 +310,21 @@ export async function initDb() {
     `);
     await client.query("ALTER TABLE vit_licenses ADD COLUMN IF NOT EXISTS hwid TEXT;");
 
+    // Initialize Reports Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_reports (
+        id TEXT PRIMARY KEY,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        details TEXT,
+        reporter_contact TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        reporter_ip TEXT
+      );
+    `);
+
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_settings (
@@ -342,34 +337,113 @@ export async function initDb() {
     if (parseInt(monetizationRes.rows[0].count, 10) === 0) {
       const defaultSettings = {
         monetization_enabled: false,
-        free_enabled: false,
+        free_enabled: true,
         plans: [
           {
             tier: "Free",
             title: "Free Pass",
-            subtitle: "Basic access limits",
+            subtitle: "Basic local bridging",
             price: "₹0",
             validity_days: 365,
-            max_sessions: 999,
-            max_vitcodes: 999,
+            max_sessions: 5,
+            max_resources_per_month: 5,
             allow_live_sync: 0,
             allow_typing: 0,
             allow_typing_mode: 0,
             allow_inject: 0,
-            allow_raw: 0,
+            allow_raw: 1,
             allow_select_copy: 0,
             allow_fetch: 0,
             allow_refill: 0,
-            allow_vitcode: 0,
+            allow_resource_access: 1,
+            allow_resource_analytics: 0,
             allow_tunnel: -1
           },
-          { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7, allow_tunnel: -1 },
-          { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30, allow_tunnel: 0 },
-          { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120, allow_tunnel: 0 },
-          { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365, allow_tunnel: 0 }
+          {
+            tier: "Pro",
+            title: "Pro Pass",
+            subtitle: "Full power for local builders",
+            price: "₹99",
+            validity_days: 30,
+            max_sessions: 999,
+            max_resources_per_month: 100,
+            allow_live_sync: 1,
+            allow_typing: 1,
+            allow_typing_mode: 1,
+            allow_inject: 1,
+            allow_raw: 1,
+            allow_select_copy: 1,
+            allow_fetch: 1,
+            allow_refill: 1,
+            allow_resource_access: 1,
+            allow_resource_analytics: 0,
+            allow_tunnel: 1
+          },
+          {
+            tier: "Creator",
+            title: "Creator Pass",
+            subtitle: "Publishing and analytics",
+            price: "₹299",
+            validity_days: 120,
+            max_sessions: 999,
+            max_resources_per_month: 9999,
+            allow_live_sync: 1,
+            allow_typing: 1,
+            allow_typing_mode: 1,
+            allow_inject: 1,
+            allow_raw: 1,
+            allow_select_copy: 1,
+            allow_fetch: 1,
+            allow_refill: 1,
+            allow_resource_access: 1,
+            allow_resource_analytics: 1,
+            allow_tunnel: 1
+          }
         ]
       };
       await client.query("INSERT INTO vit_settings (key, value) VALUES ('monetization_settings', $1)", [JSON.stringify(defaultSettings)]);
+    }
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hubs (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        creator_email TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN DEFAULT false,
+        visibility TEXT DEFAULT 'public',
+        allowed_types TEXT DEFAULT '["code","link","text"]',
+        sub_categories TEXT DEFAULT '[]'
+      );
+    `);
+
+    try {
+      await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public';");
+      await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS allowed_types TEXT DEFAULT '[\"code\",\"link\",\"text\"]';");
+      await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS sub_categories TEXT DEFAULT '[]';");
+    } catch (e) {
+      console.error("Failed to add columns to hubs:", e);
+    }
+
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hub_contributors (
+        id SERIAL PRIMARY KEY,
+        hub_id TEXT NOT NULL,
+        contributor_email TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hub_id, contributor_email)
+      );
+    `);
+
+    try {
+      await client.query("ALTER TABLE vit_resources ADD COLUMN IF NOT EXISTS hub_id TEXT DEFAULT NULL;");
+      await client.query("ALTER TABLE vit_resources ADD COLUMN IF NOT EXISTS sub_category TEXT DEFAULT NULL;");
+      await client.query("ALTER TABLE vit_resources ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;");
+    } catch (e) {
+      console.error("Failed to add columns to vit_resources:", e);
     }
 
     isDbInitialized = true;
@@ -381,155 +455,122 @@ export async function initDb() {
   }
 }
 
-export interface Question {
+export interface TopicConfig {
+  name: string;
+  limit?: number;
+}
+
+export interface CategoryConfig {
+  name: string;
+  allowedTypes?: string[];
+  limit?: number;
+  topics?: TopicConfig[];
+  topicsLimit?: number;
+  dailyLimit?: number;
+}
+
+export interface Resource {
   id: string;
   title: string;
-  code: string;
-  language: string;
-  comment?: string;
-  contributorEmail?: string;
-  contributorName?: string;
-  contributorRegno?: string;
-  contributorCollege?: string;
-  isDeleted?: boolean;
+  type: string;
+  language?: string;
+  tags: string[];
+  content: string;
+  description?: string;
+  views: number;
+  copies: number;
+  sends: number;
+  isDeleted: boolean;
   isLocked?: boolean;
-  edits?: any[];
+  createdAt?: string;
+  creatorEmail?: string;
+  creatorName?: string;
+  hubId?: string;
+  subCategory?: string;
+  category?: string;
+  topic?: string;
 }
 
-export interface VitCode {
+export interface Collection {
   id: string;
-  date: string;
-  examType: string;
-  title?: string;
-  questions: Question[];
-  isDeleted?: boolean;
-  year?: string;
+  title: string;
+  description?: string;
+  isDeleted: boolean;
+  createdAt?: string;
+  creatorEmail?: string;
 }
 
-export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
-  const settings = await readRules();
-  const examYears = settings.examYears || {};
+const getResourcesJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "resources.json");
+};
 
+const getCollectionsJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "collections.json");
+};
+
+export async function readResources(includeDeleted = false): Promise<Resource[]> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      // Fetch all sessions (filtered or not)
-      const sessionsQuery = includeDeleted
-        ? "SELECT * FROM vit_sessions ORDER BY date DESC, id DESC"
-        : "SELECT * FROM vit_sessions WHERE is_deleted = false ORDER BY date DESC, id DESC";
-      const sessionsRes = await client.query(sessionsQuery);
-
-      // Fetch all questions (filtered or not)
-      const questionsQuery = includeDeleted
-        ? `SELECT q.*, c.say_my_name, c.name as contributor_db_name
-           FROM vit_questions q
-           LEFT JOIN vit_contributors c ON q.contributor_email = c.email`
-        : `SELECT q.*, c.say_my_name, c.name as contributor_db_name
-           FROM vit_questions q
-           LEFT JOIN vit_contributors c ON q.contributor_email = c.email
-           WHERE q.is_deleted = false`;
-      const questionsRes = await client.query(questionsQuery);
-      
-      const questionsBySession: Record<string, Question[]> = {};
-      questionsRes.rows.forEach((row) => {
-        let parsedEdits = [];
-        if (row.edits) {
-          try {
-            parsedEdits = JSON.parse(row.edits);
-          } catch (e) {
-            parsedEdits = [];
-          }
-        }
-        const q: Question = {
-          id: row.id,
-          title: row.title,
-          code: row.code,
-          language: row.language,
-          comment: row.comment,
-          contributorEmail: row.contributor_email,
-          contributorName: row.say_my_name ? (row.contributor_db_name || row.contributor_name) : undefined,
-          contributorRegno: row.contributor_regno,
-          contributorCollege: row.contributor_college,
-          isDeleted: !!row.is_deleted,
-          isLocked: !!row.is_locked,
-          edits: parsedEdits,
-        };
-        if (!questionsBySession[row.session_id]) {
-          questionsBySession[row.session_id] = [];
-        }
-        questionsBySession[row.session_id].push(q);
-      });
-
-      return sessionsRes.rows.map((row) => ({
+      const query = includeDeleted
+        ? "SELECT * FROM vit_resources ORDER BY created_at DESC"
+        : "SELECT * FROM vit_resources WHERE is_deleted = false ORDER BY created_at DESC";
+      const res = await client.query(query);
+      return res.rows.map((row) => ({
         id: row.id,
-        date: row.date,
-        examType: row.exam_type,
-        title: row.title || undefined,
+        title: row.title,
+        type: row.type,
+        language: row.language || undefined,
+        tags: typeof row.tags === "string" ? JSON.parse(row.tags) : (Array.isArray(row.tags) ? row.tags : []),
+        content: row.content,
+        views: row.views || 0,
+        copies: row.copies || 0,
+        sends: row.sends || 0,
         isDeleted: !!row.is_deleted,
-        year: examYears[row.exam_type] || "1st Year",
-        questions: questionsBySession[row.id] || [],
+        isLocked: !!row.is_locked,
+        description: row.description || undefined,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        creatorEmail: row.creator_email || undefined,
+        creatorName: row.creator_name || undefined,
+        hubId: row.hub_id || undefined,
+        subCategory: row.sub_category || undefined,
+        category: row.category || undefined,
+        topic: row.topic || undefined,
       }));
     } catch (error) {
-      console.error("Error reading from Postgres:", error);
+      console.error("Error reading resources from Postgres:", error);
       throw error;
     } finally {
       client.release();
     }
   }
 
-  // Fallback to JSON file
-  const filePath = getJsonFilePath();
-  if (!fs.existsSync(filePath)) {
-    const defaultFilePath = path.join(process.cwd(), "public", "templates", "vitcodes.json");
-    if (fs.existsSync(defaultFilePath)) {
-      try {
-        const raw = fs.readFileSync(defaultFilePath, "utf8");
-        const data = JSON.parse(raw);
-        if (Array.isArray(data)) {
-          const sessions = data.map((s: any) => ({
-            ...s,
-            isDeleted: !!s.isDeleted,
-            year: examYears[s.examType] || s.year || "1st Year",
-            questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
-              ...q,
-              isDeleted: !!q.isDeleted,
-              isLocked: !!q.isLocked
-            }))
-          }));
-          if (includeDeleted) return sessions;
-          return sessions
-            .filter((s: any) => !s.isDeleted)
-            .map((s: any) => ({
-              ...s,
-              questions: s.questions.filter((q: any) => !q.isDeleted)
-            }));
-        }
-      } catch (e) {}
-    }
-    return [];
-  }
+  const filePath = getResourcesJsonPath();
+  if (!fs.existsSync(filePath)) return [];
   try {
     const raw = fs.readFileSync(filePath, "utf8");
     const data = JSON.parse(raw);
     if (Array.isArray(data)) {
-      const sessions = data.map((s: any) => ({
-        ...s,
-        isDeleted: !!s.isDeleted,
-        year: examYears[s.examType] || s.year || "1st Year",
-        questions: (Array.isArray(s.questions) ? s.questions : []).map((q: any) => ({
-          ...q,
-          isDeleted: !!q.isDeleted,
-          isLocked: !!q.isLocked
-        }))
+      const items = data.map((item: any) => ({
+        ...item,
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        views: item.views || 0,
+        copies: item.copies || 0,
+        sends: item.sends || 0,
+        isDeleted: !!item.isDeleted,
+        isLocked: !!item.isLocked,
+        hubId: item.hubId || undefined,
+        subCategory: item.subCategory || undefined,
+        category: item.category || undefined,
+        topic: item.topic || undefined,
       }));
-      if (includeDeleted) return sessions;
-      return sessions
-        .filter((s: any) => !s.isDeleted)
-        .map((s: any) => ({
-          ...s,
-          questions: s.questions.filter((q: any) => !q.isDeleted)
-        }));
+      if (includeDeleted) return items;
+      return items.filter((item: any) => !item.isDeleted);
     }
     return [];
   } catch (error) {
@@ -537,428 +578,317 @@ export async function readCodes(includeDeleted = false): Promise<VitCode[]> {
   }
 }
 
-export async function writeCodes(data: VitCode[]): Promise<void> {
+export async function writeResources(data: Resource[]): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      
-      // Clear all existing data
-      await client.query("DELETE FROM vit_questions");
-      await client.query("DELETE FROM vit_sessions");
-
-      // Insert fresh data
-      for (const session of data) {
+      await client.query("DELETE FROM vit_resources");
+      for (const item of data) {
         await client.query(
-          "INSERT INTO vit_sessions (id, date, exam_type, title, is_deleted) VALUES ($1, $2, $3, $4, $5)",
-          [session.id, session.date, session.examType, session.title || null, session.isDeleted || false]
+          `INSERT INTO vit_resources (id, title, type, language, tags, content, views, copies, sends, is_deleted, creator_email, creator_name, hub_id, sub_category, category, topic, is_locked) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+          [
+            item.id,
+            item.title,
+            item.type,
+            item.language || null,
+            item.tags ? (typeof item.tags === "string" ? item.tags : JSON.stringify(item.tags)) : "[]",
+            item.content,
+            item.views || 0,
+            item.copies || 0,
+            item.sends || 0,
+            item.isDeleted || false,
+            item.creatorEmail || null,
+            item.creatorName || null,
+            item.hubId || null,
+            item.subCategory || null,
+            item.category || null,
+            item.topic || null,
+            item.isLocked || false,
+          ]
         );
-
-        for (const q of session.questions) {
-          const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
-          await client.query(
-            "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted, edits) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
-            [
-              q.id,
-              session.id,
-              q.title,
-              q.code,
-              q.language,
-              q.comment || null,
-              q.contributorEmail || null,
-              q.contributorName || parsed.name || null,
-              q.contributorRegno || parsed.regno || null,
-              q.contributorCollege || parsed.college || null,
-              q.isDeleted || false,
-              q.edits ? JSON.stringify(q.edits) : "[]"
-            ]
-          );
-        }
       }
-
       await client.query("COMMIT");
       return;
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error writing to Postgres:", error);
+      console.error("Error writing resources to Postgres:", error);
       throw error;
     } finally {
       client.release();
     }
   }
 
-  // Fallback to JSON file
-  const filePath = getJsonFilePath();
-  const parentDir = path.dirname(filePath);
-  if (!fs.existsSync(parentDir)) {
-    fs.mkdirSync(parentDir, { recursive: true });
-  }
+  const filePath = getResourcesJsonPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
-// ─── Granular Operations ───
-
-export async function createSession(session: VitCode): Promise<void> {
+export async function getResourceById(id: string): Promise<Resource | null> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      await client.query(
-        "INSERT INTO vit_sessions (id, date, exam_type, title, is_deleted) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET date=$2, exam_type=$3, title=$4, is_deleted=$5",
-        [session.id, session.date, session.examType, session.title || null, session.isDeleted || false]
-      );
-    } finally {
-      client.release();
-    }
-  } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    const existingIdx = all.findIndex(s => s.id === session.id);
-    if (existingIdx !== -1) {
-      all[existingIdx] = {
-        ...all[existingIdx],
-        date: session.date,
-        examType: session.examType,
-        title: session.title,
-        isDeleted: session.isDeleted !== undefined ? session.isDeleted : all[existingIdx].isDeleted,
-        questions: all[existingIdx].questions || []
+      const res = await client.query("SELECT * FROM vit_resources WHERE id = $1", [id]);
+      if (res.rows.length === 0) return null;
+      const row = res.rows[0];
+      return {
+        id: row.id,
+        title: row.title,
+        type: row.type,
+        language: row.language || undefined,
+        tags: typeof row.tags === "string" ? JSON.parse(row.tags) : (Array.isArray(row.tags) ? row.tags : []),
+        content: row.content,
+        views: row.views || 0,
+        copies: row.copies || 0,
+        sends: row.sends || 0,
+        isDeleted: !!row.is_deleted,
+        isLocked: !!row.is_locked,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        creatorEmail: row.creator_email || undefined,
+        creatorName: row.creator_name || undefined,
+        hubId: row.hub_id || undefined,
+        subCategory: row.sub_category || undefined,
+        category: row.category || undefined,
+        topic: row.topic || undefined,
       };
-    } else {
-      all.unshift({
-        ...session,
-        isDeleted: session.isDeleted || false,
-        questions: session.questions || []
-      });
-    }
-    await writeCodes(all);
-  }
-}
-
-export async function updateQuestionLock(questionId: string, isLocked: boolean) {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      await client.query("UPDATE vit_questions SET is_locked = $1 WHERE id = $2", [isLocked, questionId]);
-      return;
-    } catch (e) {
-      console.error("Failed to update question lock in pg, falling back to JSON", e);
     } finally {
       client.release();
     }
   }
-  
-  const all = await readCodes(true);
-  let found = false;
-  for (const s of all) {
-    for (const q of s.questions) {
-      if (q.id === questionId) {
-        q.isLocked = isLocked;
-        found = true;
-        break;
-      }
-    }
-    if (found) break;
-  }
-  if (found) {
-    await writeCodes(all);
-  }
+
+  const resources = await readResources(true);
+  return resources.find((r) => r.id === id) || null;
 }
 
-export async function isQuestionLocked(questionId: string): Promise<boolean> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      const res = await client.query("SELECT is_locked FROM vit_questions WHERE id = $1", [questionId]);
-      if (res.rows.length > 0) {
-        return !!res.rows[0].is_locked;
-      }
-      return false;
-    } catch (e) {
-      console.error("Failed to query question lock in pg, falling back to JSON", e);
-    } finally {
-      client.release();
-    }
-  }
-  
-  const all = await readCodes(true);
-  for (const s of all) {
-    for (const q of s.questions) {
-      if (q.id === questionId) {
-        return !!q.isLocked;
-      }
-    }
-  }
-  return false;
-}
-
-export async function deleteSession(sessionId: string): Promise<void> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      await client.query("UPDATE vit_sessions SET is_deleted = true WHERE id = $1", [sessionId]);
-      await client.query("UPDATE vit_questions SET is_deleted = true WHERE session_id = $1", [sessionId]);
-    } finally {
-      client.release();
-    }
-  } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    const session = all.find(s => s.id === sessionId);
-    if (session) {
-      session.isDeleted = true;
-      if (session.questions) {
-        session.questions.forEach(q => {
-          q.isDeleted = true;
-        });
-      }
-      await writeCodes(all);
-    }
-  }
-}
-
-export async function permanentlyDeleteSession(sessionId: string): Promise<void> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      await client.query("DELETE FROM vit_sessions WHERE id = $1", [sessionId]);
-    } finally {
-      client.release();
-    }
-  } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    const filtered = all.filter(s => s.id !== sessionId);
-    await writeCodes(filtered);
-  }
-}
-
-export async function restoreSession(sessionId: string): Promise<void> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      await client.query("UPDATE vit_sessions SET is_deleted = false WHERE id = $1", [sessionId]);
-      await client.query("UPDATE vit_questions SET is_deleted = false WHERE session_id = $1", [sessionId]);
-    } finally {
-      client.release();
-    }
-  } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    const session = all.find(s => s.id === sessionId);
-    if (session) {
-      session.isDeleted = false;
-      if (session.questions) {
-        session.questions.forEach(q => {
-          q.isDeleted = false;
-        });
-      }
-      await writeCodes(all);
-    }
-  }
-}
-
-export async function createQuestion(sessionId: string, q: Question): Promise<void> {
-  const parsed = q.contributorEmail ? parseVitEmail(q.contributorEmail) : { name: null, regno: null, college: null };
-  const updatedQ: Question = {
-    ...q,
-    contributorName: q.contributorName || parsed.name || undefined,
-    contributorRegno: q.contributorRegno || parsed.regno || undefined,
-    contributorCollege: q.contributorCollege || parsed.college || undefined,
-    isDeleted: q.isDeleted || false
-  };
-
+export async function createResource(resource: Resource): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
       await client.query(
-        "INSERT INTO vit_questions (id, session_id, title, code, language, comment, contributor_email, contributor_name, contributor_regno, contributor_college, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+        `INSERT INTO vit_resources (id, title, type, language, tags, content, description, views, copies, sends, is_deleted, creator_email, creator_name, hub_id, sub_category, category, topic, is_locked) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
         [
-          updatedQ.id,
-          sessionId,
-          updatedQ.title,
-          updatedQ.code,
-          updatedQ.language,
-          updatedQ.comment || null,
-          updatedQ.contributorEmail || null,
-          updatedQ.contributorName || null,
-          updatedQ.contributorRegno || null,
-          updatedQ.contributorCollege || null,
-          updatedQ.isDeleted || false
+          resource.id,
+          resource.title,
+          resource.type,
+          resource.language || null,
+          JSON.stringify(resource.tags || []),
+          resource.content,
+          resource.description || null,
+          resource.views || 0,
+          resource.copies || 0,
+          resource.sends || 0,
+          resource.isDeleted || false,
+          resource.creatorEmail || null,
+          resource.creatorName || null,
+          resource.hubId || null,
+          resource.subCategory || null,
+          resource.category || null,
+          resource.topic || null,
+          resource.isLocked || false,
         ]
       );
     } finally {
       client.release();
     }
   } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    const s = all.find(s => s.id === sessionId);
-    if (s) {
-      if (!s.questions) s.questions = [];
-      s.questions.push(updatedQ);
-      await writeCodes(all);
-    }
+    const resources = await readResources(true);
+    resources.unshift(resource);
+    await writeResources(resources);
   }
 }
 
-export async function updateQuestion(q: Question, editorEmail?: string): Promise<void> {
-  if (await isQuestionLocked(q.id)) {
-    throw new Error("This question is locked by an admin and cannot be modified.");
-  }
-  
-  let editsList: any[] = [];
-  
+export async function updateResource(resource: Resource): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      const existingRes = await client.query("SELECT code, edits FROM vit_questions WHERE id = $1", [q.id]);
-      let existingCode = "";
-      if (existingRes.rows.length > 0) {
-        existingCode = existingRes.rows[0].code || "";
-        if (existingRes.rows[0].edits) {
-          try {
-            editsList = JSON.parse(existingRes.rows[0].edits);
-          } catch (e) {
-            editsList = [];
-          }
-        }
-      }
-      
-      if (editorEmail) {
-        editsList.push({
-          editorEmail,
-          reason: q.comment || "Updated code",
-          timestamp: Date.now(),
-          questionId: q.id,
-          questionTitle: q.title,
-          language: q.language,
-          previousCode: existingCode
-        });
-      }
-      
       await client.query(
-        "UPDATE vit_questions SET title = $2, code = $3, language = $4, comment = $5, is_deleted = $6, edits = $7 WHERE id = $1",
-        [q.id, q.title, q.code, q.language, q.comment || null, q.isDeleted || false, JSON.stringify(editsList)]
+        `UPDATE vit_resources 
+         SET title = $2, type = $3, language = $4, tags = $5, content = $6, description = $7, is_deleted = $8, creator_email = $9, creator_name = $10, hub_id = $11, sub_category = $12, category = $13, topic = $14, is_locked = $15
+         WHERE id = $1`,
+        [
+          resource.id,
+          resource.title,
+          resource.type,
+          resource.language || null,
+          JSON.stringify(resource.tags || []),
+          resource.content,
+          resource.description || null,
+          resource.isDeleted || false,
+          resource.creatorEmail || null,
+          resource.creatorName || null,
+          resource.hubId || null,
+          resource.subCategory || null,
+          resource.category || null,
+          resource.topic || null,
+          resource.isLocked || false,
+        ]
       );
     } finally {
       client.release();
     }
   } else {
-    const all = await readCodes(true);
-    for (const s of all) {
-      const idx = (s.questions || []).findIndex(x => x.id === q.id);
-      if (idx !== -1) {
-        const existingQ = s.questions[idx];
-        editsList = existingQ.edits || [];
-        if (editorEmail) {
-          editsList.push({
-            editorEmail,
-            reason: q.comment || "Updated code",
-            timestamp: Date.now(),
-            questionId: q.id,
-            questionTitle: q.title,
-            language: q.language,
-            previousCode: existingQ.code || ""
-          });
-        }
-        s.questions[idx] = {
-          ...q,
-          isDeleted: q.isDeleted !== undefined ? q.isDeleted : s.questions[idx].isDeleted,
-          edits: editsList
-        };
-        await writeCodes(all);
-        return;
-      }
+    const resources = await readResources(true);
+    const idx = resources.findIndex((r) => r.id === resource.id);
+    if (idx !== -1) {
+      resources[idx] = { ...resources[idx], ...resource };
+      await writeResources(resources);
     }
   }
 }
 
-export async function deleteQuestion(qId: string): Promise<void> {
-  if (await isQuestionLocked(qId)) {
-    throw new Error("This question is locked by an admin and cannot be modified.");
-  }
+export async function deleteResource(id: string): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      await client.query("UPDATE vit_questions SET is_deleted = true WHERE id = $1", [qId]);
+      await client.query("DELETE FROM vit_resources WHERE id = $1", [id]);
     } finally {
       client.release();
     }
   } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    for (const s of all) {
-      const q = (s.questions || []).find(q => q.id === qId);
-      if (q) {
-        q.isDeleted = true;
-        await writeCodes(all);
-        return;
-      }
-    }
+    const resources = await readResources(true);
+    const filtered = resources.filter((r) => r.id !== id);
+    await writeResources(filtered);
   }
 }
 
-export async function permanentlyDeleteQuestion(qId: string): Promise<void> {
-  if (await isQuestionLocked(qId)) {
-    throw new Error("This question is locked by an admin and cannot be modified.");
-  }
+
+export async function incrementResourceStats(id: string, field: "views" | "copies" | "sends"): Promise<void> {
   if (pool) {
     await initDb();
     const client = await pool.connect();
     try {
-      await client.query("DELETE FROM vit_questions WHERE id = $1", [qId]);
-    } finally {
-      client.release();
-    }
-  } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    for (const s of all) {
-      const idx = (s.questions || []).findIndex(q => q.id === qId);
-      if (idx !== -1) {
-        s.questions.splice(idx, 1);
-        await writeCodes(all);
-        return;
-      }
-    }
-  }
-}
-
-export async function restoreQuestion(qId: string): Promise<void> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      await client.query("UPDATE vit_questions SET is_deleted = false WHERE id = $1", [qId]);
-      const res = await client.query("SELECT session_id FROM vit_questions WHERE id = $1", [qId]);
-      if (res.rows.length > 0) {
-        const parentSessionId = res.rows[0].session_id;
-        await client.query("UPDATE vit_sessions SET is_deleted = false WHERE id = $1", [parentSessionId]);
+      if (field === "views") {
+        await client.query("UPDATE vit_resources SET views = views + 1 WHERE id = $1", [id]);
+      } else if (field === "copies") {
+        await client.query("UPDATE vit_resources SET copies = copies + 1 WHERE id = $1", [id]);
+      } else if (field === "sends") {
+        await client.query("UPDATE vit_resources SET sends = sends + 1 WHERE id = $1", [id]);
       }
     } finally {
       client.release();
     }
   } else {
-    // JSON fallback
-    const all = await readCodes(true);
-    for (const s of all) {
-      const q = (s.questions || []).find(q => q.id === qId);
-      if (q) {
-        q.isDeleted = false;
-        s.isDeleted = false; // Restore parent session too
-        await writeCodes(all);
-        return;
-      }
+    const resources = await readResources(true);
+    const item = resources.find((r) => r.id === id);
+    if (item) {
+      if (field === "views") item.views = (item.views || 0) + 1;
+      if (field === "copies") item.copies = (item.copies || 0) + 1;
+      if (field === "sends") item.sends = (item.sends || 0) + 1;
+      await writeResources(resources);
     }
+  }
+}
+
+export async function readCollections(includeDeleted = false): Promise<Collection[]> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const query = includeDeleted
+        ? "SELECT * FROM vit_collections ORDER BY created_at DESC"
+        : "SELECT * FROM vit_collections WHERE is_deleted = false ORDER BY created_at DESC";
+      const res = await client.query(query);
+      return res.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description || undefined,
+        isDeleted: !!row.is_deleted,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        creatorEmail: row.creator_email || undefined,
+      }));
+    } catch (error) {
+      console.error("Error reading collections from Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getCollectionsJsonPath();
+  if (!fs.existsSync(filePath)) return [];
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      const items = data.map((item: any) => ({
+        ...item,
+        isDeleted: !!item.isDeleted,
+      }));
+      if (includeDeleted) return items;
+      return items.filter((item: any) => !item.isDeleted);
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function writeCollections(data: Collection[]): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM vit_collections");
+      for (const item of data) {
+        await client.query(
+          `INSERT INTO vit_collections (id, title, description, is_deleted, creator_email) 
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            item.id,
+            item.title,
+            item.description || null,
+            item.isDeleted || false,
+            item.creatorEmail || null,
+          ]
+        );
+      }
+      await client.query("COMMIT");
+      return;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error writing collections to Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getCollectionsJsonPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+export async function createCollection(collection: Collection): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO vit_collections (id, title, description, is_deleted, creator_email) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          collection.id,
+          collection.title,
+          collection.description || null,
+          collection.isDeleted || false,
+          collection.creatorEmail || null,
+        ]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const collections = await readCollections(true);
+    collections.unshift(collection);
+    await writeCollections(collections);
   }
 }
 
@@ -968,115 +898,12 @@ export interface ExamSettings {
   examYears: Record<string, string>;
 }
 
-let cachedRules: ExamSettings | null = null;
-let lastRulesFetch = 0;
-const RULES_CACHE_TTL = 60000; // Cache rules for 60 seconds
-
 export async function readRules(): Promise<ExamSettings> {
-  const now = Date.now();
-  if (cachedRules && (now - lastRulesFetch < RULES_CACHE_TTL)) {
-    return cachedRules;
-  }
-
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      const res = await client.query("SELECT * FROM vit_exam_rules");
-      const rules: Record<string, string> = {};
-      const sessionLimits: Record<string, number> = {};
-      const examYears: Record<string, string> = {};
-      res.rows.forEach(row => {
-        rules[row.exam_type] = row.rule;
-        sessionLimits[row.exam_type] = row.session_limit !== null ? row.session_limit : 1;
-        examYears[row.exam_type] = row.year || '1st Year';
-      });
-      cachedRules = { rules, sessionLimits, examYears };
-      lastRulesFetch = now;
-      return cachedRules;
-    } finally {
-      client.release();
-    }
-  } else {
-    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
-    if (!fs.existsSync(filePath)) return { rules: {}, sessionLimits: {}, examYears: {} };
-    try {
-      const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      if (data.rules && data.sessionLimits && (data.collectionYears || data.examYears)) {
-        return {
-          rules: data.rules,
-          sessionLimits: data.sessionLimits,
-          examYears: data.collectionYears || data.examYears
-        };
-      } else {
-        const rules: Record<string, string> = {};
-        const sessionLimits: Record<string, number> = {};
-        const examYears: Record<string, string> = {};
-        
-        const srcRules = data.rules || data;
-        const srcLimits = data.sessionLimits || {};
-        const srcYears = data.collectionYears || data.examYears || {};
-        
-        Object.keys(srcRules).forEach(k => {
-          rules[k] = srcRules[k];
-          sessionLimits[k] = srcLimits[k] !== undefined ? srcLimits[k] : 1;
-          examYears[k] = srcYears[k] !== undefined ? srcYears[k] : '1st Year';
-        });
-        return { rules, sessionLimits, examYears };
-      }
-    } catch (e) {
-      return { rules: {}, sessionLimits: {}, examYears: {} };
-    }
-  }
+  return { rules: {}, sessionLimits: {}, examYears: {} };
 }
 
 export async function writeRule(examType: string, rule?: string, sessionLimit?: number, year?: string): Promise<void> {
-  if (pool) {
-    await initDb();
-    const client = await pool.connect();
-    try {
-      if (rule !== undefined) {
-        await client.query(
-          "INSERT INTO vit_exam_rules (exam_type, rule) VALUES ($1, $2) ON CONFLICT (exam_type) DO UPDATE SET rule = $2",
-          [examType, rule]
-        );
-      }
-      if (sessionLimit !== undefined) {
-        await client.query(
-          "INSERT INTO vit_exam_rules (exam_type, rule, session_limit) VALUES ($1, '1', $2) ON CONFLICT (exam_type) DO UPDATE SET session_limit = $2",
-          [examType, sessionLimit]
-        );
-      }
-      if (year !== undefined) {
-        await client.query(
-          "INSERT INTO vit_exam_rules (exam_type, rule, year) VALUES ($1, '1', $2) ON CONFLICT (exam_type) DO UPDATE SET year = $2",
-          [examType, year]
-        );
-      }
-    } finally {
-      client.release();
-    }
-  } else {
-    const settings = await readRules();
-    if (rule !== undefined) {
-      settings.rules[examType] = rule;
-    }
-    if (sessionLimit !== undefined) {
-      settings.sessionLimits[examType] = sessionLimit;
-    }
-    if (year !== undefined) {
-      settings.examYears = settings.examYears || {};
-      settings.examYears[examType] = year;
-    }
-    const filePath = path.join(process.env.VERCEL || process.env.NODE_ENV === "production" ? "/tmp" : path.join(process.cwd(), "data"), "exam_rules.json");
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    const output = {
-      rules: settings.rules,
-      sessionLimits: settings.sessionLimits,
-      collectionYears: settings.examYears
-    };
-    fs.writeFileSync(filePath, JSON.stringify(output, null, 2), "utf8");
-  }
+  // No-op for compatibility
 }
 
 export async function logDownload(platform: string): Promise<void> {
@@ -1314,12 +1141,12 @@ export async function getDiagnosticsData(): Promise<any> {
     } catch (e: any) {
       dbStatus = `Error: ${e.message}`;
     }
-  } else {
     dbStatus = "Connected (Local JSON Database)";
     try {
-      const codes = await readCodes(true);
-      sessionsCount = codes.length;
-      questionsCount = codes.reduce((a, s) => a + (s.questions?.length || 0), 0);
+      const resources = await readResources(true);
+      const collections = await readCollections(true);
+      sessionsCount = collections.length;
+      questionsCount = resources.length;
     } catch (e) {}
   }
 
@@ -1491,8 +1318,10 @@ const getUsersJsonPath = () => {
 
 async function readUsersRbac(): Promise<{ users: any[], rbac: any }> {
   const filePath = getUsersJsonPath();
+  console.log("readUsersRbac: filePath =", filePath);
   try {
     if (!fs.existsSync(filePath)) {
+      console.log("readUsersRbac: file does not exist, creating default");
       const dir = path.dirname(filePath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const defaults = {
@@ -1514,8 +1343,11 @@ async function readUsersRbac(): Promise<{ users: any[], rbac: any }> {
       return defaults;
     }
     const data = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(data);
-  } catch (e) {
+    const parsed = JSON.parse(data);
+    console.log("readUsersRbac: file read success, users count =", parsed.users?.length);
+    return parsed;
+  } catch (e: any) {
+    console.error("readUsersRbac error:", e);
     return { users: [], rbac: {} };
   }
 }
@@ -1530,16 +1362,19 @@ async function writeUsersRbac(data: { users: any[], rbac: any }) {
 }
 
 export async function getDbUsers(): Promise<any[]> {
+  console.log("getDbUsers: pool exists:", !!pool);
   if (pool) {
     try {
-      const res = await pool.query('SELECT id, name, email, role, status, verified, activity, joined_date as "joinedDate", active_devices as "activeDevices", premium, password FROM vit_users ORDER BY id ASC');
+      const res = await pool.query('SELECT id, name, email, role, status, verified, activity, joined_date as "joinedDate", active_devices as "activeDevices", premium, password, consent_emails as "consentEmails", referral FROM vit_users ORDER BY id ASC');
+      console.log("getDbUsers: pool query returned rows count:", res.rows.length);
       return res.rows;
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("getDbUsers: pool query error:", e);
       return [];
     }
   } else {
     const data = await readUsersRbac();
+    console.log("getDbUsers: fallback JSON readUsersRbac users count:", data.users?.length);
     return data.users;
   }
 }
@@ -1566,12 +1401,17 @@ export async function getDbRbac(): Promise<any> {
 export async function updateDbUser(user: any): Promise<void> {
   if (pool) {
     await pool.query(
-      "INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role, status = EXCLUDED.status, verified = EXCLUDED.verified, activity = EXCLUDED.activity, joined_date = EXCLUDED.joined_date, active_devices = EXCLUDED.active_devices, premium = EXCLUDED.premium, password = EXCLUDED.password",
-      [user.id, user.name, user.email, user.role, user.status, user.verified, user.activity, user.joinedDate, user.activeDevices, user.premium, user.password || 'check']
+      "INSERT INTO vit_users (id, name, email, role, status, verified, activity, joined_date, active_devices, premium, password, consent_emails, referral) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, status = EXCLUDED.status, verified = EXCLUDED.verified, activity = EXCLUDED.activity, joined_date = EXCLUDED.joined_date, active_devices = EXCLUDED.active_devices, premium = EXCLUDED.premium, password = EXCLUDED.password, consent_emails = EXCLUDED.consent_emails, referral = EXCLUDED.referral",
+      [user.id, user.name, user.email, user.role, user.status, user.verified, user.activity, user.joinedDate, user.activeDevices, user.premium, user.password || 'check', user.consentEmails || false, user.referral || null]
     );
   } else {
     const data = await readUsersRbac();
-    data.users = data.users.map((u: any) => u.id === user.id ? user : u);
+    const exists = data.users.some((u: any) => u.email === user.email || u.id === user.id);
+    if (exists) {
+      data.users = data.users.map((u: any) => (u.email === user.email || u.id === user.id) ? { ...u, ...user } : u);
+    } else {
+      data.users.push(user);
+    }
     await writeUsersRbac(data);
   }
 }
@@ -1637,36 +1477,73 @@ export async function getMonetizationSettings(): Promise<any> {
   if (!settings) {
     settings = {
       monetization_enabled: false,
-      free_enabled: false,
+      free_enabled: true,
       plans: [
         {
           tier: "Free",
           title: "Free Pass",
-          subtitle: "Basic access limits",
+          subtitle: "Basic local bridging",
           price: "₹0",
           validity_days: 365,
-          max_sessions: 999,
-          max_vitcodes: 999,
+          max_sessions: 5,
+          max_resources_per_month: 5,
           allow_live_sync: 0,
           allow_typing: 0,
           allow_typing_mode: 0,
           allow_inject: 0,
-          allow_raw: 0,
+          allow_raw: 1,
           allow_select_copy: 0,
           allow_fetch: 0,
           allow_refill: 0,
-          allow_vitcode: 0,
+          allow_resource_access: 1,
+          allow_resource_analytics: 0,
           allow_tunnel: -1
         },
-        { tier: "Basic", title: "Week Pass", subtitle: "Perfect for exam weeks", price: "₹39", validity_days: 7, allow_tunnel: -1 },
-        { tier: "Pro", title: "Monthly Pass", subtitle: "Consistent connectivity", price: "₹99", validity_days: 30, allow_tunnel: 0 },
-        { tier: "Max", title: "Sem Pass", subtitle: "Semester companion", price: "₹299", validity_days: 120, allow_tunnel: 0 },
-        { tier: "Ultra", title: "Yearly Pass", subtitle: "Year-round connectivity", price: "₹499", validity_days: 365, allow_tunnel: 0 }
+        {
+          tier: "Pro",
+          title: "Pro Pass",
+          subtitle: "Full power for local builders",
+          price: "₹99",
+          validity_days: 30,
+          max_sessions: 999,
+          max_resources_per_month: 100,
+          allow_live_sync: 1,
+          allow_typing: 1,
+          allow_typing_mode: 1,
+          allow_inject: 1,
+          allow_raw: 1,
+          allow_select_copy: 1,
+          allow_fetch: 1,
+          allow_refill: 1,
+          allow_resource_access: 1,
+          allow_resource_analytics: 0,
+          allow_tunnel: 1
+        },
+        {
+          tier: "Creator",
+          title: "Creator Pass",
+          subtitle: "Publishing and analytics",
+          price: "₹299",
+          validity_days: 120,
+          max_sessions: 999,
+          max_resources_per_month: 9999,
+          allow_live_sync: 1,
+          allow_typing: 1,
+          allow_typing_mode: 1,
+          allow_inject: 1,
+          allow_raw: 1,
+          allow_select_copy: 1,
+          allow_fetch: 1,
+          allow_refill: 1,
+          allow_resource_access: 1,
+          allow_resource_analytics: 1,
+          allow_tunnel: 1
+        }
       ]
     };
   } else {
     if (settings.free_enabled === undefined) {
-      settings.free_enabled = false;
+      settings.free_enabled = true;
     }
     if (!settings.plans) {
       settings.plans = [];
@@ -1676,27 +1553,36 @@ export async function getMonetizationSettings(): Promise<any> {
       settings.plans.unshift({
         tier: "Free",
         title: "Free Pass",
-        subtitle: "Basic access limits",
+        subtitle: "Basic local bridging",
         price: "₹0",
         validity_days: 365,
-        max_sessions: 999,
-        max_vitcodes: 999,
+        max_sessions: 5,
+        max_resources_per_month: 5,
         allow_live_sync: 0,
         allow_typing: 0,
         allow_typing_mode: 0,
         allow_inject: 0,
-        allow_raw: 0,
+        allow_raw: 1,
         allow_select_copy: 0,
         allow_fetch: 0,
         allow_refill: 0,
-        allow_vitcode: 0,
+        allow_resource_access: 1,
+        allow_resource_analytics: 0,
         allow_tunnel: -1
       });
     }
-    // Backward compatibility check for other plans lacking allow_tunnel
     settings.plans.forEach((plan: any) => {
       if (plan.allow_tunnel === undefined) {
-        plan.allow_tunnel = (plan.tier === "Basic" || plan.tier === "Free") ? -1 : 0;
+        plan.allow_tunnel = (plan.tier === "Free") ? -1 : 1;
+      }
+      if (plan.max_resources_per_month === undefined) {
+        plan.max_resources_per_month = plan.tier === "Free" ? 5 : (plan.tier === "Pro" ? 100 : 9999);
+      }
+      if (plan.allow_resource_access === undefined) {
+        plan.allow_resource_access = 1;
+      }
+      if (plan.allow_resource_analytics === undefined) {
+        plan.allow_resource_analytics = plan.tier === "Creator" ? 1 : 0;
       }
     });
   }
@@ -2123,6 +2009,440 @@ export async function getLegalAcceptances(): Promise<any[]> {
     })
     .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
+
+export async function createReport(report: {
+  id: string;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  details: string;
+  reporter_contact?: string;
+  reporter_ip: string;
+}): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "INSERT INTO vit_reports (id, target_type, target_id, reason, details, reporter_contact, reporter_ip, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())",
+        [
+          report.id,
+          report.target_type,
+          report.target_id,
+          report.reason,
+          report.details,
+          report.reporter_contact || null,
+          report.reporter_ip
+        ]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const filePath = getReportsJsonFilePath();
+    let data: any[] = [];
+    if (fs.existsSync(filePath)) {
+      try {
+        data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      } catch (e) {}
+    }
+    data.push({
+      ...report,
+      status: "pending",
+      created_at: new Date().toISOString()
+    });
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  }
+}
+
+export async function getReports(): Promise<any[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT * FROM vit_reports ORDER BY created_at DESC");
+    return res.rows;
+  } else {
+    const filePath = getReportsJsonFilePath();
+    if (fs.existsSync(filePath)) {
+      try {
+        return JSON.parse(fs.readFileSync(filePath, "utf8")).sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      } catch (e) {}
+    }
+    return [];
+  }
+}
+
+export async function resolveReport(id: string, status: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE vit_reports SET status = $1 WHERE id = $2", [status, id]);
+  } else {
+    const filePath = getReportsJsonFilePath();
+    if (fs.existsSync(filePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        const report = data.find((r: any) => r.id === id);
+        if (report) {
+          report.status = status;
+          fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+        }
+      } catch (e) {}
+    }
+  }
+}
+
+function getReportsJsonFilePath() {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "reports.json");
+}
+
+export interface Hub {
+  id: string;
+  title: string;
+  description?: string;
+  creatorEmail: string;
+  createdAt?: string;
+  isDeleted?: boolean;
+  visibility?: "public" | "private";
+  allowedTypes?: string[];
+  subCategories?: string[];
+  categories?: CategoryConfig[];
+}
+
+export interface HubContributor {
+  id?: number;
+  hubId: string;
+  contributorEmail: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt?: string;
+}
+
+export async function readHubs(includeDeleted = false): Promise<Hub[]> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const query = includeDeleted
+        ? "SELECT * FROM hubs ORDER BY created_at DESC"
+        : "SELECT * FROM hubs WHERE is_deleted = false ORDER BY created_at DESC";
+      const res = await client.query(query);
+      return res.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description || undefined,
+        creatorEmail: row.creator_email,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        isDeleted: !!row.is_deleted,
+        visibility: (row.visibility as any) || "public",
+        allowedTypes: row.allowed_types ? JSON.parse(row.allowed_types) : ["code", "link", "text"],
+        subCategories: row.sub_categories ? JSON.parse(row.sub_categories) : [],
+        categories: row.categories ? JSON.parse(row.categories) : [],
+      }));
+    } catch (error) {
+      console.error("Error reading hubs from Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getHubsJsonPath();
+  if (!fs.existsSync(filePath)) return [];
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      const items = data.map((item: any) => ({
+        ...item,
+        isDeleted: !!item.isDeleted,
+        visibility: item.visibility || "public",
+        allowedTypes: item.allowedTypes || ["code", "link", "text"],
+        subCategories: item.subCategories || [],
+        categories: item.categories || [],
+      }));
+      if (includeDeleted) return items;
+      return items.filter((item: any) => !item.isDeleted);
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function writeHubs(data: Hub[]): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM hubs");
+      for (const item of data) {
+        await client.query(
+          `INSERT INTO hubs (id, title, description, creator_email, is_deleted, visibility, allowed_types, sub_categories, categories) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            item.id,
+            item.title,
+            item.description || null,
+            item.creatorEmail,
+            item.isDeleted || false,
+            item.visibility || "public",
+            JSON.stringify(item.allowedTypes || ["code", "link", "text"]),
+            JSON.stringify(item.subCategories || []),
+            JSON.stringify(item.categories || []),
+          ]
+        );
+      }
+      await client.query("COMMIT");
+      return;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error writing hubs to Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getHubsJsonPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+export async function createHub(hub: Hub): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO hubs (id, title, description, creator_email, is_deleted, visibility, allowed_types, sub_categories, categories) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          hub.id,
+          hub.title,
+          hub.description || null,
+          hub.creatorEmail,
+          hub.isDeleted || false,
+          hub.visibility || "public",
+          JSON.stringify(hub.allowedTypes || ["code", "link", "text"]),
+          JSON.stringify(hub.subCategories || []),
+          JSON.stringify(hub.categories || []),
+        ]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const hubs = await readHubs(true);
+    hubs.unshift(hub);
+    await writeHubs(hubs);
+  }
+}
+
+export async function updateHub(hub: Hub): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `UPDATE hubs 
+         SET title = $2, description = $3, creator_email = $4, is_deleted = $5, visibility = $6, allowed_types = $7, sub_categories = $8, categories = $9
+         WHERE id = $1`,
+        [
+          hub.id,
+          hub.title,
+          hub.description || null,
+          hub.creatorEmail,
+          hub.isDeleted || false,
+          hub.visibility || "public",
+          JSON.stringify(hub.allowedTypes || ["code", "link", "text"]),
+          JSON.stringify(hub.subCategories || []),
+          JSON.stringify(hub.categories || []),
+        ]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const list = await readHubs(true);
+    const idx = list.findIndex(h => h.id === hub.id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...hub };
+      await writeHubs(list);
+    }
+  }
+}
+
+export async function readHubContributors(): Promise<HubContributor[]> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const res = await client.query("SELECT * FROM hub_contributors ORDER BY created_at DESC");
+      return res.rows.map((row) => ({
+        id: row.id,
+        hubId: row.hub_id,
+        contributorEmail: row.contributor_email,
+        status: row.status as any,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      }));
+    } catch (error) {
+      console.error("Error reading hub contributors from Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getHubContributorsJsonPath();
+  if (!fs.existsSync(filePath)) return [];
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function writeHubContributors(data: HubContributor[]): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM hub_contributors");
+      for (const item of data) {
+        await client.query(
+          `INSERT INTO hub_contributors (hub_id, contributor_email, status) 
+           VALUES ($1, $2, $3)`,
+          [
+            item.hubId,
+            item.contributorEmail,
+            item.status,
+          ]
+        );
+      }
+      await client.query("COMMIT");
+      return;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error writing hub contributors to Postgres:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  const filePath = getHubContributorsJsonPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+export async function addContributorRequest(hubId: string, email: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO hub_contributors (hub_id, contributor_email, status) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (hub_id, contributor_email) DO UPDATE SET status = $3`,
+        [hubId, email, "pending"]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const list = await readHubContributors();
+    const idx = list.findIndex((item) => item.hubId === hubId && item.contributorEmail === email);
+    if (idx !== -1) {
+      list[idx].status = "pending";
+    } else {
+      list.push({ hubId, contributorEmail: email, status: "pending" });
+    }
+    await writeHubContributors(list);
+  }
+}
+
+export async function updateContributorStatus(hubId: string, email: string, status: "pending" | "approved" | "rejected"): Promise<void> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO hub_contributors (hub_id, contributor_email, status) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (hub_id, contributor_email) DO UPDATE SET status = $3`,
+        [hubId, email, status]
+      );
+    } finally {
+      client.release();
+    }
+  } else {
+    const list = await readHubContributors();
+    const idx = list.findIndex((item) => item.hubId === hubId && item.contributorEmail === email);
+    if (idx !== -1) {
+      list[idx].status = status;
+    } else {
+      list.push({ hubId, contributorEmail: email, status });
+    }
+    await writeHubContributors(list);
+  }
+}
+
+export async function isApprovedContributor(hubId: string, email: string): Promise<boolean> {
+  if (pool) {
+    await initDb();
+    const client = await pool.connect();
+    try {
+      const res = await client.query(
+        "SELECT status FROM hub_contributors WHERE hub_id = $1 AND contributor_email = $2",
+        [hubId, email]
+      );
+      if (res.rows.length === 0) return false;
+      return res.rows[0].status === "approved";
+    } finally {
+      client.release();
+    }
+  } else {
+    const list = await readHubContributors();
+    const found = list.find((item) => item.hubId === hubId && item.contributorEmail === email);
+    return found ? found.status === "approved" : false;
+  }
+}
+
+export async function deleteHub(id: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE hubs SET is_deleted = true WHERE id = $1", [id]);
+  } else {
+    const list = await readHubs(true);
+    const found = list.find(h => h.id === id);
+    if (found) {
+      found.isDeleted = true;
+      await writeHubs(list);
+    }
+  }
+}
+
+const getHubsJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "hubs.json");
+};
+
+const getHubContributorsJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "hub_contributors.json");
+};
 
 
 

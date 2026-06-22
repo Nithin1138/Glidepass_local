@@ -82,3 +82,128 @@ h1, h2, h3 {
   letter-spacing: -0.04em;
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
+
+/* Claymorphic Effects */
+.clay-light {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.05), 
+    0 10px 30px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+.clay-dark {
+  background: rgba(20, 20, 30, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 1px 1px 2px rgba(255, 255, 255, 0.15), 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.4), 
+    0 15px 35px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Light Theme Overrides (applies when parent has .light class) */
+.light {
+  background: radial-gradient(circle at 0% 0%, #FAFAF9 0%, #EDEAE0 100%) !important;
+  background-color: #EDEAE0 !important;
+  color: #1F2937 !important;
+}
+
+.light .text-white,
+.light .text-white\/90,
+.light .group-hover\:text-white,
+.light h1, .light h2, .light h3, .light h4 {
+  color: #111827 !important;
+  text-shadow: none !important;
+}
+
+.light .text-white\/60,
+.light .text-white\/55,
+.light .text-white\/50,
+.light .text-white\/40,
+.light .text-white\/30,
+.light .text-\[\#A0AEC0\],
+.light .text-purple-400,
+.light .text-sky-400,
+.light .text-emerald-400 {
+  color: #4B5563 !important;
+}
+
+.light .bg-white\/5,
+.light .bg-white\/10,
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.01\],
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/\[0\.08\],
+.light .bg-\[rgba\(250\,250\,250\,0\.01\)\] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+.light .border-white\/10,
+.light .border-white\/5,
+.light .border-white\/20,
+.light .border-white\/\[0\.08\],
+.light .border-\[rgba\(199\,238\,255\,0\.08\)\] {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light .bg-\[\#0b0b0b\],
+.light .bg-\[\#050505\],
+.light .bg-\[\#121212\] {
+  background-color: #ffffff !important;
+  color: #1F2937 !important;
+}
+
+/* Exclude code editor and dark code blocks from light theme overrides so they stay dark */
+.light .bg-\[\#0d1117\],
+.light pre,
+.light code {
+  background-color: #0d1117 !important;
+  color: #c9d1d9 !important;
+}
+
+.light input,
+.light select,
+.light textarea {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light input:focus,
+.light select:focus,
+.light textarea:focus {
+  border-color: #0077C0 !important;
+  box-shadow: 0 0 0 2px rgba(0, 119, 192, 0.15) !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #9CA3AF !important;
+}
+
+.light option {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+.light .clay-dark,
+.light .clay-light {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  color: #111827 !important;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.9), 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.03), 
+    0 10px 25px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+

@@ -677,10 +677,10 @@
                     <span>ENTER COMMAND CENTER</span>
                     <i data-lucide="chevron-right" size="20"></i>
                 </button>
-                <button class="connect-btn-main" id="vit-btn"
+                <button class="connect-btn-main" id="resources-btn"
                     style="margin-top: 15px; background: rgba(72, 187, 120, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color);">
-                    <span>VIT-AP (Today's code)</span>
-                    <i data-lucide="code" size="20"></i>
+                    <span>Browse Resources</span>
+                    <i data-lucide="compass" size="20"></i>
                 </button>
             </div>
         </div>
@@ -756,9 +756,9 @@
             window.location.href = '/center';
         });
 
-        const vitBtn = document.getElementById('vit-btn');
-        vitBtn.addEventListener('click', () => {
-            window.location.href = '/vitcodes';
+        const resourcesBtn = document.getElementById('resources-btn');
+        resourcesBtn.addEventListener('click', () => {
+            window.location.href = '/resources';
         });
 
         // Connect to active status websocket

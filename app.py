@@ -79,6 +79,27 @@ CMD_KEY    = cmd_key()
 pending_paste = {"text": "", "id": 0, "mode": ""}
 stop_typing = False
 is_currently_typing = False
+history_stack = []
+
+def add_to_history(text: str, mode: str, title: str = None):
+    global history_stack
+    if not text or not text.strip():
+        return
+    if history_stack and history_stack[0]["content"] == text:
+        return
+    import uuid
+    from datetime import datetime
+    item = {
+        "id": str(uuid.uuid4()),
+        "content": text,
+        "mode": mode,
+        "title": title or (text[:30] + "..." if len(text) > 30 else text),
+        "timestamp": datetime.now().strftime("%H:%M:%S")
+    }
+    history_stack.insert(0, item)
+    if len(history_stack) > 50:
+        history_stack.pop()
+
 
 
 def get_local_ip():
@@ -220,7 +241,7 @@ def get_cloud_limits(tier):
     # Base limits (default to 0=unlimited, Admin can restrict via cloud)
     limits = {
         "max_sessions": 999,
-        "max_vitcodes": 999,
+        "max_resources_per_month": 999,
         "allow_live_sync": 0,
         "allow_typing": 0,
         "allow_typing_mode": 0,
@@ -229,14 +250,15 @@ def get_cloud_limits(tier):
         "allow_select_copy": 0,
         "allow_fetch": 0,
         "allow_refill": 0,
-        "allow_vitcode": 0,
+        "allow_resource_access": 0,
+        "allow_resource_analytics": 0,
         "allow_tunnel": 0
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled
     if tier == "DEVELOPER" or not CLOUD_LIMITS_CACHE or not CLOUD_LIMITS_CACHE.get("monetization_enabled", False):
         for key in limits:
-            if key in ["max_sessions", "max_vitcodes"]:
+            if key in ["max_sessions", "max_resources_per_month"]:
                 limits[key] = 999
             else:
                 limits[key] = 0 # 0 means unlimited
@@ -259,15 +281,93 @@ def get_cloud_limits(tier):
     return limits
 
 
+def load_and_sync_usages(config_path, limits, now=None):
+    if now is None:
+        import datetime
+        now = datetime.datetime.now()
+        
+    config = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+        except Exception:
+            pass
+            
+    usages = config.get("feature_usages", {})
+    usage_metadata = config.get("feature_usage_metadata", {})
+    
+    modified = False
+    for k, val in limits.items():
+        if k.startswith("allow_") and not isinstance(val, bool) and val > 0:
+            limit_period = limits.get("limit_period", "lifetime").lower()
+            meta = usage_metadata.get(k, {})
+            last_updated_str = meta.get("last_updated", "")
+            
+            should_reset = False
+            today_str = now.strftime("%Y-%m-%d")
+            
+            if last_updated_str:
+                try:
+                    import datetime as dt_mod
+                    last_updated = dt_mod.datetime.strptime(last_updated_str, "%Y-%m-%d")
+                    if limit_period == "day":
+                        if last_updated.date() != now.date():
+                            should_reset = True
+                    elif limit_period == "month":
+                        if last_updated.year != now.year or last_updated.month != now.month:
+                            should_reset = True
+                except Exception:
+                    should_reset = True
+            else:
+                should_reset = True
+                
+            if should_reset:
+                usages[k] = 0
+                meta = {"last_updated": today_str}
+                usage_metadata[k] = meta
+                modified = True
+                
+    if modified:
+        config["feature_usages"] = usages
+        config["feature_usage_metadata"] = usage_metadata
+        try:
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+        except Exception:
+            pass
+            
+    return config, usages
+
 def check_feature_usage(feature_key, feature_name):
     """
-    Checks if a feature is allowed based on limit bounds.
-    If limited, increments usage and returns True if under limit.
-    Returns (True, None) if allowed, (False, error_msg) if blocked.
+    Checks if a feature is allowed based on limit bounds, including hour-of-day,
+    day-of-week, and daily/monthly reset periods configured by the administrator.
     """
     tier = get_license_tier()
     limits = get_cloud_limits(tier)
     
+    # 1. Check allowed days (0=Monday, 6=Sunday)
+    import datetime
+    now = datetime.datetime.now()
+    allowed_days_str = limits.get("allowed_days", "")
+    if allowed_days_str:
+        allowed_days = [int(x.strip()) for x in allowed_days_str.split(",") if x.strip().isdigit()]
+        if len(allowed_days) > 0 and now.weekday() not in allowed_days:
+            day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            allowed_names = ", ".join([day_names[d] for d in allowed_days])
+            return False, f"{feature_name} is only allowed on: {allowed_names}."
+
+    # 2. Check allowed hours (format e.g., "9-17")
+    allowed_hours_str = limits.get("allowed_hours", "")
+    if allowed_hours_str:
+        try:
+            start_hour, end_hour = [int(x.strip()) for x in allowed_hours_str.split("-")]
+            if not (start_hour <= now.hour < end_hour):
+                return False, f"{feature_name} is only allowed between {start_hour}:00 and {end_hour}:00."
+        except Exception:
+            pass
+
     val = limits.get(feature_key, 0)
     
     # Backwards compatibility if cloud returns True/False
@@ -280,25 +380,26 @@ def check_feature_usage(feature_key, feature_name):
         return False, f"{feature_name} is completely disabled on your current plan. Please upgrade to unlock."
         
     if val > 0:
-        # Check usage
         path = _config_path()
-        config = {}
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-            except Exception:
-                pass
-                
-        usages = config.get("feature_usages", {})
+        config, usages = load_and_sync_usages(path, limits, now)
         used = usages.get(feature_key, 0)
         
+        limit_period = limits.get("limit_period", "lifetime").lower()
         if used >= val:
-            return False, f"You have reached the usage limit ({val}) for {feature_name} on your current plan. Please upgrade to continue."
+            period_name = "today" if limit_period == "day" else ("this month" if limit_period == "month" else "lifetime")
+            return False, f"You have reached the usage limit ({val}) {period_name} for {feature_name} on your current plan. Please upgrade to continue."
             
         # Increment usage
         usages[feature_key] = used + 1
+        
+        # Keep last updated metadata in sync
+        usage_metadata = config.get("feature_usage_metadata", {})
+        meta = usage_metadata.get(feature_key, {})
+        meta["last_updated"] = now.strftime("%Y-%m-%d")
+        usage_metadata[feature_key] = meta
+        
         config["feature_usages"] = usages
+        config["feature_usage_metadata"] = usage_metadata
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=4)
@@ -312,7 +413,7 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "vitcodes.html", "terms_of_service.html", "privacy_policy.html"]:
+    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html"]:
         success = False
         
         # 0. Try local templates directory in workspace
@@ -482,7 +583,7 @@ app = FastAPI(lifespan=lifespan)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[],  # No public API access (local-only)
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://lanpad.app", "https://www.lanpad.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -608,11 +709,6 @@ async def center():
     return _cached_file_response("center.html")
 
 
-@app.get("/vitcodes")
-async def vitcodes_page():
-    return _cached_file_response("vitcodes.html")
-
-
 @app.get("/terms")
 async def terms_page():
     return _cached_file_response("terms_of_service.html")
@@ -623,106 +719,24 @@ async def privacy_page():
     return _cached_file_response("privacy_policy.html")
 
 
-@app.get("/api/vitcodes")
-async def get_api_vitcodes(request: Request):
-    client_ip = request.client.host if request.client else "unknown"
-    if is_rate_limited(client_ip, "/api/vitcodes", limit=60, window=60):
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limited. Max 60 requests per minute."})
-        
-    limits = get_cloud_limits(get_license_tier())
-    allow_val = limits.get("allow_vitcode", 0)
-    # Block only if explicitly disabled (-1 or False)
-    if allow_val == -1 or (isinstance(allow_val, bool) and not allow_val):
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=403, content={"error": "Your plan does not allow VITCodes access."})
-
-    config_path = os.path.expanduser("~/.lanpad/config.json")
-    custom_url = None
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                custom_url = cfg.get("website_url")
-        except (OSError, json.JSONDecodeError) as e:
-            print(f"[config] Failed to read config: {e}")
-        except Exception as e:
-            print(f"[config] Unexpected error: {e}")
-
-    urls = []
-    if custom_url:
-      urls.append(custom_url.rstrip("/") + "/api/vitcodes")
-    urls.append("https://lanpad.app/api/vitcodes")
-    urls.append("http://localhost:3000/api/vitcodes")
-
-    async def fetch_one(client, url):
-        try:
-            r = await client.get(url, timeout=2.0)
-            if r.status_code == 200:
-                data = r.json()
-                if isinstance(data, list) and len(data) > 0:
-                    return data
-        except Exception:
-            pass
-        return None
-
-    async with httpx.AsyncClient(verify=False) as client:
-        tasks = [fetch_one(client, url) for url in urls]
-        for task in asyncio.as_completed(tasks):
-            res = await task
-            if res is not None:
-                return res
-
-    # Fallback: if all lists were empty, try to return any successful response (even if empty)
-    try:
-        async with httpx.AsyncClient(verify=False) as client:
-            for url in urls:
-                try:
-                    r = await client.get(url, timeout=2.0)
-                    if r.status_code == 200:
-                        return r.json()
-                except Exception:
-                    pass
-    except Exception:
-        pass
-    return []
+@app.get("/content-policy")
+async def content_policy_page():
+    return _cached_file_response("content_policy.html")
 
 
-@app.get("/api/vitcodes/rules")
-async def get_api_vitcodes_rules(request: Request):
-    config_path = os.path.expanduser("~/.lanpad/config.json")
-    custom_url = None
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                custom_url = cfg.get("website_url")
-        except Exception:
-            pass
+@app.get("/copyright-takedown")
+async def copyright_takedown_page():
+    return _cached_file_response("copyright_takedown.html")
 
-    urls = []
-    if custom_url:
-        urls.append(custom_url.rstrip("/") + "/api/vitcodes/rules")
-    urls.append("https://lanpad.app/api/vitcodes/rules")
-    urls.append("http://localhost:3000/api/vitcodes/rules")
 
-    async def fetch_one(client, url):
-        try:
-            r = await client.get(url, timeout=2.0)
-            if r.status_code == 200:
-                return r.json()
-        except Exception:
-            pass
-        return None
+@app.get("/refund-policy")
+async def refund_policy_page():
+    return _cached_file_response("refund_policy.html")
 
-    async with httpx.AsyncClient(verify=False) as client:
-        tasks = [fetch_one(client, url) for url in urls]
-        for task in asyncio.as_completed(tasks):
-            res = await task
-            if res is not None:
-                return res
 
-    return {"rules": {}, "sessionLimits": {}, "collectionYears": {}}
+@app.get("/resources")
+async def resources_page():
+    return _cached_file_response("resources.html")
 
 
 def _cached_file_response(filename: str):
@@ -885,14 +899,7 @@ async def get_my_limits():
     
     # Read usages to compute effective boolean values
     path = _config_path()
-    config = {}
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                config = json.load(f)
-        except Exception:
-            pass
-    usages = config.get("feature_usages", {})
+    config, usages = load_and_sync_usages(path, limits)
     
     # Translate numeric limits to boolean values for older UI code, while providing usage data
     frontend_limits = {}
@@ -974,7 +981,7 @@ async def get_clipboard(request: Request):
         return JSONResponse(status_code=429, content={"status": "error", "message": "Rate limit exceeded"})
 
     # Security Check
-    allowed, err = check_feature_usage("allow_vitcode", "VITCodes Access")
+    allowed, err = check_feature_usage("allow_fetch", "Fetch Clipboard")
     if not allowed:
         return {"status": "error", "message": err}       
     try:
@@ -1392,6 +1399,7 @@ async def paste(request: Request, data: dict):
         pending_paste["text"] = text
         pending_paste["mode"] = mode
         pending_paste["id"] += 1
+        add_to_history(text, mode)
 
     if mode == "inject":
         def run_inject():
@@ -1480,10 +1488,37 @@ async def paste(request: Request, data: dict):
                 pyautogui_module.hotkey('ctrl', 'v', interval=0.05)
 
         import asyncio
-        await asyncio.to_thread(run_flash)
+        try:
+            await asyncio.to_thread(run_flash)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
         return {"status": "success"}
 
-    return {"status": "error", "message": "No text provided"}
+
+@app.post("/receive_resource")
+async def receive_resource(data: dict):
+    """Receive a resource snippet from the public catalog browser and push to pending_paste."""
+    title = data.get("title", "Resource")
+    content = data.get("content", "")
+    res_type = data.get("type", "text")
+    language = data.get("language", "")
+
+    if not content:
+        return {"status": "error", "message": "Content is empty"}
+
+    pending_paste["text"] = content
+    pending_paste["mode"] = "flash"
+    pending_paste["id"] += 1
+    add_to_history(content, "flash", title)
+
+    return {"status": "success", "message": f"Snippet '{title}' received successfully"}
+
+
+@app.get("/history")
+async def get_history_endpoint():
+    return {"status": "success", "history": history_stack}
+
+
 
 
 def _safe_pyautogui():

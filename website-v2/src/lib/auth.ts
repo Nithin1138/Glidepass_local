@@ -11,16 +11,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const email = user.email || "";
-        if (
-          email.endsWith("@vitapstudent.ac.in") ||
-          email.endsWith("@vitapstudents.ac.in") ||
-          email.endsWith("@vitstudent.ac.in") ||
-          email.endsWith("@vitbhopal.ac.in")
-        ) {
-          return true;
-        }
-        return false;
+        return !!user.email;
       }
       return false;
     },

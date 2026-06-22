@@ -58,72 +58,56 @@ export default function PricingPage() {
 
   const defaultPlans = [
     {
-      name: "Week Pass",
-      appTier: "Basic",
-      price: "₹39",
-      period: "per week",
-      description: "Perfect for quick test-prep and exam weeks.",
+      name: "Free Pass",
+      appTier: "Free",
+      price: "₹0",
+      period: "lifetime",
+      description: "Basic local device communication bridging.",
       features: [
-        "Type Mode (Bypass paste blocks)",
-        "Custom WPM control",
-        "AP Isolation bypass (Tunnel)",
-        "Instant Clipboard sync",
-        "1 Active session at a time",
+        "Flash (Raw) paste mode",
+        "Local connection speed",
+        "5 Active sessions limit",
+        "5 Shared resources / month",
+        "No tunnel routing"
       ],
       isPopular: false,
-      badge: "Exam Special",
+      badge: "Free tier",
       color: "rgba(160, 174, 192, 0.08)"
     },
     {
-      name: "Monthly Pass",
+      name: "Pro Pass",
       appTier: "Pro",
       price: "₹99",
       period: "per month",
-      description: "For consistent, hassle-free campus connectivity.",
+      description: "Full power for local builders and developers.",
       features: [
-        "All Week Pass features",
+        "Human Typing Simulation",
         "Live Sync character mirroring",
-        "Persistent session pairing",
-        "Multiple device configurations",
-        "Priority tunnel routing",
+        "Custom WPM control speed",
+        "Hybrid Relay Tunnel routing",
+        "999 Active parallel sessions",
+        "100 Shared resources / month"
       ],
-      isPopular: false,
+      isPopular: true,
       badge: "Standard",
       color: "rgba(0, 119, 192, 0.08)"
     },
     {
-      name: "Sem Pass",
-      appTier: "Max",
+      name: "Creator Pass",
+      appTier: "Creator",
       price: "₹299",
-      period: "per semester",
-      description: "The ultimate academic semester companion. Unmatched value.",
+      period: "per 4 months",
+      description: "Publishing tools and advanced resource analytics.",
       features: [
-        "All Monthly Pass features",
-        "Unlimited parallel sessions",
-        "Dedicated high-speed Tunnels",
-        "Direct developer support",
-        "Ad-free experience",
-      ],
-      isPopular: true,
-      badge: "Best Value",
-      color: "rgba(199, 238, 255, 0.12)"
-    },
-    {
-      name: "Yearly Pass",
-      appTier: "Ultra",
-      price: "₹499",
-      period: "per year",
-      description: "Full year-round connectivity and unlimited access.",
-      features: [
-        "All Sem Pass features",
-        "Offline emergency access",
-        "Free version upgrades",
-        "Persistent cloud backup",
-        "Special Discord contributor role",
+        "All Pro Pass features",
+        "Snippet publishing tool",
+        "Detailed view & copy analytics",
+        "Priority relay tunnel routing",
+        "9999 Shared resources / month"
       ],
       isPopular: false,
-      badge: "Power User",
-      color: "rgba(250, 250, 250, 0.08)"
+      badge: "Creator Special",
+      color: "rgba(199, 238, 255, 0.12)"
     }
   ];
 
@@ -491,7 +475,7 @@ export default function PricingPage() {
         </div>
 
         {/* ── Pricing Grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24 max-w-6xl mx-auto">
           {activePlans.map((plan, index) => {
             return (
               <motion.div

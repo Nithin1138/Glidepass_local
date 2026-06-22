@@ -5,10 +5,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    console.log("GET /api/admin/users-rbac called");
+    console.log("DATABASE_URL present:", !!process.env.DATABASE_URL);
     const users = await getDbUsers();
+    console.log("getDbUsers returned count:", users.length);
     const rbac = await getDbRbac();
     return NextResponse.json({ users, rbac });
   } catch (error: any) {
+    console.error("GET /api/admin/users-rbac error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

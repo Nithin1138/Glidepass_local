@@ -210,6 +210,11 @@
                             <td>Temporarily (during session)</td>
                         </tr>
                         <tr>
+                            <td><strong>Workspace/Resource metadata</strong></td>
+                            <td>Snippet titles, languages, tags, and timestamps</td>
+                            <td>Indefinitely on database (for shared resources)</td>
+                        </tr>
+                        <tr>
                             <td><strong>Configuration data</strong></td>
                             <td>Store preferences, license info</td>
                             <td>Indefinitely (in local storage)</td>
@@ -236,6 +241,11 @@
                             <td><strong>Device hostname</strong></td>
                             <td>Display in UI for identification</td>
                             <td>Session-only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Viewer Fingerprint Hash</strong></td>
+                            <td>Track unique resource views (IP + User-Agent SHA256 hash)</td>
+                            <td>30 days (auto-expired)</td>
                         </tr>
                         <tr>
                             <td><strong>Session token</strong></td>
@@ -266,6 +276,11 @@
                 <h2>4. HOW IS MY DATA USED?</h2>
                 <p>We process data to enable text transfer between your devices, support users with disabilities via keystroke injection, and authenticate pairing between devices.</p>
                 <p>We <strong>NEVER</strong> sell or share your clipboard data, nor do we track or profile you.</p>
+
+                <hr>
+
+                <h2>4A. UNIQUE VIEWER TRACKING</h2>
+                <p>To measure content reach for creators on the discovery platform without compromising privacy, we compute a hashed fingerprint of your IP address and User-Agent (using SHA-256). This hash is stored for 30 days to prevent duplicate view/copy counts. The raw IP address and User-Agent are discarded immediately. You can opt out of this tracking by enabling "Do Not Track" in your browser settings.</p>
 
                 <hr>
 

@@ -1,1 +1,18 @@
-{}
+{
+    "4170b5d5a0847229229242b88a7fef9c": {
+        "tier": "DEVELOPER",
+        "license_key": "GLIDE-DEV-4170b5d5a0847229229242b88a7fef9c",
+        "user_id": "4170b5d5a0847229229242b88a7fef9c",
+        "owner_email": "[EMAIL_ADDRESS]",
+        "is_suspended": false,
+        "last_modified": "2026-06-22T16:43:22.659Z"
+    },
+    "20917b0721a70f327a57ab8664ab286d": {
+        "tier": "CREATOR",
+        "license_key": "GLIDE-CREATOR-20917b0721a70f327a57ab8664ab286d",
+        "user_id": "20917b0721a70f327a57ab8664ab286d",
+        "owner_email": "chilakaluripet9@gmail.com",
+        "is_suspended": false,
+        "last_modified": "2026-06-22T16:46:08.913Z"
+    }
+}

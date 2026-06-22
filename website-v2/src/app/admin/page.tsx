@@ -124,6 +124,8 @@ interface UserRecord {
   activeDevices: number;
   premium: boolean;
   password?: string;
+  consentEmails?: boolean;
+  referral?: string;
 }
 
 interface SecurityLog {
@@ -140,12 +142,16 @@ interface SecurityLog {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export default function GlidePassAdmin() {
   // ─── Theme Engine ───
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const saved = localStorage.getItem("glidepass-admin-theme") as "light" | "dark" | "system" | null;
-    if (saved) setTheme(saved);
+    if (saved) {
+      setTheme(saved);
+    } else {
+      setTheme("light");
+    }
   }, []);
 
   useEffect(() => {
@@ -332,7 +338,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "versioning" | "coupons" | "referrals" | "legal_acceptances"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -381,6 +387,12 @@ export default function GlidePassAdmin() {
   // Legal Acceptance Search & Filters
   const [legalSearch, setLegalSearch] = useState("");
   const [legalPlatformFilter, setLegalPlatformFilter] = useState("all");
+
+  // Provider Filters & Details Modal
+  const [providerSearch, setProviderSearch] = useState("");
+  const [providerRoleFilter, setProviderRoleFilter] = useState<"all" | "creator" | "contributor">("all");
+  const [providerStatusFilter, setProviderStatusFilter] = useState<"all" | "active" | "suspended">("all");
+  const [selectedProviderDetails, setSelectedProviderDetails] = useState<any | null>(null);
 
   // ─── Version & Telemetry ───
   const [appVersionData, setAppVersionData] = useState({
@@ -473,6 +485,9 @@ export default function GlidePassAdmin() {
     });
   }, [referralCodesList, referralsList]);
 
+
+
+
   const [freeTierLimits, setFreeTierLimits] = useState({
     dailyCopyLimit: 3,
     maxDevices: 2,
@@ -487,13 +502,13 @@ export default function GlidePassAdmin() {
   };
 
   // ─── OTA ───
-  const [selectedFile, setSelectedFile] = useState<"index.html" | "center.html" | "vitcodes.html">("center.html");
+  const [selectedFile, setSelectedFile] = useState<"index.html" | "center.html" | "resources.html">("center.html");
   const [otaContent, setOtaContent] = useState("");
   const [loadingOta, setLoadingOta] = useState(true);
   const [savingOta, setSavingOta] = useState(false);
   const [usingCustom, setUsingCustom] = useState(false);
 
-  const fetchTemplate = async (f: "index.html" | "center.html" | "vitcodes.html") => {
+  const fetchTemplate = async (f: "index.html" | "center.html" | "resources.html") => {
     setLoadingOta(true);
     try {
       const res = await fetch(`/api/ota?file=${f}`);
@@ -569,11 +584,11 @@ export default function GlidePassAdmin() {
 
   const handleApproveEdit = async (edit: PendingEdit) => {
     setVitSessions(prev => prev.map(s => {
-      const hasQ = s.questions?.some(q => q.id === edit.questionId);
+      const hasQ = s.questions?.some((q: any) => q.id === edit.questionId);
       if (hasQ) {
         return {
           ...s,
-          questions: s.questions.map(q => {
+          questions: s.questions.map((q: any) => {
             if (q.id === edit.questionId) {
               return {
                 ...q,
@@ -631,7 +646,7 @@ export default function GlidePassAdmin() {
     let parentSessionId: string | null = null;
     
     for (const s of vitSessions) {
-      const found = s.questions?.find(q => q.id === questionId);
+      const found = s.questions?.find((q: any) => q.id === questionId);
       if (found) {
         originalQ = found;
         parentSessionId = s.id;
@@ -660,7 +675,7 @@ export default function GlidePassAdmin() {
       if (s.id === parentSessionId) {
         return {
           ...s,
-          questions: s.questions.map(q => q.id === questionId ? revertedQ : q)
+          questions: s.questions.map((q: any) => q.id === questionId ? revertedQ : q)
         };
       }
       return s;
@@ -772,9 +787,12 @@ export default function GlidePassAdmin() {
     } catch (e) {}
   };
 
-  // ─── VIT Codes ───
-  const [vitSessions, setVitSessions] = useState<VitCode[]>([]);
+  // ─── VIT Codes (Resources) ───
+  const [vitSessions, setVitSessions] = useState<any[]>([]);
   const [loadingVit, setLoadingVit] = useState(true);
+  const [qType, setQType] = useState("snippet");
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [savingVit, setSavingVit] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [vitDetailView, setVitDetailView] = useState(false);
@@ -812,9 +830,9 @@ export default function GlidePassAdmin() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  const [newExamType, setNewExamType] = useState("NERD");
+  const [newExamType, setNewExamType] = useState("Script");
   const [newSessionTitle, setNewSessionTitle] = useState("");
-  const [examTypes, setExamTypes] = useState(["NERD", "Daily Assessment", "Mid Term Exam", "Final Term Exam", "Coding Challenge"]);
+  const [examTypes, setExamTypes] = useState(["Script", "Config File", "Cheat Sheet", "Documentation", "Database Dump"]);
   const [newExamTypeName, setNewExamTypeName] = useState("");
   const [editingTypeIdx, setEditingTypeIdx] = useState<number | null>(null);
   const [editingTypeName, setEditingTypeName] = useState("");
@@ -852,7 +870,7 @@ export default function GlidePassAdmin() {
   const [examRules, setExamRules] = useState<Record<string, string>>({});
   const [sessionLimits, setSessionLimits] = useState<Record<string, number>>({});
   const [examYears, setExamYears] = useState<Record<string, string>>({});
-  const [selectedRuleType, setSelectedRuleType] = useState("NERD");
+  const [selectedRuleType, setSelectedRuleType] = useState("Script");
 
   const [batchMappings, setBatchMappings] = useState<Record<string, string>>({});
 
@@ -1008,37 +1026,18 @@ export default function GlidePassAdmin() {
   const fetchVitCodes = async (quiet = false) => {
     if (!quiet) setLoadingVit(true);
     try {
-      const res = await fetch("/api/vitcodes?includeDeleted=true", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch VIT codes");
+      const res = await fetch("/api/resources?includeDeleted=true", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch resources");
       const data = await res.json();
-      setVitSessions(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-        return data;
-      });
-      if (data.length > 0 && !activeSessionId) setActiveSessionId(data[0].id);
-      if (data && Array.from) {
-        const types = data.map((s: any) => s.examType).filter(Boolean);
-        const activeTypes = types.filter((t: string) => !deletedExamTypesRef.current.includes(t));
-        setExamTypes(prev => Array.from(new Set([...prev, ...activeTypes])).filter(t => !deletedExamTypesRef.current.includes(t)));
+      if (data.success && data.resources) {
+        setVitSessions(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(data.resources)) return prev;
+          return data.resources;
+        });
+        if (data.resources.length > 0 && !activeSessionId) {
+          setActiveSessionId(data.resources[0].id);
+        }
       }
-
-       // Sync rules in real-time
-       const rulesRes = await fetch("/api/vitcodes/rules", { cache: "no-store" });
-       if (rulesRes.ok) {
-         const rulesData = await rulesRes.json();
-         if (rulesData) {
-           if (rulesData.rules) {
-             setExamRules(prev => JSON.stringify(prev) === JSON.stringify(rulesData.rules) ? prev : rulesData.rules);
-              setPinnedExamType(rulesData.rules["ACTIVE_PINNED_EXAM"] || "");
-           }
-           if (rulesData.sessionLimits) {
-             setSessionLimits(prev => JSON.stringify(prev) === JSON.stringify(rulesData.sessionLimits) ? prev : rulesData.sessionLimits);
-           }
-           if (rulesData.examYears) {
-             setExamYears(prev => JSON.stringify(prev) === JSON.stringify(rulesData.examYears) ? prev : rulesData.examYears);
-           }
-         }
-       }
     } catch (err: any) {
       showToast("error", err.message);
     } finally {
@@ -1081,224 +1080,107 @@ export default function GlidePassAdmin() {
 
   };
 
-  const handleAddQuestion = async () => {
-    if (!activeSessionId) return;
-    if (!qTitle || !qCode) return showToast("error", "Title and Code required.");
+  const handleAddResource = async () => {
+    if (!qTitle || !qCode) return showToast("error", "Title and Content are required.");
+    const parsedTags = newQTags.split(",").map(t => t.trim()).filter(t => t.length > 0).map(t => t.startsWith("#") ? t : `#${t}`);
     
-    const parsedTags = newQTags.split(",").map(t => t.trim()).filter(t => t.startsWith("#") || t.length > 0).map(t => t.startsWith("#") ? t : `#${t}`);
-    const newQ: Question = { id: "q_" + Date.now(), title: qTitle, code: qCode, language: qLang, comment: qComment, tags: parsedTags };
-    
-    // Optimistic
-    setVitSessions(prev => prev.map(s => {
-      if (s.id === activeSessionId) {
-        return { ...s, questions: [...s.questions, newQ] };
-      }
-      return s;
-    }));
-    setQTitle("");
-    setQCode("");
-    setQComment("");
-    setNewQTags("");
-
-    const currentSession = vitSessions.find(s => s.id === activeSessionId);
-
-    try {
-      const res = await fetch("/api/vitcodes/question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          sessionId: activeSessionId, 
-          question: newQ,
-          session: currentSession ? { id: currentSession.id, date: currentSession.date, examType: currentSession.examType, title: currentSession.title } : undefined
-        })
-      });
-      if (!res.ok) throw new Error("Failed to add question");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
-  };
-
-  const openDeleteModal = (session: VitCode) => {
-    setDeleteTargetSession(session);
-    setDeleteConfirmText("");
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteSession = async () => {
-    if (!deleteTargetSession) return;
-    const expectedConfirm = (deleteTargetSession.title || deleteTargetSession.date).trim().toLowerCase();
-    if (deleteConfirmText.trim().toLowerCase() !== expectedConfirm) return;
-    const id = deleteTargetSession.id;
-    setDeletingSession(true);
-
-    // Optimistic removal
-    setVitSessions(prev => {
-      const next = prev.filter(s => s.id !== id);
-      if (activeSessionId === id) {
-        setActiveSessionId(next.length > 0 ? next[0].id : null);
-        setVitDetailView(false);
-      }
-      return next;
-    });
-    setShowDeleteModal(false);
-    setDeleteConfirmText("");
-    setDeleteTargetSession(null);
-
-    try {
-      const res = await fetch(`/api/vitcodes/session?id=${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete session");
-      showToast("success", "Session deleted successfully.");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    } finally {
-      setDeletingSession(false);
-    }
-  };
-
-  const handleDeleteQuestion = async (qId: string) => {
-    if (!confirm("Delete this question?")) return;
-    
-    // Optimistic
-    setVitSessions(prev => prev.map(s => {
-      if (s.id === activeSessionId) {
-        return { ...s, questions: s.questions.filter(q => q.id !== qId) };
-      }
-      return s;
-    }));
-
-    try {
-      const res = await fetch(`/api/vitcodes/question?id=${qId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete question");
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
-  };
-
-  const handleToggleQuestionLock = async (qId: string, currentLockStatus: boolean) => {
-    const newLockStatus = !currentLockStatus;
-    
-    // Optimistic
-    setVitSessions(prev => prev.map(s => {
-      if (s.id === activeSessionId) {
-        return { 
-          ...s, 
-          questions: s.questions.map(q => q.id === qId ? { ...q, isLocked: newLockStatus } : q) 
-        };
-      }
-      return s;
-    }));
-
-    try {
-      const res = await fetch(`/api/vitcodes/question`, { 
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: qId, isLocked: newLockStatus })
-      });
-      if (!res.ok) throw new Error("Failed to toggle question lock");
-      showToast("success", `Question ${newLockStatus ? 'locked' : 'unlocked'}.`);
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
-  };
-
-  const handleRestoreItem = async (type: "session" | "question", id: string) => {
-    // Optimistic restoration
-    setVitSessions(prev => prev.map(s => {
-      if (type === "session" && s.id === id) {
-        return {
-          ...s,
-          isDeleted: false,
-          questions: (s.questions || []).map(q => ({ ...q, isDeleted: false }))
-        };
-      }
-      if (type === "question") {
-        const hasQ = (s.questions || []).some(q => q.id === id);
-        if (hasQ) {
-          return {
-            ...s,
-            isDeleted: false, // restore parent session if it was deleted
-            questions: (s.questions || []).map(q => q.id === id ? { ...q, isDeleted: false } : q)
-          };
-        }
-      }
-      return s;
-    }));
-
-    try {
-      const res = await fetch("/api/vitcodes/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, id })
-      });
-      if (!res.ok) throw new Error("Failed to restore");
-      showToast("success", `${type === "session" ? "Session" : "Question"} restored successfully.`);
-      fetchVitCodes();
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    }
-  };
-
-  const openPermanentDeleteModal = (type: "session" | "question", id: string, name: string) => {
-    setPermanentDeleteTarget({ type, id, name });
-    setPermanentDeleteConfirmText("");
-    setShowPermanentDeleteModal(true);
-  };
-
-  const handlePermanentDelete = async () => {
-    if (!permanentDeleteTarget) return;
-    const { type, id, name } = permanentDeleteTarget;
-    if (permanentDeleteConfirmText.trim().toLowerCase() !== name.trim().toLowerCase()) {
-      return showToast("error", "Confirmation text mismatch.");
-    }
-
-    setIsPermanentlyDeleting(true);
-
-    // Optimistic delete
-    setVitSessions(prev => {
-      if (type === "session") {
-        return prev.filter(s => s.id !== id);
-      }
-      return prev.map(s => ({
-        ...s,
-        questions: (s.questions || []).filter(q => q.id !== id)
-      }));
-    });
-
-    setShowPermanentDeleteModal(false);
-    setPermanentDeleteConfirmText("");
-    setPermanentDeleteTarget(null);
-
-    try {
-      const endpoint = type === "session" ? `/api/vitcodes/session?id=${id}&permanent=true` : `/api/vitcodes/question?id=${id}&permanent=true`;
-      const res = await fetch(endpoint, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to permanently delete");
-      showToast("success", `${type === "session" ? "Session" : "Question"} deleted permanently.`);
-      fetchVitCodes();
-    } catch (e: any) {
-      showToast("error", e.message);
-      fetchVitCodes();
-    } finally {
-      setIsPermanentlyDeleting(false);
-    }
-  };
-
-  const activeSession = useMemo(() => {
-    const s = vitSessions.find(s => s.id === activeSessionId);
-    if (!s) return undefined;
-    return {
-      ...s,
-      questions: (s.questions || []).filter(q => !q.isDeleted)
+    const payload = {
+      title: qTitle,
+      type: qType,
+      language: qType === "snippet" ? qLang : "",
+      tags: parsedTags,
+      content: qCode,
+      creatorEmail: newLicenseEmail || currentUser?.email || "admin@glidepass.com",
+      creatorName: currentUser?.name || "Admin"
     };
-  }, [vitSessions, activeSessionId]);
-  const totalQ = useMemo(() => vitSessions.filter(s => !s.isDeleted).reduce((a, s) => a + (s.questions?.filter(q => !q.isDeleted).length || 0), 0), [vitSessions]);
+
+    try {
+      const res = await fetch("/api/resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create resource");
+      showToast("success", "Resource created successfully.");
+      setQTitle("");
+      setQCode("");
+      setNewQTags("");
+      setNewLicenseEmail("");
+      setShowNewSessionModal(false);
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+    }
+  };
+
+  const handleSaveResource = async () => {
+    if (!editingResourceId) return;
+    if (!qTitle || !qCode) return showToast("error", "Title and Content are required.");
+    const parsedTags = newQTags.split(",").map(t => t.trim()).filter(t => t.length > 0).map(t => t.startsWith("#") ? t : `#${t}`);
+    
+    const payload = {
+      title: qTitle,
+      type: qType,
+      language: qType === "snippet" ? qLang : "",
+      tags: parsedTags,
+      content: qCode,
+      creatorEmail: newLicenseEmail || currentUser?.email || "admin@glidepass.com"
+    };
+
+    try {
+      const res = await fetch(`/api/resources/${editingResourceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update resource");
+      showToast("success", "Resource updated successfully.");
+      setEditingResourceId(null);
+      setQTitle("");
+      setQCode("");
+      setNewQTags("");
+      setNewLicenseEmail("");
+      setShowNewSessionModal(false);
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+    }
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this resource?")) return;
+    try {
+      const res = await fetch(`/api/resources/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete resource");
+      showToast("success", "Resource moved to trash.");
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+    }
+  };
+
+  const handleRestoreResource = async (id: string) => {
+    try {
+      const res = await fetch(`/api/resources/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDeleted: false })
+      });
+      if (!res.ok) throw new Error("Failed to restore resource");
+      showToast("success", "Resource restored successfully.");
+      fetchVitCodes();
+    } catch (e: any) {
+      showToast("error", e.message);
+    }
+  };
+
+  const activeSession = undefined;
+  const totalQ = useMemo(() => vitSessions.filter(s => !s.isDeleted).length, [vitSessions]);
 
   const contributorCodes = useMemo(() => {
-    return vitSessions.filter(s => !s.isDeleted).flatMap(s => (s.questions || []).filter(q => !q.isDeleted).map(q => ({ ...q, sessionDate: s.date, sessionType: s.examType })));
+    return vitSessions.filter(s => !s.isDeleted).map(r => ({ ...r, contributorEmail: r.creatorEmail }));
   }, [vitSessions]);
 
   const contributorStats = useMemo(() => {
@@ -1312,9 +1194,9 @@ export default function GlidePassAdmin() {
       let editsCount = 0;
       vitSessions.forEach(s => {
         if (!s.isDeleted && s.questions) {
-          s.questions.forEach(q => {
+          s.questions.forEach((q: any) => {
             if (!q.isDeleted && q.edits) {
-              q.edits.forEach(edit => {
+              q.edits.forEach((edit: any) => {
                 if (edit.editorEmail === c.email) {
                   editsCount++;
                 }
@@ -1384,7 +1266,7 @@ export default function GlidePassAdmin() {
     const list: { question: Question; session: VitCode }[] = [];
     vitSessions.forEach(s => {
       if (!s.isDeleted && s.questions) {
-        s.questions.forEach(q => {
+        s.questions.forEach((q: any) => {
           if (q.isDeleted) {
             list.push({ question: q, session: s });
           }
@@ -1784,7 +1666,7 @@ export default function GlidePassAdmin() {
         }, 15000);
         return () => clearInterval(interval);
       }
-      if (view === "users" || view === "rbac") {
+      if (view === "users" || view === "rbac" || view === "providers") {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
@@ -1828,6 +1710,47 @@ export default function GlidePassAdmin() {
       return ms && mr;
     });
   }, [users, userSearch, userRoleFilter]);
+
+  const providerStats = useMemo(() => {
+    const totalConsent = users.filter(u => u.consentEmails === true).length;
+    const referralCounts: Record<string, number> = {};
+    let totalWithReferral = 0;
+    
+    users.forEach(u => {
+      if (u.referral) {
+        const ref = u.referral.trim().toLowerCase();
+        let normalized = "Other";
+        if (ref.includes("social") || ref.includes("insta") || ref.includes("twitter") || ref.includes("facebook") || ref.includes("linkedin") || ref.includes("youtube")) {
+          normalized = "Social Media";
+        } else if (ref.includes("friend") || ref.includes("mouth") || ref.includes("peer") || ref.includes("classmate")) {
+          normalized = "Friends / Word of Mouth";
+        } else if (ref.includes("search") || ref.includes("google") || ref.includes("bing")) {
+          normalized = "Search Engine";
+        } else if (ref.includes("github")) {
+          normalized = "GitHub";
+        } else if (ref) {
+          normalized = ref.charAt(0).toUpperCase() + ref.slice(1);
+        }
+        referralCounts[normalized] = (referralCounts[normalized] || 0) + 1;
+        totalWithReferral++;
+      } else {
+        referralCounts["Direct / Unknown"] = (referralCounts["Direct / Unknown"] || 0) + 1;
+        totalWithReferral++;
+      }
+    });
+
+    const referralData = Object.entries(referralCounts).map(([source, count]) => ({
+      source,
+      count,
+      percentage: totalWithReferral > 0 ? Math.round((count / totalWithReferral) * 100) : 0
+    })).sort((a, b) => b.count - a.count);
+
+    return {
+      totalConsent,
+      consentPercentage: users.length > 0 ? Math.round((totalConsent / users.length) * 100) : 0,
+      referralData
+    };
+  }, [users]);
 
   // ─── Local Storage Persistence ───
   useEffect(() => {
@@ -2394,7 +2317,7 @@ export default function GlidePassAdmin() {
 
     if (key === "dashboard" || key === "profile") return true;
     if (key === "analytics") return !!perms.analytics;
-    if (key === "users") return !!perms.users;
+    if (key === "users" || key === "providers") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
     if (key === "system") return !!perms.system;
@@ -2530,7 +2453,7 @@ export default function GlidePassAdmin() {
       { name: "Go to User Directory", action: () => { setView("users"); setCmdOpen(false); } },
       { name: "Go to Roles & Policies", action: () => { setView("rbac"); setCmdOpen(false); } },
       { name: "Go to Analytics", action: () => { setView("analytics"); setCmdOpen(false); } },
-      { name: "Go to VIT-AP Codes", action: () => { setView("vitcodes"); setCmdOpen(false); } },
+      { name: "Go to Resources Manager", action: () => { setView("vitcodes"); setCmdOpen(false); } },
       { name: "Go to Contributors", action: () => { setView("contributors"); setCmdOpen(false); } },
       { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
       { name: "Go to Diagnostics", action: () => { setView("system"); setCmdOpen(false); } },
@@ -2538,6 +2461,7 @@ export default function GlidePassAdmin() {
       { name: "Go to Settings", action: () => { setView("settings"); setCmdOpen(false); } },
       { name: "Go to Subscriptions & Licensing", action: () => { setView("subscriptions"); setCmdOpen(false); } },
       { name: "Go to Plans Config & Keys", action: () => { setView("plans"); setCmdOpen(false); } },
+      { name: "Generate Activation Key", action: () => { setView("keys"); setCmdOpen(false); } },
       { name: "Go to Version Manager", action: () => { setView("versioning"); setCmdOpen(false); } },
       { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
       { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
@@ -2806,8 +2730,8 @@ export default function GlidePassAdmin() {
                 <nav className="px-4 py-6 space-y-6">
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: Code, name: "VIT-AP Codes" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
@@ -3278,6 +3202,178 @@ export default function GlidePassAdmin() {
                                   </td>
                                 </tr>
                               ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ Providers ═══ */}
+                  {view === "providers" && (
+                    <motion.div key="providers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Providers & Creators Directory</h2>
+                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage content creators, code contributors, their accounts, and growth metrics</p>
+                        </div>
+                      </div>
+
+                      {/* Analytics Dashboard Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Consent metrics */}
+                        <div className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Newsletter Consent</p>
+                              <h3 className="text-3xl font-black mt-2 font-[family-name:var(--font-outfit)]" style={{ color: dk ? P.white : P.black }}>
+                                {providerStats.totalConsent}
+                              </h3>
+                            </div>
+                            <div className="p-2.5 rounded-xl border" style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: P.blue }}>
+                              <Mail size={20} />
+                            </div>
+                          </div>
+                          <div className="mt-4 flex items-center gap-2">
+                            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ background: `${P.blue}15`, color: P.blue }}>
+                              {providerStats.consentPercentage}%
+                            </span>
+                            <span className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>of total users opted in for updates</span>
+                          </div>
+                        </div>
+
+                        {/* Referral Growth Channels */}
+                        <div className="p-5 rounded-[24px] border relative overflow-hidden md:col-span-2 space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div>
+                            <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Acquisition Channels (Referrals)</p>
+                            <p className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>Where do our users find us?</p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {providerStats.referralData.slice(0, 4).map((ref, idx) => (
+                              <div key={idx} className="space-y-1.5">
+                                <div className="flex justify-between text-xs font-bold">
+                                  <span style={{ color: dk ? P.white : P.black }}>{ref.source}</span>
+                                  <span className="font-mono" style={{ color: P.blue }}>{ref.count} ({ref.percentage}%)</span>
+                                </div>
+                                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                  <div className="h-full rounded-full" style={{ width: `${ref.percentage}%`, background: P.blue }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filters */}
+                      <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="relative w-full md:w-80">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                          <input type="text" value={providerSearch} onChange={e => setProviderSearch(e.target.value)} placeholder="Search name or email..."
+                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Provider:</span>
+                            <select value={providerRoleFilter} onChange={e => setProviderRoleFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                              <option value="all">All Providers</option>
+                              <option value="creator">Creators</option>
+                              <option value="contributor">Contributors</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Status:</span>
+                            <select value={providerStatusFilter} onChange={e => setProviderStatusFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                              <option value="all">All Statuses</option>
+                              <option value="active">Active</option>
+                              <option value="suspended">Suspended</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Providers Directory Table */}
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "750px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Name", "Email", "Role Type", "Joined Date", "Consent", "Status", "Actions"].map(h => (
+                                  <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Name" ? "pl-6" : ""}`}
+                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users
+                                .filter(u => {
+                                  const searchMatch = u.name.toLowerCase().includes(providerSearch.toLowerCase()) || u.email.toLowerCase().includes(providerSearch.toLowerCase());
+                                  
+                                  const rLower = u.role.toLowerCase();
+                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
+                                  const isContributor = rLower.includes("contributor");
+                                  
+                                  const roleMatch = providerRoleFilter === "all"
+                                    ? (isCreator || isContributor)
+                                    : providerRoleFilter === "creator"
+                                      ? isCreator
+                                      : isContributor;
+                                      
+                                  const statusMatch = providerStatusFilter === "all" || u.status === providerStatusFilter;
+                                  
+                                  return searchMatch && roleMatch && statusMatch;
+                                })
+                                .map(u => {
+                                  const rLower = u.role.toLowerCase();
+                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
+                                  const displayRole = isCreator ? "Creator" : "Contributor";
+                                  
+                                  return (
+                                    <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 pl-6 font-bold">{u.name}</td>
+                                      <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
+                                      <td className="p-4">
+                                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" 
+                                          style={{ 
+                                            background: displayRole === "Creator" ? `${P.blue}15` : "transparent", 
+                                            color: displayRole === "Creator" ? P.blue : dk ? `${P.sky}80` : `${P.black}80`, 
+                                            borderColor: displayRole === "Creator" ? `${P.blue}25` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)"
+                                          }}>
+                                          {displayRole} ({u.role})
+                                        </span>
+                                      </td>
+                                      <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.joinedDate}</td>
+                                      <td className="p-4">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.consentEmails ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                                          {u.consentEmails ? "Opt-in" : "Opt-out"}
+                                        </span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.status === "suspended" ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}>
+                                          {u.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 pr-6 text-right flex justify-end gap-2">
+                                        <button onClick={() => setSelectedProviderDetails(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? P.white : P.black }}>
+                                          Details
+                                        </button>
+                                        <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
+                                          {u.status === "suspended" ? "Unsuspend" : "Suspend"}
+                                        </button>
+                                        <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
+                                          Delete
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                             </tbody>
                           </table>
                         </div>
@@ -3770,669 +3866,220 @@ export default function GlidePassAdmin() {
                     </motion.div>
                   )}
 
-                  {/* ═══ VIT-AP CODES — MASTER-DETAIL ═══ */}
+                  {/* ═══ RESOURCES MANAGER ═══ */}
                   {view === "vitcodes" && (
-                    <motion.div key="vit" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-                      <AnimatePresence mode="wait">
-                        {showBin ? (
-                          <motion.div key="vit-bin" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
-                            {/* Bin Header */}
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <button onClick={() => setShowBin(false)} className="flex items-center gap-1.5 text-xs font-bold hover:opacity-70 transition-colors mb-2" style={{ color: P.blue }}>
-                                  <ArrowLeft size={14} /> Back to Sessions
-                                </button>
-                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase text-red-400">VIT AP TRASH BIN</h2>
-                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Restore or permanently delete sessions and questions</p>
-                              </div>
-                            </div>
+                    <motion.div key="resources" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
 
-                            {/* Bin Tabs */}
-                            <div className="flex gap-2 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                              <button
-                                onClick={() => setBinTab("sessions")}
-                                className={`px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 ${binTab === "sessions" ? "border-red-500 text-red-400" : "border-transparent opacity-60"}`}
-                              >
-                                Binned Sessions ({binnedSessionsCount})
-                              </button>
-                              <button
-                                onClick={() => setBinTab("questions")}
-                                className={`px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 ${binTab === "questions" ? "border-red-500 text-red-400" : "border-transparent opacity-60"}`}
-                              >
-                                Binned Questions ({binnedQuestionsCount})
-                              </button>
-                            </div>
-
-                            {/* Bin Content */}
-                            {binTab === "sessions" ? (
-                              binnedSessions.length === 0 ? (
-                                <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                  <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
-                                  <p className="text-xs">No sessions in trash bin.</p>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                  {binnedSessions.map(s => {
-                                    const formatDate = (d: string) => {
-                                      const p = d.split("-");
-                                      return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
-                                    };
-                                    return (
-                                      <div key={s.id}
-                                        className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between"
-                                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: "rgba(239, 68, 68, 0.20)", backdropFilter: "blur(40px)" }}>
-                                        <div>
-                                          <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-red-500/30 bg-red-500/10 text-red-400">{s.examType}</span>
-                                            <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
-                                          </div>
-                                          <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
-                                          <p className="text-[10px] font-mono mb-4" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</p>
-                                        </div>
-                                        <div className="flex gap-2 mt-2">
-                                          <button
-                                            onClick={() => handleRestoreItem("session", s.id)}
-                                            className="flex-1 py-2 rounded-xl border border-white/10 hover:bg-white/5 font-bold text-xs transition-all flex items-center justify-center gap-1"
-                                            style={{ color: P.blue }}
-                                          >
-                                            <RotateCcw size={12} /> Restore
-                                          </button>
-                                          <button
-                                            onClick={() => openPermanentDeleteModal("session", s.id, s.title || s.date)}
-                                            className="flex-1 py-2 rounded-xl bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold text-xs transition-all flex items-center justify-center gap-1"
-                                          >
-                                            <Trash2 size={12} /> Delete Forever
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )
-                            ) : (
-                              binnedQuestions.length === 0 ? (
-                                <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                  <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
-                                  <p className="text-xs">No questions in trash bin.</p>
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  {binnedQuestions.map(({ question: q, session: s }) => (
-                                    <div key={q.id} className="rounded-2xl border overflow-hidden transition-all p-5"
-                                      style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: "rgba(239, 68, 68, 0.15)" }}>
-                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                                        <div>
-                                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                            <span className="text-[9px] font-mono px-2 py-0.5 rounded border border-red-500/20 bg-red-500/5 text-red-400">{q.language}</span>
-                                            <span className="text-[9px] font-sans px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>
-                                              Session: {s.title || s.date} ({s.examType})
-                                            </span>
-                                          </div>
-                                          <h4 className="text-xs font-bold">{q.title}</h4>
-                                          {q.comment && <p className="text-[10px] font-mono mt-1 opacity-60">{q.comment}</p>}
-                                        </div>
-                                        <div className="flex gap-2 shrink-0">
-                                          <button
-                                            onClick={() => handleRestoreItem("question", q.id)}
-                                            className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 font-bold text-[10px] transition-all flex items-center gap-1"
-                                            style={{ color: P.blue }}
-                                          >
-                                            <RotateCcw size={10} /> Restore
-                                          </button>
-                                          <button
-                                            onClick={() => openPermanentDeleteModal("question", q.id, q.title)}
-                                            className="px-3 py-1.5 rounded-xl bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold text-[10px] transition-all flex items-center gap-1"
-                                          >
-                                            <Trash2 size={10} /> Delete Forever
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <pre className="p-3 text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-32 rounded-lg" style={{ background: "#151b22", color: "#8ecfff" }}>
-                                        <code>{q.code}</code>
-                                      </pre>
-                                    </div>
-                                  ))}
-                                </div>
-                              )
-                            )}
-                          </motion.div>
-                        ) : showApprovalQueue ? (
-                          <motion.div key="vit-approval" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
-                            {/* Back Button & Header */}
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                              <div>
-                                <button onClick={() => setShowApprovalQueue(false)} className="flex items-center gap-1.5 text-xs font-bold hover:opacity-70 transition-colors mb-2" style={{ color: P.blue }}>
-                                  <ArrowLeft size={14} /> Back to Sessions
-                                </button>
-                                <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">VIT CODES APPROVAL QUEUE</h2>
-                                <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Review and merge student contributed code snippet optimizations</p>
-                              </div>
-                              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
-                                <span>Spam Filter Guard</span>
-                                <input type="checkbox" checked={spamFilterActive} onChange={e => setSpamFilterActive(e.target.checked)} className="rounded-md w-4 h-4" style={{ accentColor: P.blue }} />
-                              </label>
-                            </div>
-
-                            {/* List of Edits */}
-                            {(() => {
-                              const filteredEdits = pendingEdits.filter(edit => {
-                                if (spamFilterActive && (edit.contributorEmail.includes("spam") || edit.reason.includes("garbage") || edit.contributedCode.length < 5)) {
-                                  return false;
-                                }
-                                return true;
-                              });
-
-                              if (filteredEdits.length === 0) {
-                                return (
-                                  <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                    <CheckCircle size={32} className="mx-auto mb-3 opacity-30 text-green-400" />
-                                    <p className="text-xs">All contributions reviewed. Queue is empty!</p>
-                                  </div>
-                                );
-                              }
-
-                              return (
-                                <div className="space-y-8">
-                                  {filteredEdits.map(edit => {
-                                    const diffRows = renderDiff(edit.originalCode, edit.contributedCode);
-                                    return (
-                                      <div key={edit.id} className="p-6 rounded-[28px] border space-y-4"
-                                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                        
-                                        {/* Edit Info */}
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                                          <div>
-                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                              <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider bg-[#0077C0]/15 text-[#0077C0] border border-[#0077C0]/30">{edit.language}</span>
-                                              <span className="text-xs font-bold">Question: {edit.questionTitle}</span>
-                                            </div>
-                                            <p className="text-xs font-medium text-amber-500">Reason: {edit.reason}</p>
-                                            <p className="text-[10px] font-mono opacity-60">Submitted by: {edit.contributorEmail} at {edit.timestamp}</p>
-                                          </div>
-                                          <div className="flex gap-2">
-                                            <button onClick={() => handleApproveEdit(edit)} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
-                                              <Check size={13} /> Approve (Merge)
-                                            </button>
-                                            <button onClick={() => handleRequestClarification(edit)} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
-                                              <Info size={13} /> Clarify
-                                            </button>
-                                            <button onClick={() => handleRejectEdit(edit)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1">
-                                              <X size={13} /> Reject
-                                            </button>
-                                          </div>
-                                        </div>
-
-                                        {/* Diff Side-by-Side Viewer */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          {/* Original */}
-                                          <div className="space-y-2">
-                                            <h4 className="text-xs font-bold text-red-400 flex items-center gap-1"><X size={12} /> Original Code</h4>
-                                            <div className="rounded-xl overflow-auto max-h-80 border" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                                              <table className="w-full font-mono text-[10px] text-left border-collapse" style={{ background: "#0d1117" }}>
-                                                <tbody>
-                                                  {diffRows.map(row => (
-                                                    <tr key={row.lineNo} className={row.isDifferent ? "bg-red-950/35 text-red-300" : "text-gray-400"}>
-                                                      <td className="p-1 px-2 border-r border-gray-800 text-right select-none text-gray-600 w-8">{row.lineNo}</td>
-                                                      <td className="p-1 px-3 whitespace-pre">{row.original}</td>
-                                                    </tr>
-                                                  ))}
-                                                </tbody>
-                                              </table>
-                                            </div>
-                                          </div>
-
-                                          {/* Contributed */}
-                                          <div className="space-y-2">
-                                            <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Check size={12} /> Contributed Code</h4>
-                                            <div className="rounded-xl overflow-auto max-h-80 border" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                                              <table className="w-full font-mono text-[10px] text-left border-collapse" style={{ background: "#0d1117" }}>
-                                                <tbody>
-                                                  {diffRows.map(row => (
-                                                    <tr key={row.lineNo} className={row.isDifferent ? "bg-green-950/35 text-green-300" : "text-gray-400"}>
-                                                      <td className="p-1 px-2 border-r border-gray-800 text-right select-none text-gray-600 w-8">{row.lineNo}</td>
-                                                      <td className="p-1 px-3 whitespace-pre">{row.contributed}</td>
-                                                    </tr>
-                                                  ))}
-                                                </tbody>
-                                              </table>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-                          </motion.div>
-                        ) : !vitDetailView ? (
-                          <motion.div key="vit-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} className="space-y-6">
-                            {/* Header */}
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                              <div>
-                                <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase text-[#FAFAFA]">VIT-AP Code Sessions</h2>
-                                <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage exam exam sessions and code questions</p>
-                              </div>
-                              <div className="flex items-center gap-3 flex-wrap md:justify-end">
-                                <select value={selectedYearFilter} onChange={e => setSelectedYearFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
-                                  <option value="all">All Years</option>
-                                  <option value="1st Year">1st Year</option>
-                                  <option value="2nd Year">2nd Year</option>
-                                  <option value="3rd Year">3rd Year</option>
-                                  <option value="4th Year">4th Year</option>
-                                  <option value="5th Year">5th Year</option>
-                                </select>
-
-                                <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}>
-                                  <option value="all">All Types</option>
-                                  {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-
-                                <button onClick={() => setShowManageTypes(true)} className="p-2.5 rounded-xl border transition-all hover:opacity-80 cursor-pointer"
-                                  style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}>
-                                  <Settings size={14} />
-                                </button>
-                                <button onClick={() => setShowBin(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs shadow-md active:scale-[0.98] transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer">
-                                  <Trash2 size={13} /> VIT Bin ({binnedSessionsCount + binnedQuestionsCount})
-                                </button>
-                                <button onClick={() => setShowNewSessionModal(true)} className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all cursor-pointer"
-                                  style={{ background: P.blue }}>
-                                  <Plus size={13} /> New Session
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Session Cards Grid */}
-                            {loadingVit ? (
-                              <div className="flex items-center justify-center py-20">
-                                <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
-                              </div>
-                            ) : filteredSessions.length === 0 ? (
-                              <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-xs">No sessions yet. Create your first one.</p>
-                              </div>
-                            ) : (
-                              <div className="space-y-8">
-                                {Object.entries(groupedSessions).map(([type, sessions]) => {
-                                  const today = new Date();
-                                  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                                  
-                                  // Sort descending so newest is first, BUT pin today's date to the very front
-                                  const sorted = [...sessions].sort((a, b) => {
-                                    if (a.date === todayStr && b.date !== todayStr) return -1;
-                                    if (b.date === todayStr && a.date !== todayStr) return 1;
-                                    const dateCmp = b.date.localeCompare(a.date);
-                                    if (dateCmp !== 0) return dateCmp;
-                                    return b.id.localeCompare(a.id); // Tie-breaker for multiple sessions on same day
-                                  });
-                                  const maxDate = sorted[0].date;
-                                  const minDate = sorted[sorted.length - 1].date;
-                                  
-                                  const formatDate = (d: string) => {
-                                    const p = d.split("-");
-                                    return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
-                                  };
-                                  
-                                  const dateRange = minDate === maxDate ? formatDate(minDate) : `${formatDate(minDate)} to ${formatDate(maxDate)}`;
-
-                                  return (
-                                    <div key={type} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                      <div className="mb-4">
-                                        <h2 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>{type}</h2>
-                                        <p className="text-[10px] font-mono mt-1" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Available: {dateRange} • {sessions.length} Session{sessions.length !== 1 && 's'}</p>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {sorted.map(s => (
-                                          <div key={s.id}
-                                            onClick={() => { setActiveSessionId(s.id); setVitDetailView(true); }}
-                                            className="p-5 rounded-[24px] border cursor-pointer transition-all group hover:shadow-lg relative overflow-hidden"
-                                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                            <div className="flex items-center gap-2 mb-3">
-                                              <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{s.examType}</span>
-                                              <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{formatDate(s.date)}</span>
-                                            </div>
-                                            <h3 className="text-sm font-bold mb-3">{s.title || formatDate(s.date)}</h3>
-                                            <div className="flex items-center justify-between">
-                                              <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{s.questions.length} Codes Contributed</span>
-                                              <button onClick={e => { e.stopPropagation(); openDeleteModal(s); }}
-                                                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:opacity-80"
-                                                style={{ color: P.error }}>
-                                                <Trash2 size={12} />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </motion.div>
-                        ) : (
-                          /* Session Detail View */
-                          <motion.div key="vit-detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} className="space-y-6">
-                            <button onClick={() => setVitDetailView(false)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors" style={{ color: P.blue }}>
-                              <ArrowLeft size={14} /> Back to Sessions
+                      {/* ─── Header ─── */}
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Resources Manager</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {vitSessions.filter((r: any) => !r.isDeleted).length} active &bull; {vitSessions.filter((r: any) => r.isDeleted).length} in trash
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap md:justify-end">
+                          {/* Search */}
+                          <div className="relative">
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                            <input
+                              id="resource-search"
+                              type="text"
+                              value={searchQuery}
+                              onChange={e => setSearchQuery(e.target.value)}
+                              placeholder="Search resources..."
+                              className={`text-xs rounded-xl pl-8 pr-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 w-48 ${inputBg}`}
+                            />
+                          </div>
+                          {/* Type filter */}
+                          <select
+                            value={examTypeFilter === "snippet" || examTypeFilter === "macro" ? examTypeFilter : "all"}
+                            onChange={e => setExamTypeFilter(e.target.value)}
+                            className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}
+                          >
+                            <option value="all">All Types</option>
+                            <option value="snippet">Snippets</option>
+                            <option value="macro">Macros</option>
+                          </select>
+                          {/* Trash toggle */}
+                          <button
+                            onClick={() => setShowBin(b => !b)}
+                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all active:scale-[0.98] ${
+                              showBin ? "bg-red-500/15 border-red-500/40 text-red-400" : "bg-red-500/5 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            }`}
+                          >
+                            <Trash2 size={13} /> Trash ({vitSessions.filter((r: any) => r.isDeleted).length})
+                          </button>
+                          {/* New Resource */}
+                          {!showBin && (
+                            <button
+                              id="new-resource-btn"
+                              onClick={() => {
+                                setEditingResourceId(null);
+                                setQTitle(""); setQCode(""); setQLang("cpp"); setNewQTags(""); setNewLicenseEmail(""); setQType("snippet");
+                                setShowNewSessionModal(true);
+                              }}
+                              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
+                              style={{ background: P.blue }}
+                            >
+                              <Plus size={13} /> New Resource
                             </button>
+                          )}
+                        </div>
+                      </div>
 
-                            {activeSession && (
-                              <>
-                                {/* Session Header */}
-                                <div className="p-6 rounded-[28px] border relative overflow-hidden"
-                                  style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                                  <div className="flex flex-wrap items-center gap-3">
-                                    <h2 className="text-lg font-black font-[family-name:var(--font-outfit)]">{activeSession.title || activeSession.date}</h2>
-                                    <span className="text-[9px] px-2.5 py-0.5 rounded-md font-bold uppercase border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{activeSession.examType}</span>
-                                    <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{activeSession.date}</span>
-                                    <span className="text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>• {activeSession.questions.length} Codes Contributed</span>
-                                  </div>
+                      {/* ─── Resource Grid ─── */}
+                      {loadingVit ? (
+                        <div className="flex items-center justify-center py-20">
+                          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                        </div>
+                      ) : (() => {
+                        const all: any[] = vitSessions.filter((r: any) => showBin ? r.isDeleted : !r.isDeleted);
+                        const tFilter = (examTypeFilter === "snippet" || examTypeFilter === "macro") ? examTypeFilter : null;
+                        const filtered = all.filter((r: any) => {
+                          const q = searchQuery.toLowerCase();
+                          const matchQ = !q || (r.title || "").toLowerCase().includes(q) || (r.language || "").toLowerCase().includes(q) || (r.tags || []).some((t: string) => t.toLowerCase().includes(q));
+                          const matchT = !tFilter || r.type === tFilter;
+                          return matchQ && matchT;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                              {showBin
+                                ? <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
+                                : <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+                              }
+                              <p className="text-xs font-medium mt-2">
+                                {showBin ? "Trash is empty." : searchQuery ? "No resources match your search." : "No resources yet — add your first one."}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {filtered.map((r: any) => (
+                              <div key={r.id}
+                                className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col gap-3 transition-all hover:shadow-lg group"
+                                style={{
+                                  background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
+                                  borderColor: r.isDeleted ? "rgba(239,68,68,0.22)" : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+                                  backdropFilter: "blur(40px)"
+                                }}
+                              >
+                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+
+                                {/* Type + Language badges */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border"
+                                    style={{
+                                      background: r.type === "macro" ? "rgba(168,85,247,0.12)" : `${P.blue}15`,
+                                      color: r.type === "macro" ? "#A855F7" : P.blue,
+                                      borderColor: r.type === "macro" ? "rgba(168,85,247,0.25)" : `${P.blue}25`
+                                    }}>
+                                    {r.type || "snippet"}
+                                  </span>
+                                  {r.language && (
+                                    <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border"
+                                      style={{ background: `${P.sky}12`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>
+                                      {r.language}
+                                    </span>
+                                  )}
+                                  {r.isDeleted && (
+                                    <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-red-500/25 bg-red-500/10 text-red-400">
+                                      Deleted
+                                    </span>
+                                  )}
                                 </div>
 
-                                {/* Add Question Form */}
-                                <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
-                                  style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
-                                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                                  <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: P.blue }}>
-                                    <Plus size={14} /> Add Code Question
-                                  </h3>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="md:col-span-2">
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Question Title</label>
-                                      <input type="text" value={qTitle} onChange={e => setQTitle(e.target.value)} placeholder="e.g. Matrix Transpose"
-                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
-                                      <select value={qLang} onChange={e => setQLang(e.target.value)} className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}>
-                                        <option value="cpp">C++ (cpp)</option>
-                                        <option value="python">Python</option>
-                                        <option value="java">Java</option>
-                                        <option value="javascript">JavaScript</option>
-                                      </select>
-                                    </div>
+                                {/* Title */}
+                                <h3 className="text-sm font-bold leading-tight">{r.title || "Untitled"}</h3>
+
+                                {/* Tags */}
+                                {r.tags && r.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {(r.tags as string[]).slice(0, 5).map((tag: string) => (
+                                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded border"
+                                        style={{ background: `${P.sky}10`, color: dk ? `${P.sky}90` : `${P.black}70`, borderColor: `${P.sky}20` }}>
+                                        {tag}
+                                      </span>
+                                    ))}
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Comment (Optional)</label>
-                                      <input type="text" value={qComment} onChange={e => setQComment(e.target.value)} placeholder="e.g. Needs C++17 support..."
-                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Tags (Comma separated, e.g. #midterm2026, #da1)</label>
-                                      <input type="text" value={newQTags} onChange={e => setNewQTags(e.target.value)} placeholder="e.g. #midterm2026, #da1"
-                                        className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                                    </div>
+                                )}
+
+                                {/* Stats */}
+                                <div className="flex items-center gap-4 text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                  <span className="flex items-center gap-1"><Eye size={10} /> {r.views ?? 0} views</span>
+                                  <span className="flex items-center gap-1"><Download size={10} /> {r.copies ?? 0} copies</span>
+                                </div>
+
+                                {/* Creator */}
+                                {r.creatorEmail && (
+                                  <div className="text-[9px] font-mono truncate" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                    by {r.creatorEmail}
                                   </div>
-                                  <div className="flex flex-col h-64">
-                                    <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Source Code</label>
-                                    <textarea value={qCode} onChange={e => setQCode(e.target.value)} placeholder="Paste source code..."
-                                      className="w-full flex-1 text-xs font-mono rounded-xl p-4 border focus:outline-none resize-none"
-                                      style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.1)", color: "#8ecfff" }} />
-                                  </div>
-                                  <div className="flex justify-between items-center flex-wrap gap-4">
-                                    <div className="flex items-center gap-2">
-                                      <input
-                                        type="file"
-                                        id="bulk-import-file"
-                                        accept=".json,.csv"
-                                        className="hidden"
-                                        onChange={e => {
-                                          const file = e.target.files?.[0];
-                                          if (!file) return;
-                                          const reader = new FileReader();
-                                          reader.onload = (event) => {
-                                            const content = event.target?.result as string;
-                                            const type = file.name.endsWith(".json") ? "json" : "csv";
-                                            handleBulkImport(content, type);
-                                          };
-                                          reader.readAsText(file);
-                                          e.target.value = ""; // reset input
-                                        }}
-                                      />
+                                )}
+
+                                {/* Content preview */}
+                                <div className="rounded-xl overflow-hidden">
+                                  <pre className="p-3 text-[9px] font-mono overflow-x-auto max-h-[4.5rem] leading-relaxed" style={{ background: "#151b22", color: "#8ecfff" }}>
+                                    <code>{((r.content || "")).substring(0, 160)}{(r.content || "").length > 160 ? "\u2026" : ""}</code>
+                                  </pre>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="flex items-center gap-2 pt-1">
+                                  {r.isDeleted ? (
+                                    <>
                                       <button
-                                        onClick={() => document.getElementById("bulk-import-file")?.click()}
-                                        className="px-4 py-2.5 rounded-xl border text-xs font-bold transition-all hover:bg-white/5"
+                                        onClick={() => handleRestoreResource(r.id)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80"
+                                        style={{ borderColor: `${P.blue}30`, color: P.blue, background: `${P.blue}08` }}
+                                      >
+                                        <RotateCcw size={11} /> Restore
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteResource(r.id)}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5"
+                                      >
+                                        <Trash2 size={11} /> Forever
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingResourceId(r.id);
+                                          setQTitle(r.title || "");
+                                          setQCode(r.content || "");
+                                          setQLang(r.language || "cpp");
+                                          setNewQTags((r.tags || []).join(", "));
+                                          setNewLicenseEmail(r.creatorEmail || "");
+                                          setQType(r.type || "snippet");
+                                          setShowNewSessionModal(true);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80"
                                         style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}
                                       >
-                                        Bulk Import JSON/CSV
+                                        <Edit2 size={11} /> Edit
                                       </button>
-                                    </div>
-                                    <button onClick={handleAddQuestion} className="px-5 py-2.5 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-[0.98] transition-all"
-                                      style={{ background: P.blue }}><Plus size={13} /> Add Question</button>
-                                  </div>
+                                      <button
+                                        onClick={() => handleDeleteResource(r.id)}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5"
+                                      >
+                                        <Trash2 size={11} /> Delete
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
-
-                                {/* Questions List */}
-                                <div className="space-y-3">
-                                  {activeSession.questions.length === 0 ? (
-                                    <div className="py-16 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                      <Code size={28} className="mx-auto mb-3 opacity-30" />
-                                      <p className="text-xs">No questions yet. Add your first question above.</p>
-                                    </div>
-                                  ) : activeSession.questions.map((q, idx) => (
-                                    <div key={q.id} className="rounded-2xl border overflow-hidden transition-all"
-                                      style={{ background: dk ? "rgba(5,5,5,0.40)" : "rgba(255,255,255,0.60)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                                      <div onClick={() => setExpandedQId(expandedQId === q.id ? null : q.id)}
-                                        className="w-full px-5 py-4 flex justify-between items-center text-left hover:opacity-90 transition-colors cursor-pointer">
-                                        <div className="flex flex-col gap-1">
-                                          <span className="text-xs font-bold">{idx + 1}. {q.title}</span>
-                                          {q.comment && <span className="text-[10px] font-mono opacity-80" style={{ color: dk ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>{q.comment}</span>}
-                                          {(() => {
-                                            const info = getQuestionContributorInfo(q.contributorEmail, contributors);
-                                            if (!info) return null;
-                                            return (
-                                              <span className="text-[9px] flex items-center gap-1.5 opacity-60 mt-0.5 select-none">
-                                                <span>Contributed by:</span>
-                                                <span className="font-bold uppercase" style={{ color: P.blue }}>{info.name}</span>
-                                                <span className="font-mono text-[8px] px-1 py-0.2 rounded border bg-white/5" style={{ borderColor: dk ? "rgba(199,238,255,0.15)" : "rgba(5,5,5,0.1)" }}>{info.id}</span>
-                                              </span>
-                                            );
-                                          })()}
-                                        </div>
-                                        <div className="flex items-center gap-3 shrink-0 ml-4">
-                                          <span className="text-[9px] font-mono px-2 py-0.5 rounded border" style={{ background: `${P.blue}10`, color: P.blue, borderColor: `${P.blue}20` }}>{q.language}</span>
-                                          {q.tags && q.tags.map(t => (
-                                            <span key={t} className="text-[8px] px-1.5 py-0.5 rounded border" style={{ background: `${P.sky}15`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>{t}</span>
-                                          ))}
-                                          <button onClick={e => { e.stopPropagation(); handleToggleQuestionLock(q.id, !!q.isLocked); }} className="p-1 rounded hover:opacity-70 transition-colors" style={{ color: q.isLocked ? P.blue : P.sky }} title={q.isLocked ? "Unlock code" : "Lock code"}>
-                                            {q.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
-                                          </button>
-                                          <button onClick={e => { e.stopPropagation(); handleDeleteQuestion(q.id); }} className="p-1 rounded hover:opacity-70" style={{ color: P.error }} title="Delete code"><Trash2 size={12} /></button>
-                                          <ChevronRight size={14} className={`transition-transform ${expandedQId === q.id ? "rotate-90" : ""}`} style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
-                                        </div>
-                                      </div>
-                                      <AnimatePresence>
-                                        {expandedQId === q.id && (
-                                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                            <pre className="p-4 text-[10px] font-[family-name:var(--font-mono)] overflow-x-auto max-h-52" style={{ background: "#151b22", color: "#8ecfff" }}>
-                                              <code>{q.code}</code>
-                                            </pre>
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
-                                    </div>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </motion.div>
                   )}
-
-                  {/* ═══ DELETE SESSION CONFIRMATION MODAL ═══ */}
-                  <AnimatePresence>
-                    {showDeleteModal && deleteTargetSession && (
-                      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.92 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.92 }}
-                          className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
-                        >
-                          <div className={`p-5 sm:p-6 rounded-[20px] ${cardBg} space-y-4`}>
-                            {/* Header */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                                  <Trash2 size={16} className="text-red-400" />
-                                </div>
-                                <div>
-                                  <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Session</h3>
-                                  <p className={`text-[10px] ${txt3}`}>This action cannot be undone</p>
-                                </div>
-                              </div>
-                              <button onClick={() => setShowDeleteModal(false)} className={`p-1.5 rounded-lg border border-white/10 hover:bg-white/5 shrink-0`}>
-                                <X size={14} className={txt1} />
-                              </button>
-                            </div>
-
-                            {/* Warning Box */}
-                            <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
-                              <p className="text-xs text-red-300/80 leading-relaxed">
-                                You are about to permanently delete session{" "}
-                                <span className="font-bold text-white">{deleteTargetSession.title || deleteTargetSession.date}</span>{" "}
-                                from <span className="font-bold text-white">{deleteTargetSession.examType}</span>.
-                                All {deleteTargetSession.questions.length} question{deleteTargetSession.questions.length !== 1 ? "s" : ""} will be removed from the database.
-                              </p>
-                            </div>
-
-                            {/* Type-to-confirm */}
-                            <div>
-                              <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
-                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{deleteTargetSession.title || deleteTargetSession.date}</span> to confirm
-                              </label>
-                              <input
-                                type="text"
-                                value={deleteConfirmText}
-                                onChange={e => setDeleteConfirmText(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && deleteConfirmText.trim().toLowerCase() === (deleteTargetSession.title || deleteTargetSession.date).trim().toLowerCase()) handleDeleteSession(); }}
-                                placeholder={`Type "${deleteTargetSession.title || deleteTargetSession.date}" here...`}
-                                autoFocus
-                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${deleteConfirmText.trim().toLowerCase() === (deleteTargetSession.title || deleteTargetSession.date).trim().toLowerCase() ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
-                              />
-                            </div>
-
-                            {/* Footer Buttons */}
-                            <div className="flex justify-end gap-2 pt-1">
-                              <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className={`px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-all`}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={handleDeleteSession}
-                                disabled={deleteConfirmText.trim().toLowerCase() !== (deleteTargetSession.title || deleteTargetSession.date).trim().toLowerCase() || deletingSession}
-                                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                  deleteConfirmText.trim().toLowerCase() === (deleteTargetSession.title || deleteTargetSession.date).trim().toLowerCase() && !deletingSession
-                                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
-                                    : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
-                                }`}
-                              >
-                                {deletingSession ? (
-                                  <div className="w-3.5 h-3.5 rounded-full border-2 border-red-300/40 border-t-white animate-spin" />
-                                ) : (
-                                  <Trash2 size={12} />
-                                )}
-                                Delete Session
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* ═══ PERMANENT DELETE CONFIRMATION MODAL ═══ */}
-                  <AnimatePresence>
-                    {showPermanentDeleteModal && permanentDeleteTarget && (
-                      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPermanentDeleteModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.92 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.92 }}
-                          className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border border-red-500/30 bg-black shadow-2xl z-10"
-                        >
-                          <div className={`p-5 sm:p-6 rounded-[20px] ${cardBg} space-y-4`}>
-                            {/* Header */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                                  <Trash2 size={16} className="text-red-400" />
-                                </div>
-                                <div>
-                                  <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Permanently</h3>
-                                  <p className={`text-[10px] ${txt3}`}>This action cannot be undone</p>
-                                </div>
-                              </div>
-                              <button onClick={() => setShowPermanentDeleteModal(false)} className={`p-1.5 rounded-lg border border-white/10 hover:bg-white/5 shrink-0`}>
-                                <X size={14} className={txt1} />
-                              </button>
-                            </div>
-
-                            {/* Warning Box */}
-                            <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
-                              <p className="text-xs text-red-300/80 leading-relaxed">
-                                You are about to **permanently delete** this {permanentDeleteTarget.type}: <span className="font-bold text-white">{permanentDeleteTarget.name}</span>.
-                                This will erase it from the database forever.
-                              </p>
-                            </div>
-
-                            {/* Type-to-confirm */}
-                            <div>
-                              <label className={`block text-[10px] uppercase font-bold tracking-wider mb-2 ${txt3}`}>
-                                Type <span className="font-mono text-white px-1 py-0.5 rounded bg-white/10">{permanentDeleteTarget.name}</span> to confirm
-                              </label>
-                              <input
-                                type="text"
-                                value={permanentDeleteConfirmText}
-                                onChange={e => setPermanentDeleteConfirmText(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase()) handlePermanentDelete(); }}
-                                placeholder={`Type confirmation name here...`}
-                                autoFocus
-                                className={`w-full text-xs font-mono rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 transition-all ${permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase() ? 'border-red-500/50 focus:ring-red-500/20 bg-red-500/5' : inputBg}`}
-                              />
-                            </div>
-
-                            {/* Footer Buttons */}
-                            <div className="flex justify-end gap-2 pt-1">
-                              <button
-                                onClick={() => setShowPermanentDeleteModal(false)}
-                                className={`px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-all`}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={handlePermanentDelete}
-                                disabled={permanentDeleteConfirmText.trim().toLowerCase() !== permanentDeleteTarget.name.trim().toLowerCase() || isPermanentlyDeleting}
-                                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                  permanentDeleteConfirmText.trim().toLowerCase() === permanentDeleteTarget.name.trim().toLowerCase() && !isPermanentlyDeleting
-                                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
-                                    : 'bg-red-900/20 text-red-700 cursor-not-allowed border border-red-500/10'
-                                }`}
-                              >
-                                {isPermanentlyDeleting ? (
-                                  <div className="w-3.5 h-3.5 rounded-full border-2 border-red-300/40 border-t-white animate-spin" />
-                                ) : (
-                                  <Trash2 size={12} />
-                                )}
-                                Delete Permanently
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    )}
-                  </AnimatePresence>
 
                   {/* ═══ CONTRIBUTORS ═══ */}
                   {view === "contributors" && (
@@ -4581,10 +4228,10 @@ export default function GlidePassAdmin() {
                               
                               vitSessions.forEach(s => {
                                 if (!s.isDeleted && s.questions) {
-                                  s.questions.forEach(q => {
+                                  s.questions.forEach((q: any) => {
                                     if (!q.isDeleted) {
                                       if (q.edits && q.edits.length > 0) {
-                                        q.edits.forEach(edit => {
+                                        q.edits.forEach((edit: any) => {
                                           if (edit.editorEmail === c.email) {
                                             list.push({
                                               questionId: q.id,
@@ -4693,11 +4340,11 @@ export default function GlidePassAdmin() {
                                         No contributions match this filter.
                                       </div>
                                     ) : (
-                                      Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, qs]) => (
+                                      Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, qs]: [string, any]) => (
                                         <div key={date} className="space-y-3">
                                           <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: P.blue }}>{date}</h3>
                                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {qs.map((q, idx) => {
+                                            {(qs as any[]).map((q: any, idx: number) => {
                                               const tsStr = q.id.replace("q_", "");
                                               const ts = parseInt(tsStr);
                                               const timeStr = !isNaN(ts) ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
@@ -4794,7 +4441,7 @@ export default function GlidePassAdmin() {
                                                       <div className="mt-4 pt-3 border-t border-dashed" style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
                                                         <h5 className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-75">All Revision Logs ({otherEdits.length})</h5>
                                                         <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
-                                                          {otherEdits.map((h, hIdx) => {
+                                                          {otherEdits.map((h: any, hIdx: number) => {
                                                             const hDate = new Date(h.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                                                             return (
                                                               <div key={hIdx} className="text-[9px] p-2 rounded bg-white/5 border flex justify-between items-center gap-2" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
@@ -4854,7 +4501,7 @@ export default function GlidePassAdmin() {
                             <Layout size={13} /> Choose File
                           </h2>
                           <div className="space-y-2">
-                            {(["center.html", "index.html", "vitcodes.html"] as const).map(file => (
+                            {(["center.html", "index.html", "resources.html"] as const).map(file => (
                               <button key={file} onClick={() => setSelectedFile(file)}
                                 className="w-full text-left p-4 rounded-2xl flex items-center gap-3.5 transition-all border"
                                 style={{
@@ -4868,7 +4515,7 @@ export default function GlidePassAdmin() {
                                 <div className="text-xs">
                                   <p className="font-bold">{file}</p>
                                   <p className="text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                    {file === "center.html" ? "Mobile Command Center" : file === "index.html" ? "Mobile Landing Page" : "VIT Exam Codes Page"}
+                                    {file === "center.html" ? "Mobile Command Center" : file === "index.html" ? "Mobile Landing Page" : "Resources List Page"}
                                   </p>
                                 </div>
                               </button>
@@ -5562,17 +5209,17 @@ export default function GlidePassAdmin() {
                                       </td>
                                     ))}
                                   </tr>
-                                  {/* VITCodes */}
+                                  {/* Resources Cap */}
                                   <tr>
-                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>VITCode Session Limit</td>
+                                    <td className="p-3 border-b font-bold opacity-90" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>Resource Access Limit</td>
                                     {monetizationSettings.plans.map((plan: any, planIdx: number) => (
                                       <td key={plan.tier} className="p-2 border-b text-center" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                           <input 
-                                            type="number" min="0" max="999"
-                                            value={plan.max_vitcodes ?? 0}
+                                            type="number" min="0" max="9999"
+                                            value={plan.max_resources_per_month ?? 0}
                                             onChange={e => {
                                               const updatedPlans = [...monetizationSettings.plans];
-                                              updatedPlans[planIdx].max_vitcodes = parseInt(e.target.value) || 0;
+                                              updatedPlans[planIdx].max_resources_per_month = parseInt(e.target.value) || 0;
                                               handleSaveMonetizationSettings({ ...monetizationSettings, plans: updatedPlans });
                                             }}
                                             className={`w-14 text-[10px] text-center rounded-lg px-2 py-1 border focus:outline-none ${inputBg}`} 
@@ -5590,8 +5237,9 @@ export default function GlidePassAdmin() {
                                     { key: 'allow_select_copy', label: 'Select Copy Usage' },
                                     { key: 'allow_fetch', label: 'Fetch Paste Usage' },
                                     { key: 'allow_refill', label: 'Refill Action Usage' },
-                                    { key: 'allow_vitcode', label: 'VITCodes Access Usage' },
-                                    { key: 'allow_tunnel', label: 'AP Isolation Bypass (Tunnel)' }
+                                    { key: 'allow_resource_access', label: 'Resource Access Usage' },
+                                    { key: 'allow_resource_analytics', label: 'Resource Analytics' },
+                                    { key: 'allow_tunnel', label: 'Hybrid Relay Tunnel' }
                                   ].map((toggle) => (
                                     <tr key={toggle.key}>
                                       <td className="p-3 border-b font-bold opacity-80" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>{toggle.label}</td>
@@ -5641,52 +5289,110 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
-                      {/* License key generator */}
-                      <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-5"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ GENERATE ACTIVATION KEY ═══ */}
+                  {view === "keys" && (
+                    <motion.div key="keys" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+
+                      {/* Header */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Activation Keys</h2>
+                          <p className="text-xs mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Generate, revoke, and manage product license keys</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border font-mono text-xs" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{liveTime || "Syncing..."}</span>
+                          <span className="opacity-50">&bull;</span>
+                          <span style={{ color: P.blue }}>{licenses.length} keys</span>
+                        </div>
+                      </div>
+
+                      {/* Stats row */}
+                      {(() => {
+                        const active = licenses.filter((l: any) => new Date(l.expires_at) > new Date());
+                        const expired = licenses.filter((l: any) => new Date(l.expires_at) <= new Date());
+                        const bound = licenses.filter((l: any) => l.hwid);
+                        const unbound = licenses.filter((l: any) => !l.hwid);
+                        return (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[
+                              { label: "Total Keys", val: licenses.length, color: P.blue },
+                              { label: "Active", val: active.length, color: "#10B981" },
+                              { label: "Expired", val: expired.length, color: "#EF4444" },
+                              { label: "Unbound", val: unbound.length, color: "#F59E0B" },
+                            ].map(s => (
+                              <div key={s.label} className="p-5 rounded-[22px] border relative overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                                <div className="h-[1.5px] absolute top-0 left-0 right-0" style={{ background: `linear-gradient(90deg, ${s.color}40, ${s.color}10)` }} />
+                                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{s.label}</p>
+                                <p className="text-3xl font-black font-[family-name:var(--font-outfit)]" style={{ color: s.color }}>{s.val}</p>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Generator Form Card */}
+                      <div className="p-6 rounded-[28px] border relative overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                         <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                        <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#0077C0]" style={{ color: P.blue }}>Generate Activation Key</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                          <div>
-                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Student Email</label>
-                            <input 
-                              type="email" 
-                              value={newLicenseEmail} 
-                              onChange={e => setNewLicenseEmail(e.target.value)} 
-                              placeholder="e.g. nithin@vitstudent.ac.in"
-                              className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
-                            />
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${P.blue}18`, border: `1px solid ${P.blue}30` }}>
+                            <Key size={16} style={{ color: P.blue }} />
                           </div>
                           <div>
-                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>License Tier</label>
-                            <select 
-                              value={newLicenseTier} 
+                            <h3 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Generate Activation Key</h3>
+                            <p className="text-[10px] mt-0.5" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Issue a new license key tied to a user email and tier</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                          {/* Email */}
+                          <div className="lg:col-span-1">
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>User Email *</label>
+                            <input
+                              id="key-email"
+                              type="email"
+                              value={newLicenseEmail}
+                              onChange={e => setNewLicenseEmail(e.target.value)}
+                              placeholder="user@example.com"
+                              className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                            />
+                          </div>
+                          {/* Tier */}
+                          <div>
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>License Tier</label>
+                            <select
+                              value={newLicenseTier}
                               onChange={e => setNewLicenseTier(e.target.value)}
-                              className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}
+                              className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}
                             >
-                              <option value="Basic">Basic (Week Pass)</option>
-                              <option value="Pro">Pro (Monthly Pass)</option>
-                              <option value="Max">Max (Sem Pass)</option>
-                              <option value="Ultra">Ultra (Yearly Pass)</option>
-                              {(currentUser?.role === "ADMIN MASTER") && (
-                                <option value="DEVELOPER">DEVELOPER (Hidden All-Access)</option>
+                              <option value="Basic">Basic — Week Pass</option>
+                              <option value="Pro">Pro — Monthly Pass</option>
+                              <option value="Creator">Creator — Creator Pass</option>
+                              <option value="Max">Max — Semester Pass</option>
+                              <option value="Ultra">Ultra — Yearly Pass</option>
+                              {currentUser?.role === "ADMIN MASTER" && (
+                                <option value="DEVELOPER">DEVELOPER — All-Access</option>
                               )}
                             </select>
                           </div>
+                          {/* Duration */}
                           <div>
-                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity Duration</label>
+                            <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Validity</label>
                             <div className="flex gap-2">
-                              <input 
-                                type="number" 
-                                value={newLicenseDuration} 
-                                onChange={e => setNewLicenseDuration(e.target.value)} 
+                              <input
+                                type="number"
+                                value={newLicenseDuration}
+                                onChange={e => setNewLicenseDuration(e.target.value)}
                                 placeholder="30"
-                                className={`w-2/3 text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`} 
+                                className={`w-2/3 text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`}
                               />
                               <select
                                 value={newLicenseDurationUnit}
                                 onChange={e => setNewLicenseDurationUnit(e.target.value as any)}
-                                className={`w-1/3 text-xs rounded-xl px-2 py-2 border focus:outline-none ${inputBg}`}
+                                className={`w-1/3 text-xs rounded-xl px-2 py-3 border focus:outline-none ${inputBg}`}
                               >
                                 <option value="days">Days</option>
                                 <option value="hours">Hours</option>
@@ -5694,67 +5400,108 @@ export default function GlidePassAdmin() {
                               </select>
                             </div>
                           </div>
-                          <button onClick={handleGenerateLicense} className="py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all" style={{ background: P.blue }}>
-                            Create Activation Key
+                          {/* Generate Button */}
+                          <button
+                            onClick={handleGenerateLicense}
+                            disabled={!newLicenseEmail}
+                            className="py-3 rounded-xl text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ background: `linear-gradient(135deg, ${P.blue}, #0099ff)` }}
+                          >
+                            <Key size={14} />
+                            Generate Key
                           </button>
                         </div>
                       </div>
 
-                      {/* ═══ ACTIVE LICENSES TABLE ═══ */}
-                      <div className="rounded-[28px] border overflow-hidden mt-8"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                      {/* Active Keys Table */}
+                      <div className="rounded-[28px] border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Activation Keys</h3>
+                          <div>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>All Activation Keys</h3>
+                            <p className="text-[10px] mt-0.5" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{licenses.length} total issued keys</p>
+                          </div>
                         </div>
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                {["Activation Key", "Owner Email", "License Tier", "Device HWID", "Expires At", "Created At", "Actions"].map(h => (
-                                  <th key={h} className={`p-4 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                {["Activation Key", "Owner Email", "Tier", "Device HWID", "Expires", "Status", "Actions"].map(h => (
+                                  <th key={h} className={`px-5 py-3 text-[9px] uppercase font-bold tracking-wider ${h === "Actions" ? "text-right pr-6" : ""}`} style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
-                              {licenses.map(lic => (
-                                <tr key={lic.key} className="text-xs animate-fadeIn" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                  <td className="p-4 font-mono font-bold" style={{ color: P.sky }}>{lic.key}</td>
-                                  <td className="p-4 font-semibold">{lic.email}</td>
-                                  <td className="p-4">
-                                    <span className="text-[9px] font-bold uppercase px-2.5 py-0.5 rounded bg-[#0077C0]/15 text-[#C7EEFF]">
-                                      {lic.tier}
-                                    </span>
-                                  </td>
-                                  <td className="p-4 font-mono text-[10px]" style={{ color: lic.hwid ? P.white : `${P.white}40` }}>
-                                    {lic.hwid ? lic.hwid : "Unbound (Ready)"}
-                                  </td>
-                                  <td className="p-4 font-mono text-[10px]" style={{ color: P.white }}>
-                                    {new Date(lic.expires_at).toLocaleString()}
-                                  </td>
-                                  <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                    {new Date(lic.created_at || Date.now()).toLocaleString()}
-                                  </td>
-                                  <td className="p-4 text-right pr-6">
-                                    <div className="flex items-center justify-end gap-3">
-                                      {lic.hwid && (
-                                        <button onClick={() => handleResetHwid(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-sky-400 transition-colors" title="Reset HWID Lock">
-                                          <RefreshCw size={12} />
-                                        </button>
-                                      )}
-                                      <button onClick={() => handleDeleteLicense(lic.key)} className="p-1 rounded hover:bg-neutral-500/10 hover:text-red-500 transition-colors" title="Revoke Key">
-                                        <Trash2 size={12} />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                      {licenses.length === 0 && (
+                              {licenses.length === 0 ? (
                                 <tr>
-                                  <td colSpan={7} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
-                                    No active activation keys found.
+                                  <td colSpan={7} className="text-center py-12 text-xs" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                    <Key size={28} className="mx-auto mb-3 opacity-20" />
+                                    No activation keys issued yet
                                   </td>
                                 </tr>
-                              )}
+                              ) : licenses.map((lic: any) => {
+                                const isExpired = new Date(lic.expires_at) <= new Date();
+                                return (
+                                  <tr key={lic.key} className="text-xs group hover:bg-white/[0.02] transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="px-5 py-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-bold text-[10px]" style={{ color: P.sky }}>{lic.key}</span>
+                                        <button
+                                          onClick={() => { navigator.clipboard.writeText(lic.key); }}
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:text-blue-400"
+                                          title="Copy key"
+                                        >
+                                          <CheckSquare size={10} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-4 font-semibold">{lic.email}</td>
+                                    <td className="px-5 py-4">
+                                      <span className="text-[9px] font-bold uppercase px-2.5 py-1 rounded-lg" style={{ background: `${P.blue}18`, color: P.blue, border: `1px solid ${P.blue}28` }}>
+                                        {lic.tier}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: lic.hwid ? P.white : `${P.white}35` }}>
+                                      {lic.hwid ? (
+                                        <span className="truncate max-w-[120px] block">{lic.hwid}</span>
+                                      ) : (
+                                        <span className="italic">Unbound</span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: isExpired ? "#EF4444" : P.white }}>
+                                      {new Date(lic.expires_at).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                      <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
+                                        isExpired
+                                          ? "border-red-500/25 bg-red-500/10 text-red-400"
+                                          : "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"
+                                      }`}>
+                                        {isExpired ? "Expired" : "Active"}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-4 text-right pr-6">
+                                      <div className="flex items-center justify-end gap-2">
+                                        {lic.hwid && (
+                                          <button
+                                            onClick={() => handleResetHwid(lic.key)}
+                                            className="p-1.5 rounded-lg hover:bg-sky-500/10 hover:text-sky-400 transition-all"
+                                            title="Reset device lock"
+                                          >
+                                            <RefreshCw size={12} />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => handleDeleteLicense(lic.key)}
+                                          className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all"
+                                          title="Revoke key"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -6422,44 +6169,134 @@ export default function GlidePassAdmin() {
               )}
             </AnimatePresence>
 
-            {/* ─── New Session Modal ─── */}
+            {/* ─── New / Edit Resource Modal ─── */}
             <AnimatePresence>
               {showNewSessionModal && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center px-4"
-                  style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-                  onClick={() => setShowNewSessionModal(false)}>
-                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                    className="w-full max-w-[450px] rounded-[28px] border p-6 space-y-5 relative overflow-hidden"
-                    style={{ background: dk ? "rgba(5,5,5,0.95)" : "rgba(255,255,255,0.95)", borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                  className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+                  style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+                  onClick={() => { setShowNewSessionModal(false); setEditingResourceId(null); }}>
+                  <motion.div
+                    initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 16 }}
+                    className="w-full max-w-2xl rounded-[28px] border p-6 space-y-5 relative overflow-hidden max-h-[92vh] overflow-y-auto"
+                    style={{ background: dk ? "rgba(5,5,5,0.96)" : "rgba(255,255,255,0.96)", borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
                     onClick={e => e.stopPropagation()}>
                     <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>New Session</h3>
-                      <button onClick={() => setShowNewSessionModal(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><X size={14} /></button>
-                    </div>
-                    <div className="space-y-4">
+
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
                       <div>
-                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Session Title</label>
-                        <input type="text" value={newSessionTitle} onChange={e => setNewSessionTitle(e.target.value)} placeholder="e.g. Lab Assessment 1"
-                          className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                        <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>
+                          {editingResourceId ? "Edit Resource" : "New Resource"}
+                        </h3>
+                        <p className="text-[10px] mt-0.5" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                          {editingResourceId ? "Update the resource details below" : "Publish a new resource to the platform"}
+                        </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Date</label>
-                          <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none ${inputBg}`} />
+                      <button
+                        onClick={() => { setShowNewSessionModal(false); setEditingResourceId(null); }}
+                        className="p-1.5 rounded-lg hover:opacity-70 transition-opacity shrink-0 ml-4"
+                        style={{ color: dk ? P.sky : P.black }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    {/* Form fields */}
+                    <div className="space-y-4">
+
+                      {/* Title + Type */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Title *</label>
+                          <input
+                            id="resource-title"
+                            type="text"
+                            value={qTitle}
+                            onChange={e => setQTitle(e.target.value)}
+                            placeholder="e.g. Binary Search Template"
+                            autoFocus
+                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                          />
                         </div>
                         <div>
-                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Exam Type</label>
-                          <select value={newExamType} onChange={e => setNewExamType(e.target.value)}
-                            className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}>
-                            {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Type</label>
+                          <select
+                            value={qType}
+                            onChange={e => setQType(e.target.value as any)}
+                            className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}
+                          >
+                            <option value="snippet">Snippet</option>
+                            <option value="macro">Macro</option>
                           </select>
                         </div>
                       </div>
-                      <button onClick={handleAddSession} className="w-full py-3.5 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
-                        style={{ background: P.blue }}><Plus size={14} /> Create Session</button>
+
+                      {/* Language + Tags */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Language</label>
+                          <select
+                            value={qLang}
+                            onChange={e => setQLang(e.target.value)}
+                            className={`w-full text-xs rounded-xl px-3 py-3 border focus:outline-none ${inputBg}`}
+                          >
+                            <option value="cpp">C++ (cpp)</option>
+                            <option value="c">C</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="go">Go</option>
+                            <option value="rust">Rust</option>
+                            <option value="bash">Bash / Shell</option>
+                            <option value="sql">SQL</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Tags (comma separated)</label>
+                          <input
+                            type="text"
+                            value={newQTags}
+                            onChange={e => setNewQTags(e.target.value)}
+                            placeholder="#algorithm, #graph, #dp"
+                            className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Creator Email */}
+                      <div>
+                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Creator Email</label>
+                        <input
+                          type="email"
+                          value={newLicenseEmail}
+                          onChange={e => setNewLicenseEmail(e.target.value)}
+                          placeholder="creator@example.com (defaults to your admin account)"
+                          className={`w-full text-xs rounded-xl px-3.5 py-3 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                        />
+                      </div>
+
+                      {/* Content editor */}
+                      <div>
+                        <label className="text-[9px] uppercase font-bold tracking-wider mb-1.5 block" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Content *</label>
+                        <textarea
+                          value={qCode}
+                          onChange={e => setQCode(e.target.value)}
+                          placeholder="Paste or type the resource content here..."
+                          className="w-full h-52 text-xs font-mono rounded-xl p-4 border focus:outline-none resize-y"
+                          style={{ background: "#151b22", borderColor: "rgba(199,238,255,0.12)", color: "#8ecfff" }}
+                        />
+                      </div>
+
+                      {/* Submit */}
+                      <button
+                        onClick={editingResourceId ? handleSaveResource : handleAddResource}
+                        className="w-full py-3.5 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
+                        style={{ background: P.blue }}
+                      >
+                        {editingResourceId ? <><Save size={14} /> Save Changes</> : <><Plus size={14} /> Create Resource</>}
+                      </button>
                     </div>
                   </motion.div>
                 </motion.div>
@@ -6479,7 +6316,7 @@ export default function GlidePassAdmin() {
                     onClick={e => e.stopPropagation()}>
                     <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
                     <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Manage Exam Types</h3>
+                      <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Manage Resource Types</h3>
                       <button onClick={() => setShowManageTypes(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}><X size={14} /></button>
                     </div>
 
@@ -6506,7 +6343,7 @@ export default function GlidePassAdmin() {
                                   />
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Sessions:</span>
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Limits:</span>
                                   <input 
                                     type="number" 
                                     min="1"
@@ -6517,17 +6354,17 @@ export default function GlidePassAdmin() {
                                   />
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Year:</span>
+                                  <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Level:</span>
                                   <select
                                     value={examYears[t] || "1st Year"}
                                     onChange={e => handleUpdateExamYear(t, e.target.value)}
                                     className={`text-[9px] rounded-lg px-1 py-0.5 border focus:outline-none ${inputBg}`}
                                     style={{ color: dk ? P.sky : P.black }}
                                   >
-                                    <option value="1st Year">1st Year</option>
-                                    <option value="2nd Year">2nd Year</option>
-                                    <option value="3rd Year">3rd Year</option>
-                                    <option value="4th Year">4th Year</option>
+                                    <option value="1st Year">Level 1</option>
+                                    <option value="2nd Year">Level 2</option>
+                                    <option value="3rd Year">Level 3</option>
+                                    <option value="4th Year">Level 4</option>
                                   </select>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -6605,7 +6442,7 @@ export default function GlidePassAdmin() {
                             <Trash2 size={16} className="text-red-400" />
                           </div>
                           <div>
-                            <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Exam Type</h3>
+                            <h3 className="text-sm font-black uppercase tracking-wide text-red-400">Delete Resource Type</h3>
                             <p className={`text-[10px] ${txt3}`}>This will remove the type permanently</p>
                           </div>
                         </div>
@@ -6617,7 +6454,7 @@ export default function GlidePassAdmin() {
                       {/* Warning */}
                       <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
                         <p className="text-xs text-red-300/80 leading-relaxed">
-                          You are about to permanently delete the exam type{" "}
+                          You are about to permanently delete the resource type{" "}
                           <span className="font-bold text-white">{deleteTargetType}</span>.
                           {" "}Existing sessions using this type will not be deleted but the type will no longer be available.
                         </p>
@@ -6678,6 +6515,90 @@ export default function GlidePassAdmin() {
                         >
                           <Trash2 size={12} />
                           Delete Type
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* ═══ PROVIDER DETAILS MODAL ═══ */}
+            <AnimatePresence>
+              {selectedProviderDetails && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedProviderDetails(null)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    className="relative w-[95%] sm:max-w-md p-1 rounded-[24px] border bg-black shadow-2xl z-10"
+                    style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="p-5 sm:p-6 rounded-[20px] space-y-4" style={{ background: dk ? "rgba(5,5,5,0.98)" : "rgba(255,255,255,0.98)" }}>
+                      <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                        <div>
+                          <h3 className="text-sm font-black uppercase tracking-wide" style={{ color: P.blue }}>Provider Profile Details</h3>
+                          <p className="text-[10px]" style={{ color: dk ? `${P.sky}50` : `${P.black}50` }}>Detailed metadata and status check</p>
+                        </div>
+                        <button onClick={() => setSelectedProviderDetails(null)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3.5 text-xs">
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Provider ID</span>
+                          <span className="font-mono font-bold" style={{ color: dk ? P.white : P.black }}>{selectedProviderDetails.id}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Full Name</span>
+                          <span className="font-bold" style={{ color: dk ? P.white : P.black }}>{selectedProviderDetails.name}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Email Address</span>
+                          <span className="font-semibold" style={{ color: dk ? P.white : P.black }}>{selectedProviderDetails.email}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Assigned Role</span>
+                          <span className="font-mono" style={{ color: P.blue }}>{selectedProviderDetails.role}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Account Status</span>
+                          <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${selectedProviderDetails.status === "suspended" ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}>
+                            {selectedProviderDetails.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Verification Status</span>
+                          <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${selectedProviderDetails.verified ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"}`}>
+                            {selectedProviderDetails.verified ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Joined Date</span>
+                          <span className="font-mono text-[11px]" style={{ color: dk ? P.white : P.black }}>{selectedProviderDetails.joinedDate}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Marketing Consent</span>
+                          <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${selectedProviderDetails.consentEmails ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                            {selectedProviderDetails.consentEmails ? "Opted In" : "Opted Out"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2" style={{ borderColor: dk ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+                          <span style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>Referral Source</span>
+                          <span className="font-bold" style={{ color: P.blue }}>{selectedProviderDetails.referral || "Direct / Unknown"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3">
+                        <button
+                          onClick={() => setSelectedProviderDetails(null)}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs font-bold border"
+                          style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)", color: dk ? "white" : "black" }}
+                        >
+                          Close Profile
                         </button>
                       </div>
                     </div>

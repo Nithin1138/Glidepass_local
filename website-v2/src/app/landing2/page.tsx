@@ -1113,7 +1113,7 @@ export default function Landing2() {
                 },
                 {
                   title: "Works Everywhere",
-                  desc: "Works like a real physical keyboard on Mac and Windows to bypass any typing blocks."
+                  desc: "Works like a real physical keyboard on Mac and Windows utilizing Native Input Mode."
                 }
               ].map((item, idx) => (
                 <motion.div 
@@ -1760,173 +1760,71 @@ export default function Landing2() {
           </motion.div>
         </div>
       </section>
-      {/* ─── SECTION 3.75: TESTIMONIALS & FAQ ─── */}
-      <section className="py-32 px-12 max-w-7xl mx-auto border-t border-gray-200/40">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+      {/* ─── SECTION 3.75: FAQ ─── */}
+      <section className="py-32 px-12 max-w-4xl mx-auto border-t border-gray-200/40">
+        <div className="space-y-12">
           
-          {/* Left Column: Testimonials */}
-          <div className="lg:col-span-5 space-y-12">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Client Reviews</span>
-              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">WHAT THEY TYPE.</h2>
-              <p className="text-gray-500 font-medium text-sm mt-1">Real reviews from local-first power developers.</p>
-            </div>
-
-            <div className="h-[460px] overflow-hidden relative w-full rounded-3xl">
-              
-              {/* Fade overlays for smooth scrolling edges */}
-              <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-[#EDEAE0] to-transparent z-20 pointer-events-none" />
-              
-              <div className="flex flex-col gap-6 animate-marquee-vertical py-6">
-                
-                {/* First loop of cards */}
-                {[
-                  {
-                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Alex Rivera",
-                    role: "Lead Platform Engineer"
-                  },
-                  {
-                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Sarah Chen",
-                    role: "Creative Director"
-                  },
-                  {
-                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Vikram Malhotra",
-                    role: "DevOps & Crypt Architect"
-                  }
-                ].map((t, idx) => (
-                  <div
-                    key={`l1-${idx}`}
-                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
-                  >
-                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
-                      "{t.quote}"
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase">
-                        {t.author[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
-                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Duplicate loop of cards for seamless infinite animation */}
-                {[
-                  {
-                    quote: "LANpad completely removed context-switching between my test devices. Being able to type configuration lines directly from my phone into standard prompt interfaces saves hours.",
-                    author: "Alex Rivera",
-                    role: "Lead Platform Engineer"
-                  },
-                  {
-                    quote: "Triggering layout updates and shell command sequences remotely via physical switches has elevated my visual testing process. Lag is completely imperceptible.",
-                    author: "Sarah Chen",
-                    role: "Creative Director"
-                  },
-                  {
-                    quote: "Passing security key files and dynamic parameters over an air-gapped local bridge is brilliant. Secure, zero trace, and fast.",
-                    author: "Vikram Malhotra",
-                    role: "DevOps & Crypt Architect"
-                  }
-                ].map((t, idx) => (
-                  <div
-                    key={`l2-${idx}`}
-                    className="clay-card p-6.5 space-y-3.5 border border-white/20 hover:scale-[1.01] hover:-translate-y-[2px] transition-all"
-                  >
-                    <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
-                      "{t.quote}"
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-black font-rubik text-gray-600 uppercase">
-                        {t.author[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-xs text-gray-800">{t.author}</h4>
-                        <p className="text-[9px] text-gray-400 font-bold">{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-              </div>
-            </div>
+          {/* FAQ Header */}
+          <div className="text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">Support Knowledge</span>
+            <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">COMMON RUN LOOPS.</h2>
+            <p className="text-gray-500 font-medium text-sm mt-1">Answers to key operational architecture queries.</p>
           </div>
 
-          {/* Right Column: FAQ Accordion */}
-          <motion.div 
-            initial={{ opacity: 0, y: 35 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-7 space-y-12"
-          >
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500]">Support Knowledge</span>
-              <h2 className="font-rubik text-4xl lg:text-5xl font-black mt-2 tracking-tighter">COMMON RUN LOOPS.</h2>
-              <p className="text-gray-500 font-medium text-sm mt-1">Answers to key operational architecture queries.</p>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  q: "How is the connection kept at sub-50ms local sync latency?",
-                  a: "LANpad communicates strictly via local WebSockets using your home router. By skipping the external internet entirely, packets travel instantly between your phone and host PC without round-tripping to cloud servers."
-                },
-                {
-                  q: "Is my keystroke history logged or sent to any server?",
-                  a: "Never. LANpad runs 100% locally. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
-                },
-                {
-                  q: "Do I need standard user permissions or administrator privileges?",
-                  a: "LANpad runs under standard system user privileges. On macOS, it requires standard Accessibility privileges to send virtual keystroke inputs (via Quartz CGEvent). On Windows, it binds locally via ctypes to user32.dll."
-                },
-                {
-                  q: "Can I map custom keyboard shortcut macros?",
-                  a: "Yes! Through our simple config, you can map arbitrary string payloads, shell scripts, or keystroke combinations (e.g. Cmd+Alt+Z) to custom preset buttons."
-                }
-              ].map((item, idx) => {
-                const isOpen = openFaqIdx === idx;
-                return (
-                  <div key={idx} className="clay-card overflow-hidden transition-all duration-300 border border-white/20">
-                    <button
-                      onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
-                      className="w-full text-left p-6 flex justify-between items-center hover:bg-white/10 transition-colors"
+          <div className="space-y-4">
+            {[
+              {
+                q: "How is the connection kept at sub-50ms local sync latency?",
+                a: "LANpad communicates strictly via local WebSockets using your home router. By skipping the external internet entirely, packets travel instantly between your phone and host PC without round-tripping to cloud servers."
+              },
+              {
+                q: "Is my keystroke history logged or sent to any server?",
+                a: "Never. LANpad runs 100% locally. The software does not connect to the cloud, requires no internet access to execute scripts, and does not write log metrics to disk."
+              },
+              {
+                q: "Do I need standard user permissions or administrator privileges?",
+                a: "LANpad runs under standard system user privileges. On macOS, it requires standard Accessibility privileges to send virtual keystroke inputs (via Quartz CGEvent). On Windows, it binds locally via ctypes to user32.dll."
+              },
+              {
+                q: "Can I map custom keyboard shortcut macros?",
+                a: "Yes! Through our simple config, you can map arbitrary string payloads, shell scripts, or keystroke combinations (e.g. Cmd+Alt+Z) to custom preset buttons."
+              }
+            ].map((item, idx) => {
+              const isOpen = openFaqIdx === idx;
+              return (
+                <div key={idx} className="clay-card overflow-hidden transition-all duration-300 border border-white/20">
+                  <button
+                    onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                    className="w-full text-left p-6 flex justify-between items-center hover:bg-white/10 transition-colors"
+                  >
+                    <span className="font-extrabold text-sm text-gray-800">{item.q}</span>
+                    <motion.span 
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-gray-400"
                     >
-                      <span className="font-extrabold text-sm text-gray-800">{item.q}</span>
-                      <motion.span 
-                        animate={{ rotate: isOpen ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="text-gray-400"
+                      ▼
+                    </motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="border-t border-dashed border-gray-200/50"
                       >
-                        ▼
-                      </motion.span>
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                          className="border-t border-dashed border-gray-200/50"
-                        >
-                          <p className="p-6 text-xs text-gray-500 font-medium leading-relaxed bg-[#EDEAE0]/30">
-                            {item.a}
-                          </p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
+                        <p className="p-6 text-xs text-gray-500 font-medium leading-relaxed bg-[#EDEAE0]/30">
+                          {item.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
 
         </div>
       </section>
@@ -2027,6 +1925,9 @@ export default function Landing2() {
                 <li><Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-gray-800 transition-colors">Terms of Service</Link></li>
                 <li><Link href="/cookies" className="hover:text-gray-800 transition-colors">Cookie Policy</Link></li>
+                <li><Link href="/legal/content-policy" className="hover:text-gray-800 transition-colors">Content Policy</Link></li>
+                <li><Link href="/legal/copyright-takedown" className="hover:text-gray-800 transition-colors">Copyright Takedown</Link></li>
+                <li><Link href="/legal/refund-policy" className="hover:text-gray-800 transition-colors">Refund Policy</Link></li>
               </ul>
             </div>
           </div>

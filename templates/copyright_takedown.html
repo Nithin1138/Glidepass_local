@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copyright Takedown Policy — LANpad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0D0D10;
+            --border-color: rgba(199, 238, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: #A0AEC0;
+            --accent-color: #0077C0;
+            --accent-sky: #C7EEFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 40px 20px;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 119, 192, 0.15) 0%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(199, 238, 255, 0.08);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--accent-sky) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .content {
+            line-height: 1.7;
+            font-size: 0.95rem;
+            color: rgba(250, 250, 250, 0.9);
+        }
+
+        .content h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--accent-sky);
+        }
+
+        .content p {
+            margin-bottom: 15px;
+        }
+
+        .content ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            transition: color 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .back-btn:hover {
+            color: var(--text-main);
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-glow"></div>
+    <div style="width: 100%; max-width: 800px;">
+        <button onclick="window.history.back()" class="back-btn">
+            &larr; Go Back
+        </button>
+        <div class="container">
+            <header>
+                <h1>Copyright Takedown Policy</h1>
+                <div class="meta">Last Updated: June 19, 2026</div>
+            </header>
+            <div class="content">
+                <h2>1. SUBMITTING A COPYRIGHT CLAIM</h2>
+                <p>If you believe that any resource hosted on or distributed through LANpad infringes your copyright, you may submit a takedown notice. To be valid, your notice must include:</p>
+                <ul>
+                    <li>Your full name, contact address, telephone number, and email address.</li>
+                    <li>A detailed description of the copyrighted work that you claim has been infringed.</li>
+                    <li>The exact URL or ID of the resource on LANpad that is infringing.</li>
+                    <li>A good faith statement that you believe the use of the material is unauthorized.</li>
+                    <li>A statement, under penalty of perjury, that the information in your notice is accurate and that you are the copyright owner or authorized to act on their behalf.</li>
+                    <li>Your physical or electronic signature.</li>
+                </ul>
+                <p>Send takedown notices to: copyright@example.com.</p>
+
+                <hr>
+
+                <h2>2. OUR RESPONSE TIMELINE</h2>
+                <p>We take copyright claims seriously. Upon receiving a valid, fully completed takedown notice, we will act to remove or disable access to the infringing material within <strong>36 hours</strong>.</p>
+
+                <hr>
+
+                <h2>3. COUNTER-NOTICES</h2>
+                <p>If your content was removed via a copyright notice and you believe this was an error, you may submit a counter-notice containing your contact details, resource ID, a statement under penalty of perjury of your right to share, and your signature. Counter-notices will be shared with the original claimant.</p>
+
+                <hr>
+
+                <h2>4. REPEAT INFRINGER POLICY</h2>
+                <p>We will terminate or suspend accounts/license keys of users who repeatedly publish unauthorized copyrighted material.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

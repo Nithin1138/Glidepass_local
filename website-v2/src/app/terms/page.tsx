@@ -132,6 +132,21 @@ export default function TermsPage() {
 
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
+          {/* Section 3A */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">3A. RESOURCE UPLOADS</h2>
+            <p>
+              By uploading code snippets, templates, files, notes, or links (collectively, <strong>"Resources"</strong>) to LANpad, you agree that:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-[#A0AEC0]">
+              <li>You may only upload content you own or have explicit rights to distribute.</li>
+              <li>You grant LANpad a non-exclusive license to store, format, and serve your uploaded content to users you've shared it with or to the public discovery platform.</li>
+              <li>We reserve the right to remove content reported under our Copyright Takedown Policy or Content Policy within 36 hours of a valid notice or discovery.</li>
+            </ul>
+          </section>
+
+          <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
+
           {/* Section 4 */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4. DISCLAIMERS & "AS-IS" WARRANTY</h2>

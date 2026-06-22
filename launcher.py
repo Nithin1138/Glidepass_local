@@ -316,18 +316,15 @@ class LANpadLauncher:
 
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
-        self.bypass_view = tk.Frame(root, bg=self.BG)
         self.lock_view   = tk.Frame(root, bg=self.BG)
         self.splash_view = tk.Frame(root, bg=self.BG)
         self.legal_view  = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bypass_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.splash_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.legal_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
-        self._build_bypass()
         self._build_lock()
         self._build_splash()
         self._build_legal()
@@ -507,9 +504,6 @@ class LANpadLauncher:
         tb = tk.Frame(v, bg=self.BG, height=60)
         tb.place(x=0, y=0, relwidth=1)
 
-        self._pill_button(tb, "Can't paste here?", self.WHITE, self.BG2,
-                          cmd=lambda: self.show_view("bypass"))
-
         # ── Status row ───────────────────────────────────────────────────────
         sr = tk.Frame(v, bg=self.BG)
         sr.place(x=24, y=68 + (0 if _mac else 4))
@@ -598,7 +592,7 @@ class LANpadLauncher:
             except Exception:
                 pass
 
-            # Check if plan allows AP Isolation Bypass (Tunnel Mode)
+            # Check if plan allows Hybrid Relay (Tunnel Mode)
             allow_tunnel = True
             plans = []
             try:
@@ -623,9 +617,9 @@ class LANpadLauncher:
                     allowed_plans = [p.get("title", p.get("tier")) for p in plans if p.get("allow_tunnel") != -1]
                     plans_str = ", ".join(allowed_plans)
                 except Exception:
-                    plans_str = "Pro, Max, and Ultra plans"
+                    plans_str = "Pro and Creator plans"
                 
-                messagebox.showwarning("Upgrade Required", f"AP Isolation Bypass (College Wi-Fi Tunnel Mode) is only available on {plans_str}. Please upgrade your package.")
+                messagebox.showwarning("Upgrade Required", f"Hybrid Relay (Tunnel Mode) is only available on {plans_str}. Please upgrade your package.")
                 return
 
             if self._active_tab != "tunnel":
@@ -689,10 +683,10 @@ class LANpadLauncher:
         
         if self._active_tab == "local":
             rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG2, outline=self.GREEN)
-            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Local (Home Wi-Fi)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Direct LAN", fill=self.WHITE, font=(self.FU, 12, "bold"))
         else:
             rounded_rect(c_local, 2, 2, w_l - 2, h_l - 2, r=8, fill=self.BG, outline="#222222")
-            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Local (Home Wi-Fi)", fill=self.DIM, font=(self.FU, 12))
+            c_local.create_text(w_l // 2, h_l // 2 + text_y_offset, text="Direct LAN", fill=self.DIM, font=(self.FU, 12))
             
         # Tunnel tab
         c_tunnel = self._tab_tunnel
@@ -702,10 +696,10 @@ class LANpadLauncher:
         
         if self._active_tab == "tunnel":
             rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG2, outline=self.GREEN)
-            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="College (Tunnel)", fill=self.WHITE, font=(self.FU, 12, "bold"))
+            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="Hybrid Relay", fill=self.WHITE, font=(self.FU, 12, "bold"))
         else:
             rounded_rect(c_tunnel, 2, 2, w_t - 2, h_t - 2, r=8, fill=self.BG, outline="#222222")
-            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="College (Tunnel)", fill=self.DIM, font=(self.FU, 12))
+            c_tunnel.create_text(w_t // 2, h_t // 2 + text_y_offset, text="Hybrid Relay", fill=self.DIM, font=(self.FU, 12))
 
     def _draw_qr_loading(self):
         c = self._qr_cv
@@ -1186,197 +1180,7 @@ class LANpadLauncher:
         # Animation removed for clean UI
         pass
 
-    # ── BYPASS VIEW ───────────────────────────────────────────────────────────
-
-    def _build_bypass(self):
-        v = self.bypass_view
-        W = 400
-        _mac = sys.platform == "darwin"
-        yo = 0 if _mac else 12  # Y-offset for Windows spacing
-
-        # Flat background
-        bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
-        bg_cv.place(x=0, y=0)
-
-        # ── Titlebar (Native Layout) ─────────────────────────────────────────
-        tb = tk.Frame(v, bg=self.BG, height=60)
-        tb.place(x=0, y=0, relwidth=1)
-        self._pill_button(tb, "← Back", self.WHITE, self.BG2,
-                          cmd=lambda: self.show_view("main"), side="right")
-
-        # ── Header: shield icon + title + badge ──────────────────────────────
-        hdr = tk.Frame(v, bg=self.BG)
-        hdr.place(x=18, y=58 + yo, width=W - 36)
-
-        # Shield icon tile
-        ic = tk.Canvas(hdr, width=48, height=48, bg=self.BG, highlightthickness=0)
-        ic.pack(side="left")
-        rounded_rect(ic, 0, 0, 48, 48, r=12, fill=self.BG2, outline="")
-        ic.create_text(24, 24, text="🛡", font=(self.FU, 20), anchor="center")
-
-        # Title block
-        ti = tk.Frame(hdr, bg=self.BG)
-        ti.pack(side="left", padx=12)
-        tk.Label(ti, text="Restricted Field Helper",
-                 font=(self.FD, 16, "bold"), bg=self.BG, fg=self.WHITE, bd=0, highlightthickness=0).pack(anchor="w")
-        tk.Label(ti, text="Type into fields that block pasting",
-                 font=(self.FU, 10), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).pack(anchor="w", pady=(2, 0))
-
-
-        # ── Step cards  2 × 2 grid ───────────────────────────────────────────
-        steps = [
-            ("01", "↬", "Open Site",     "Navigate to the\nrestricted page"),
-            ("02", "⌘",  "Show Bar",      "Win: Ctrl+Shift+B\nMac: ⌘+Shift+B"),
-            ("03", "★", "Bookmark",      "Right-click bar → Add Page,\nname it 'LANpad'"),
-            ("04", "⎘",  "Paste Script",  "(Copied!) Paste script into\nthe bookmark URL field"),
-        ]
-        cw = (W - 44) // 2
-        ch = 125 if _mac else 135
-        grid_top = 135 + yo
-        for i, (num, icon, title, desc) in enumerate(steps):
-            col, row = i % 2, i // 2
-            x = 18 + col * (cw + 8)
-            y = grid_top + row * (ch + 8)
-            cv = tk.Canvas(v, width=cw, height=ch, bg=self.BG, highlightthickness=0)
-            cv.place(x=x, y=y)
-            rounded_rect(cv, 0, 0, cw, ch, r=14, fill=self.BG2, outline=self.BORDER)
-            # Step number (top-right)
-            cv.create_text(cw - 12, 14, text=num,
-                           font=(self.FM, 9, "bold"), fill=self.DIM, anchor="e")
-            # Icon
-            cv.create_text(15, 26, text=icon, font=(self.FU, 18), anchor="w")
-            # Title
-            cv.create_text(15, 48, text=title,
-                           font=(self.FU, 11, "bold"), fill=self.WHITE, anchor="w")
-            # Description (wrapping)
-            if i == 3:
-                # Highlight "Copied!"
-                cv.create_text(15, 66, text="(Copied!)", font=(self.FU, 9, "bold"), fill="#EAB308", anchor="nw")
-                padx_copied = 55 if _mac else 66
-                cv.create_text(15 + padx_copied, 66, text="Paste script into", font=(self.FU, 9), fill=self.DIM, anchor="nw")
-                cv.create_text(15, 82, text="the bookmark URL field", font=(self.FU, 9), fill=self.DIM, anchor="nw", width=cw - 22)
-            else:
-                cv.create_text(15, 66, text=desc,
-                               font=(self.FU, 9), fill=self.DIM,
-                               anchor="nw", width=cw - 22)
-
-        # ── CTA banner ───────────────────────────────────────────────────────
-        cta_y  = grid_top + 2 * (ch + 8) + 15
-        cta_h  = 120
-        cta_cv = tk.Canvas(v, width=W - 36, height=cta_h, bg=self.BG, highlightthickness=0)
-        cta_cv.place(x=18, y=cta_y)
-        rounded_rect(cta_cv, 0, 0, W - 36, cta_h, r=16,
-                     fill=self.BG2, outline=self.BORDER)
-        mid = (W - 36) // 2
-        cta_cv.create_text(mid, 30, text="🖱", font=(self.FU, 24))
-        cta_cv.create_text(mid, 65, text="Click the Bookmark",
-                           font=(self.FD, 16, "bold"), fill=self.WHITE)
-        cta_cv.create_text(mid, 88, text="Instantly enable remote injection.",
-                           font=(self.FU, 10), fill=self.DIM)
-        cta_cv.create_text(mid, 104, text="You only need to do this once per site!",
-                           font=(self.FU, 9), fill=self.DIM)
-
-        # ── Got It button ────────────────────────────────────────────────────
-        got_y  = cta_y + cta_h + 14
-        got_cv = tk.Canvas(v, width=W - 36, height=52, bg=self.BG, highlightthickness=0)
-        got_cv.place(x=18, y=got_y)
-        rounded_rect(got_cv, 0, 0, W - 36, 52, r=12, fill=self.GREEN, outline="")
-        got_cv.create_text((W - 36) // 2, 26, text="Got it! Close",
-                           font=(self.FU, 14, "bold"), fill=self.WHITE)
-        def got_handler(e): self.show_view("main")
-        got_cv.bind("<Button-1>", got_handler)
-        got_cv.tag_bind("all", "<Button-1>", got_handler)
-        got_cv.config(cursor="hand2")
-
-        # Hidden bookmarklet store (never displayed)
-        self.code_text = tk.Text(v)
-        bookmarklet = (
-            "javascript:(function()%7B      if(window.__lanpad_active) %7B"
-            "showN(\"ALREADY ACTIVE\", \"%23f59e0b\");        return;      %7D"
-            "window.__lanpad_active=true;      window.__gp_abort=false;"
-            "const op=Event.prototype.preventDefault;"
-            "Event.prototype.preventDefault=function()%7B"
-            "if(%5B\"copy\",\"paste\",\"cut\",\"beforeinput\",\"selectstart\"%5D.includes(this.type))return;"
-            "return op.apply(this,arguments)%7D;"
-            "function ul(r)%7Bconst ev=%5B\"copy\",\"paste\",\"cut\",\"contextmenu\","
-            "\"selectstart\",\"beforeinput\"%5D;"
-            "ev.forEach(t=>r.addEventListener(t,e=>e.stopImmediatePropagation(),true));"
-            "const al=r.querySelectorAll?r.querySelectorAll(\"*\"):%5B%5D;"
-            "al.forEach(el=>%7Bif(el.shadowRoot)ul(el.shadowRoot)%7D)%7D;"
-            "ul(document);"
-            "const ob=new MutationObserver(()=>ul(document));"
-            "ob.observe(document.documentElement,%7BchildList:true,subtree:true%7D);"
-            "const s=document.createElement(\"style\");"
-            "s.innerHTML=\"*%7B-webkit-user-select:text!important;"
-            "user-select:text!important;pointer-events:auto!important;%7D\";"
-            "document.head.appendChild(s);"
-            "const n=document.createElement(\"div\");n.id=\"__gp_container\";"
-            "n.innerHTML='<div id=\"__gp_note\" style=\"position:fixed;top:24px;"
-            "left:50%25;transform:translateX(-50%25);background:%230a0a0a;color:%23fff;"
-            "padding:14px 24px;border-radius:16px;border:1px solid %23d97757;"
-            "font-family:sans-serif;font-weight:900;font-size:14px;z-index:2147483647;"
-            "display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,0,0,0.5);"
-            "transition:all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);opacity:0;"
-            "transform:translate(-50%25, -40px);\"><span style=\"color:%23d97757;"
-            "font-size:18px;\">🛰️</span> Helper Active</div>';"
-            "document.body.appendChild(n);"
-            "function showN(t,c=\"%23d97757\")%7Bconst e=document.getElementById(\"__gp_note\");"
-            "if(!e)return;e.innerHTML=`<span style=\"color:${c};font-size:18px;\">🛰️</span> ${t}`;"
-            "e.style.opacity=\"1\";e.style.transform=\"translate(-50%25, 0)\";"
-            "setTimeout(()=>%7Be.style.opacity=\"0\";"
-            "e.style.transform=\"translate(-50%25, -40px)\"%7D,3000)%7D"
-            "setTimeout(()=>showN(\"Helper Active\"),10);"
-            "let lastId=localStorage.getItem(\"__gp_last_id\")||\"\";"
-            "let seenIds=new Set();let seenTxt=new Map();let queue=%5B%5D;"
-            "const wait=(ms)=>new Promise(res=>setTimeout(res,ms));"
-            "async function poller()%7Bwhile(true)%7B"
-            "if(window.__gp_abort_poller)break;"
-            "try%7Bconst res=await fetch("
-            "\"https://bypass-backend-nms1.onrender.com/api/v1/paste/poll?last_id=\""
-            "+lastId+\"&t=\"+Date.now(),%7Bheaders:%7B\"x-device-id\":"
-            "\"b8b989d6-dca0-4d98-a0e4-2556c5fbc4a1\"%7D,cache:\"no-store\","
-            "mode:\"cors\",credentials:\"omit\"%7D);"
-            "const data=await res.json();"
-            "if(data.status===\"success\")%7BlastId=data.id;"
-            "localStorage.setItem(\"__gp_last_id\",lastId);"
-            "const txt=data.text||\"\";const mode=data.mode||\"\";"
-            "if(mode===\"system\"||txt.indexOf(\"STOP_PASTE\")!==-1)%7B"
-            "window.__gp_abort=true;queue=%5B%5D;"
-            "showN(\"PASTING STOPPED\",\"%23ef4444\");continue;%7D"
-            "const now=Date.now();"
-            "const txtHash=btoa(txt.substring(0,100)).replace(/=/g,\"\");"
-            "if(seenIds.has(data.id)||(seenTxt.has(txtHash)&&now-seenTxt.get(txtHash)<2000))continue;"
-            "seenIds.add(data.id);seenTxt.set(txtHash,now);queue.push(data);"
-            "%7Delse%7Bawait wait(500)%7D%7Dcatch(e)%7B"
-            "console.log(\"GP Poll Error:\",e);await wait(2000);%7D%7D%7D"
-            "async function executor()%7Bwhile(true)%7B"
-            "if(window.__gp_abort)%7Bqueue=%5B%5D;window.__gp_abort=false;"
-            "await wait(100);continue;%7D"
-            "if(queue.length>0)%7Bconst data=queue.shift();if(!data)continue;"
-            "let wpm=data.wpm||40;let txt=data.text;let isRealistic=data.realistic||false;"
-            "const el=document.activeElement;"
-            "if(el&&(\"value\" in el||el.isContentEditable))%7B"
-            "const inject=(c)=>%7Bif(\"value\" in el)%7B"
-            "const start=el.selectionStart;const end=el.selectionEnd;"
-            "if(start!==undefined&&start!==null)%7B"
-            "el.value=el.value.substring(0,start)+c+el.value.substring(end);"
-            "el.selectionStart=el.selectionEnd=start+c.length;%7D"
-            "else%7Bel.value+=c;%7D%7D"
-            "else%7Bconst sel=window.getSelection();if(sel.rangeCount)%7B"
-            "const range=sel.getRangeAt(0);range.deleteContents();"
-            "range.insertNode(document.createTextNode(c));range.collapse(false);"
-            "sel.removeAllRanges();sel.addRange(range);%7D%7D"
-            "el.dispatchEvent(new Event(\"input\",%7Bbubbles:true%7D));"
-            "el.dispatchEvent(new Event(\"change\",%7Bbubbles:true%7D))%7D;"
-            "if(isRealistic)%7Bfor(let i=0;i<txt.length;i++)%7B"
-            "if(window.__gp_abort)break;inject(txt[i]);"
-            "let d=60000/(wpm*5);if(txt[i]===' ')d*=1.2;"
-            "await wait(d*(0.8+Math.random()*0.4));%7D%7D"
-            "else%7Bif(!window.__gp_abort)inject(txt);%7D%7D%7D"
-            "await wait(100);%7D%7D poller();executor();%7D)();"
-        )
-        bookmarklet = bookmarklet.replace("https://bypass-backend-nms1.onrender.com", "http://127.0.0.1:8000")
-        self.code_text.insert("1.0", bookmarklet)
+    # ── BYPASS VIEW REMOVED ───────────────────────────────────────────────────
 
     def load_cached_monetization(self):
         import json
@@ -1550,9 +1354,6 @@ class LANpadLauncher:
             self.splash_view.tkraise()
         elif name == "legal":
             self.legal_view.tkraise()
-        else:
-            self.bypass_view.tkraise()
-            self.copy_bookmarklet(silent=True)
 
     def update_lock_time_left(self):
         try:
@@ -1753,7 +1554,7 @@ class LANpadLauncher:
         title_lbl.place(x=24, y=logo_y + 110, width=W - 48)
         
         # Subtitle
-        sub_lbl = tk.Label(v, text="Bypass campus peer-to-peer restrictions and\nAP Isolation instantly.", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 12))
+        sub_lbl = tk.Label(v, text="Direct local connection and\nsecure device communication.", fg="#8A8A93", bg="#0D0D10", font=(self.FU, 12))
         sub_lbl.place(x=24, y=logo_y + 155, width=W - 48)
         
         # Key Input Label
@@ -2564,8 +2365,8 @@ class LANpadLauncher:
         cv, tid = self._info_cards["State"]
         cv.itemconfig(tid, text="Live", fill=self.GREEN)
 
-        # Start background SSH tunnel fallback
-        self.start_tunnel()
+        # Delay Hybrid Relay tunnel execution by 8 seconds
+        self.root.after(8000, self._start_relay_if_needed)
 
         ip = self.get_local_ip()
         # If we detected more than one LAN IP, show the primary one
@@ -2580,6 +2381,25 @@ class LANpadLauncher:
         self._update_display()
         if self.root.state() != "withdrawn":
             self.root.after(100, self.show_window)
+
+    def _start_relay_if_needed(self):
+        if not self._server_on:
+            return
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request("http://127.0.0.1:8000/api/connections")
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                count = data.get("count", 0)
+                if count == 0:
+                    print("[lanpad] No local connections detected after 8s delay, starting Hybrid Relay tunnel...")
+                    self.start_tunnel()
+                else:
+                    print(f"[lanpad] {count} local connection(s) active, skipping Hybrid Relay tunnel startup.")
+        except Exception as e:
+            print(f"[lanpad] Error checking connection count: {e}. Starting tunnel as fallback.")
+            self.start_tunnel()
 
     def stop_server(self):
         self.stop_tunnel()
@@ -2690,12 +2510,7 @@ class LANpadLauncher:
         else:
             self._conn_lbl.config(text="0 Connected", fg=self.DIM)
 
-    def copy_bookmarklet(self, event=None, silent=False):
-        code = self.code_text.get("1.0", "end-1c")
-        self.root.clipboard_clear()
-        self.root.clipboard_append(code)
-        if not silent:
-            messagebox.showinfo("Bypass Copied", "Bookmarklet copied to clipboard!")
+
 
     def show_window(self, *args):
         """Bring the dashboard to front without stealing focus from other apps
