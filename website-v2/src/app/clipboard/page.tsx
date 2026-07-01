@@ -465,82 +465,72 @@ export default function ClipboardPage() {
       }
       if (!finalTitle) finalTitle = stagedFile.name;
 
-      // Safe alphanumeric upload ID generator
-      const uploadId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (under Vercel/proxy body parsing limit)
-      const totalSize = stagedFile.size;
-      const totalChunks = Math.max(1, Math.ceil(totalSize / CHUNK_SIZE));
-      let currentChunk = 0;
+      // File size guard: 5 MB limit for inline base64 DB storage
+      const MAX_FILE_BYTES = 5 * 1024 * 1024;
+      if (stagedFile.size > MAX_FILE_BYTES) {
+        setError("File exceeds the 5 MB limit for clipboard rooms.");
+        setAddingItem(false);
+        return;
+      }
 
-      const uploadNextChunk = () => {
-        const start = currentChunk * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, totalSize);
-        const chunk = stagedFile.slice(start, end);
-
-        const queryParams = new URLSearchParams({
-          roomCode: currentRoom.code,
-          title: finalTitle,
-          sessionId: sessionId,
-          fileName: stagedFile.name,
-          fileType: stagedFile.type,
-          fileSize: totalSize.toString(),
-          uploadId: uploadId,
-          chunkIndex: currentChunk.toString(),
-          totalChunks: totalChunks.toString()
+      try {
+        // Convert file to base64 data URI in browser (no disk needed)
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(stagedFile);
+          // Simulate upload progress during base64 read
+          let pct = 0;
+          const tick = setInterval(() => {
+            pct = Math.min(90, pct + 10);
+            setUploadProgress(pct);
+          }, 80);
+          reader.onloadend = () => clearInterval(tick);
         });
 
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
+        setUploadProgress(95);
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const uploadedBytesSoFar = (currentChunk * CHUNK_SIZE) + event.loaded;
-            const percentComplete = Math.min(99, Math.round((uploadedBytesSoFar / totalSize) * 100));
-            setUploadProgress(percentComplete);
-          }
-        };
+        // Store inline in DB as JSON — no file system dependency
+        const itemContent = JSON.stringify({
+          isFile: true,
+          fileName: stagedFile.name,
+          fileType: stagedFile.type || "application/octet-stream",
+          fileSize: stagedFile.size,
+          data: dataUri           // ← full base64 data URI lives in DB
+        });
 
-        xhr.onload = () => {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
-              if (currentChunk < totalChunks - 1) {
-                currentChunk++;
-                uploadNextChunk();
-              } else {
-                setUploadProgress(100);
-                setTimeout(() => {
-                  setAddingItem(false);
-                  setUploadProgress(null);
-                  setNewTitle("");
-                  setNewContent("");
-                  clearStagedFile();
-                  fetchRoomDetails(currentRoom.code);
-                }, 400);
-              }
-            } else {
-              setAddingItem(false);
-              setUploadProgress(null);
-              setError(data.error || `Upload failed at chunk ${currentChunk + 1} with status ${xhr.status}`);
-            }
-          } catch (err) {
-            setAddingItem(false);
-            setUploadProgress(null);
-            setError(`Upload failed: Server returned invalid response (${xhr.status})`);
-          }
-        };
-
-        xhr.onerror = () => {
+        const res = await fetch("/api/clipboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add-item",
+            roomCode: currentRoom.code,
+            title: finalTitle,
+            content: itemContent,
+            sessionId
+          })
+        });
+        const data = await res.json();
+        setUploadProgress(100);
+        setTimeout(() => {
           setAddingItem(false);
           setUploadProgress(null);
-          setError("Upload failed: Network error occurred.");
-        };
+          setNewTitle("");
+          setNewContent("");
+          clearStagedFile();
+          if (data.success) {
+            fetchRoomDetails(currentRoom.code);
+          } else {
+            setError(data.error || "Failed to upload file");
+          }
+        }, 300);
+      } catch (err: any) {
+        setAddingItem(false);
+        setUploadProgress(null);
+        setError("Upload failed: " + (err.message || "Unknown error"));
+      }
 
-        xhr.send(chunk);
-      };
-
-      // Start uploading chunk-by-chunk
-      uploadNextChunk();
     }
   };
 
@@ -1270,7 +1260,9 @@ export default function ClipboardPage() {
                                 <div className="flex items-center gap-3 shrink-0">
                                   {fileItem ? (
                                     <a
-                                      href={`/api/clipboard/download?id=${item.id}`}
+                                      href={fileItem.data && fileItem.data.startsWith("data:")
+                                        ? fileItem.data
+                                        : `/api/clipboard/download?id=${item.id}`}
                                       download={fileItem.fileName}
                                       onClick={(e) => e.stopPropagation()}
                                       className="text-gray-400 hover:text-white transition-colors"
@@ -1336,7 +1328,9 @@ export default function ClipboardPage() {
                                               dk ? "bg-black/30" : "bg-[#F28500]/10"
                                             }`}>
                                               <img 
-                                                src={`/api/clipboard/download?id=${item.id}`}
+                                                src={fileItem.data && fileItem.data.startsWith("data:")
+                                                  ? fileItem.data
+                                                  : `/api/clipboard/download?id=${item.id}`}
                                                 alt={fileItem.fileName}
                                                 className="max-h-80 max-w-full object-contain rounded-lg shadow-sm"
                                               />
