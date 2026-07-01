@@ -931,8 +931,8 @@ export default function ClipboardPage() {
                             +30m
                           </button>
                         ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none">
-                            Extended ✓
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none whitespace-nowrap">
+                            Extended <Check size={8} strokeWidth={3} />
                           </span>
                         )}
                         <button
