@@ -96,6 +96,7 @@ export default function ClipboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | "text" | "image" | "file">("all");
   const [activeUsers, setActiveUsers] = useState(1);
+  const [hasExtended, setHasExtended] = useState(false);
 
   // Recent Rooms States
   interface RecentRoom {
@@ -140,6 +141,13 @@ export default function ClipboardPage() {
       joinRoom(hash);
     }
   }, []);
+
+  // Synchronize hasExtended state when entering/updating room
+  useEffect(() => {
+    if (currentRoom) {
+      setHasExtended(localStorage.getItem(`extended_${currentRoom.code}`) === "true");
+    }
+  }, [currentRoom?.code]);
 
   // Poll for new clipboard items when inside a room
   useEffect(() => {
@@ -295,7 +303,7 @@ export default function ClipboardPage() {
   };
 
   const extendRoomTime = async (minutes: number) => {
-    if (!currentRoom || !isHost) return;
+    if (!currentRoom || !isHost || hasExtended) return;
     try {
       const res = await fetch("/api/clipboard", {
         method: "POST",
@@ -310,6 +318,8 @@ export default function ClipboardPage() {
       const data = await res.json();
       if (data.success) {
         setCurrentRoom(prev => prev ? { ...prev, expiresAt: data.expiresAt } : null);
+        localStorage.setItem(`extended_${currentRoom.code}`, "true");
+        setHasExtended(true);
       } else {
         setError(data.error || "Failed to extend room time");
       }
@@ -845,7 +855,7 @@ export default function ClipboardPage() {
           <div className="flex-1 flex flex-col lg:flex-row gap-6 lg:gap-8 w-full min-h-0">
             
             {/* Sidebar Info & Controls */}
-            <div className="w-full lg:w-80 shrink-0 space-y-4 lg:sticky lg:top-20 h-fit">
+            <div className="w-full lg:w-96 shrink-0 space-y-4 lg:sticky lg:top-20 h-fit">
               <div className={`p-6 rounded-[28px] border ${borderLight} ${clayBg} space-y-5 shadow-lg`}>
                 
                 <div>
@@ -883,13 +893,19 @@ export default function ClipboardPage() {
                     </div>
                     {isHost && (
                       <div className="flex items-center gap-1.5 mt-1">
-                        <button
-                          onClick={() => extendRoomTime(30)}
-                          className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#F28500]/10 text-[#F28500] hover:bg-[#F28500]/20 transition-all border border-[#F28500]/20 cursor-pointer"
-                          title="Extend room by 30 mins"
-                        >
-                          +30m
-                        </button>
+                        {!hasExtended ? (
+                          <button
+                            onClick={() => extendRoomTime(30)}
+                            className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#F28500]/10 text-[#F28500] hover:bg-[#F28500]/20 transition-all border border-[#F28500]/20 cursor-pointer animate-pulse"
+                            title="Extend room by 30 mins"
+                          >
+                            +30m
+                          </button>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none">
+                            Extended ✓
+                          </span>
+                        )}
                         <button
                           onClick={() => alert("Custom extensions beyond 24 hours require a premium subscription to cover production and cloud resource costs.")}
                           className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-white transition-all border border-transparent cursor-pointer"
