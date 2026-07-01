@@ -345,15 +345,19 @@ export default function ClipboardPage() {
       }
       if (!finalTitle) finalTitle = stagedFile.name;
 
-      const formData = new FormData();
-      formData.append("roomCode", currentRoom.code);
-      formData.append("title", finalTitle);
-      formData.append("sessionId", sessionId);
-      formData.append("file", stagedFile);
+      // Pass parameters via query parameters to bypass Next.js multipart/form-data body parsing limit
+      const queryParams = new URLSearchParams({
+        roomCode: currentRoom.code,
+        title: finalTitle,
+        sessionId: sessionId,
+        fileName: stagedFile.name,
+        fileType: stagedFile.type,
+        fileSize: stagedFile.size.toString()
+      });
 
       // Use XMLHttpRequest to track upload progress
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/clipboard/upload");
+      xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -386,7 +390,7 @@ export default function ClipboardPage() {
         setError("Failed to save clipboard item: Network error occurred.");
       };
 
-      xhr.send(formData);
+      xhr.send(stagedFile);
     }
   };
 

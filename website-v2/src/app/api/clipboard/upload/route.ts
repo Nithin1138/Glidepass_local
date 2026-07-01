@@ -3,19 +3,24 @@ import { getClipboardRoom, addClipboardItem } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { Readable } from "stream";
+import { finished } from "stream/promises";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const roomCode = formData.get("roomCode") as string;
-    const title = formData.get("title") as string;
-    const sessionId = formData.get("sessionId") as string;
-    const file = formData.get("file") as File;
+    const { searchParams } = new URL(req.url);
+    const roomCode = searchParams.get("roomCode") || "";
+    const title = searchParams.get("title") || "";
+    const sessionId = searchParams.get("sessionId") || "";
+    const fileName = searchParams.get("fileName") || "";
+    const fileType = searchParams.get("fileType") || "";
+    const fileSizeStr = searchParams.get("fileSize") || "0";
+    const fileSize = parseInt(fileSizeStr, 10);
 
-    if (!roomCode || !sessionId || !file) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    if (!roomCode || !sessionId || !fileName) {
+      return NextResponse.json({ success: false, error: "Missing required query parameters" }, { status: 400 });
     }
 
     const room = await getClipboardRoom(roomCode.toUpperCase());
@@ -36,28 +41,35 @@ export async function POST(req: NextRequest) {
 
     // Generate unique local file path
     const fileId = crypto.randomUUID();
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
     const localFilePath = path.join(uploadDir, `${fileId}-${safeFileName}`);
 
-    // Stream write file buffer to disk
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(localFilePath, buffer);
+    // Stream request body directly to disk (bypasses Next.js 413 body size limit)
+    const webStream = req.body;
+    if (!webStream) {
+      return NextResponse.json({ success: false, error: "Empty request body" }, { status: 400 });
+    }
+
+    const nodeStream = Readable.fromWeb(webStream as any);
+    const writeStream = fs.createWriteStream(localFilePath);
+    nodeStream.pipe(writeStream);
+
+    await finished(writeStream);
 
     // Save metadata in database
     const itemId = crypto.randomUUID();
     const itemContent = JSON.stringify({
       isFile: true,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
+      fileName: fileName,
+      fileType: fileType,
+      fileSize: fileSize,
       filePath: localFilePath
     });
 
     const newItem = {
       id: itemId,
       roomCode: roomCode.toUpperCase(),
-      title: title || file.name,
+      title: title || fileName,
       content: itemContent
     };
 
