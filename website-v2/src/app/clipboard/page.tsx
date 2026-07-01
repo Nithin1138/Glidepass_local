@@ -1027,21 +1027,47 @@ export default function ClipboardPage() {
 
               return (
                 <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                  {/* Top Feed Header / Search */}
-                  <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2 select-none">
-                      Clipboard Feed ({filteredItems.length})
-                      <button 
-                        onClick={() => fetchRoomDetails(currentRoom.code)}
-                        className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-white transition-all cursor-pointer"
-                        title="Reload feed"
-                      >
-                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                      </button>
+                  {/* Top Feed Header / Actions / Search - All in One Row */}
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+                    {/* Left: Title & Pills Group */}
+                    <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                      <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2 select-none shrink-0">
+                        Clipboard Feed ({filteredItems.length})
+                        <button 
+                          onClick={() => fetchRoomDetails(currentRoom.code)}
+                          className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-white transition-all cursor-pointer"
+                          title="Reload feed"
+                        >
+                          <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                        </button>
+                      </div>
+
+                      {/* Filter Categories Pills */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { id: "all", label: "All Items" },
+                          { id: "text", label: "Texts" },
+                          { id: "image", label: "Images" },
+                          { id: "file", label: "Files" },
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setFilterCategory(cat.id as any)}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
+                              filterCategory === cat.id
+                                ? "bg-[#F28500]/10 text-[#F28500] border-[#F28500]/30"
+                                : `${borderLight} bg-black/5 dark:bg-white/5 text-gray-500 hover:text-white hover:bg-black/10`
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    {/* Search Input */}
-                    <div className="relative w-full md:w-60">
+                    {/* Right: Search Input */}
+                    <div className="relative w-full md:w-56 shrink-0">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <Search size={12} className="text-gray-400" />
                       </span>
@@ -1053,29 +1079,6 @@ export default function ClipboardPage() {
                         className={`w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA]`}
                       />
                     </div>
-                  </div>
-
-                  {/* Filter Categories Pills */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {[
-                      { id: "all", label: "All Items" },
-                      { id: "text", label: "Texts" },
-                      { id: "image", label: "Images" },
-                      { id: "file", label: "Files" },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setFilterCategory(cat.id as any)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
-                          filterCategory === cat.id
-                            ? "bg-[#F28500]/10 text-[#F28500] border-[#F28500]/30"
-                            : `${borderLight} bg-black/5 dark:bg-white/5 text-gray-500 hover:text-white hover:bg-black/10`
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
                   </div>
 
                   {/* Feed Scrollable List */}
