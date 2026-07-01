@@ -39,11 +39,17 @@ export async function GET(req: NextRequest) {
     // Read file bytes
     const fileBuffer = fs.readFileSync(fileInfo.filePath);
 
+    const isInline = fileInfo.fileType.startsWith("image/") || 
+                     fileInfo.fileType.startsWith("video/") || 
+                     fileInfo.fileType.startsWith("audio/") || 
+                     searchParams.get("inline") === "true";
+    const dispositionType = isInline ? "inline" : "attachment";
+
     // Return direct binary download stream
     return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": fileInfo.fileType || "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(fileInfo.fileName)}"`,
+        "Content-Disposition": `${dispositionType}; filename="${encodeURIComponent(fileInfo.fileName)}"`,
         "Content-Length": fileInfo.fileSize.toString()
       }
     });
