@@ -240,7 +240,7 @@ export default function ClipboardPage() {
         if (data.activeUsersCount !== undefined) {
           setActiveUsers(data.activeUsersCount);
         }
-        window.location.hash = code;
+        window.history.replaceState(null, "", `/clipboard#${code}`);
         saveRecentRoom(data.room.code, data.room.expiresAt);
       } else {
         setError(data.error || "Failed to load room");
@@ -562,7 +562,7 @@ export default function ClipboardPage() {
     setCurrentRoom(null);
     setItems([]);
     clearStagedFile();
-    window.location.hash = "";
+    window.history.replaceState(null, "", window.location.pathname);
   };
 
   const copyRoomCode = () => {
@@ -635,7 +635,7 @@ export default function ClipboardPage() {
 
       {/* ── NAV ── */}
       <header className={`shrink-0 border-b ${borderLight} backdrop-blur-md z-50 ${dk ? "bg-[#08080c]/85" : "bg-[#EDEAE0]/85"} sticky top-0`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+        <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className={`flex items-center gap-1.5 text-[10px] font-bold ${textSecondary} hover:text-[#468FEA] transition-colors`}>
               <ArrowLeft size={13} /> Home
@@ -721,7 +721,7 @@ export default function ClipboardPage() {
       </header>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6 z-10 flex flex-col justify-start">
+      <main className="flex-1 w-full px-4 md:px-8 py-6 z-10 flex flex-col justify-start">
         
         {error && (
           <motion.div 
