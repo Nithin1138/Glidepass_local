@@ -2653,5 +2653,22 @@ export async function deleteClipboardItem(id: string): Promise<void> {
   }
 }
 
+export async function getClipboardItemById(id: string): Promise<ClipboardItem | null> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query(
+      `SELECT id, room_code as "roomCode", title, content, created_at as "createdAt" 
+       FROM vit_clipboard_items WHERE id = $1`,
+      [id]
+    );
+    if (res.rows.length === 0) return null;
+    return res.rows[0];
+  } else {
+    const data = await readClipboardFile();
+    const found = data.items.find(i => i.id === id);
+    return found || null;
+  }
+}
+
 
 

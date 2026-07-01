@@ -236,7 +236,7 @@ export default function ClipboardPage() {
     joinRoom(roomCodeInput.trim().toUpperCase());
   };
 
-  // Convert staged file to Base64 and stage it
+  // Convert staged file and stage it
   const stageFile = (file: File) => {
     // 100MB limit check
     const limitBytes = 100 * 1024 * 1024;
@@ -251,16 +251,13 @@ export default function ClipboardPage() {
       setNewTitle(file.name);
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setStagedFileBase64(event.target.result as string);
-      }
-    };
-    reader.onerror = () => {
-      setError("Failed to read selected file.");
-    };
-    reader.readAsDataURL(file);
+    // Instant local object URL for preview (zero CPU time/memory footprint)
+    if (file.type.startsWith("image/")) {
+      const previewUrl = URL.createObjectURL(file);
+      setStagedFileBase64(previewUrl);
+    } else {
+      setStagedFileBase64("");
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,42 +298,52 @@ export default function ClipboardPage() {
     e.preventDefault();
     if (!currentRoom) return;
 
-    let finalContent = "";
-    let finalTitle = newTitle.trim();
-
-    if (uploadMode === "text") {
-      if (!newContent.trim()) return;
-      finalContent = newContent;
-      if (!finalTitle) finalTitle = "Text Snippet";
-    } else {
-      if (!stagedFile || !stagedFileBase64) {
-        setError("Please select or drop a file to upload.");
-        return;
-      }
-      finalContent = JSON.stringify({
-        isFile: true,
-        fileName: stagedFile.name,
-        fileType: stagedFile.type,
-        fileSize: stagedFile.size,
-        data: stagedFileBase64
-      });
-      if (!finalTitle) finalTitle = stagedFile.name;
-    }
-
     setAddingItem(true);
     setError("");
+
     try {
-      const res = await fetch("/api/clipboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add-item",
-          roomCode: currentRoom.code,
-          title: finalTitle,
-          content: finalContent,
-          sessionId
-        })
-      });
+      let res;
+      let finalTitle = newTitle.trim();
+
+      if (uploadMode === "text") {
+        if (!newContent.trim()) {
+          setAddingItem(false);
+          return;
+        }
+        if (!finalTitle) finalTitle = "Text Snippet";
+
+        res = await fetch("/api/clipboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add-item",
+            roomCode: currentRoom.code,
+            title: finalTitle,
+            content: newContent,
+            sessionId
+          })
+        });
+      } else {
+        if (!stagedFile) {
+          setError("Please select or drop a file to upload.");
+          setAddingItem(false);
+          return;
+        }
+        if (!finalTitle) finalTitle = stagedFile.name;
+
+        // Use Form Data for binary upload (jet speed!)
+        const formData = new FormData();
+        formData.append("roomCode", currentRoom.code);
+        formData.append("title", finalTitle);
+        formData.append("sessionId", sessionId);
+        formData.append("file", stagedFile);
+
+        res = await fetch("/api/clipboard/upload", {
+          method: "POST",
+          body: formData
+        });
+      }
+
       const data = await res.json();
       if (data.success) {
         setNewTitle("");
@@ -874,7 +881,7 @@ export default function ClipboardPage() {
                             <div className="flex items-center gap-3 shrink-0">
                               {fileItem ? (
                                 <a
-                                  href={fileItem.data}
+                                  href={`/api/clipboard/download?id=${item.id}`}
                                   download={fileItem.fileName}
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-gray-400 hover:text-white transition-colors"
@@ -936,7 +943,7 @@ export default function ClipboardPage() {
                                       {fileItem.fileType.startsWith("image/") ? (
                                         <div className="flex flex-col items-center justify-center bg-black/30 rounded-xl overflow-hidden max-h-96 p-1">
                                           <img 
-                                            src={fileItem.data} 
+                                            src={`/api/clipboard/download?id=${item.id}`}
                                             alt={fileItem.fileName}
                                             className="max-h-80 max-w-full object-contain rounded-lg shadow-sm"
                                           />
