@@ -118,7 +118,12 @@ export default function ClipboardPage() {
     } catch (e) {}
   };
 
-  // Initialize Session ID
+  // Sync theme changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("glidepass_theme", theme);
+  }, [theme]);
+
+  // Initialize Session ID and Theme
   useEffect(() => {
     let storedSessionId = localStorage.getItem("glidepass_clipboard_session_id");
     if (!storedSessionId) {
@@ -126,6 +131,12 @@ export default function ClipboardPage() {
       localStorage.setItem("glidepass_clipboard_session_id", storedSessionId);
     }
     setSessionId(storedSessionId);
+
+    // Load theme preference
+    const savedTheme = localStorage.getItem("glidepass_theme") as "dark" | "light";
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
 
     // Load recent rooms
     try {
