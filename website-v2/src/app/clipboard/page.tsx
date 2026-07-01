@@ -984,11 +984,11 @@ export default function ClipboardPage() {
                                 <div className="px-4 pb-4">
                                   {fileItem ? (
                                     <div className={`rounded-[16px] border p-4 ${
-                                      dk ? "border-white/[0.05] bg-[#030303]" : "border-black/[0.06] bg-[#f4f1ea]"
+                                      dk ? "border-[#F28500]/25 bg-black/40" : "border-[#F28500]/20 bg-[#F28500]/5"
                                     }`}>
                                       {fileItem.fileType.startsWith("image/") ? (
                                         <div className={`flex flex-col items-center justify-center rounded-xl overflow-hidden max-h-96 p-1 ${
-                                          dk ? "bg-black/30" : "bg-black/[0.03]"
+                                          dk ? "bg-black/30" : "bg-[#F28500]/10"
                                         }`}>
                                           <img 
                                             src={`/api/clipboard/download?id=${item.id}`}
@@ -999,7 +999,7 @@ export default function ClipboardPage() {
                                       ) : (
                                         <div className="flex items-center gap-3">
                                           <div className={`p-3 rounded-xl border ${
-                                            dk ? "bg-white/5 border-white/5" : "bg-black/5 border-black/[0.04]"
+                                            dk ? "bg-white/5 border-white/5" : "bg-white/60 border-[#F28500]/20"
                                           }`}>
                                             {getFileIcon(fileItem.fileType, fileItem.fileName)}
                                           </div>
@@ -1016,7 +1016,7 @@ export default function ClipboardPage() {
                                     </div>
                                   ) : (
                                     <div className={`rounded-[16px] border p-4 overflow-hidden ${
-                                      dk ? "border-white/[0.05] bg-[#030303]" : "border-black/[0.06] bg-[#f4f1ea]"
+                                      dk ? "border-[#468FEA]/25 bg-black/40" : "border-[#468FEA]/20 bg-[#468FEA]/5"
                                     }`}>
                                       <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
                                         dk ? "text-[#a5d6ff]" : "text-gray-800"
