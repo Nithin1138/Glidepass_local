@@ -107,7 +107,10 @@ export default function ClipboardPage() {
   const [isInitializingRoom, setIsInitializingRoom] = useState(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      return hash.length === 6;
+      if (hash.length === 6) return true;
+      // Fallback: check if we have a persisted active room in local storage
+      const savedRoom = localStorage.getItem("glidepass_active_room_code");
+      if (savedRoom && savedRoom.length === 6) return true;
     }
     return false;
   });
@@ -160,7 +163,13 @@ export default function ClipboardPage() {
     if (hash && hash.length === 6) {
       joinRoom(hash);
     } else {
-      setIsInitializingRoom(false);
+      // Fallback: check if there's a saved active room code in localStorage
+      const savedRoom = localStorage.getItem("glidepass_active_room_code");
+      if (savedRoom && savedRoom.length === 6) {
+        joinRoom(savedRoom);
+      } else {
+        setIsInitializingRoom(false);
+      }
     }
   }, []);
 
@@ -252,6 +261,7 @@ export default function ClipboardPage() {
           setActiveUsers(data.activeUsersCount);
         }
         window.history.replaceState(null, "", `/clipboard#${code}`);
+        localStorage.setItem("glidepass_active_room_code", code); // Save active room code
         saveRecentRoom(data.room.code, data.room.expiresAt);
       } else {
         setError(data.error || "Failed to load room");
@@ -580,6 +590,7 @@ export default function ClipboardPage() {
     setCurrentRoom(null);
     setItems([]);
     clearStagedFile();
+    localStorage.removeItem("glidepass_active_room_code"); // Clear active room on exit/expiry
     window.history.replaceState(null, "", window.location.pathname);
   };
 
