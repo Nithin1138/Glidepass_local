@@ -3,7 +3,8 @@ import {
   createClipboardRoom, 
   getClipboardRoom, 
   addClipboardItem, 
-  getClipboardItems 
+  getClipboardItems,
+  deleteClipboardItem
 } from "@/lib/db";
 import crypto from "crypto";
 
@@ -105,6 +106,28 @@ export async function POST(req: NextRequest) {
       await addClipboardItem(newItem);
 
       return NextResponse.json({ success: true, item: newItem });
+    }
+
+    if (action === "delete-item") {
+      const { itemId, roomCode, sessionId } = body;
+
+      if (!itemId || !roomCode || !sessionId) {
+        return NextResponse.json({ success: false, error: "itemId, roomCode, and sessionId are required" }, { status: 400 });
+      }
+
+      const room = await getClipboardRoom(roomCode.toUpperCase());
+      if (!room) {
+        return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
+      }
+
+      // Verify host permissions
+      if (room.hostSessionId !== sessionId) {
+        return NextResponse.json({ success: false, error: "Only the room host can delete items" }, { status: 403 });
+      }
+
+      await deleteClipboardItem(itemId);
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });

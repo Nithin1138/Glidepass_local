@@ -16,7 +16,8 @@ import {
   LogOut, 
   Clipboard,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 
@@ -71,6 +72,9 @@ export default function ClipboardPage() {
 
   // Expiration countdown
   const [timeLeft, setTimeLeft] = useState("");
+
+  // Expand state for long items
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // Initialize Session ID
   useEffect(() => {
@@ -245,6 +249,36 @@ export default function ClipboardPage() {
     navigator.clipboard.writeText(text);
     setCopiedItemId(itemId);
     setTimeout(() => setCopiedItemId(null), 2000);
+  };
+
+  const toggleExpand = (itemId: string) => {
+    setExpandedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!currentRoom) return;
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    try {
+      const res = await fetch("/api/clipboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete-item",
+          itemId,
+          roomCode: currentRoom.code,
+          sessionId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchRoomDetails(currentRoom.code);
+      } else {
+        setError(data.error || "Failed to delete item");
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError("Failed to delete clipboard item.");
+    }
   };
 
   const isHost = currentRoom && currentRoom.hostSessionId === sessionId;
@@ -572,41 +606,68 @@ export default function ClipboardPage() {
                       <span>This room's clipboard is empty.</span>
                     </motion.div>
                   ) : (
-                    items.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className={`p-5 rounded-[28px] border ${borderLight} ${clayBg} group relative flex flex-col justify-between shadow-md hover:shadow-lg transition-all`}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <h3 className="text-xs font-black text-[#F28500] font-outfit uppercase tracking-wider">{item.title}</h3>
-                            <button
-                              onClick={() => copyItemContent(item.id, item.content)}
-                              className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#468FEA] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
-                              title="Copy Content"
-                            >
-                              {copiedItemId === item.id ? (
-                                <>
-                                  <Check size={12} className="text-emerald-500" />
-                                  <span className="text-emerald-500">Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy size={12} className="text-gray-400 group-hover:text-white" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
+                    items.map((item) => {
+                      const isExpanded = !!expandedItems[item.id];
+                      const lines = item.content.split("\n");
+                      const hasManyLines = lines.length > 2 || item.content.length > 120;
+
+                      return (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className={`p-5 rounded-[28px] border ${borderLight} ${clayBg} group relative flex flex-col justify-between shadow-md hover:shadow-lg transition-all`}
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                              <h3 className="text-xs font-black text-[#F28500] font-outfit uppercase tracking-wider">{item.title}</h3>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => copyItemContent(item.id, item.content)}
+                                  className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#468FEA] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
+                                  title="Copy Content"
+                                >
+                                  {copiedItemId === item.id ? (
+                                    <>
+                                      <Check size={12} className="text-emerald-500" />
+                                      <span className="text-emerald-500">Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={12} className="text-gray-400 group-hover:text-white" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                                {isHost && (
+                                  <button
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    className={`px-2.5 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all cursor-pointer shrink-0 flex items-center justify-center`}
+                                    title="Delete Item"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <pre className={`text-xs font-mono bg-black/25 dark:bg-black/45 border border-white/5 p-4 rounded-2xl overflow-x-auto whitespace-pre-wrap break-all select-all text-gray-300 transition-all duration-300 ${
+                              isExpanded ? "max-h-none" : "max-h-16 overflow-hidden"
+                            }`}>
+                              {item.content}
+                            </pre>
+                            {hasManyLines && (
+                              <button
+                                onClick={() => toggleExpand(item.id)}
+                                className="text-[10px] font-bold text-[#468FEA] mt-2 hover:underline cursor-pointer flex items-center gap-1 select-none"
+                              >
+                                {isExpanded ? "Collapse" : "Tap to expand"}
+                              </button>
+                            )}
                           </div>
-                          <pre className="text-xs font-mono bg-black/25 dark:bg-black/45 border border-white/5 p-4 rounded-2xl overflow-x-auto whitespace-pre-wrap break-all max-h-96 scrollbar-none select-all text-gray-300">
-                            {item.content}
-                          </pre>
-                        </div>
-                      </motion.div>
-                    ))
+                        </motion.div>
+                      );
+                    })
                   )}
                 </AnimatePresence>
               </div>

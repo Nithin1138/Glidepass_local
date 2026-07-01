@@ -2642,5 +2642,16 @@ export async function cleanupExpiredClipboardRooms(): Promise<void> {
   }
 }
 
+export async function deleteClipboardItem(id: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("DELETE FROM vit_clipboard_items WHERE id = $1", [id]);
+  } else {
+    const data = await readClipboardFile();
+    data.items = data.items.filter(i => i.id !== id);
+    await writeClipboardFile(data);
+  }
+}
+
 
 
