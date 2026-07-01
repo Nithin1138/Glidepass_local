@@ -2753,5 +2753,24 @@ export async function getActiveUsersCount(roomCode: string): Promise<number> {
   }
 }
 
+export async function updateRoomExpiration(code: string, expiresAt: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `UPDATE vit_clipboard_rooms 
+       SET expires_at = $1 
+       WHERE code = $2`,
+      [expiresAt, code.toUpperCase()]
+    );
+  } else {
+    const data = await readClipboardFile();
+    const idx = data.rooms.findIndex(r => r.code.toUpperCase() === code.toUpperCase());
+    if (idx !== -1) {
+      data.rooms[idx].expiresAt = expiresAt;
+      await writeClipboardFile(data);
+    }
+  }
+}
+
 
 

@@ -7,7 +7,8 @@ import {
   deleteClipboardItem,
   touchActiveUser,
   getActiveUsersCount,
-  updateRoomPermissions
+  updateRoomPermissions,
+  updateRoomExpiration
 } from "@/lib/db";
 import crypto from "crypto";
 
@@ -158,6 +159,31 @@ export async function POST(req: NextRequest) {
       await updateRoomPermissions(roomCode.toUpperCase(), !!allowAllMembersToAdd);
 
       return NextResponse.json({ success: true });
+    }
+
+    if (action === "extend-room") {
+      const { roomCode, minutes, sessionId } = body;
+
+      if (!roomCode || !minutes || !sessionId) {
+        return NextResponse.json({ success: false, error: "roomCode, minutes, and sessionId are required" }, { status: 400 });
+      }
+
+      const room = await getClipboardRoom(roomCode.toUpperCase());
+      if (!room) {
+        return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
+      }
+
+      if (room.hostSessionId !== sessionId) {
+        return NextResponse.json({ success: false, error: "Only the room host can extend the expiration time" }, { status: 403 });
+      }
+
+      const additionalMs = minutes * 60 * 1000;
+      const currentExpiresAt = new Date(room.expiresAt).getTime();
+      const newExpiresAt = new Date(currentExpiresAt + additionalMs).toISOString();
+
+      await updateRoomExpiration(roomCode.toUpperCase(), newExpiresAt);
+
+      return NextResponse.json({ success: true, expiresAt: newExpiresAt });
     }
 
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });

@@ -294,6 +294,30 @@ export default function ClipboardPage() {
     }
   };
 
+  const extendRoomTime = async (minutes: number) => {
+    if (!currentRoom || !isHost) return;
+    try {
+      const res = await fetch("/api/clipboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "extend-room",
+          roomCode: currentRoom.code,
+          minutes,
+          sessionId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentRoom(prev => prev ? { ...prev, expiresAt: data.expiresAt } : null);
+      } else {
+        setError(data.error || "Failed to extend room time");
+      }
+    } catch (e) {
+      setError("Network error extending room time");
+    }
+  };
+
   const handleJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCodeInput.trim()) return;
@@ -857,6 +881,24 @@ export default function ClipboardPage() {
                       <Clock size={12} />
                       {timeLeft}
                     </div>
+                    {isHost && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <button
+                          onClick={() => extendRoomTime(30)}
+                          className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#F28500]/10 text-[#F28500] hover:bg-[#F28500]/20 transition-all border border-[#F28500]/20 cursor-pointer"
+                          title="Extend room by 30 mins"
+                        >
+                          +30m
+                        </button>
+                        <button
+                          onClick={() => alert("Custom extensions beyond 24 hours require a premium subscription to cover production and cloud resource costs.")}
+                          className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-white transition-all border border-transparent cursor-pointer"
+                          title="Request custom extension duration"
+                        >
+                          Custom
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Active Users</div>
