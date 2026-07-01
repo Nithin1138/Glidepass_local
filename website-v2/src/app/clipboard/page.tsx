@@ -238,10 +238,10 @@ export default function ClipboardPage() {
 
   // Convert staged file to Base64 and stage it
   const stageFile = (file: File) => {
-    // 10MB limit check
-    const limitBytes = 10 * 1024 * 1024;
+    // 100MB limit check
+    const limitBytes = 100 * 1024 * 1024;
     if (file.size > limitBytes) {
-      setError("File exceeds 10MB limit. Please choose a smaller file.");
+      setError("File exceeds 100MB limit. Please choose a smaller file.");
       return;
     }
 
@@ -771,7 +771,7 @@ export default function ClipboardPage() {
                             Drag & drop file or <span className="text-[#468FEA] hover:underline">browse</span>
                           </div>
                           <div className="text-[8px] text-gray-500 leading-normal">
-                            Supports PDF, DOCX, ZIP, PNG, JPG, etc. (Max 10MB)
+                            Supports PDF, DOCX, ZIP, PNG, JPG, etc. (Max 100MB)
                           </div>
                         </div>
 
