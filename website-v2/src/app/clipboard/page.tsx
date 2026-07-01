@@ -48,7 +48,13 @@ interface ClipboardItem {
 }
 
 export default function ClipboardPage() {
-  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("glidepass_theme") as "dark" | "light";
+      return savedTheme || "light";
+    }
+    return "light";
+  });
   const dk = theme === "dark";
 
   const cardBg = dk ? "bg-[#08080c]" : "bg-[#EDEAE0]";
@@ -132,11 +138,6 @@ export default function ClipboardPage() {
     }
     setSessionId(storedSessionId);
 
-    // Load theme preference
-    const savedTheme = localStorage.getItem("glidepass_theme") as "dark" | "light";
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
 
     // Load recent rooms
     try {
