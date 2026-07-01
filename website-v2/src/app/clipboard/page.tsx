@@ -103,6 +103,13 @@ export default function ClipboardPage() {
   const [filterCategory, setFilterCategory] = useState<"all" | "text" | "image" | "file">("all");
   const [activeUsers, setActiveUsers] = useState(1);
   const [hasExtended, setHasExtended] = useState(false);
+  const [isInitializingRoom, setIsInitializingRoom] = useState(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      return hash.length === 6;
+    }
+    return false;
+  });
 
   // Recent Rooms States
   interface RecentRoom {
@@ -151,6 +158,8 @@ export default function ClipboardPage() {
     const hash = window.location.hash.replace("#", "");
     if (hash && hash.length === 6) {
       joinRoom(hash);
+    } else {
+      setIsInitializingRoom(false);
     }
   }, []);
 
@@ -252,6 +261,7 @@ export default function ClipboardPage() {
       if (!isSilent) setError("Connection error. Please try again.");
     } finally {
       if (!isSilent) setLoading(false);
+      setIsInitializingRoom(false);
     }
   };
 
@@ -639,7 +649,7 @@ export default function ClipboardPage() {
         <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className={`flex items-center gap-1.5 text-[10px] font-bold ${textSecondary} hover:text-[#468FEA] transition-colors`}>
-              <ArrowLeft size={13} /> Home
+              <ArrowLeft size={13} /> Back
             </Link>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${dk ? "border-[#468FEA]/20 bg-[#468FEA]/5 text-[#468FEA]" : "border-[#468FEA]/30 bg-[#468FEA]/5 text-[#468FEA]"}`}>
               Temporary Clipboard
@@ -735,7 +745,12 @@ export default function ClipboardPage() {
           </motion.div>
         )}
 
-        {!currentRoom ? (
+        {isInitializingRoom ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-20 my-auto">
+            <div className="w-10 h-10 border-4 border-[#468FEA]/20 border-t-[#468FEA] rounded-full animate-spin mb-4" />
+            <p className={`text-xs ${textSecondary} font-bold animate-pulse`}>Loading Clipboard Room...</p>
+          </div>
+        ) : !currentRoom ? (
           /* ──────── DASHBOARD: CREATE OR JOIN ──────── */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full py-4 md:py-8 my-auto">
             
