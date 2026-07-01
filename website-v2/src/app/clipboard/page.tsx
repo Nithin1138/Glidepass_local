@@ -96,6 +96,26 @@ export default function ClipboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | "text" | "image" | "file">("all");
 
+  // Recent Rooms States
+  interface RecentRoom {
+    code: string;
+    expiresAt: string;
+  }
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
+  const [showRecentDropdown, setShowRecentDropdown] = useState(false);
+
+  const saveRecentRoom = (code: string, expiresAt: string) => {
+    try {
+      const stored = localStorage.getItem("glidepass_recent_rooms");
+      let list: RecentRoom[] = stored ? JSON.parse(stored) : [];
+      list = list.filter(r => r.code !== code);
+      list.unshift({ code, expiresAt });
+      list = list.slice(0, 8); // Keep last 8 rooms
+      localStorage.setItem("glidepass_recent_rooms", JSON.stringify(list));
+      setRecentRooms(list);
+    } catch (e) {}
+  };
+
   // Initialize Session ID
   useEffect(() => {
     let storedSessionId = localStorage.getItem("glidepass_clipboard_session_id");
@@ -104,6 +124,14 @@ export default function ClipboardPage() {
       localStorage.setItem("glidepass_clipboard_session_id", storedSessionId);
     }
     setSessionId(storedSessionId);
+
+    // Load recent rooms
+    try {
+      const storedRecent = localStorage.getItem("glidepass_recent_rooms");
+      if (storedRecent) {
+        setRecentRooms(JSON.parse(storedRecent));
+      }
+    } catch (e) {}
 
     // Read room code from URL hash if present
     const hash = window.location.hash.replace("#", "");
@@ -190,6 +218,7 @@ export default function ClipboardPage() {
         setCurrentRoom(data.room);
         setItems(data.items || []);
         window.location.hash = code;
+        saveRecentRoom(data.room.code, data.room.expiresAt);
       } else {
         setError(data.error || "Failed to load room");
         if (!isSilent) handleLeaveRoom();
@@ -542,6 +571,70 @@ export default function ClipboardPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Recent Rooms Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowRecentDropdown(!showRecentDropdown)}
+                className={`p-2 rounded-xl border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1.5`}
+                title="Recent Rooms"
+              >
+                <Clock size={13} className="text-gray-400" />
+                <span>Recent</span>
+              </button>
+
+              {showRecentDropdown && (
+                <>
+                  {/* Backdrop to close on click outside */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowRecentDropdown(false)}
+                  />
+                  <div className={`absolute right-0 mt-2 w-56 rounded-2xl border ${borderLight} ${dk ? "bg-[#090b0e] shadow-2xl" : "bg-[#EDEAE0] shadow-xl"} p-2.5 z-50`}>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-gray-500 mb-2 px-1 select-none">
+                      Recent Rooms
+                    </div>
+                    <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-none">
+                      {recentRooms.length === 0 ? (
+                        <div className="text-gray-500 text-xs py-3 text-center">No recent rooms</div>
+                      ) : (
+                        recentRooms.map((room) => {
+                          const expirationTime = new Date(room.expiresAt).getTime();
+                          const isActive = Date.now() < expirationTime;
+
+                          return (
+                            <button
+                              key={room.code}
+                              disabled={!isActive}
+                              onClick={() => {
+                                setShowRecentDropdown(false);
+                                joinRoom(room.code);
+                              }}
+                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors text-xs ${
+                                isActive 
+                                  ? "hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-gray-900 dark:text-white" 
+                                  : "opacity-40 cursor-not-allowed text-gray-500 dark:text-gray-600"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-[#F28500]">{room.code}</span>
+                              </div>
+                              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                isActive
+                                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                  : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                              }`}>
+                                {isActive ? "ACTIVE" : "EXPIRED"}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors cursor-pointer`}
