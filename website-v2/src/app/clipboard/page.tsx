@@ -26,7 +26,8 @@ import {
   UploadCloud,
   X,
   FileSpreadsheet,
-  FileCode
+  FileCode,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 
@@ -90,6 +91,10 @@ export default function ClipboardPage() {
 
   // Expiration countdown
   const [timeLeft, setTimeLeft] = useState("");
+
+  // Search & Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<"all" | "text" | "image" | "file">("all");
 
   // Initialize Session ID
   useEffect(() => {
@@ -902,174 +907,241 @@ export default function ClipboardPage() {
             </div>
 
             {/* Items Feed - Spans full remaining page width */}
-            <div className="flex-1 flex flex-col min-h-0 min-w-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2 select-none">
-                  Clipboard Feed ({items.length})
-                  <button 
-                    onClick={() => fetchRoomDetails(currentRoom.code)}
-                    className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-white transition-all cursor-pointer"
-                    title="Reload feed"
-                  >
-                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                  </button>
-                </div>
-              </div>
+            {(() => {
+              const filteredItems = items.filter((item) => {
+                // 1. Search filter
+                const matchesSearch = 
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  item.content.toLowerCase().includes(searchQuery.toLowerCase());
 
-              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-10">
-                <AnimatePresence initial={false}>
-                  {items.length === 0 ? (
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className={`h-60 rounded-3xl border ${borderLight} border-dashed flex flex-col items-center justify-center gap-3 text-xs ${textSecondary}`}
-                    >
-                      <Clipboard size={24} className="stroke-[1.5] text-[#F28500]/40" />
-                      <span>This room's clipboard is empty.</span>
-                    </motion.div>
-                  ) : (
-                    items.map((item) => {
-                      const fileItem = parseFileItem(item.content);
-                      const isExpanded = !!expandedItems[item.id];
+                if (!matchesSearch) return false;
 
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => toggleExpand(item.id)}
-                          className={`rounded-[18px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-black/[0.015] hover:bg-black/[0.03]"} transition-all cursor-pointer overflow-hidden`}
+                // 2. Category filter
+                const fileItem = parseFileItem(item.content);
+                if (filterCategory === "all") return true;
+                if (filterCategory === "text") return !fileItem;
+                
+                if (fileItem) {
+                  if (filterCategory === "image") {
+                    return fileItem.fileType.startsWith("image/");
+                  }
+                  if (filterCategory === "file") {
+                    return !fileItem.fileType.startsWith("image/");
+                  }
+                }
+                return false;
+              });
+
+              return (
+                <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                  {/* Top Feed Header / Search */}
+                  <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2 select-none">
+                      Clipboard Feed ({filteredItems.length})
+                      <button 
+                        onClick={() => fetchRoomDetails(currentRoom.code)}
+                        className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-white transition-all cursor-pointer"
+                        title="Reload feed"
+                      >
+                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                      </button>
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="relative w-full md:w-60">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <Search size={12} className="text-gray-400" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Search items..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={`w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA]`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filter Categories Pills */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {[
+                      { id: "all", label: "All Items" },
+                      { id: "text", label: "Texts" },
+                      { id: "image", label: "Images" },
+                      { id: "file", label: "Files" },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setFilterCategory(cat.id as any)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
+                          filterCategory === cat.id
+                            ? "bg-[#F28500]/10 text-[#F28500] border-[#F28500]/30"
+                            : `${borderLight} bg-black/5 dark:bg-white/5 text-gray-500 hover:text-white hover:bg-black/10`
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Feed Scrollable List */}
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-10">
+                    <AnimatePresence initial={false}>
+                      {filteredItems.length === 0 ? (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className={`h-60 rounded-3xl border ${borderLight} border-dashed flex flex-col items-center justify-center gap-3 text-xs ${textSecondary}`}
                         >
-                          {/* Top row */}
-                          <div className="p-4 flex items-center justify-between gap-3">
-                            {/* Title / Info */}
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="text-[#F28500] font-mono text-[11px] font-bold shrink-0">&gt;_</span>
-                              <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
-                                {item.title}
-                              </h4>
-                              {fileItem && (
-                                <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
-                                  dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
-                                }`}>
-                                  FILE • {formatBytes(fileItem.fileSize)}
-                                </span>
-                              )}
-                            </div>
+                          <Clipboard size={24} className="stroke-[1.5] text-[#F28500]/40" />
+                          <span>No items found matching your filters.</span>
+                        </motion.div>
+                      ) : (
+                        filteredItems.map((item) => {
+                          const fileItem = parseFileItem(item.content);
+                          const isExpanded = !!expandedItems[item.id];
 
-                            {/* Action Items */}
-                            <div className="flex items-center gap-3 shrink-0">
-                              {fileItem ? (
-                                <a
-                                  href={`/api/clipboard/download?id=${item.id}`}
-                                  download={fileItem.fileName}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="text-gray-400 hover:text-white transition-colors"
-                                  title="Download file"
-                                >
-                                  <Download size={13} className="text-[#F28500]" />
-                                </a>
-                              ) : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); copyItemContent(item.id, item.content); }}
-                                  className="text-gray-400 hover:text-white transition-colors"
-                                  title="Copy content"
-                                >
-                                  {copiedItemId === item.id ? (
-                                    <Check size={13} className="text-[#468FEA]" />
-                                  ) : (
-                                    <Copy size={13} />
-                                  )}
-                                </button>
-                              )}
-
-                              {isHost && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                                  className="text-gray-400 hover:text-rose-500 transition-colors"
-                                  title="Delete Item"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              )}
-
-                              {/* Chevron Expand Icon */}
-                              <svg 
-                                width="10" 
-                                height="10" 
-                                viewBox="0 0 24 24" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                strokeWidth="2.5" 
-                                className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                              >
-                                <path d="m6 9 6 6 6-6"/>
-                              </svg>
-                            </div>
-                          </div>
-
-                          {/* Expanded code preview */}
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="px-4 pb-4">
-                                  {fileItem ? (
-                                    <div className={`rounded-[16px] border p-4 ${
-                                      dk ? "border-[#F28500]/25 bg-black/40" : "border-[#F28500]/20 bg-[#F28500]/5"
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => toggleExpand(item.id)}
+                              className={`rounded-[18px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-black/[0.015] hover:bg-black/[0.03]"} transition-all cursor-pointer overflow-hidden`}
+                            >
+                              {/* Top row */}
+                              <div className="p-4 flex items-center justify-between gap-3">
+                                {/* Title / Info */}
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-[#F28500] font-mono text-[11px] font-bold shrink-0">&gt;_</span>
+                                  <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
+                                    {item.title}
+                                  </h4>
+                                  {fileItem && (
+                                    <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
+                                      dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
                                     }`}>
-                                      {fileItem.fileType.startsWith("image/") ? (
-                                        <div className={`flex flex-col items-center justify-center rounded-xl overflow-hidden max-h-96 p-1 ${
-                                          dk ? "bg-black/30" : "bg-[#F28500]/10"
+                                      FILE • {formatBytes(fileItem.fileSize)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Action Items */}
+                                <div className="flex items-center gap-3 shrink-0">
+                                  {fileItem ? (
+                                    <a
+                                      href={`/api/clipboard/download?id=${item.id}`}
+                                      download={fileItem.fileName}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-gray-400 hover:text-white transition-colors"
+                                      title="Download file"
+                                    >
+                                      <Download size={13} className="text-[#F28500]" />
+                                    </a>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); copyItemContent(item.id, item.content); }}
+                                      className="text-gray-400 hover:text-white transition-colors"
+                                      title="Copy content"
+                                    >
+                                      {copiedItemId === item.id ? (
+                                        <Check size={13} className="text-[#468FEA]" />
+                                      ) : (
+                                        <Copy size={13} />
+                                      )}
+                                    </button>
+                                  )}
+
+                                  {isHost && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
+                                      className="text-gray-400 hover:text-rose-500 transition-colors"
+                                      title="Delete Item"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  )}
+
+                                  {/* Chevron Expand Icon */}
+                                  <svg 
+                                    width="10" 
+                                    height="10" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    strokeWidth="2.5" 
+                                    className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                  >
+                                    <path d="m6 9 6 6 6-6"/>
+                                  </svg>
+                                </div>
+                              </div>
+
+                              {/* Expanded code preview */}
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="px-4 pb-4">
+                                      {fileItem ? (
+                                        <div className={`rounded-[16px] border p-4 ${
+                                          dk ? "border-[#F28500]/25 bg-black/40" : "border-[#F28500]/20 bg-[#F28500]/5"
                                         }`}>
-                                          <img 
-                                            src={`/api/clipboard/download?id=${item.id}`}
-                                            alt={fileItem.fileName}
-                                            className="max-h-80 max-w-full object-contain rounded-lg shadow-sm"
-                                          />
+                                          {fileItem.fileType.startsWith("image/") ? (
+                                            <div className={`flex flex-col items-center justify-center rounded-xl overflow-hidden max-h-96 p-1 ${
+                                              dk ? "bg-black/30" : "bg-[#F28500]/10"
+                                            }`}>
+                                              <img 
+                                                src={`/api/clipboard/download?id=${item.id}`}
+                                                alt={fileItem.fileName}
+                                                className="max-h-80 max-w-full object-contain rounded-lg shadow-sm"
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-3">
+                                              <div className={`p-3 rounded-xl border ${
+                                                dk ? "bg-white/5 border-white/5" : "bg-white/60 border-[#F28500]/20"
+                                              }`}>
+                                                {getFileIcon(fileItem.fileType, fileItem.fileName)}
+                                              </div>
+                                              <div className="min-w-0">
+                                                <div className={`text-xs font-bold font-mono truncate ${
+                                                  dk ? "text-white" : "text-gray-900"
+                                                }`}>{fileItem.fileName}</div>
+                                                <div className={`text-[10px] font-mono mt-0.5 ${
+                                                  dk ? "text-gray-400" : "text-gray-600"
+                                                }`}>{fileItem.fileType || "Unknown Type"}</div>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       ) : (
-                                        <div className="flex items-center gap-3">
-                                          <div className={`p-3 rounded-xl border ${
-                                            dk ? "bg-white/5 border-white/5" : "bg-white/60 border-[#F28500]/20"
+                                        <div className={`rounded-[16px] border p-4 overflow-hidden ${
+                                          dk ? "border-[#468FEA]/25 bg-black/40" : "border-[#468FEA]/20 bg-[#468FEA]/5"
+                                        }`}>
+                                          <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
+                                            dk ? "text-[#a5d6ff]" : "text-gray-800"
                                           }`}>
-                                            {getFileIcon(fileItem.fileType, fileItem.fileName)}
-                                          </div>
-                                          <div className="min-w-0">
-                                            <div className={`text-xs font-bold font-mono truncate ${
-                                              dk ? "text-white" : "text-gray-900"
-                                            }`}>{fileItem.fileName}</div>
-                                            <div className={`text-[10px] font-mono mt-0.5 ${
-                                              dk ? "text-gray-400" : "text-gray-600"
-                                            }`}>{fileItem.fileType || "Unknown Type"}</div>
-                                          </div>
+                                            <code className="theme-adaptive">{item.content}</code>
+                                          </pre>
                                         </div>
                                       )}
                                     </div>
-                                  ) : (
-                                    <div className={`rounded-[16px] border p-4 overflow-hidden ${
-                                      dk ? "border-[#468FEA]/25 bg-black/40" : "border-[#468FEA]/20 bg-[#468FEA]/5"
-                                    }`}>
-                                      <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
-                                        dk ? "text-[#a5d6ff]" : "text-gray-800"
-                                      }`}>
-                                        <code className="theme-adaptive">{item.content}</code>
-                                      </pre>
-                                    </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              );
+            })()}
 
           </div>
         )}
