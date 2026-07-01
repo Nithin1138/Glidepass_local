@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Copy, 
@@ -17,7 +17,16 @@ import {
   Clipboard,
   Sparkles,
   RefreshCw,
-  Trash2
+  Trash2,
+  FileText,
+  File,
+  Image as ImageIcon,
+  Archive,
+  Download,
+  UploadCloud,
+  X,
+  FileSpreadsheet,
+  FileCode
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,7 +42,7 @@ interface ClipboardItem {
   id: string;
   roomCode: string;
   title: string;
-  content: string;
+  content: string; // Plain text or JSON string for files: { isFile: true, fileName: string, fileType: string, fileSize: number, data: string }
   createdAt?: string;
 }
 
@@ -62,19 +71,24 @@ export default function ClipboardPage() {
   const [allowAllMembers, setAllowAllMembers] = useState(true);
 
   // Add Item States
+  const [uploadMode, setUploadMode] = useState<"text" | "file">("text");
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [addingItem, setAddingItem] = useState(false);
 
-  // Copy states
+  // File Upload States
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [stagedFileBase64, setStagedFileBase64] = useState<string>("");
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Copy/Expand states
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedItemId, setCopiedItemId] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // Expiration countdown
   const [timeLeft, setTimeLeft] = useState("");
-
-  // Expand state for long items
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // Initialize Session ID
   useEffect(() => {
@@ -134,6 +148,31 @@ export default function ClipboardPage() {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [currentRoom]);
+
+  // Listen to clipboard paste events for quick file upload
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!currentRoom || !canAddItems) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) {
+            setUploadMode("file");
+            stageFile(file);
+            e.preventDefault();
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [currentRoom, sessionId, currentRoom?.allowAllMembersToAdd]);
 
   const fetchRoomDetails = async (code: string, isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -197,9 +236,92 @@ export default function ClipboardPage() {
     joinRoom(roomCodeInput.trim().toUpperCase());
   };
 
+  // Convert staged file to Base64 and stage it
+  const stageFile = (file: File) => {
+    // 10MB limit check
+    const limitBytes = 10 * 1024 * 1024;
+    if (file.size > limitBytes) {
+      setError("File exceeds 10MB limit. Please choose a smaller file.");
+      return;
+    }
+
+    setStagedFile(file);
+    setError("");
+    if (!newTitle) {
+      setNewTitle(file.name);
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setStagedFileBase64(event.target.result as string);
+      }
+    };
+    reader.onerror = () => {
+      setError("Failed to read selected file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      stageFile(e.target.files[0]);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      stageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const clearStagedFile = () => {
+    setStagedFile(null);
+    setStagedFileBase64("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentRoom || !newContent.trim()) return;
+    if (!currentRoom) return;
+
+    let finalContent = "";
+    let finalTitle = newTitle.trim();
+
+    if (uploadMode === "text") {
+      if (!newContent.trim()) return;
+      finalContent = newContent;
+      if (!finalTitle) finalTitle = "Text Snippet";
+    } else {
+      if (!stagedFile || !stagedFileBase64) {
+        setError("Please select or drop a file to upload.");
+        return;
+      }
+      finalContent = JSON.stringify({
+        isFile: true,
+        fileName: stagedFile.name,
+        fileType: stagedFile.type,
+        fileSize: stagedFile.size,
+        data: stagedFileBase64
+      });
+      if (!finalTitle) finalTitle = stagedFile.name;
+    }
 
     setAddingItem(true);
     setError("");
@@ -210,8 +332,8 @@ export default function ClipboardPage() {
         body: JSON.stringify({
           action: "add-item",
           roomCode: currentRoom.code,
-          title: newTitle.trim() || "Untitled Item",
-          content: newContent,
+          title: finalTitle,
+          content: finalContent,
           sessionId
         })
       });
@@ -219,6 +341,7 @@ export default function ClipboardPage() {
       if (data.success) {
         setNewTitle("");
         setNewContent("");
+        clearStagedFile();
         fetchRoomDetails(currentRoom.code);
       } else {
         setError(data.error || "Failed to add item");
@@ -229,30 +352,6 @@ export default function ClipboardPage() {
     } finally {
       setAddingItem(false);
     }
-  };
-
-  const handleLeaveRoom = () => {
-    setCurrentRoom(null);
-    setItems([]);
-    window.location.hash = "";
-  };
-
-  const copyRoomCode = () => {
-    if (!currentRoom) return;
-    const url = `${window.location.origin}/clipboard#${currentRoom.code}`;
-    navigator.clipboard.writeText(url);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const copyItemContent = (itemId: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedItemId(itemId);
-    setTimeout(() => setCopiedItemId(null), 2000);
-  };
-
-  const toggleExpand = (itemId: string) => {
-    setExpandedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleDeleteItem = async (itemId: string) => {
@@ -279,6 +378,68 @@ export default function ClipboardPage() {
       console.error(e);
       setError("Failed to delete clipboard item.");
     }
+  };
+
+  const handleLeaveRoom = () => {
+    setCurrentRoom(null);
+    setItems([]);
+    clearStagedFile();
+    window.location.hash = "";
+  };
+
+  const copyRoomCode = () => {
+    if (!currentRoom) return;
+    const url = `${window.location.origin}/clipboard#${currentRoom.code}`;
+    navigator.clipboard.writeText(url);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const copyItemContent = (itemId: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedItemId(itemId);
+    setTimeout(() => setCopiedItemId(null), 2000);
+  };
+
+  const toggleExpand = (itemId: string) => {
+    setExpandedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  // Helper to parse file item data
+  const parseFileItem = (content: string) => {
+    try {
+      if (content.startsWith('{"isFile":true')) {
+        return JSON.parse(content) as { isFile: boolean; fileName: string; fileType: string; fileSize: number; data: string };
+      }
+    } catch (e) {}
+    return null;
+  };
+
+  // Get matching file icon
+  const getFileIcon = (fileType: string, fileName: string) => {
+    const lowerType = fileType.toLowerCase();
+    const extension = fileName.split('.').pop()?.toLowerCase() || "";
+
+    if (lowerType.startsWith("image/")) return <ImageIcon size={28} className="text-[#F28500]" />;
+    if (lowerType.includes("pdf") || extension === "pdf") return <FileText size={28} className="text-rose-500" />;
+    if (lowerType.includes("zip") || lowerType.includes("tar") || ["zip", "tar", "gz", "rar", "7z"].includes(extension)) {
+      return <Archive size={28} className="text-amber-500" />;
+    }
+    if (lowerType.includes("spreadsheet") || lowerType.includes("excel") || ["xls", "xlsx", "csv"].includes(extension)) {
+      return <FileSpreadsheet size={28} className="text-emerald-500" />;
+    }
+    if (lowerType.includes("javascript") || lowerType.includes("typescript") || lowerType.includes("html") || ["js", "ts", "html", "css", "py", "cpp", "json"].includes(extension)) {
+      return <FileCode size={28} className="text-[#468FEA]" />;
+    }
+    return <File size={28} className="text-gray-400" />;
   };
 
   const isHost = currentRoom && currentRoom.hostSessionId === sessionId;
@@ -349,7 +510,7 @@ export default function ClipboardPage() {
                   <h2 className="text-xl font-bold font-outfit">Join Room</h2>
                 </div>
                 <p className={`text-xs ${textSecondary} mb-8 leading-relaxed`}>
-                  Enter a 6-character room code to join an active online clipboard. Access shared snippets instantly.
+                  Enter a 6-character room code to join an active online clipboard. Access shared snippets and files instantly.
                 </p>
 
                 <form onSubmit={handleJoinSubmit} className="space-y-5">
@@ -512,12 +673,12 @@ export default function ClipboardPage() {
                       {currentRoom.allowAllMembersToAdd ? (
                         <>
                           <Unlock size={12} className="text-emerald-500" />
-                          <span className="text-emerald-500">Everyone can add items</span>
+                          <span className="text-emerald-500">Everyone can add</span>
                         </>
                       ) : (
                         <>
                           <Lock size={12} className="text-[#F28500]" />
-                          <span className="text-[#F28500]">Only host can add items</span>
+                          <span className="text-[#F28500]">Only host can add</span>
                         </>
                       )}
                     </div>
@@ -539,35 +700,111 @@ export default function ClipboardPage() {
               {/* Add Item Form (Visible if allowed) */}
               {canAddItems ? (
                 <div className={`p-6 rounded-[28px] border ${borderLight} ${clayBg} space-y-4 shadow-lg`}>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
+                    
+                    {/* Mode Toggle */}
+                    <div className="flex rounded-lg border border-black/10 dark:border-white/10 overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-[9px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => { setUploadMode("text"); setError(""); }}
+                        className={`px-2 py-1 rounded transition-all cursor-pointer ${uploadMode === "text" ? "bg-[#468FEA] text-white" : "text-gray-400"}`}
+                      >
+                        Text/Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setUploadMode("file"); setError(""); }}
+                        className={`px-2 py-1 rounded transition-all cursor-pointer ${uploadMode === "file" ? "bg-[#F28500] text-white" : "text-gray-400"}`}
+                      >
+                        File/Image
+                      </button>
+                    </div>
+                  </div>
                   
                   <form onSubmit={handleAddItem} className="space-y-4">
                     <div>
                       <input 
                         type="text" 
-                        placeholder="Title (e.g. Command, Draft)" 
+                        placeholder={uploadMode === "text" ? "Title (optional)" : "File Display Title (optional)"}
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
                         className={`w-full px-3 py-2.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA]`}
                       />
                     </div>
-                    <div>
-                      <textarea 
-                        rows={5}
-                        placeholder="Paste content here..." 
-                        value={newContent}
-                        onChange={(e) => setNewContent(e.target.value)}
-                        required
-                        className={`w-full px-3 py-2.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA] font-mono`}
-                      />
-                    </div>
+
+                    {uploadMode === "text" ? (
+                      <div>
+                        <textarea 
+                          rows={5}
+                          placeholder="Paste content here..." 
+                          value={newContent}
+                          onChange={(e) => setNewContent(e.target.value)}
+                          required
+                          className={`w-full px-3 py-2.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA] font-mono`}
+                        />
+                      </div>
+                    ) : (
+                      /* File Drag-and-drop zone */
+                      <div className="space-y-3">
+                        <div 
+                          onDragEnter={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDragOver={handleDrag}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                            dragActive 
+                              ? "border-[#F28500] bg-[#F28500]/5 shadow-[0_0_15px_rgba(242,133,0,0.1)]" 
+                              : `${borderLight} hover:border-[#468FEA]/50 bg-black/5 dark:bg-white/5`
+                          }`}
+                        >
+                          <input 
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            accept="*/*"
+                          />
+                          <UploadCloud size={28} className={dragActive ? "text-[#F28500]" : "text-gray-400"} />
+                          <div className="text-[10px] font-bold">
+                            Drag & drop file or <span className="text-[#468FEA] hover:underline">browse</span>
+                          </div>
+                          <div className="text-[8px] text-gray-500 leading-normal">
+                            Supports PDF, DOCX, ZIP, PNG, JPG, etc. (Max 10MB)
+                          </div>
+                        </div>
+
+                        {stagedFile && (
+                          <div className="flex items-center justify-between p-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {getFileIcon(stagedFile.type, stagedFile.name)}
+                              <div className="min-w-0">
+                                <div className="text-[10px] font-bold truncate">{stagedFile.name}</div>
+                                <div className="text-[8px] text-gray-500">{formatBytes(stagedFile.size)}</div>
+                              </div>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={clearStagedFile}
+                              className="p-1 hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <button 
                       type="submit"
-                      disabled={addingItem || !newContent.trim()}
-                      className="w-full py-2.5 rounded-xl bg-[#468FEA] text-white font-bold text-xs hover:bg-[#3b7dc9] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      disabled={addingItem || (uploadMode === "text" ? !newContent.trim() : !stagedFile)}
+                      className={`w-full py-2.5 rounded-xl text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer ${
+                        uploadMode === "text" ? "bg-[#468FEA] hover:bg-[#3b7dc9]" : "bg-[#F28500] hover:bg-[#d97700]"
+                      }`}
                     >
                       <Plus size={14} />
-                      {addingItem ? "Adding..." : "Add Item"}
+                      {addingItem ? "Uploading..." : uploadMode === "text" ? "Add Text" : "Upload File"}
                     </button>
                   </form>
                 </div>
@@ -607,9 +844,10 @@ export default function ClipboardPage() {
                     </motion.div>
                   ) : (
                     items.map((item) => {
+                      const fileItem = parseFileItem(item.content);
                       const isExpanded = !!expandedItems[item.id];
                       const lines = item.content.split("\n");
-                      const hasManyLines = lines.length > 2 || item.content.length > 120;
+                      const hasManyLines = !fileItem && (lines.length > 2 || item.content.length > 120);
 
                       return (
                         <motion.div
@@ -620,26 +858,52 @@ export default function ClipboardPage() {
                           className={`p-5 rounded-[28px] border ${borderLight} ${clayBg} group relative flex flex-col justify-between shadow-md hover:shadow-lg transition-all`}
                         >
                           <div>
+                            {/* Card Header */}
                             <div className="flex items-start justify-between gap-4 mb-3">
-                              <h3 className="text-xs font-black text-[#F28500] font-outfit uppercase tracking-wider">{item.title}</h3>
+                              <div className="min-w-0">
+                                <h3 className="text-xs font-black text-[#F28500] font-outfit uppercase tracking-wider truncate">
+                                  {item.title}
+                                </h3>
+                                {fileItem && (
+                                  <span className="text-[9px] text-gray-500 font-mono">
+                                    File Upload • {formatBytes(fileItem.fileSize)}
+                                  </span>
+                                )}
+                              </div>
+                              
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => copyItemContent(item.id, item.content)}
-                                  className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#468FEA] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
-                                  title="Copy Content"
-                                >
-                                  {copiedItemId === item.id ? (
-                                    <>
-                                      <Check size={12} className="text-emerald-500" />
-                                      <span className="text-emerald-500">Copied!</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Copy size={12} className="text-gray-400 group-hover:text-white" />
-                                      <span>Copy</span>
-                                    </>
-                                  )}
-                                </button>
+                                {/* If it's a file, show download button */}
+                                {fileItem ? (
+                                  <a
+                                    href={fileItem.data}
+                                    download={fileItem.fileName}
+                                    className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#F28500] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
+                                    title="Download File"
+                                  >
+                                    <Download size={12} className="text-[#F28500]" />
+                                    <span>Download</span>
+                                  </a>
+                                ) : (
+                                  /* If it's text, show Copy button */
+                                  <button
+                                    onClick={() => copyItemContent(item.id, item.content)}
+                                    className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#468FEA] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
+                                    title="Copy Content"
+                                  >
+                                    {copiedItemId === item.id ? (
+                                      <>
+                                        <Check size={12} className="text-emerald-500" />
+                                        <span className="text-emerald-500">Copied!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy size={12} className="text-gray-400 group-hover:text-white" />
+                                        <span>Copy</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
                                 {isHost && (
                                   <button
                                     onClick={() => handleDeleteItem(item.id)}
@@ -651,19 +915,49 @@ export default function ClipboardPage() {
                                 )}
                               </div>
                             </div>
-                            <pre className={`text-xs font-mono bg-black/25 dark:bg-black/45 border border-white/5 p-4 rounded-2xl overflow-x-auto whitespace-pre-wrap break-all select-all text-gray-300 transition-all duration-300 ${
-                              isExpanded ? "max-h-none" : "max-h-16 overflow-hidden"
-                            }`}>
-                              {item.content}
-                            </pre>
-                            {hasManyLines && (
-                              <button
-                                onClick={() => toggleExpand(item.id)}
-                                className="text-[10px] font-bold text-[#468FEA] mt-2 hover:underline cursor-pointer flex items-center gap-1 select-none"
-                              >
-                                {isExpanded ? "Collapse" : "Tap to expand"}
-                              </button>
+
+                            {/* Card Content */}
+                            {fileItem ? (
+                              <div className="flex flex-col gap-3 p-4 rounded-2xl bg-black/20 dark:bg-black/40 border border-white/5">
+                                {/* Image preview or File details container */}
+                                {fileItem.fileType.startsWith("image/") ? (
+                                  <div className="flex flex-col items-center justify-center bg-black/30 rounded-xl overflow-hidden max-h-72 border border-white/5 p-1">
+                                    <img 
+                                      src={fileItem.data} 
+                                      alt={fileItem.fileName}
+                                      className="max-h-64 max-w-full object-contain rounded-lg shadow-sm"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-black/30 rounded-xl border border-white/5">
+                                      {getFileIcon(fileItem.fileType, fileItem.fileName)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold font-mono truncate">{fileItem.fileName}</div>
+                                      <div className="text-[10px] text-gray-500 font-mono mt-0.5">{fileItem.fileType || "Unknown Type"}</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                <pre className={`text-xs font-mono bg-black/25 dark:bg-black/45 border border-white/5 p-4 rounded-2xl overflow-x-auto whitespace-pre-wrap break-all select-all text-gray-300 transition-all duration-300 ${
+                                  isExpanded ? "max-h-none" : "max-h-16 overflow-hidden"
+                                }`}>
+                                  {item.content}
+                                </pre>
+                                {hasManyLines && (
+                                  <button
+                                    onClick={() => toggleExpand(item.id)}
+                                    className="text-[10px] font-bold text-[#468FEA] mt-2 hover:underline cursor-pointer flex items-center gap-1 select-none"
+                                  >
+                                    {isExpanded ? "Collapse" : "Tap to expand"}
+                                  </button>
+                                )}
+                              </>
                             )}
+
                           </div>
                         </motion.div>
                       );
