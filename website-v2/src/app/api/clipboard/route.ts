@@ -4,7 +4,10 @@ import {
   getClipboardRoom, 
   addClipboardItem, 
   getClipboardItems,
-  deleteClipboardItem
+  deleteClipboardItem,
+  touchActiveUser,
+  getActiveUsersCount,
+  updateRoomPermissions
 } from "@/lib/db";
 import crypto from "crypto";
 
@@ -25,6 +28,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code") || "";
+    const sessionId = searchParams.get("sessionId") || "";
     
     if (!code) {
       return NextResponse.json({ success: false, error: "Room code is required" }, { status: 400 });
@@ -35,8 +39,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
     }
 
+    if (sessionId) {
+      await touchActiveUser(code, sessionId);
+    }
+    const activeUsersCount = await getActiveUsersCount(code);
+
     const items = await getClipboardItems(code.toUpperCase());
-    return NextResponse.json({ success: true, room, items });
+    return NextResponse.json({ success: true, room, items, activeUsersCount });
   } catch (error: any) {
     console.error("GET Clipboard API error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -126,6 +135,27 @@ export async function POST(req: NextRequest) {
       }
 
       await deleteClipboardItem(itemId);
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "update-permissions") {
+      const { roomCode, allowAllMembersToAdd, sessionId } = body;
+
+      if (!roomCode || sessionId === undefined) {
+        return NextResponse.json({ success: false, error: "roomCode and sessionId are required" }, { status: 400 });
+      }
+
+      const room = await getClipboardRoom(roomCode.toUpperCase());
+      if (!room) {
+        return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
+      }
+
+      if (room.hostSessionId !== sessionId) {
+        return NextResponse.json({ success: false, error: "Only the room host can change permissions" }, { status: 403 });
+      }
+
+      await updateRoomPermissions(roomCode.toUpperCase(), !!allowAllMembersToAdd);
 
       return NextResponse.json({ success: true });
     }

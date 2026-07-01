@@ -482,6 +482,15 @@ export async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_clipboard_active_users (
+        room_code TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        last_active TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (room_code, session_id)
+      );
+    `);
+
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
   } catch (error) {
@@ -2667,6 +2676,80 @@ export async function getClipboardItemById(id: string): Promise<ClipboardItem | 
     const data = await readClipboardFile();
     const found = data.items.find(i => i.id === id);
     return found || null;
+  }
+}
+
+export async function updateRoomPermissions(code: string, allowAllMembersToAdd: boolean): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `UPDATE vit_clipboard_rooms 
+       SET allow_all_members_to_add = $1 
+       WHERE code = $2`,
+      [allowAllMembersToAdd, code.toUpperCase()]
+    );
+  } else {
+    const data = await readClipboardFile();
+    const idx = data.rooms.findIndex(r => r.code.toUpperCase() === code.toUpperCase());
+    if (idx !== -1) {
+      data.rooms[idx].allowAllMembersToAdd = allowAllMembersToAdd;
+      await writeClipboardFile(data);
+    }
+  }
+}
+
+export async function touchActiveUser(roomCode: string, sessionId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `INSERT INTO vit_clipboard_active_users (room_code, session_id, last_active)
+       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (room_code, session_id)
+       DO UPDATE SET last_active = CURRENT_TIMESTAMP`,
+      [roomCode.toUpperCase(), sessionId]
+    );
+  } else {
+    const globalRef = globalThis as any;
+    if (!globalRef.activeUsersMap) {
+      globalRef.activeUsersMap = new Map<string, Map<string, number>>();
+    }
+    const roomMap = globalRef.activeUsersMap.get(roomCode.toUpperCase()) || new Map<string, number>();
+    roomMap.set(sessionId, Date.now());
+    globalRef.activeUsersMap.set(roomCode.toUpperCase(), roomMap);
+  }
+}
+
+export async function getActiveUsersCount(roomCode: string): Promise<number> {
+  if (pool) {
+    await initDb();
+    const cutoff = new Date(Date.now() - 15000);
+    await pool.query(
+      `DELETE FROM vit_clipboard_active_users WHERE last_active < $1`,
+      [cutoff]
+    );
+    const res = await pool.query(
+      `SELECT COUNT(DISTINCT session_id) as count 
+       FROM vit_clipboard_active_users 
+       WHERE room_code = $1`,
+      [roomCode.toUpperCase()]
+    );
+    return parseInt(res.rows[0].count, 10);
+  } else {
+    const globalRef = globalThis as any;
+    if (!globalRef.activeUsersMap) return 0;
+    const roomMap = globalRef.activeUsersMap.get(roomCode.toUpperCase());
+    if (!roomMap) return 0;
+    
+    const now = Date.now();
+    let count = 0;
+    for (const [sessId, lastTime] of roomMap.entries()) {
+      if (now - lastTime < 15000) {
+        count++;
+      } else {
+        roomMap.delete(sessId);
+      }
+    }
+    return count;
   }
 }
 

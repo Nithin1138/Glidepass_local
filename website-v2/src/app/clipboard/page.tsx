@@ -95,6 +95,7 @@ export default function ClipboardPage() {
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | "text" | "image" | "file">("all");
+  const [activeUsers, setActiveUsers] = useState(1);
 
   // Recent Rooms States
   interface RecentRoom {
@@ -212,11 +213,14 @@ export default function ClipboardPage() {
     if (!isSilent) setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/clipboard?code=${code}`);
+      const res = await fetch(`/api/clipboard?code=${code}&sessionId=${sessionId}`);
       const data = await res.json();
       if (data.success) {
         setCurrentRoom(data.room);
         setItems(data.items || []);
+        if (data.activeUsersCount !== undefined) {
+          setActiveUsers(data.activeUsersCount);
+        }
         window.location.hash = code;
         saveRecentRoom(data.room.code, data.room.expiresAt);
       } else {
@@ -263,6 +267,31 @@ export default function ClipboardPage() {
   const joinRoom = async (code: string) => {
     if (!code) return;
     await fetchRoomDetails(code);
+  };
+
+  const toggleRoomPermissions = async () => {
+    if (!currentRoom || !isHost) return;
+    try {
+      const nextVal = !currentRoom.allowAllMembersToAdd;
+      const res = await fetch("/api/clipboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update-permissions",
+          roomCode: currentRoom.code,
+          allowAllMembersToAdd: nextVal,
+          sessionId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentRoom(prev => prev ? { ...prev, allowAllMembersToAdd: nextVal } : null);
+      } else {
+        setError(data.error || "Failed to update permissions");
+      }
+    } catch (e) {
+      setError("Network error updating permissions");
+    }
   };
 
   const handleJoinSubmit = (e: React.FormEvent) => {
@@ -724,11 +753,12 @@ export default function ClipboardPage() {
                 <form onSubmit={handleCreateRoom} className="space-y-5">
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider font-bold mb-2 text-[#F28500]">Expiration Duration</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[
                         { label: "30 Mins", value: 30 },
                         { label: "1 Hour", value: 60 },
-                        { label: "2 Hours", value: 120 }
+                        { label: "2 Hours", value: 120 },
+                        { label: "6 Hours", value: 360 }
                       ].map((opt) => (
                         <button
                           key={opt.value}
@@ -820,12 +850,19 @@ export default function ClipboardPage() {
 
                 <div className="h-px bg-black/10 dark:bg-white/10" />
 
-                <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-3 gap-4 text-xs">
                   <div>
                     <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Expires In</div>
                     <div className="font-bold flex items-center gap-1 mt-1 text-[#F28500]">
                       <Clock size={12} />
                       {timeLeft}
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Active Users</div>
+                    <div className="font-bold flex items-center gap-1 mt-1 text-emerald-500">
+                      <Users size={12} />
+                      <span>{activeUsers} active</span>
                     </div>
                   </div>
                   <div>
@@ -837,19 +874,39 @@ export default function ClipboardPage() {
                 <div className="grid grid-cols-1 gap-2 text-xs">
                   <div>
                     <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Permissions</div>
-                    <div className="font-bold flex items-center gap-1.5 mt-1">
-                      {currentRoom.allowAllMembersToAdd ? (
-                        <>
-                          <Unlock size={12} className="text-emerald-500" />
-                          <span className="text-emerald-500">Everyone can add</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock size={12} className="text-[#F28500]" />
-                          <span className="text-[#F28500]">Only host can add</span>
-                        </>
-                      )}
-                    </div>
+                    {isHost ? (
+                      <button
+                        onClick={toggleRoomPermissions}
+                        className="font-bold flex items-center gap-1.5 mt-1 hover:opacity-80 transition-opacity text-left cursor-pointer"
+                        title="Click to toggle permissions"
+                      >
+                        {currentRoom.allowAllMembersToAdd ? (
+                          <>
+                            <Unlock size={12} className="text-emerald-500" />
+                            <span className="text-emerald-500">Everyone can add (Toggle)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock size={12} className="text-[#F28500]" />
+                            <span className="text-[#F28500]">Only host can add (Toggle)</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="font-bold flex items-center gap-1.5 mt-1">
+                        {currentRoom.allowAllMembersToAdd ? (
+                          <>
+                            <Unlock size={12} className="text-emerald-500" />
+                            <span className="text-emerald-500">Everyone can add</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock size={12} className="text-[#F28500]" />
+                            <span className="text-[#F28500]">Only host can add</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
