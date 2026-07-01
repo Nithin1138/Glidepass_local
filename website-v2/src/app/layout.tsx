@@ -18,8 +18,34 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LANpad | Intelligent Input Orchestration",
-  description: "Turn your phone into a low-latency input companion. High-fidelity text transfer, realistic typing simulation, and local-only security.",
+  title: "LANpad - Share Clipboard, Files & Text Instantly",
+  description: "Quickly copy and paste text, share files, and link your devices on your local network. Private, secure, and works instantly without setup.",
+  openGraph: {
+    title: "LANpad - Share Clipboard, Files & Text Instantly",
+    description: "Quickly copy and paste text, share files, and link your devices on your local network. Private, secure, and works instantly without setup.",
+    url: "https://www.lanpad.app",
+    siteName: "LANpad",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 600,
+        alt: "LANpad Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LANpad - Share Clipboard, Files & Text Instantly",
+    description: "Quickly copy and paste text, share files, and link your devices on your local network. Private, secure, and works instantly without setup.",
+    images: ["/logo.png"],
+  },
+  icons: {
+    icon: "/logo-favicon.png",
+    apple: "/logo-favicon.png",
+  },
 };
 
 export default function RootLayout({
