@@ -3,8 +3,6 @@ import { getClipboardRoom, addClipboardItem } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { Readable } from "stream";
-import { finished } from "stream/promises";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +17,13 @@ export async function POST(req: NextRequest) {
     const fileSizeStr = searchParams.get("fileSize") || "0";
     const fileSize = parseInt(fileSizeStr, 10);
 
-    if (!roomCode || !sessionId || !fileName) {
-      return NextResponse.json({ success: false, error: "Missing required query parameters" }, { status: 400 });
+    // Chunking params
+    const uploadId = searchParams.get("uploadId") || "";
+    const chunkIndexStr = searchParams.get("chunkIndex") || "";
+    const totalChunksStr = searchParams.get("totalChunks") || "";
+
+    if (!roomCode || !sessionId || !fileName || !uploadId) {
+      return NextResponse.json({ success: false, error: "Missing required upload parameters" }, { status: 400 });
     }
 
     const room = await getClipboardRoom(roomCode.toUpperCase());
@@ -39,43 +42,58 @@ export async function POST(req: NextRequest) {
     const uploadDir = isServerless ? "/tmp/glidepass_uploads" : path.join(process.cwd(), "data", "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
 
-    // Generate unique local file path
-    const fileId = crypto.randomUUID();
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const localFilePath = path.join(uploadDir, `${fileId}-${safeFileName}`);
+    // Path for temporary partial file
+    const safeUploadId = uploadId.replace(/[^a-zA-Z0-9-]/g, "");
+    const tempFilePath = path.join(uploadDir, `${safeUploadId}.part`);
 
-    // Stream request body directly to disk (bypasses Next.js 413 body size limit)
-    const webStream = req.body;
-    if (!webStream) {
-      return NextResponse.json({ success: false, error: "Empty request body" }, { status: 400 });
+    // Parse chunk index and total chunks
+    const chunkIndex = parseInt(chunkIndexStr, 10);
+    const totalChunks = parseInt(totalChunksStr, 10);
+
+    // Read chunk bytes from request body
+    const chunkArrayBuffer = await req.arrayBuffer();
+    const chunkBuffer = Buffer.from(chunkArrayBuffer);
+
+    // Append chunk to partial file
+    if (chunkIndex === 0) {
+      // First chunk: overwrite/create clean file
+      fs.writeFileSync(tempFilePath, chunkBuffer);
+    } else {
+      // Subsequent chunks: append
+      fs.appendFileSync(tempFilePath, chunkBuffer);
     }
 
-    const nodeStream = Readable.fromWeb(webStream as any);
-    const writeStream = fs.createWriteStream(localFilePath);
-    nodeStream.pipe(writeStream);
+    // If it's the last chunk, finalize the file
+    if (chunkIndex === totalChunks - 1) {
+      const finalFileId = crypto.randomUUID();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const finalFilePath = path.join(uploadDir, `${finalFileId}-${safeFileName}`);
 
-    await finished(writeStream);
+      // Move temp file to final location
+      fs.renameSync(tempFilePath, finalFilePath);
 
-    // Save metadata in database
-    const itemId = crypto.randomUUID();
-    const itemContent = JSON.stringify({
-      isFile: true,
-      fileName: fileName,
-      fileType: fileType,
-      fileSize: fileSize,
-      filePath: localFilePath
-    });
+      // Save metadata in database
+      const itemId = crypto.randomUUID();
+      const itemContent = JSON.stringify({
+        isFile: true,
+        fileName: fileName,
+        fileType: fileType,
+        fileSize: fileSize,
+        filePath: finalFilePath
+      });
 
-    const newItem = {
-      id: itemId,
-      roomCode: roomCode.toUpperCase(),
-      title: title || fileName,
-      content: itemContent
-    };
+      const newItem = {
+        id: itemId,
+        roomCode: roomCode.toUpperCase(),
+        title: title || fileName,
+        content: itemContent
+      };
 
-    await addClipboardItem(newItem);
+      await addClipboardItem(newItem);
+      return NextResponse.json({ success: true, completed: true, item: newItem });
+    }
 
-    return NextResponse.json({ success: true, item: newItem });
+    return NextResponse.json({ success: true, completed: false, chunkReceived: chunkIndex });
   } catch (error: any) {
     console.error("Upload API error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

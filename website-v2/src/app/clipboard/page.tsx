@@ -345,52 +345,82 @@ export default function ClipboardPage() {
       }
       if (!finalTitle) finalTitle = stagedFile.name;
 
-      // Pass parameters via query parameters to bypass Next.js multipart/form-data body parsing limit
-      const queryParams = new URLSearchParams({
-        roomCode: currentRoom.code,
-        title: finalTitle,
-        sessionId: sessionId,
-        fileName: stagedFile.name,
-        fileType: stagedFile.type,
-        fileSize: stagedFile.size.toString()
-      });
+      // Safe alphanumeric upload ID generator
+      const uploadId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (under Vercel/proxy body parsing limit)
+      const totalSize = stagedFile.size;
+      const totalChunks = Math.max(1, Math.ceil(totalSize / CHUNK_SIZE));
+      let currentChunk = 0;
 
-      // Use XMLHttpRequest to track upload progress
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
+      const uploadNextChunk = () => {
+        const start = currentChunk * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, totalSize);
+        const chunk = stagedFile.slice(start, end);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percentComplete);
-        }
-      };
+        const queryParams = new URLSearchParams({
+          roomCode: currentRoom.code,
+          title: finalTitle,
+          sessionId: sessionId,
+          fileName: stagedFile.name,
+          fileType: stagedFile.type,
+          fileSize: totalSize.toString(),
+          uploadId: uploadId,
+          chunkIndex: currentChunk.toString(),
+          totalChunks: totalChunks.toString()
+        });
 
-      xhr.onload = () => {
-        setAddingItem(false);
-        setUploadProgress(null);
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
-            setNewTitle("");
-            setNewContent("");
-            clearStagedFile();
-            fetchRoomDetails(currentRoom.code);
-          } else {
-            setError(data.error || `Upload failed with status: ${xhr.status}`);
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const uploadedBytesSoFar = (currentChunk * CHUNK_SIZE) + event.loaded;
+            const percentComplete = Math.min(99, Math.round((uploadedBytesSoFar / totalSize) * 100));
+            setUploadProgress(percentComplete);
           }
-        } catch (err) {
-          setError(`Failed to save clipboard item: Server returned invalid response (${xhr.status})`);
-        }
+        };
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+              if (currentChunk < totalChunks - 1) {
+                currentChunk++;
+                uploadNextChunk();
+              } else {
+                setUploadProgress(100);
+                setTimeout(() => {
+                  setAddingItem(false);
+                  setUploadProgress(null);
+                  setNewTitle("");
+                  setNewContent("");
+                  clearStagedFile();
+                  fetchRoomDetails(currentRoom.code);
+                }, 400);
+              }
+            } else {
+              setAddingItem(false);
+              setUploadProgress(null);
+              setError(data.error || `Upload failed at chunk ${currentChunk + 1} with status ${xhr.status}`);
+            }
+          } catch (err) {
+            setAddingItem(false);
+            setUploadProgress(null);
+            setError(`Upload failed: Server returned invalid response (${xhr.status})`);
+          }
+        };
+
+        xhr.onerror = () => {
+          setAddingItem(false);
+          setUploadProgress(null);
+          setError("Upload failed: Network error occurred.");
+        };
+
+        xhr.send(chunk);
       };
 
-      xhr.onerror = () => {
-        setAddingItem(false);
-        setUploadProgress(null);
-        setError("Failed to save clipboard item: Network error occurred.");
-      };
-
-      xhr.send(stagedFile);
+      // Start uploading chunk-by-chunk
+      uploadNextChunk();
     }
   };
 
