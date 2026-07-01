@@ -461,6 +461,27 @@ export async function initDb() {
       console.error("Failed to add columns to vit_resources:", e);
     }
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_clipboard_rooms (
+        code TEXT PRIMARY KEY,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMPTZ NOT NULL,
+        duration_mins INTEGER NOT NULL,
+        allow_all_members_to_add BOOLEAN DEFAULT true,
+        host_session_id TEXT NOT NULL
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_clipboard_items (
+        id TEXT PRIMARY KEY,
+        room_code TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
   } catch (error) {
@@ -2475,6 +2496,151 @@ const getHubContributorsJsonPath = () => {
   const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
   return path.join(baseDir, "hub_contributors.json");
 };
+
+export interface ClipboardRoom {
+  code: string;
+  createdAt?: string;
+  expiresAt: string;
+  durationMins: number;
+  allowAllMembersToAdd: boolean;
+  hostSessionId: string;
+}
+
+export interface ClipboardItem {
+  id: string;
+  roomCode: string;
+  title: string;
+  content: string;
+  createdAt?: string;
+}
+
+const getClipboardJsonPath = () => {
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  return path.join(baseDir, "clipboard.json");
+};
+
+async function readClipboardFile(): Promise<{ rooms: ClipboardRoom[]; items: ClipboardItem[] }> {
+  const filePath = getClipboardJsonPath();
+  if (!fs.existsSync(filePath)) {
+    return { rooms: [], items: [] };
+  }
+  try {
+    const data = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (e) {
+    return { rooms: [], items: [] };
+  }
+}
+
+async function writeClipboardFile(data: { rooms: ClipboardRoom[]; items: ClipboardItem[] }): Promise<void> {
+  const filePath = getClipboardJsonPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+export async function createClipboardRoom(room: ClipboardRoom): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `INSERT INTO vit_clipboard_rooms (code, expires_at, duration_mins, allow_all_members_to_add, host_session_id)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [room.code, room.expiresAt, room.durationMins, room.allowAllMembersToAdd, room.hostSessionId]
+    );
+  } else {
+    const data = await readClipboardFile();
+    const newRoom: ClipboardRoom = {
+      ...room,
+      createdAt: new Date().toISOString()
+    };
+    data.rooms.push(newRoom);
+    await writeClipboardFile(data);
+  }
+}
+
+export async function getClipboardRoom(code: string): Promise<ClipboardRoom | null> {
+  await cleanupExpiredClipboardRooms();
+  if (pool) {
+    await initDb();
+    const res = await pool.query(
+      `SELECT code, created_at as "createdAt", expires_at as "expiresAt", 
+              duration_mins as "durationMins", allow_all_members_to_add as "allowAllMembersToAdd", 
+              host_session_id as "hostSessionId" 
+       FROM vit_clipboard_rooms WHERE code = $1`,
+      [code]
+    );
+    if (res.rows.length === 0) return null;
+    return res.rows[0];
+  } else {
+    const data = await readClipboardFile();
+    const found = data.rooms.find(r => r.code.toUpperCase() === code.toUpperCase());
+    if (!found) return null;
+    if (new Date(found.expiresAt).getTime() < Date.now()) {
+      return null;
+    }
+    return found;
+  }
+}
+
+export async function addClipboardItem(item: ClipboardItem): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_clipboard_items (id, room_code, title, content) VALUES ($1, $2, $3, $4)",
+      [item.id, item.roomCode, item.title, item.content]
+    );
+  } else {
+    const data = await readClipboardFile();
+    const newItem: ClipboardItem = {
+      ...item,
+      createdAt: new Date().toISOString()
+    };
+    data.items.push(newItem);
+    await writeClipboardFile(data);
+  }
+}
+
+export async function getClipboardItems(roomCode: string): Promise<ClipboardItem[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query(
+      `SELECT id, room_code as "roomCode", title, content, created_at as "createdAt" 
+       FROM vit_clipboard_items WHERE room_code = $1 ORDER BY created_at DESC`,
+      [roomCode]
+    );
+    return res.rows;
+  } else {
+    const data = await readClipboardFile();
+    return data.items
+      .filter(i => i.roomCode.toUpperCase() === roomCode.toUpperCase())
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+}
+
+export async function cleanupExpiredClipboardRooms(): Promise<void> {
+  const now = new Date();
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "DELETE FROM vit_clipboard_items WHERE room_code IN (SELECT code FROM vit_clipboard_rooms WHERE expires_at < $1)",
+      [now]
+    );
+    await pool.query(
+      "DELETE FROM vit_clipboard_rooms WHERE expires_at < $1",
+      [now]
+    );
+  } else {
+    const data = await readClipboardFile();
+    const activeRooms = data.rooms.filter(r => new Date(r.expiresAt).getTime() >= now.getTime());
+    const expiredRoomCodes = new Set(
+      data.rooms
+        .filter(r => new Date(r.expiresAt).getTime() < now.getTime())
+        .map(r => r.code.toUpperCase())
+    );
+    const activeItems = data.items.filter(i => !expiredRoomCodes.has(i.roomCode.toUpperCase()));
+    await writeClipboardFile({ rooms: activeRooms, items: activeItems });
+  }
+}
 
 
 

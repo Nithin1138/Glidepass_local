@@ -146,6 +146,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
         <Link href="/support" className="hover:text-[#468FEA] transition-colors duration-300">Support</Link>
         <Link href="/resources" className="hover:text-[#468FEA] transition-colors duration-300">Resources</Link>
         <Link href="/provider" className="hover:text-[#468FEA] transition-colors duration-300 uppercase tracking-[0.2em] font-black text-[10px] font-rubik">Provider</Link>
+        <Link href="/clipboard" className="hover:text-[#468FEA] transition-colors duration-300 uppercase tracking-[0.2em] font-black text-[10px] font-rubik">Clipboard</Link>
       </div>
 
       <div className="hidden lg:flex items-center gap-3 md:gap-6 relative">
@@ -214,6 +215,7 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
               </div>
               <Link href="/resources" className="text-[#F28500] font-bold" onClick={() => setIsOpen(false)}>Resources</Link>
               <Link href="/provider" className="text-[#F28500] font-bold text-left uppercase tracking-widest text-xs" onClick={() => setIsOpen(false)}>Provider</Link>
+              <Link href="/clipboard" className="text-[#F28500] font-bold text-left uppercase tracking-widest text-xs" onClick={() => setIsOpen(false)}>Clipboard</Link>
             </div>
           </motion.div>
         )}
