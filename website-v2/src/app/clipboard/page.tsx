@@ -75,6 +75,7 @@ export default function ClipboardPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [addingItem, setAddingItem] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // File Upload States
   const [stagedFile, setStagedFile] = useState<File | null>(null);
@@ -301,18 +302,17 @@ export default function ClipboardPage() {
     setAddingItem(true);
     setError("");
 
-    try {
-      let res;
-      let finalTitle = newTitle.trim();
+    let finalTitle = newTitle.trim();
 
-      if (uploadMode === "text") {
-        if (!newContent.trim()) {
-          setAddingItem(false);
-          return;
-        }
-        if (!finalTitle) finalTitle = "Text Snippet";
+    if (uploadMode === "text") {
+      if (!newContent.trim()) {
+        setAddingItem(false);
+        return;
+      }
+      if (!finalTitle) finalTitle = "Text Snippet";
 
-        res = await fetch("/api/clipboard", {
+      try {
+        const res = await fetch("/api/clipboard", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -323,41 +323,70 @@ export default function ClipboardPage() {
             sessionId
           })
         });
-      } else {
-        if (!stagedFile) {
-          setError("Please select or drop a file to upload.");
-          setAddingItem(false);
-          return;
+        const data = await res.json();
+        if (data.success) {
+          setNewTitle("");
+          setNewContent("");
+          fetchRoomDetails(currentRoom.code);
+        } else {
+          setError(data.error || "Failed to add item");
         }
-        if (!finalTitle) finalTitle = stagedFile.name;
-
-        // Use Form Data for binary upload (jet speed!)
-        const formData = new FormData();
-        formData.append("roomCode", currentRoom.code);
-        formData.append("title", finalTitle);
-        formData.append("sessionId", sessionId);
-        formData.append("file", stagedFile);
-
-        res = await fetch("/api/clipboard/upload", {
-          method: "POST",
-          body: formData
-        });
+      } catch (err: any) {
+        console.error(err);
+        setError("Failed to save clipboard item: " + (err.message || "Unknown error"));
+      } finally {
+        setAddingItem(false);
       }
-
-      const data = await res.json();
-      if (data.success) {
-        setNewTitle("");
-        setNewContent("");
-        clearStagedFile();
-        fetchRoomDetails(currentRoom.code);
-      } else {
-        setError(data.error || "Failed to add item");
+    } else {
+      if (!stagedFile) {
+        setError("Please select or drop a file to upload.");
+        setAddingItem(false);
+        return;
       }
-    } catch (e: any) {
-      console.error(e);
-      setError("Failed to save clipboard item.");
-    } finally {
-      setAddingItem(false);
+      if (!finalTitle) finalTitle = stagedFile.name;
+
+      const formData = new FormData();
+      formData.append("roomCode", currentRoom.code);
+      formData.append("title", finalTitle);
+      formData.append("sessionId", sessionId);
+      formData.append("file", stagedFile);
+
+      // Use XMLHttpRequest to track upload progress
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/clipboard/upload");
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        setAddingItem(false);
+        setUploadProgress(null);
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+            setNewTitle("");
+            setNewContent("");
+            clearStagedFile();
+            fetchRoomDetails(currentRoom.code);
+          } else {
+            setError(data.error || `Upload failed with status: ${xhr.status}`);
+          }
+        } catch (err) {
+          setError(`Failed to save clipboard item: Server returned invalid response (${xhr.status})`);
+        }
+      };
+
+      xhr.onerror = () => {
+        setAddingItem(false);
+        setUploadProgress(null);
+        setError("Failed to save clipboard item: Network error occurred.");
+      };
+
+      xhr.send(formData);
     }
   };
 
@@ -800,6 +829,21 @@ export default function ClipboardPage() {
                             </button>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {uploadProgress !== null && (
+                      <div className="space-y-1.5 py-1">
+                        <div className="flex justify-between text-[9px] font-bold text-gray-500 font-mono">
+                          <span>Uploading File...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-black/10 dark:bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[#F28500] transition-all duration-150 rounded-full" 
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
                       </div>
                     )}
 
