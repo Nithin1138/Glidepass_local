@@ -159,8 +159,8 @@ h1, h2, h3 {
 
 /* Exclude code editor and dark code blocks from light theme overrides so they stay dark */
 .light .bg-\[\#0d1117\],
-.light pre,
-.light code {
+.light pre:not(.theme-adaptive),
+.light code:not(.theme-adaptive) {
   background-color: #0d1117 !important;
   color: #c9d1d9 !important;
 }

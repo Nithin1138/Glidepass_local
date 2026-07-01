@@ -983,9 +983,13 @@ export default function ClipboardPage() {
                               >
                                 <div className="px-4 pb-4">
                                   {fileItem ? (
-                                    <div className="rounded-[16px] border border-white/[0.05] bg-black p-4">
+                                    <div className={`rounded-[16px] border p-4 ${
+                                      dk ? "border-white/[0.05] bg-[#030303]" : "border-black/[0.06] bg-[#f4f1ea]"
+                                    }`}>
                                       {fileItem.fileType.startsWith("image/") ? (
-                                        <div className="flex flex-col items-center justify-center bg-black/30 rounded-xl overflow-hidden max-h-96 p-1">
+                                        <div className={`flex flex-col items-center justify-center rounded-xl overflow-hidden max-h-96 p-1 ${
+                                          dk ? "bg-black/30" : "bg-black/[0.03]"
+                                        }`}>
                                           <img 
                                             src={`/api/clipboard/download?id=${item.id}`}
                                             alt={fileItem.fileName}
@@ -994,20 +998,30 @@ export default function ClipboardPage() {
                                         </div>
                                       ) : (
                                         <div className="flex items-center gap-3">
-                                          <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                          <div className={`p-3 rounded-xl border ${
+                                            dk ? "bg-white/5 border-white/5" : "bg-black/5 border-black/[0.04]"
+                                          }`}>
                                             {getFileIcon(fileItem.fileType, fileItem.fileName)}
                                           </div>
                                           <div className="min-w-0">
-                                            <div className="text-xs font-bold font-mono truncate text-white">{fileItem.fileName}</div>
-                                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">{fileItem.fileType || "Unknown Type"}</div>
+                                            <div className={`text-xs font-bold font-mono truncate ${
+                                              dk ? "text-white" : "text-gray-900"
+                                            }`}>{fileItem.fileName}</div>
+                                            <div className={`text-[10px] font-mono mt-0.5 ${
+                                              dk ? "text-gray-400" : "text-gray-600"
+                                            }`}>{fileItem.fileType || "Unknown Type"}</div>
                                           </div>
                                         </div>
                                       )}
                                     </div>
                                   ) : (
-                                    <div className="rounded-[16px] border border-white/[0.05] bg-black p-4 overflow-hidden">
-                                      <pre className="text-[11px] font-mono overflow-x-auto text-[#a5d6ff] text-left max-h-60 scrollbar-none leading-relaxed select-all">
-                                        <code>{item.content}</code>
+                                    <div className={`rounded-[16px] border p-4 overflow-hidden ${
+                                      dk ? "border-white/[0.05] bg-[#030303]" : "border-black/[0.06] bg-[#f4f1ea]"
+                                    }`}>
+                                      <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
+                                        dk ? "text-[#a5d6ff]" : "text-gray-800"
+                                      }`}>
+                                        <code className="theme-adaptive">{item.content}</code>
                                       </pre>
                                     </div>
                                   )}
