@@ -491,6 +491,19 @@ export async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vit_clipboard_file_chunks (
+        upload_id TEXT NOT NULL,
+        chunk_index INTEGER NOT NULL,
+        chunk_data TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        file_size BIGINT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (upload_id, chunk_index)
+      );
+    `);
+
     isDbInitialized = true;
     globalDb.isDbInitialized = true;
   } catch (error) {
@@ -2772,5 +2785,62 @@ export async function updateRoomExpiration(code: string, expiresAt: string): Pro
   }
 }
 
+// ── File chunk storage helpers ───────────────────────────────────────────────
 
+export async function saveFileChunk(
+  uploadId: string,
+  chunkIndex: number,
+  chunkData: string,   // base64 string (no data URI prefix)
+  fileName: string,
+  fileType: string,
+  fileSize: number
+): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `INSERT INTO vit_clipboard_file_chunks
+         (upload_id, chunk_index, chunk_data, file_name, file_type, file_size)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (upload_id, chunk_index) DO UPDATE SET chunk_data = EXCLUDED.chunk_data`,
+      [uploadId, chunkIndex, chunkData, fileName, fileType, fileSize]
+    );
+  }
+}
 
+export async function getFileChunks(
+  uploadId: string
+): Promise<{ chunkIndex: number; chunkData: string; fileName: string; fileType: string; fileSize: number }[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query(
+      `SELECT chunk_index as "chunkIndex", chunk_data as "chunkData",
+              file_name as "fileName", file_type as "fileType", file_size as "fileSize"
+       FROM vit_clipboard_file_chunks
+       WHERE upload_id = $1
+       ORDER BY chunk_index ASC`,
+      [uploadId]
+    );
+    return res.rows;
+  }
+  return [];
+}
+
+export async function deleteFileChunks(uploadId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `DELETE FROM vit_clipboard_file_chunks WHERE upload_id = $1`,
+      [uploadId]
+    );
+  }
+}
+
+// Cleanup stale chunks older than 2 hours (call periodically)
+export async function cleanupStaleChunks(): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      `DELETE FROM vit_clipboard_file_chunks WHERE created_at < NOW() - INTERVAL '2 hours'`
+    );
+  }
+}

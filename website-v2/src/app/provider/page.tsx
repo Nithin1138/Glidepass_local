@@ -61,35 +61,38 @@ export default function ProviderOnboardingPage() {
   // Redirection when step 5 is active
   useEffect(() => {
     if (step === 5) {
-      const registerUser = async () => {
-        try {
-          await fetch("/api/auth/register", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              id: Date.now().toString(),
-              name: name || "Provider User",
-              email: email || `user_${Date.now()}@glidepass.local`,
-              role: role === "creator" ? "Creator" : "Contributor",
-              status: "active",
-              verified: true,
-              activity: "Active now",
-              joinedDate: new Date().toISOString().split("T")[0],
-              activeDevices: 1,
-              premium: true,
-              password: password || "google_oauth",
-              referral: referral || customReferral || "Not specified",
-              consentEmails: consentEmails
-            }),
-          });
-        } catch (err) {
-          console.error("Failed to register user to DB:", err);
-        }
-      };
-
-      registerUser();
+      // Only register if this is a NEW sign-up — never re-register on sign-in
+      // (re-registering would overwrite the user's role in the DB)
+      if (isSignUpMode) {
+        const registerUser = async () => {
+          try {
+            await fetch("/api/auth/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                id: Date.now().toString(),
+                name: name || "Provider User",
+                email: email || `user_${Date.now()}@glidepass.local`,
+                role: role === "creator" ? "Creator" : "Contributor",
+                status: "active",
+                verified: true,
+                activity: "Active now",
+                joinedDate: new Date().toISOString().split("T")[0],
+                activeDevices: 1,
+                premium: true,
+                password: password || "google_oauth",
+                referral: referral || customReferral || "Not specified",
+                consentEmails: consentEmails
+              }),
+            });
+          } catch (err) {
+            console.error("Failed to register user to DB:", err);
+          }
+        };
+        registerUser();
+      }
 
       const timer = setTimeout(() => {
         if (role === "creator") {
@@ -104,7 +107,7 @@ export default function ProviderOnboardingPage() {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [step, role, email, name, password, referral, customReferral]);
+  }, [step, role, email, name, password, referral, customReferral, isSignUpMode]);
 
   // Clean up global handler on unmount
   useEffect(() => {
@@ -144,7 +147,9 @@ export default function ProviderOnboardingPage() {
         }
       } else {
         if (isExisting) {
-          setRole("creator");
+          // Use the actual role stored in the database — never hardcode
+          const actualRole = (checkData.role || "Contributor").toLowerCase();
+          setRole(actualRole === "creator" ? "creator" : "contributor");
           setStep(5);
         } else {
           setAuthError("No account found. Please Sign Up.");
@@ -187,7 +192,9 @@ export default function ProviderOnboardingPage() {
           if (isExisting) {
             setName(selectedName);
             setEmail(selectedEmail);
-            setRole("creator");
+            // Use the actual role stored in the database — never hardcode
+            const actualRole = (checkData.role || "Contributor").toLowerCase();
+            setRole(actualRole === "creator" ? "creator" : "contributor");
             setStep(5);
           } else {
             setAuthError("No account found. Please Sign Up.");

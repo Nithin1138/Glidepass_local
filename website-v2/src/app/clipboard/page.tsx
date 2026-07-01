@@ -465,72 +465,88 @@ export default function ClipboardPage() {
       }
       if (!finalTitle) finalTitle = stagedFile.name;
 
-      // File size guard: 5 MB limit for inline base64 DB storage
-      const MAX_FILE_BYTES = 5 * 1024 * 1024;
+      // 25 MB guard — chunks go to DB (not disk), so no /tmp issues
+      const MAX_FILE_BYTES = 25 * 1024 * 1024;
       if (stagedFile.size > MAX_FILE_BYTES) {
-        setError("File exceeds the 5 MB limit for clipboard rooms.");
+        setError("File exceeds the 25 MB limit for clipboard rooms.");
         setAddingItem(false);
         return;
       }
 
-      try {
-        // Convert file to base64 data URI in browser (no disk needed)
-        const dataUri = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(stagedFile);
-          // Simulate upload progress during base64 read
-          let pct = 0;
-          const tick = setInterval(() => {
-            pct = Math.min(90, pct + 10);
-            setUploadProgress(pct);
-          }, 80);
-          reader.onloadend = () => clearInterval(tick);
-        });
+      // Chunk size: 2 MB binary = ~2.7 MB base64 → stays under Vercel's 4.5 MB cap
+      const uploadId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const CHUNK_SIZE = 2 * 1024 * 1024;
+      const totalSize = stagedFile.size;
+      const totalChunks = Math.max(1, Math.ceil(totalSize / CHUNK_SIZE));
+      let currentChunk = 0;
 
-        setUploadProgress(95);
+      const uploadNextChunk = () => {
+        const start = currentChunk * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, totalSize);
+        const chunk = stagedFile.slice(start, end);
 
-        // Store inline in DB as JSON — no file system dependency
-        const itemContent = JSON.stringify({
-          isFile: true,
+        const queryParams = new URLSearchParams({
+          roomCode: currentRoom.code,
+          title: finalTitle,
+          sessionId: sessionId,
           fileName: stagedFile.name,
           fileType: stagedFile.type || "application/octet-stream",
-          fileSize: stagedFile.size,
-          data: dataUri           // ← full base64 data URI lives in DB
+          fileSize: totalSize.toString(),
+          uploadId: uploadId,
+          chunkIndex: currentChunk.toString(),
+          totalChunks: totalChunks.toString()
         });
 
-        const res = await fetch("/api/clipboard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "add-item",
-            roomCode: currentRoom.code,
-            title: finalTitle,
-            content: itemContent,
-            sessionId
-          })
-        });
-        const data = await res.json();
-        setUploadProgress(100);
-        setTimeout(() => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const bytesDone = currentChunk * CHUNK_SIZE + event.loaded;
+            setUploadProgress(Math.min(98, Math.round((bytesDone / totalSize) * 100)));
+          }
+        };
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+              if (currentChunk < totalChunks - 1) {
+                currentChunk++;
+                uploadNextChunk();
+              } else {
+                setUploadProgress(100);
+                setTimeout(() => {
+                  setAddingItem(false);
+                  setUploadProgress(null);
+                  setNewTitle("");
+                  setNewContent("");
+                  clearStagedFile();
+                  fetchRoomDetails(currentRoom.code);
+                }, 400);
+              }
+            } else {
+              setAddingItem(false);
+              setUploadProgress(null);
+              setError(data.error || `Upload failed at chunk ${currentChunk + 1}`);
+            }
+          } catch {
+            setAddingItem(false);
+            setUploadProgress(null);
+            setError(`Upload failed: invalid server response (${xhr.status})`);
+          }
+        };
+
+        xhr.onerror = () => {
           setAddingItem(false);
           setUploadProgress(null);
-          setNewTitle("");
-          setNewContent("");
-          clearStagedFile();
-          if (data.success) {
-            fetchRoomDetails(currentRoom.code);
-          } else {
-            setError(data.error || "Failed to upload file");
-          }
-        }, 300);
-      } catch (err: any) {
-        setAddingItem(false);
-        setUploadProgress(null);
-        setError("Upload failed: " + (err.message || "Unknown error"));
-      }
+          setError("Upload failed: network error.");
+        };
 
+        xhr.send(chunk);
+      };
+
+      uploadNextChunk();
     }
   };
 

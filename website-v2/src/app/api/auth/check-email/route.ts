@@ -20,7 +20,10 @@ export async function GET(req: NextRequest) {
     if (foundUser) {
       return NextResponse.json({ 
         exists: true, 
-        suspended: foundUser.status === "suspended" 
+        suspended: foundUser.status === "suspended",
+        role: foundUser.role || "Contributor",
+        name: foundUser.name || "",
+        email: foundUser.email || ""
       });
     }
 
