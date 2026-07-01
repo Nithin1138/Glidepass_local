@@ -846,120 +846,125 @@ export default function ClipboardPage() {
                     items.map((item) => {
                       const fileItem = parseFileItem(item.content);
                       const isExpanded = !!expandedItems[item.id];
-                      const lines = item.content.split("\n");
-                      const hasManyLines = !fileItem && (lines.length > 2 || item.content.length > 120);
 
                       return (
-                        <motion.div
+                        <div
                           key={item.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className={`p-5 rounded-[28px] border ${borderLight} ${clayBg} group relative flex flex-col justify-between shadow-md hover:shadow-lg transition-all`}
+                          onClick={() => toggleExpand(item.id)}
+                          className={`rounded-[18px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-black/[0.015] hover:bg-black/[0.03]"} transition-all cursor-pointer overflow-hidden`}
                         >
-                          <div>
-                            {/* Card Header */}
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                              <div className="min-w-0">
-                                <h3 className="text-xs font-black text-[#F28500] font-outfit uppercase tracking-wider truncate">
-                                  {item.title}
-                                </h3>
-                                {fileItem && (
-                                  <span className="text-[9px] text-gray-500 font-mono">
-                                    File Upload • {formatBytes(fileItem.fileSize)}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-2">
-                                {/* If it's a file, show download button */}
-                                {fileItem ? (
-                                  <a
-                                    href={fileItem.data}
-                                    download={fileItem.fileName}
-                                    className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#F28500] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
-                                    title="Download File"
-                                  >
-                                    <Download size={12} className="text-[#F28500]" />
-                                    <span>Download</span>
-                                  </a>
-                                ) : (
-                                  /* If it's text, show Copy button */
-                                  <button
-                                    onClick={() => copyItemContent(item.id, item.content)}
-                                    className={`px-3 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:border-[#468FEA] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-[10px] font-bold`}
-                                    title="Copy Content"
-                                  >
-                                    {copiedItemId === item.id ? (
-                                      <>
-                                        <Check size={12} className="text-emerald-500" />
-                                        <span className="text-emerald-500">Copied!</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy size={12} className="text-gray-400 group-hover:text-white" />
-                                        <span>Copy</span>
-                                      </>
-                                    )}
-                                  </button>
-                                )}
-
-                                {isHost && (
-                                  <button
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className={`px-2.5 py-1.5 rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all cursor-pointer shrink-0 flex items-center justify-center`}
-                                    title="Delete Item"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
-                              </div>
+                          {/* Top row */}
+                          <div className="p-4 flex items-center justify-between gap-3">
+                            {/* Title / Info */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-[#F28500] font-mono text-[11px] font-bold shrink-0">&gt;_</span>
+                              <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
+                                {item.title}
+                              </h4>
+                              {fileItem && (
+                                <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
+                                  dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
+                                }`}>
+                                  FILE • {formatBytes(fileItem.fileSize)}
+                                </span>
+                              )}
                             </div>
 
-                            {/* Card Content */}
-                            {fileItem ? (
-                              <div className="flex flex-col gap-3 p-4 rounded-2xl bg-black/20 dark:bg-black/40 border border-white/5">
-                                {/* Image preview or File details container */}
-                                {fileItem.fileType.startsWith("image/") ? (
-                                  <div className="flex flex-col items-center justify-center bg-black/30 rounded-xl overflow-hidden max-h-72 border border-white/5 p-1">
-                                    <img 
-                                      src={fileItem.data} 
-                                      alt={fileItem.fileName}
-                                      className="max-h-64 max-w-full object-contain rounded-lg shadow-sm"
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-black/30 rounded-xl border border-white/5">
-                                      {getFileIcon(fileItem.fileType, fileItem.fileName)}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="text-xs font-bold font-mono truncate">{fileItem.fileName}</div>
-                                      <div className="text-[10px] text-gray-500 font-mono mt-0.5">{fileItem.fileType || "Unknown Type"}</div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <>
-                                <pre className={`text-xs font-mono bg-black/25 dark:bg-black/45 border border-white/5 p-4 rounded-2xl overflow-x-auto whitespace-pre-wrap break-all select-all text-gray-300 transition-all duration-300 ${
-                                  isExpanded ? "max-h-none" : "max-h-16 overflow-hidden"
-                                }`}>
-                                  {item.content}
-                                </pre>
-                                {hasManyLines && (
-                                  <button
-                                    onClick={() => toggleExpand(item.id)}
-                                    className="text-[10px] font-bold text-[#468FEA] mt-2 hover:underline cursor-pointer flex items-center gap-1 select-none"
-                                  >
-                                    {isExpanded ? "Collapse" : "Tap to expand"}
-                                  </button>
-                                )}
-                              </>
-                            )}
+                            {/* Action Items */}
+                            <div className="flex items-center gap-3 shrink-0">
+                              {fileItem ? (
+                                <a
+                                  href={fileItem.data}
+                                  download={fileItem.fileName}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-gray-400 hover:text-white transition-colors"
+                                  title="Download file"
+                                >
+                                  <Download size={13} className="text-[#F28500]" />
+                                </a>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); copyItemContent(item.id, item.content); }}
+                                  className="text-gray-400 hover:text-white transition-colors"
+                                  title="Copy content"
+                                >
+                                  {copiedItemId === item.id ? (
+                                    <Check size={13} className="text-[#468FEA]" />
+                                  ) : (
+                                    <Copy size={13} />
+                                  )}
+                                </button>
+                              )}
 
+                              {isHost && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
+                                  className="text-gray-400 hover:text-rose-500 transition-colors"
+                                  title="Delete Item"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+
+                              {/* Chevron Expand Icon */}
+                              <svg 
+                                width="10" 
+                                height="10" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2.5" 
+                                className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              >
+                                <path d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
                           </div>
-                        </motion.div>
+
+                          {/* Expanded code preview */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-4 pb-4">
+                                  {fileItem ? (
+                                    <div className="rounded-[16px] border border-white/[0.05] bg-black p-4">
+                                      {fileItem.fileType.startsWith("image/") ? (
+                                        <div className="flex flex-col items-center justify-center bg-black/30 rounded-xl overflow-hidden max-h-96 p-1">
+                                          <img 
+                                            src={fileItem.data} 
+                                            alt={fileItem.fileName}
+                                            className="max-h-80 max-w-full object-contain rounded-lg shadow-sm"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-3">
+                                          <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                            {getFileIcon(fileItem.fileType, fileItem.fileName)}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <div className="text-xs font-bold font-mono truncate text-white">{fileItem.fileName}</div>
+                                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">{fileItem.fileType || "Unknown Type"}</div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="rounded-[16px] border border-white/[0.05] bg-black p-4 overflow-hidden">
+                                      <pre className="text-[11px] font-mono overflow-x-auto text-[#a5d6ff] text-left max-h-60 scrollbar-none leading-relaxed select-all">
+                                        <code>{item.content}</code>
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       );
                     })
                   )}
