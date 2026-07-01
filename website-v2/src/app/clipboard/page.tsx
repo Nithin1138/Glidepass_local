@@ -752,7 +752,8 @@ export default function ClipboardPage() {
           </div>
         ) : !currentRoom ? (
           /* ──────── DASHBOARD: CREATE OR JOIN ──────── */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full py-4 md:py-8 my-auto">
+          <div className="max-w-5xl mx-auto w-full my-auto py-4 md:py-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full">
             
             {/* Join Room */}
             <motion.div 
@@ -876,6 +877,7 @@ export default function ClipboardPage() {
               </div>
             </motion.div>
 
+            </div>
           </div>
         ) : (
           /* ──────── INSIDE ACTIVE ROOM ──────── */
