@@ -8,7 +8,7 @@ import {
   Mail, Key, User, Calendar, Terminal, Keyboard,
   ArrowRight, Check, ArrowLeft, Eye, EyeOff, Sparkles,
   GraduationCap, Laptop, Palette, Globe, ShieldAlert,
-  Layers, Users, BookOpen, Sun, Moon, Download
+  Layers, Users, BookOpen, Sun, Moon, Download, Copy
 } from "lucide-react";
 
 export default function ProviderOnboardingPage() {
@@ -54,6 +54,9 @@ export default function ProviderOnboardingPage() {
   const [occupation, setOccupation] = useState("Student");
   const [referral, setReferral] = useState("");
   const [customReferral, setCustomReferral] = useState("");
+  const [copiedWin, setCopiedWin] = useState(false);
+  const [copiedMac, setCopiedMac] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
 
   // Redirection when step 5 is active
   useEffect(() => {
@@ -128,6 +131,11 @@ export default function ProviderOnboardingPage() {
       const isExisting = checkData.exists;
       
       setAuthLoading(false);
+      if (isExisting && checkData.suspended) {
+        setAuthError("Your account has been suspended. Please contact support.");
+        return;
+      }
+
       if (isSignUpMode) {
         if (isExisting) {
           setAuthError("Account already exists. Please Sign In.");
@@ -162,6 +170,11 @@ export default function ProviderOnboardingPage() {
         const isExisting = checkData.exists;
         
         setAuthLoading(false);
+        if (isExisting && checkData.suspended) {
+          setAuthError("Your account has been suspended. Please contact support.");
+          return;
+        }
+
         if (isSignUpMode) {
           if (isExisting) {
             setAuthError("Account already exists. Please Sign In.");
@@ -465,9 +478,16 @@ export default function ProviderOnboardingPage() {
     }, 1000);
   };
 
-  const handleDownloadNow = async () => {
+  const handleMacDownloadClick = async () => {
     try {
       setAuthLoading(true);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText("brew install --cask lanpad");
+      }
+      setCopiedMac(true);
+      setShowCopyModal(true);
+      setTimeout(() => setCopiedMac(false), 2000);
+
       await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -501,12 +521,57 @@ export default function ProviderOnboardingPage() {
       console.error("Failed to register user to DB:", err);
     } finally {
       setAuthLoading(false);
-      window.location.href = "/#downloads";
+    }
+  };
+
+  const handleWinDownloadClick = async () => {
+    try {
+      setAuthLoading(true);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText("winget install LANpad");
+      }
+      setCopiedWin(true);
+      setShowCopyModal(true);
+      setTimeout(() => setCopiedWin(false), 2000);
+
+      await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: Date.now().toString(),
+          name: name || "Provider User",
+          email: email || `user_${Date.now()}@glidepass.local`,
+          role: role === "creator" ? "Creator" : "Contributor",
+          status: "active",
+          verified: true,
+          activity: "Active now",
+          joinedDate: new Date().toISOString().split("T")[0],
+          activeDevices: 1,
+          premium: true,
+          password: password || "google_oauth",
+          referral: referral || customReferral || "Not specified",
+          consentEmails: consentEmails
+        }),
+      });
+
+      if (role === "creator") {
+        const sessionObj = { email: email || "creator@glidepass.local", name: name || "Creator", role: "Creator", licenseKey: "" };
+        localStorage.setItem("glidepass-creator-user", JSON.stringify(sessionObj));
+      } else {
+        const sessionObj = { email: email || "contributor@glidepass.local", name: name || "Contributor", role: "Contributor" };
+        localStorage.setItem("glidepass-contributor-user", JSON.stringify(sessionObj));
+      }
+    } catch (err) {
+      console.error("Failed to copy or register:", err);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   return (
-    <div className={`min-h-screen ${dk ? "bg-[#08080c] text-white" : "bg-[#F5F5F0] text-gray-900"} font-sans flex flex-col justify-between p-6 md:p-12 relative overflow-hidden antialiased select-none transition-colors duration-200`}>
+    <div className={`min-h-screen ${dk ? "bg-[#08080c] text-white" : "bg-[#F5F5F0] text-gray-900"} font-sans flex flex-col justify-between p-6 md:p-12 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden antialiased select-none transition-colors duration-200`}>
       {/* Background Decorative Rings */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         {dk ? (
@@ -588,7 +653,10 @@ export default function ProviderOnboardingPage() {
               if (step === 1.5) setStep(1);
               else if (step === 1.2) setStep(1);
               else if (step === 2) setStep(1.2);
-              else if (step > 1) setStep(step - 1);
+              else if (step === 3) setStep(2);
+              else if (step === 4) setStep(3);
+              else if (step === 4.5) setStep(4);
+              else if (step > 1) setStep(Math.floor(step - 1));
               else window.location.href = "/";
             }}
             className={`inline-flex items-center gap-2 text-sm font-black transition-colors uppercase tracking-widest cursor-pointer ${
@@ -650,7 +718,7 @@ export default function ProviderOnboardingPage() {
               className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-12 items-center"
             >
               {/* Left Column (Info Text) */}
-              <div className="md:col-span-6 text-left space-y-6">
+              <div className="md:col-span-6 text-left space-y-6 hidden md:block">
                 <h1 className={`text-5xl md:text-6xl font-black uppercase tracking-tight leading-none ${
                   dk ? "text-white" : "text-gray-950"
                 }`}>
@@ -677,6 +745,22 @@ export default function ProviderOnboardingPage() {
                   </div>
                 ) : (
                   <div className="clay-box p-8 md:p-10 space-y-6">
+                    {/* Mobile Header (Visible only on mobile) */}
+                    <div className="block md:hidden text-center space-y-2 mb-2">
+                      <h1 className={`text-3xl font-black uppercase tracking-tight leading-none ${
+                        dk ? "text-white" : "text-gray-950"
+                      }`}>
+                        {isSignUpMode ? "Sign Up" : "Sign In"}
+                      </h1>
+                      <p className={`text-xs font-bold leading-relaxed ${
+                        dk ? "text-white/65" : "text-gray-500"
+                      }`}>
+                        {isSignUpMode 
+                          ? "Create your account to start managing community hubs or contributing new scripts." 
+                          : "Access the console to configure hubs, allowed formats, and paste settings."}
+                      </p>
+                      <div className="w-12 h-1 bg-[#0077C0] rounded-full mx-auto" />
+                    </div>
                     {/* Google OAuth Button */}
                     <button
                       type="button"
@@ -967,26 +1051,26 @@ export default function ProviderOnboardingPage() {
                     setRole("creator");
                     setStep(3);
                   }}
-                  className={`clay-box p-6 md:p-8 flex flex-col justify-between min-h-[380px] border ${
+                  className={`clay-box p-5 md:p-8 flex flex-col justify-between min-h-[220px] md:min-h-[380px] border ${
                     dk ? "border-blue-900/40 hover:border-blue-500/40" : "border-blue-100 hover:border-blue-300"
                   } hover:scale-[1.01] transition-all cursor-pointer text-left`}
                 >
-                  <div className="space-y-5">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border ${
+                  <div className="space-y-4 md:space-y-5">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border ${
                       dk ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-500/10 border-blue-200/40"
                     }`}>
-                      <Terminal size={24} />
+                      <Terminal className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     
                     <div className="space-y-1">
-                      <h3 className="text-2xl font-black uppercase tracking-wider text-blue-600">
+                      <h3 className="text-xl md:text-2xl font-black uppercase tracking-wider text-blue-600">
                         Creator
                       </h3>
                       <p className={`text-xs font-bold ${dk ? "text-white/65" : "text-gray-500"}`}>Build community workspaces, configure access rules, and monitor activity.</p>
                     </div>
 
-                    {/* 3 Feature Boxes */}
-                    <div className="grid grid-cols-1 gap-3 pt-2">
+                    {/* Desktop 3 Feature Boxes */}
+                    <div className="hidden md:grid grid-cols-1 gap-3 pt-2">
                       <div className={`p-3 rounded-xl border shadow-sm flex items-start gap-3 ${
                         dk ? "bg-white/5 border-white/[0.04]" : "bg-white/70 border-black/[0.04]"
                       }`}>
@@ -1017,9 +1101,16 @@ export default function ProviderOnboardingPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Mobile compact checklist */}
+                    <div className="flex flex-wrap gap-2 md:hidden pt-1">
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>Build Hubs</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>Manage Members</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>Configure Defaults</span>
+                    </div>
                   </div>
 
-                  <div className={`w-full pt-6 flex items-center justify-between border-t mt-6 ${
+                  <div className={`w-full pt-4 md:pt-6 flex items-center justify-between border-t mt-4 md:mt-6 ${
                     dk ? "border-white/[0.06]" : "border-black/[0.04]"
                   }`}>
                     <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-1">
@@ -1034,26 +1125,26 @@ export default function ProviderOnboardingPage() {
                     setRole("contributor");
                     setStep(3);
                   }}
-                  className={`clay-box p-6 md:p-8 flex flex-col justify-between min-h-[380px] border ${
+                  className={`clay-box p-5 md:p-8 flex flex-col justify-between min-h-[220px] md:min-h-[380px] border ${
                     dk ? "border-amber-900/40 hover:border-amber-500/40" : "border-amber-100 hover:border-amber-300"
                   } hover:scale-[1.01] transition-all cursor-pointer text-left`}
                 >
-                  <div className="space-y-5">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-amber-600 shadow-sm border ${
+                  <div className="space-y-4 md:space-y-5">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-amber-600 shadow-sm border ${
                       dk ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-500/10 border-amber-200/40"
                     }`}>
-                      <Keyboard size={24} />
+                      <Keyboard className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="text-2xl font-black uppercase tracking-wider text-amber-600">
+                      <h3 className="text-xl md:text-2xl font-black uppercase tracking-wider text-amber-600">
                         Contributor
                       </h3>
                       <p className={`text-xs font-bold ${dk ? "text-white/65" : "text-gray-500"}`}>Request access to hubs, upload scripts, and share custom macros.</p>
                     </div>
 
-                    {/* 3 Feature Boxes */}
-                    <div className="grid grid-cols-1 gap-3 pt-2">
+                    {/* Desktop 3 Feature Boxes */}
+                    <div className="hidden md:grid grid-cols-1 gap-3 pt-2">
                       <div className={`p-3 rounded-xl border shadow-sm flex items-start gap-3 ${
                         dk ? "bg-white/5 border-white/[0.04]" : "bg-white/70 border-black/[0.04]"
                       }`}>
@@ -1084,9 +1175,16 @@ export default function ProviderOnboardingPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Mobile compact checklist */}
+                    <div className="flex flex-wrap gap-2 md:hidden pt-1">
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-amber-500/10 text-amber-400" : "bg-amber-50 text-amber-600"}`}>Share Resources</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-amber-500/10 text-amber-400" : "bg-amber-50 text-amber-600"}`}>Discover Hubs</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${dk ? "bg-amber-500/10 text-amber-400" : "bg-amber-50 text-amber-600"}`}>Execute Macros</span>
+                    </div>
                   </div>
 
-                  <div className={`w-full pt-6 flex items-center justify-between border-t mt-6 ${
+                  <div className={`w-full pt-4 md:pt-6 flex items-center justify-between border-t mt-4 md:mt-6 ${
                     dk ? "border-white/[0.06]" : "border-black/[0.04]"
                   }`}>
                     <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-1">
@@ -1170,8 +1268,8 @@ export default function ProviderOnboardingPage() {
                 </h1>
               </div>
 
-              <div className="clay-box p-8 md:p-10 space-y-6 text-left">
-                <div className="space-y-4">
+              <div className="clay-box p-6 md:p-10 space-y-6 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     "Google search",
                     "Social media",
@@ -1185,34 +1283,37 @@ export default function ProviderOnboardingPage() {
                     "Other (please specify)"
                   ].map((option) => {
                     const active = referral === option;
+                    const isOther = option === "Other (please specify)";
                     return (
-                      <div key={option} className="space-y-2">
+                      <div key={option} className={`space-y-2 ${isOther && active ? "col-span-1 sm:col-span-2" : ""}`}>
                         <div
                           onClick={() => setReferral(option)}
-                          className="flex items-center gap-4 cursor-pointer group select-none"
+                          className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all cursor-pointer select-none ${
+                            active
+                              ? (dk ? "bg-[#0077C0]/15 border-[#0077C0] text-white" : "bg-[#0077C0]/5 border-[#0077C0] text-[#0077C0]")
+                              : (dk ? "border-white/5 bg-white/[0.02] text-white/70 hover:bg-white/[0.05] hover:border-white/10" : "border-black/[0.05] bg-white text-gray-700 hover:bg-gray-50 hover:border-black/10")
+                          }`}
                         >
-                          <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
                             active
                               ? "bg-[#0077C0] border-[#0077C0] text-white"
-                              : (dk ? "border-white/20 bg-white/5 text-transparent group-hover:border-white/30" : "border-black/[0.12] bg-white text-transparent group-hover:border-black/[0.2]")
+                              : (dk ? "border-white/20 bg-white/5 text-transparent" : "border-black/[0.12] bg-white text-transparent")
                           }`}>
-                            <Check size={14} className="stroke-[3]" />
+                            <Check size={12} className="stroke-[3]" />
                           </div>
-                          <span className={`text-sm font-semibold leading-none transition-colors ${
-                            active ? (dk ? "text-white font-bold" : "text-gray-950 font-bold") : (dk ? "text-white/60 group-hover:text-white" : "text-gray-600 group-hover:text-gray-900")
-                          }`}>
+                          <span className="text-xs font-bold leading-none">
                             {option}
                           </span>
                         </div>
 
-                        {option === "Other (please specify)" && active && (
+                        {isOther && active && (
                           <input
                             type="text"
                             required
                             placeholder="Please tell us..."
                             value={customReferral}
                             onChange={(e) => setCustomReferral(e.target.value)}
-                            className={`w-full ml-10 max-w-[calc(100%-40px)] px-4 py-3 text-sm border rounded-xl outline-none transition-all font-semibold ${
+                            className={`w-full px-4 py-3 text-xs border rounded-xl outline-none transition-all font-semibold ${
                               dk ? "bg-white/5 border-white/10 text-white focus:border-white/20" : "bg-white border border-black/10 text-gray-800 focus:border-black/20"
                             }`}
                           />
@@ -1261,36 +1362,88 @@ export default function ProviderOnboardingPage() {
               </div>
 
               <div className="clay-box p-8 md:p-10 space-y-6">
-                <div className={`p-5 rounded-2xl border text-left flex items-start gap-4 ${
-                  dk ? "bg-white/5 border-white/[0.04]" : "bg-white/50 border-black/[0.04]"
-                }`}>
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
-                    <Laptop size={20} />
+                <div className="space-y-4">
+                  <div className={`p-5 rounded-2xl border text-left flex items-start gap-4 ${
+                    dk ? "bg-white/5 border-white/[0.04]" : "bg-white/50 border-black/[0.04]"
+                  }`}>
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
+                      <Laptop size={20} />
+                    </div>
+                    <div>
+                      <h3 className={`text-sm font-black uppercase ${dk ? "text-white" : "text-gray-900"}`}>Typing Simulation Mode</h3>
+                      <p className={`text-xs mt-1 leading-relaxed ${dk ? "text-white/40" : "text-gray-500"}`}>
+                        Simulate natural human keystrokes on target fields, bypassing clipboard blocking mechanisms.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className={`text-sm font-black uppercase ${dk ? "text-white" : "text-gray-900"}`}>Typing Simulation Mode</h3>
-                    <p className={`text-xs mt-1 leading-relaxed ${dk ? "text-white/40" : "text-gray-500"}`}>
-                      Simulate natural human keystrokes on target fields, bypassing clipboard blocking mechanisms.
-                    </p>
+
+                  <div className={`p-5 rounded-2xl border text-left flex items-start gap-4 ${
+                    dk ? "bg-white/5 border-white/[0.04]" : "bg-white/50 border-black/[0.04]"
+                  }`}>
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-550 shrink-0">
+                      <Globe size={20} />
+                    </div>
+                    <div>
+                      <h3 className={`text-sm font-black uppercase ${dk ? "text-white" : "text-gray-900"}`}>Cross-Device Cloud Sync</h3>
+                      <p className={`text-xs mt-1 leading-relaxed ${dk ? "text-white/40" : "text-gray-500"}`}>
+                        Instantly access and share your configured commands and scripts across multiple workstations.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     type="button"
-                    onClick={handleDownloadNow}
-                    className="flex-1 py-4 bg-[#0077C0] text-white font-black text-xs uppercase tracking-widest clay-btn cursor-pointer shadow-md shadow-[#0077C0]/10 flex items-center justify-center gap-2"
+                    onClick={handleMacDownloadClick}
+                    className="py-4 bg-[#0077C0] text-white font-black text-xs uppercase tracking-widest clay-btn cursor-pointer shadow-md shadow-[#0077C0]/10 flex items-center justify-center gap-2"
                   >
-                    <Download size={14} /> Download Now
+                    {copiedMac ? (
+                      <>
+                        <Check size={14} className="stroke-[3]" /> Copied Command!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} /> Copy Mac Command
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
+                    onClick={handleWinDownloadClick}
+                    className="py-4 bg-[#F28500] hover:brightness-110 text-white font-black text-xs uppercase tracking-widest clay-btn cursor-pointer shadow-md shadow-[#F28500]/10 flex items-center justify-center gap-2 border-transparent"
+                  >
+                    {copiedWin ? (
+                      <>
+                        <Check size={14} className="stroke-[3]" /> Copied Command!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} /> Copy Win Command
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex justify-center items-center gap-6 pt-2">
+                  <button
+                    type="button"
                     onClick={() => setStep(5)}
-                    className={`flex-1 py-4 border font-black text-xs uppercase tracking-widest clay-btn cursor-pointer ${
-                      dk ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-white border-black/10 hover:bg-gray-50 text-gray-700"
+                    className={`text-[10px] font-black uppercase tracking-wider hover:underline cursor-pointer ${
+                      dk ? "text-white/50 hover:text-white" : "text-gray-500 hover:text-gray-900"
                     }`}
                   >
                     Do it later
+                  </button>
+                  <span className={`text-[10px] ${dk ? "text-white/20" : "text-gray-300"}`}>|</span>
+                  <button
+                    type="button"
+                    onClick={() => setStep(5)}
+                    className={`text-[10px] font-black uppercase tracking-wider hover:underline cursor-pointer ${
+                      dk ? "text-white/50 hover:text-white" : "text-gray-500 hover:text-gray-900"
+                    }`}
+                  >
+                    Already Downloaded
                   </button>
                 </div>
               </div>
@@ -1330,6 +1483,43 @@ export default function ProviderOnboardingPage() {
           LANpad Provider Portal • Secure Sign In
         </p>
       </div>
+
+      {/* Copy Command Success Modal */}
+      <AnimatePresence>
+        {showCopyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCopyModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className={`w-full max-w-sm rounded-[24px] shadow-2xl p-6 relative z-10 border transition-all ${
+                dk ? "bg-[#1c1c24] border-white/10 text-white" : "bg-white border-black/5 text-gray-905"
+              }`}
+            >
+              <div className="space-y-5">
+                <p className={`text-sm font-bold leading-relaxed ${dk ? "text-white/95" : "text-gray-700"}`}>
+                  Install command copied to clipboard! Paste it in your Terminal.
+                </p>
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => setShowCopyModal(false)}
+                    className="text-sm font-black uppercase tracking-wider text-[#0077C0] hover:text-[#0077C0]/85 transition-colors px-4 py-2 cursor-pointer font-bold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

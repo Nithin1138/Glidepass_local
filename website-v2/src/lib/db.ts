@@ -31,6 +31,21 @@ const getJsonFilePath = () => {
 const globalDb = globalThis as unknown as { isDbInitialized: boolean };
 let isDbInitialized = globalDb.isDbInitialized || false;
 
+const globalCache = globalThis as unknown as {
+  cachedHubs?: Hub[];
+  cachedHubsTime?: number;
+  cachedResources?: Resource[];
+  cachedResourcesTime?: number;
+};
+
+// Helper to invalidate read caches on any writes
+export function invalidateCache() {
+  globalCache.cachedHubs = undefined;
+  globalCache.cachedHubsTime = undefined;
+  globalCache.cachedResources = undefined;
+  globalCache.cachedResourcesTime = undefined;
+}
+
 // Helper to parse VIT email into metadata
 export function parseVitEmail(email: string) {
   const parts = email.split("@");
@@ -513,15 +528,17 @@ const getCollectionsJsonPath = () => {
 };
 
 export async function readResources(includeDeleted = false): Promise<Resource[]> {
+  const now = Date.now();
   if (pool) {
+    if (globalCache.cachedResources && globalCache.cachedResourcesTime && (now - globalCache.cachedResourcesTime < 5000)) {
+      return includeDeleted ? globalCache.cachedResources : globalCache.cachedResources.filter(r => !r.isDeleted);
+    }
     await initDb();
     const client = await pool.connect();
     try {
-      const query = includeDeleted
-        ? "SELECT * FROM vit_resources ORDER BY created_at DESC"
-        : "SELECT * FROM vit_resources WHERE is_deleted = false ORDER BY created_at DESC";
+      const query = "SELECT * FROM vit_resources ORDER BY created_at DESC";
       const res = await client.query(query);
-      return res.rows.map((row) => ({
+      const rows = res.rows.map((row) => ({
         id: row.id,
         title: row.title,
         type: row.type,
@@ -542,6 +559,9 @@ export async function readResources(includeDeleted = false): Promise<Resource[]>
         category: row.category || undefined,
         topic: row.topic || undefined,
       }));
+      globalCache.cachedResources = rows;
+      globalCache.cachedResourcesTime = now;
+      return includeDeleted ? rows : rows.filter(r => !r.isDeleted);
     } catch (error) {
       console.error("Error reading resources from Postgres:", error);
       throw error;
@@ -664,6 +684,7 @@ export async function getResourceById(id: string): Promise<Resource | null> {
 }
 
 export async function createResource(resource: Resource): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -703,6 +724,7 @@ export async function createResource(resource: Resource): Promise<void> {
 }
 
 export async function updateResource(resource: Resource): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -743,6 +765,7 @@ export async function updateResource(resource: Resource): Promise<void> {
 }
 
 export async function deleteResource(id: string): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -760,6 +783,7 @@ export async function deleteResource(id: string): Promise<void> {
 
 
 export async function incrementResourceStats(id: string, field: "views" | "copies" | "sends"): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -2121,15 +2145,17 @@ export interface HubContributor {
 }
 
 export async function readHubs(includeDeleted = false): Promise<Hub[]> {
+  const now = Date.now();
   if (pool) {
+    if (globalCache.cachedHubs && globalCache.cachedHubsTime && (now - globalCache.cachedHubsTime < 5000)) {
+      return includeDeleted ? globalCache.cachedHubs : globalCache.cachedHubs.filter(h => !h.isDeleted);
+    }
     await initDb();
     const client = await pool.connect();
     try {
-      const query = includeDeleted
-        ? "SELECT * FROM hubs ORDER BY created_at DESC"
-        : "SELECT * FROM hubs WHERE is_deleted = false ORDER BY created_at DESC";
+      const query = "SELECT * FROM hubs ORDER BY created_at DESC";
       const res = await client.query(query);
-      return res.rows.map((row) => ({
+      const rows = res.rows.map((row) => ({
         id: row.id,
         title: row.title,
         description: row.description || undefined,
@@ -2141,6 +2167,9 @@ export async function readHubs(includeDeleted = false): Promise<Hub[]> {
         subCategories: row.sub_categories ? JSON.parse(row.sub_categories) : [],
         categories: row.categories ? JSON.parse(row.categories) : [],
       }));
+      globalCache.cachedHubs = rows;
+      globalCache.cachedHubsTime = now;
+      return includeDeleted ? rows : rows.filter(h => !h.isDeleted);
     } catch (error) {
       console.error("Error reading hubs from Postgres:", error);
       throw error;
@@ -2213,6 +2242,7 @@ export async function writeHubs(data: Hub[]): Promise<void> {
 }
 
 export async function createHub(hub: Hub): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -2243,6 +2273,7 @@ export async function createHub(hub: Hub): Promise<void> {
 }
 
 export async function updateHub(hub: Hub): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     const client = await pool.connect();
@@ -2419,6 +2450,7 @@ export async function isApprovedContributor(hubId: string, email: string): Promi
 }
 
 export async function deleteHub(id: string): Promise<void> {
+  invalidateCache();
   if (pool) {
     await initDb();
     await pool.query("UPDATE hubs SET is_deleted = true WHERE id = $1", [id]);

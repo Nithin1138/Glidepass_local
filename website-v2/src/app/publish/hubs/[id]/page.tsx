@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Settings, Users, FileCode, Trash2, Check, X, Eye, Copy, Send, Lock, Unlock
+  ArrowLeft, Settings, Users, FileCode, Trash2, Check, X, Eye, Copy, Send, Lock, Unlock, Pencil
 } from "lucide-react";
 import { useCreator } from "../../context";
 
@@ -40,11 +40,19 @@ export default function HubManagementPage() {
   const [newCatTypes, setNewCatTypes] = useState<string[]>(["code", "link", "text"]);
   const [newCatLimit, setNewCatLimit] = useState("");
   const [newCatTopicsLimit, setNewCatTopicsLimit] = useState("");
-  const [newCatDailyLimit, setNewCatDailyLimit] = useState("");
+
   const [selectedCatIdx, setSelectedCatIdx] = useState<number | null>(null);
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicLimit, setNewTopicLimit] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // ── Category edit state
+  const [editCatIdx, setEditCatIdx] = useState<number | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatTypes, setEditCatTypes] = useState<string[]>([]);
+  const [editCatLimit, setEditCatLimit] = useState("");
+  const [editCatTopicsLimit, setEditCatTopicsLimit] = useState("");
+
 
   /* ── Fetch ─────────────────────────────────────── */
   const fetchHub = async () => {
@@ -705,12 +713,11 @@ export default function HubManagementPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                   <input type="text" placeholder="Category name" value={newCatName} onChange={e => setNewCatName(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-                  <input type="number" placeholder="Resource Limit" value={newCatLimit} onChange={e => setNewCatLimit(e.target.value)}
+                  <input type="number" placeholder="Resources / Day" value={newCatLimit} onChange={e => setNewCatLimit(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-                  <input type="number" placeholder="Max Topics" value={newCatTopicsLimit} onChange={e => setNewCatTopicsLimit(e.target.value)}
+                  <input type="number" placeholder="Topics / Day" value={newCatTopicsLimit} onChange={e => setNewCatTopicsLimit(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-                  <input type="number" placeholder="Daily Limit" value={newCatDailyLimit} onChange={e => setNewCatDailyLimit(e.target.value)}
-                    className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
+
                 </div>
                 <div className="flex flex-wrap gap-3 items-center">
                   <span className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Types:</span>
@@ -726,15 +733,14 @@ export default function HubManagementPage() {
                 <button type="button" onClick={() => {
                   const n = newCatName.trim();
                   if (n && !settingsCategories.some(c => c.name.toLowerCase() === n.toLowerCase())) {
-                    const lv = parseInt(newCatLimit), tv = parseInt(newCatTopicsLimit), dv = parseInt(newCatDailyLimit);
+                    const lv = parseInt(newCatLimit), tv = parseInt(newCatTopicsLimit);
                     setSettingsCategories([...settingsCategories, {
                       name: n, allowedTypes: newCatTypes,
                       limit: isNaN(lv) ? undefined : lv,
                       topicsLimit: isNaN(tv) ? undefined : tv,
-                      dailyLimit: isNaN(dv) ? undefined : dv,
                       topics: []
                     }]);
-                    setNewCatName(""); setNewCatLimit(""); setNewCatTopicsLimit(""); setNewCatDailyLimit("");
+                    setNewCatName(""); setNewCatLimit(""); setNewCatTopicsLimit("");
                     setNewCatTypes(["code", "link", "text"]);
                   }
                 }} className={`w-full py-2 rounded-lg text-xs font-bold transition-all ${dk
@@ -760,9 +766,9 @@ export default function HubManagementPage() {
                         <div className="min-w-0">
                           <span className={`text-xs font-bold block truncate ${dk ? 'text-white' : 'text-[#111827]'}`}>{cat.name}</span>
                           <span className={`text-[9px] font-mono block truncate ${dk ? 'text-white/30' : 'text-[#9CA3AF]'}`}>
-                            Types: {cat.allowedTypes?.join(", ")} | Limit: {cat.limit ?? "∞"}
-                            {cat.topicsLimit != null ? ` | Topics: ${cat.topicsLimit}` : ""}
-                            {cat.dailyLimit != null ? ` | Daily: ${cat.dailyLimit}` : ""}
+                            Types: {cat.allowedTypes?.join(", ")} | Resources/day: {cat.limit ?? "∞"}
+                            {cat.topicsLimit != null ? ` | Topics/day: ${cat.topicsLimit}` : ""}
+
                           </span>
                         </div>
                         <div className="flex gap-1 shrink-0 ml-2">
@@ -774,6 +780,25 @@ export default function HubManagementPage() {
                           >
                             {isOpen ? "Hide" : `Topics (${cat.topics?.length || 0})`}
                           </button>
+                          {/* Edit button */}
+                          <button type="button" onClick={() => {
+                            if (editCatIdx === idx) {
+                              setEditCatIdx(null);
+                            } else {
+                              setEditCatIdx(idx);
+                              setEditCatName(cat.name);
+                              setEditCatTypes(cat.allowedTypes || []);
+                              setEditCatLimit(cat.limit != null ? String(cat.limit) : "");
+                              setEditCatTopicsLimit(cat.topicsLimit != null ? String(cat.topicsLimit) : "");
+
+                            }
+                          }} className={`p-1 rounded-lg ${
+                            editCatIdx === idx
+                              ? dk ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-600 border border-sky-300'
+                              : dk ? 'bg-white/[0.04] hover:bg-white/[0.08] text-white/40 hover:text-white/70 border border-white/[0.06]' : 'bg-black/[0.03] hover:bg-black/[0.06] text-[#9CA3AF] hover:text-[#374151] border border-black/[0.06]'
+                          }`}>
+                            <Pencil size={10} />
+                          </button>
                           <button type="button" onClick={() => {
                             setCatToDeleteIdx(idx);
                             setDeleteCatConfirmText("");
@@ -783,6 +808,87 @@ export default function HubManagementPage() {
                           </button>
                         </div>
                       </div>
+
+                      {/* ── Inline Edit Form ── */}
+                      {editCatIdx === idx && (
+                        <div className={`mt-2 p-3 rounded-xl border space-y-3 ${dk ? 'border-sky-500/20 bg-sky-950/10' : 'border-sky-300 bg-sky-50/50'}`}>
+                          {/* Header — shows what we're editing */}
+                          <div className="flex items-center gap-2">
+                            <Pencil size={9} className={dk ? 'text-sky-400' : 'text-sky-600'} />
+                            <p className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-sky-400' : 'text-sky-600'}`}>
+                              Editing: <span className={`normal-case ${dk ? 'text-white/80' : 'text-[#111827]'}`}>{cat.name}</span>
+                            </p>
+                          </div>
+
+                          {/* Category name */}
+                          <div className="space-y-1">
+                            <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Category Name</label>
+                            <input
+                              type="text" placeholder="e.g. Frontend" value={editCatName}
+                              onChange={e => setEditCatName(e.target.value)}
+                              className={`w-full rounded-lg px-2 py-1.5 text-[10px] outline-none ${inputClass}`}
+                            />
+                          </div>
+
+                          {/* Numeric limits */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-1">
+                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Resources / Day</label>
+                              <input
+                                type="number" placeholder="∞" value={editCatLimit}
+                                onChange={e => setEditCatLimit(e.target.value)}
+                                className={`w-full rounded-lg px-2 py-1.5 text-[10px] outline-none ${inputClass}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Topics / Day</label>
+                              <input
+                                type="number" placeholder="∞" value={editCatTopicsLimit}
+                                onChange={e => setEditCatTopicsLimit(e.target.value)}
+                                className={`w-full rounded-lg px-2 py-1.5 text-[10px] outline-none ${inputClass}`}
+                              />
+                            </div>
+
+                          </div>
+
+                          {/* Allowed types */}
+                          <div className="flex flex-wrap gap-1">
+                            {["code", "link", "text", "image"].map(t => {
+                              const active = editCatTypes.includes(t);
+                              return (
+                                <button key={t} type="button" onClick={() => {
+                                  setEditCatTypes(prev => active ? prev.filter(x => x !== t) : [...prev, t]);
+                                }} className={`px-2 py-0.5 rounded-full text-[9px] font-bold border transition-all ${
+                                  active
+                                    ? dk ? 'bg-sky-500/20 border-sky-500/40 text-sky-300' : 'bg-sky-100 border-sky-400 text-sky-700'
+                                    : dk ? 'bg-white/[0.03] border-white/[0.06] text-white/30' : 'bg-black/[0.03] border-black/[0.06] text-[#9CA3AF]'
+                                }`}>{t}</button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex gap-1.5 justify-end">
+                            <button type="button" onClick={() => setEditCatIdx(null)}
+                              className={`px-3 py-1 rounded-lg text-[9px] font-bold ${dk ? 'bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/70' : 'bg-black/[0.03] border border-black/[0.06] text-[#9CA3AF] hover:text-[#374151]'}`}
+                            >Cancel</button>
+                            <button type="button" onClick={() => {
+                              const name = editCatName.trim();
+                              if (!name) return;
+                              const updated = [...settingsCategories];
+                              updated[idx] = {
+                                ...updated[idx],
+                                name,
+                                allowedTypes: editCatTypes,
+                                limit: editCatLimit !== "" ? parseInt(editCatLimit) : undefined,
+                                topicsLimit: editCatTopicsLimit !== "" ? parseInt(editCatTopicsLimit) : undefined,
+
+                              };
+                              setSettingsCategories(updated);
+                              setEditCatIdx(null);
+                            }} className={`px-3 py-1 rounded-lg text-[9px] font-bold ${dk ? 'bg-sky-500/20 border border-sky-500/30 text-sky-300 hover:bg-sky-500/30' : 'bg-sky-100 border border-sky-300 text-sky-700 hover:bg-sky-200'}`}
+                            >Save</button>
+                          </div>
+                        </div>
+                      )}
 
                       {isOpen && (
                         <div className={`pl-3 border-l-2 space-y-2 mt-1 pt-1 ${dk ? 'border-purple-500/20' : 'border-purple-300'}`}>

@@ -50,13 +50,30 @@ export default function PublishLayout({ children }: { children: React.ReactNode 
       const saved = localStorage.getItem("glidepass-creator-user");
       if (saved) {
         const p = JSON.parse(saved);
-        setEmail(p.email); setName(p.name); setLicenseKey(p.licenseKey || "");
-        setIsLogged(true);
+        fetch(`/api/auth/check-email?email=${encodeURIComponent(p.email)}&t=${Date.now()}`, { cache: "no-store" })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.exists || data.suspended) {
+              localStorage.removeItem("glidepass-creator-user");
+              window.location.href = "/provider";
+            } else {
+              setEmail(p.email); setName(p.name); setLicenseKey(p.licenseKey || "");
+              setIsLogged(true);
+              setLoading(false);
+            }
+          })
+          .catch(() => {
+            setEmail(p.email); setName(p.name); setLicenseKey(p.licenseKey || "");
+            setIsLogged(true);
+            setLoading(false);
+          });
       } else {
         window.location.href = "/provider";
+        setLoading(false);
       }
-    } catch { /* noop */ }
-    setLoading(false);
+    } catch { 
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);

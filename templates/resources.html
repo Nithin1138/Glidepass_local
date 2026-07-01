@@ -4,319 +4,664 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LANPAD | Resource Catalog</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050505;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #FAFAFA;
-            --text-muted: rgba(250, 250, 250, 0.4);
-            --accent-color: #0077C0;
-            --accent-glow: rgba(0, 119, 192, 0.3);
-            --indigo-glow: rgba(199, 238, 255, 0.15);
-            --font-main: 'Inter', -apple-system, sans-serif;
+            --bg: #050505;
+            --card-bg: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.08);
+            --text: #FAFAFA;
+            --muted: rgba(250,250,250,0.4);
+            --accent: #0077C0;
+            --accent-glow: rgba(0,119,192,0.3);
+            --indigo-glow: rgba(199,238,255,0.15);
+            --font: 'Inter', -apple-system, sans-serif;
             --font-display: 'Outfit', -apple-system, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: var(--font-main);
-            -webkit-tap-highlight-color: transparent;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            overflow-x: hidden;
         }
 
-        #app-wrapper {
+        #app {
             position: relative;
             width: 100%;
-            max-width: 450px;
-            min-height: 100vh;
-            background: var(--bg-color);
+            max-width: 480px;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            z-index: 1;
-        }
-
-        .space-bg {
-            position: absolute;
-            inset: 0;
-            background: #000000;
             overflow: hidden;
-            z-index: -2;
-            pointer-events: none;
+            background: var(--bg);
         }
 
+        /* ── Decorative Background ── */
         .nebula {
             position: absolute;
-            width: 200%;
-            height: 200%;
-            top: -50%;
-            left: -50%;
-            background: radial-gradient(circle at 30% 30%, var(--accent-glow) 0%, transparent 40%),
-                        radial-gradient(circle at 70% 70%, var(--indigo-glow) 0%, transparent 40%);
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 20%, var(--accent-glow) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, var(--indigo-glow) 0%, transparent 50%);
             filter: blur(60px);
-            animation: nebula-drift 30s infinite alternate linear;
             pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 30s infinite alternate linear;
         }
-
         @keyframes nebula-drift {
             0% { transform: rotate(0deg) scale(1); }
-            100% { transform: rotate(30deg) scale(1.1); }
+            100% { transform: rotate(20deg) scale(1.08); }
         }
 
-        .view {
-            width: 100%;
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            padding: 20px;
-            z-index: 2;
-        }
-
-        .view.active {
-            display: flex;
-            animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
+        /* ── Header ── */
         header {
-            position: sticky;
-            top: 0;
+            position: relative;
             z-index: 50;
-            background: rgba(5, 5, 5, 0.5);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            width: 100%;
-            padding: 15px 20px;
-        }
-
-        .header-content {
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;
+            padding: 0 16px;
+            height: 52px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(5,5,5,0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
 
         .back-btn {
             background: none;
             border: none;
-            color: rgba(255, 255, 255, 0.4);
+            color: var(--muted);
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 5px;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 6px;
+            border-radius: 8px;
             transition: color 0.2s;
         }
+        .back-btn:hover { color: var(--text); }
 
         .logo-text {
             font-family: var(--font-display);
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 900;
-            letter-spacing: 0.15em;
-            background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.7));
+            letter-spacing: 0.12em;
+            background: linear-gradient(to right, #fff, rgba(255,255,255,0.65));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .portal-badge {
-            font-family: var(--font-display);
             font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
             font-weight: 700;
-            padding: 4px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 3px 9px;
             border-radius: 9999px;
-            border: 1px solid rgba(0, 155, 245, 0.3);
-            background: rgba(0, 119, 192, 0.15);
+            border: 1px solid rgba(0,155,245,0.3);
+            background: rgba(0,119,192,0.15);
             color: #009BF5;
-            box-shadow: 0 0 15px rgba(0, 119, 192, 0.2);
         }
 
-        .hero {
-            text-align: center;
-            margin: 10px 0 24px 0;
+        /* ── Breadcrumb Pill Bar ── */
+        #breadcrumb-bar {
+            flex-shrink: 0;
+            height: 38px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 0 12px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            overflow-x: auto;
+            scrollbar-width: none;
+            z-index: 30;
+            position: relative;
+        }
+        #breadcrumb-bar::-webkit-scrollbar { display: none; }
+        #breadcrumb-bar.visible { display: flex; }
+
+        .crumb-sep { color: rgba(255,255,255,0.2); font-size: 12px; flex-shrink: 0; }
+
+        .crumb-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.15s;
+            color: rgba(255,255,255,0.45);
+        }
+        .crumb-btn:hover { color: #fff; }
+        .crumb-btn.active-crumb { background: rgba(255,255,255,0.1); color: #fff; }
+        .crumb-label {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .crumb-label.cat { background: rgba(168,85,247,0.15); color: #c084fc; }
+        .crumb-label.topic { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+
+        /* ── Main Scrollable Area ── */
+        main {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            min-height: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            padding: 14px 12px;
             gap: 12px;
+            overflow: hidden;
         }
 
+        /* Layer headers */
+        .layer-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            flex-shrink: 0;
+        }
+        .layer-label.l1 { color: var(--accent); }
+        .layer-label.l2 { color: #a855f7; }
+        .layer-label.l3 { color: #10b981; }
+        .layer-label.l4 { color: var(--muted); }
+
+        /* ── Views ── */
+        .view {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+        .view.active { display: flex; animation: fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateX(16px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ── Hero (Layer 1) ── */
+        .hero {
+            text-align: center;
+            flex-shrink: 0;
+        }
         .ota-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
+            gap: 5px;
+            padding: 4px 10px;
             border-radius: 9999px;
-            border: 1px solid var(--border-color);
-            background: rgba(255, 255, 255, 0.02);
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            font-size: 9px;
+            color: var(--muted);
+            margin-bottom: 8px;
         }
-
         .hero h1 {
             font-family: var(--font-display);
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 800;
             letter-spacing: -0.02em;
-            background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.6));
+            background: linear-gradient(to right, #fff, rgba(255,255,255,0.6));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
         }
+        .hero p { font-size: 11px; color: var(--muted); line-height: 1.5; }
 
-        .hero p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            max-width: 320px;
-            line-height: 1.4;
+        /* ── Search ── */
+        .search-wrap {
+            position: relative;
+            flex-shrink: 0;
         }
-
-        .search-container {
-            margin-bottom: 20px;
+        .search-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
         }
-
         .search-input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 0.85rem;
+            padding: 10px 14px 10px 34px;
+            font-size: 12px;
             color: #fff;
             outline: none;
             transition: border-color 0.2s;
         }
+        .search-input:focus { border-color: var(--accent); }
+        .search-input::placeholder { color: var(--muted); }
 
-        .search-input:focus {
-            border-color: var(--accent-color);
+        /* ── Scroll Container ── */
+        .scroll-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.08) transparent;
+        }
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 9999px; }
+
+        /* ── Hub Card Grid ── */
+        .hub-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
         }
 
-        .resources-grid {
+        .hub-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .hub-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(0,119,192,0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .hub-card:hover::before { opacity: 1; }
+        .hub-card:hover { border-color: rgba(0,155,245,0.35); background: rgba(255,255,255,0.05); }
+
+        .hub-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+        .hub-title { font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hub-id { font-family: monospace; font-size: 8px; color: #009BF5; border: 1px solid rgba(0,155,245,0.2); background: rgba(0,119,192,0.08); padding: 2px 6px; border-radius: 6px; flex-shrink: 0; }
+        .hub-desc { font-size: 10px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hub-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); }
+        .hub-owner { font-size: 9px; color: var(--muted); }
+        .hub-arrow { font-size: 11px; font-weight: 700; color: var(--accent); transition: transform 0.2s; }
+        .hub-card:hover .hub-arrow { transform: translateX(3px); }
+
+        /* ── 2-Col Grid Cards (Category / Topic) ── */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .grid-card {
+            border-radius: 16px;
+            padding: 12px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            transition: all 0.2s;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            justify-content: space-between;
+            min-height: 92px;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1.5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .grid-card.cat-card::before { background: linear-gradient(90deg, transparent, rgba(168,85,247,0.5), transparent); }
+        .grid-card.topic-card::before { background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent); }
+        .grid-card.all-card::before { background: linear-gradient(90deg, transparent, rgba(0,119,192,0.4), transparent); }
+        .grid-card:hover::before { opacity: 1; }
+        .grid-card.cat-card:hover { border-color: rgba(168,85,247,0.35); background: rgba(255,255,255,0.04); }
+        .grid-card.topic-card:hover { border-color: rgba(16,185,129,0.35); background: rgba(255,255,255,0.04); }
+        .grid-card.all-card { border-style: dashed; }
+        .grid-card.all-card:hover { border-color: rgba(0,119,192,0.35); background: rgba(255,255,255,0.03); }
+
+        .gc-name { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; line-height: 1.3; margin-bottom: 4px; }
+        .gc-sub { font-size: 8px; color: var(--muted); line-height: 1.4; }
+        .gc-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .gc-count { font-size: 8px; font-family: monospace; padding: 2px 6px; border-radius: 6px; }
+        .cat-card .gc-count { color: #c084fc; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.2); }
+        .topic-card .gc-count { color: #6ee7b7; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); }
+        .all-card .gc-count { color: #38bdf8; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); }
+        .gc-arrow { font-size: 9px; font-weight: 700; }
+        .cat-card .gc-arrow { color: #c084fc; }
+        .topic-card .gc-arrow { color: #6ee7b7; }
+        .all-card .gc-arrow { color: #38bdf8; }
+
+        /* Featured Today Card */
+        #today-topic-container {
+            width: 100%;
+        }
+        .today-banner {
+            background: #10b981;
+            color: #fff;
+            font-size: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+        }
+        .grid-card.today-card-featured {
+            border-color: rgba(16,185,129,0.5);
+            background: rgba(16,185,129,0.04);
+            display: block;
+        }
+        .grid-card.today-card-featured:hover {
+            border-color: rgba(16,185,129,0.7);
+            background: rgba(16,185,129,0.07);
+        }
+        .gc-desc {
+            font-size: 8px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.3;
+            margin-top: 4px;
+        }
+
+
+        /* ── Resource Cards (Layer 4) ── */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            flex: 1;
+            min-width: 80px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 11px;
+            color: #fff;
+            outline: none;
+            cursor: pointer;
         }
 
         .resource-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-
-        .resource-card:hover {
-            border-color: rgba(0, 155, 245, 0.4);
-        }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .type-badge {
-            font-size: 8px;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            background: rgba(0, 119, 192, 0.15);
-            color: #009BF5;
-            border: 1px solid rgba(0, 155, 245, 0.3);
-            padding: 2px 8px;
-            border-radius: 9999px;
-        }
-
-        .resource-title {
-            font-family: var(--font-display);
-            font-size: 1rem;
-            font-weight: 700;
-            color: #fff;
+            transition: border-color 0.2s;
             margin-bottom: 8px;
         }
+        .resource-card:last-child { margin-bottom: 0; }
+        .resource-card:hover { border-color: rgba(0,155,245,0.35); }
 
-        .code-preview {
-            background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 0.7rem;
-            color: #a7f3d0;
-            max-height: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: pre-wrap;
-            margin-bottom: 12px;
-        }
-
-        .card-footer {
+        .rc-inner {
+            background: rgba(0,0,0,0.35);
+            padding: 12px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-
-        .actions-wrap {
-            display: flex;
+            flex-direction: column;
             gap: 8px;
         }
 
-        .action-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
+        .rc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .rc-left { display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0; }
+
+        .rc-num {
+            width: 20px; height: 20px;
+            border-radius: 6px;
+            background: rgba(0,119,192,0.12);
+            color: #38bdf8;
+            font-size: 9px;
+            font-weight: 800;
             display: flex;
             align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .rc-info { flex: 1; min-width: 0; }
+        .rc-title { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+
+        .rc-tags {
+            display: flex;
+            flex-wrap: nowrap;
             gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .rc-tags::-webkit-scrollbar { display: none; }
+
+        .tag {
+            flex-shrink: 0;
+            font-size: 8px;
+            font-family: monospace;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .tag.type { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); }
+        .tag.lang { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: #60a5fa; }
+        .tag.cat { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.2); color: #c084fc; }
+        .tag.topic { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .tag.misc { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.3); }
+
+        .rc-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+        /* Language badge — replaces the old pin button slot */
+        .lang-badge {
+            font-family: monospace;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 3px 7px;
+            border-radius: 6px;
+            background: rgba(59,130,246,0.12);
+            border: 1px solid rgba(59,130,246,0.22);
+            color: #60a5fa;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
-        .action-btn.copied {
-            border-color: #10b981;
-            color: #10b981;
+        .act-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+        .act-btn:hover { background: rgba(255,255,255,0.08); }
+        .act-btn.copy-btn { color: #38bdf8; }
+        .act-btn.copy-btn.copied { color: #10b981; border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); }
+        .act-btn.send-btn { color: #f59e0b; }
+        .act-btn.send-btn.sending { color: #f59e0b; animation: pulse 0.8s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* Expanded code preview */
+        .rc-code {
+            display: none;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .rc-code.visible { display: block; }
+        .code-dots {
+            height: 22px;
+            background: rgba(0,0,0,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 5px;
+        }
+        .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .dot.r { background: rgba(239,68,68,0.5); }
+        .dot.y { background: rgba(234,179,8,0.5); }
+        .dot.g { background: rgba(34,197,94,0.5); }
+        pre.code-body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: monospace;
+            font-size: 10px;
+            padding: 10px;
+            overflow-x: auto;
+            max-height: 180px;
+            white-space: pre;
         }
 
+        .rc-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+            color: var(--muted);
+            padding-top: 6px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Command Center button in resource card footer */
+        .center-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0,119,192,0.1);
+            border: 1px solid rgba(0,155,245,0.2);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #009BF5;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        .center-btn:hover {
+            background: rgba(0,119,192,0.18);
+            border-color: rgba(0,155,245,0.4);
+            transform: translateY(-1px);
+        }
+        .center-btn:active { transform: translateY(0); opacity: 0.7; }
+
+        /* ── Pin Button ── */
+        .hub-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+
+        .pin-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 6px;
+            color: rgba(255,255,255,0.2);
+            transition: all 0.18s;
+            flex-shrink: 0;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pin-btn:hover { color: #f59e0b; transform: rotate(-20deg); }
+        .pin-btn.pinned { color: #f59e0b; transform: rotate(-20deg); }
+        .pin-btn.pinned svg { fill: #f59e0b; }
+
+        /* Pinned section label */
+        .pinned-section-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #f59e0b;
+            padding: 2px 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .pinned-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(245,158,11,0.2);
+        }
+        .other-section-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: rgba(255,255,255,0.2);
+            padding: 8px 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .other-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* Hub card pinned state */
+        .hub-card.is-pinned {
+            border-color: rgba(245,158,11,0.25);
+            background: rgba(245,158,11,0.04);
+        }
+        .hub-card.is-pinned::before {
+            background: linear-gradient(90deg, transparent, rgba(245,158,11,0.4), transparent);
+            opacity: 1;
+        }
+
+        /* Resource card pin button */
+        .act-btn.pin-btn-res { color: rgba(255,255,255,0.2); }
+        .act-btn.pin-btn-res.pinned { color: #f59e0b; background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); }
+        .resource-card.is-pinned { border-color: rgba(245,158,11,0.25); }
+
+        /* ── Loader & Empty ── */
         .loader-wrap {
             display: flex;
             flex-direction: column;
@@ -325,208 +670,1141 @@
             padding: 60px 0;
             gap: 12px;
         }
-
         .spinner {
-            width: 28px;
-            height: 28px;
-            border: 2px solid var(--accent-color);
+            width: 26px; height: 26px;
+            border: 2px solid var(--accent);
             border-top-color: transparent;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 0;
+            gap: 8px;
+            border: 1px dashed var(--border);
+            border-radius: 20px;
+        }
+        .empty-icon { color: rgba(255,255,255,0.15); }
+        .empty-state p { font-size: 11px; color: var(--muted); }
+
+        /* Reading Modal & Report styles */
+        .read-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .read-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .read-modal {
+            background: #05070a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 680px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(0.96);
+        }
+        .read-modal-overlay.active .read-modal {
+            transform: scale(1);
+        }
+        .read-modal.fullscreen {
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
         }
     </style>
 </head>
 <body>
-    <div id="app-wrapper">
-        <div class="space-bg">
-            <div class="nebula"></div>
-        </div>
+    <div id="app">
+        <div class="nebula"></div>
 
+        <!-- Header -->
         <header>
-            <div class="header-content">
-                <div class="header-left">
-                    <button class="back-btn" id="header-back-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                    </button>
-                    <span class="logo-text">LANPAD</span>
-                    <span class="portal-badge">RESOURCES</span>
-                </div>
+            <div class="header-left">
+                <button class="back-btn" id="back-btn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                </button>
+                <span class="logo-text">LANPAD</span>
+                <span class="portal-badge">RESOURCES</span>
             </div>
         </header>
 
-        <div class="view active" id="overview-view">
-            <div class="hero">
-                <div class="ota-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                    <span>Mobile Snippet Catalog</span>
+        <!-- Breadcrumb Pill Bar -->
+        <div id="breadcrumb-bar">
+            <!-- Injected by JS -->
+        </div>
+
+        <!-- Main -->
+        <main>
+            <!-- ===== LAYER 1: Hub Selector ===== -->
+            <div class="view active" id="view-hubs">
+                <div class="hero">
+                    <div class="ota-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0077C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                        <span>Mobile Snippet Catalog</span>
+                    </div>
+                    <h1>Discovery Browser</h1>
+                    <p>Send snippets to your desktop or copy manually for native device execution.</p>
                 </div>
-                <h1>Discovery Browser</h1>
-                <p>Send snippets directly to your desktop or copy manually for native device execution.</p>
+
+                <div class="search-wrap">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" class="search-input" id="hub-search" placeholder="Search hubs…">
+                </div>
+
+                <div class="layer-label l1">Step 1 · Select Hub</div>
+
+                <div class="scroll-area">
+                    <div id="hubs-loading" class="loader-wrap">
+                        <div class="spinner"></div>
+                        <span style="font-size:11px;color:var(--muted)">Loading hubs…</span>
+                    </div>
+                    <div class="hub-grid" id="hubs-grid" style="display:none"></div>
+                </div>
             </div>
 
-            <div class="search-container">
-                <input type="text" class="search-input" id="search-input" placeholder="Search resources...">
+            <!-- ===== LAYER 2: Category Selector ===== -->
+            <div class="view" id="view-categories">
+                <div class="layer-label l2" id="cat-label">Step 2 · Select Category</div>
+                <div class="scroll-area">
+                    <div class="two-col-grid" id="categories-grid"></div>
+                </div>
             </div>
 
-            <div id="loading-spinner" class="loader-wrap">
-                <div class="spinner"></div>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">Fetching catalog...</span>
+            <!-- ===== LAYER 3: Topic Selector ===== -->
+            <div class="view" id="view-topics">
+                <div class="layer-label l3" id="topic-label">Step 3 · Select Topic</div>
+                <div class="scroll-area" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div id="today-topic-container"></div>
+                    <div id="topics-grid" style="display: flex; flex-direction: column; gap: 16px;"></div>
+                </div>
             </div>
 
-            <div class="resources-grid" id="resources-grid" style="display: none;">
-                <!-- Loaded dynamically -->
+            <!-- ===== LAYER 4: Resources ===== -->
+            <div class="view" id="view-resources">
+                <div class="filter-bar">
+                    <div class="search-wrap" style="flex:1">
+                        <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" class="search-input" id="res-search" placeholder="Search resources…">
+                    </div>
+                    <select class="filter-select" id="type-filter">
+                        <option value="">All Types</option>
+                        <option value="code">Code</option>
+                        <option value="link">Links</option>
+                        <option value="text">Text</option>
+                    </select>
+                </div>
+                <div class="layer-label l4" id="res-label">Resources</div>
+                <div class="scroll-area">
+                    <div id="res-loading" class="loader-wrap" style="display:none">
+                        <div class="spinner"></div>
+                        <span style="font-size:11px;color:var(--muted)">Loading resources…</span>
+                    </div>
+                    <div id="resources-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- READING MODE MODAL -->
+    <div id="read-overlay" class="read-modal-overlay">
+        <div id="read-card" class="read-modal" style="position: relative;">
+            <!-- Floating Fullscreen Controls -->
+            <div id="read-fs-controls" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 50; align-items: center; gap: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); padding: 6px; border-radius: 12px;">
+                <button id="read-fs-zoom-in" style="background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; cursor: pointer;">A+</button>
+                <button id="read-fs-zoom-out" style="background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; cursor: pointer;">A-</button>
+                <button id="read-fs-zoom-reset" style="background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; cursor: pointer;">Reset</button>
+                <button id="read-fs-exit" style="background: #f59e0b; border: none; color: #000; padding: 4px 10px; font-size: 10px; font-weight: 700; border-radius: 4px; cursor: pointer;">Exit Fullscreen</button>
+            </div>
+
+            <!-- Header -->
+            <div id="read-header" style="padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); shrink-0;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="display: flex; gap: 6px; margin-bottom: 4px;">
+                        <span id="read-type" style="font-size: 8px; font-weight: 700; text-transform: uppercase; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px;"></span>
+                        <span id="read-lang" style="font-size: 8px; font-weight: 700; text-transform: uppercase; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;"></span>
+                    </div>
+                    <div id="read-title" style="font-size: 14px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; shrink-0; margin-left: 12px;">
+                    <!-- Zoom actions on Header -->
+                    <div style="display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.15); padding: 3px 6px; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                        <button id="read-zoom-in" style="background: none; border: none; color: #fff; font-size: 9px; font-weight: bold; cursor: pointer; padding: 0 4px;">A+</button>
+                        <span id="read-zoom-val" style="font-size: 8px; color: rgba(255,255,255,0.5); font-family: monospace;">100%</span>
+                        <button id="read-zoom-out" style="background: none; border: none; color: #fff; font-size: 9px; font-weight: bold; cursor: pointer; padding: 0 4px;">A-</button>
+                    </div>
+
+                    <button id="read-copy" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: #38bdf8; border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        Copy
+                    </button>
+                    <button id="read-fullscreen" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: #fbbf24; border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Fullscreen
+                    </button>
+                    <button id="read-close" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 700; cursor: pointer;">✕</button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px; background: #000;">
+                <pre id="read-code" style="margin: 0; font-family: monospace; font-size: 11px; color: #a5d6ff; white-space: pre-wrap; word-break: break-all; line-height: 1.6; transition: font-size 0.15s ease;"></pre>
+            </div>
+
+            <!-- Footer -->
+            <div id="read-footer" style="padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: center; shrink-0;">
+                <div style="font-size: 11px; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; gap: 2px;">
+                    <div>by: <strong id="read-author" style="color: #fff;"></strong></div>
+                    <div id="read-hub-creator-row">hub creator: <strong id="read-hub-creator" style="color: #fff;"></strong></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="read-report-btn" style="background: none; border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); color: #f87171; border-radius: 10px; padding: 6px 12px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                        Report Abuse
+                    </button>
+                    <button id="read-center-btn" style="background: #0077C0; border: 1px solid #0088dd; color: #fff; border-radius: 10px; padding: 6px 14px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        Command Center
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT MODAL OVERLAY -->
+    <div id="report-overlay" class="read-modal-overlay" style="z-index: 10100;">
+        <div style="background: #090b0e; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 380px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 800; color: #fff;">Report Inappropriate Content</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">Reason</label>
+                  <select id="report-reason" style="width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #fff; outline: none;">
+                    <option value="spam">Spam / Advertising</option>
+                    <option value="abuse">Harmful or Dangerous Code</option>
+                    <option value="copyright">Copyright Infringement</option>
+                    <option value="other">Other Violation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">Details (Optional)</label>
+                  <textarea id="report-details" rows="3" style="width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #fff; outline: none; resize: none;"></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px; font-size: 11px;">
+                <button id="report-cancel" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); border-radius: 8px; padding: 6px 12px; cursor: pointer;">Cancel</button>
+                <button id="report-submit" style="background: #ef4444; border: none; color: #fff; border-radius: 8px; padding: 6px 14px; font-weight: 700; cursor: pointer;">Submit</button>
             </div>
         </div>
     </div>
 
     <script>
-        const backBtn = document.getElementById('header-back-btn');
-        backBtn.addEventListener('click', () => {
-            window.location.href = '/';
-        });
+    // ═══════════════════════════════════════════════════════
+    // STATE
+    // ═══════════════════════════════════════════════════════
+    let allHubs = [];
+    let allResources = [];
+    let selectedHub = null;
+    let selectedCategory = null;
+    let selectedTopic = null;
+    let expandedResId = null;
+    let copiedResId = null;
 
-        let resources = [];
+    // ── Pin persistence (localStorage) ──────────────────────────────────────
+    const PINNED_HUBS_KEY = 'lanpad_pinned_hubs';
+    const PINNED_RES_KEY  = 'lanpad_pinned_resources';
 
-        async function fetchResources() {
-            try {
-                // Fetch public resources catalog
-                const res = await fetch('/api/resources');
-                const data = await res.json();
-                if (data.success) {
-                    resources = data.resources || [];
-                    renderResources(resources);
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('resources-grid').style.display = 'flex';
+    function _loadSet(key) {
+        try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
+        catch { return new Set(); }
+    }
+    function _saveSet(key, set) {
+        try { localStorage.setItem(key, JSON.stringify([...set])); } catch {}
+    }
+
+    let pinnedHubs = _loadSet(PINNED_HUBS_KEY);
+    let pinnedResources = _loadSet(PINNED_RES_KEY);
+
+    function togglePinHub(id) {
+        if (pinnedHubs.has(id)) pinnedHubs.delete(id);
+        else pinnedHubs.add(id);
+        _saveSet(PINNED_HUBS_KEY, pinnedHubs);
+    }
+    function togglePinResource(id) {
+        if (pinnedResources.has(id)) pinnedResources.delete(id);
+        else pinnedResources.add(id);
+        _saveSet(PINNED_RES_KEY, pinnedResources);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // NAVIGATION HELPERS
+    // ═══════════════════════════════════════════════════════
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        const target = document.getElementById(viewId);
+        if (target) target.classList.add('active');
+        updateBreadcrumb();
+        updateBackBtn();
+    }
+
+    function updateBreadcrumb() {
+        const bar = document.getElementById('breadcrumb-bar');
+        if (!selectedHub) { bar.classList.remove('visible'); return; }
+        bar.classList.add('visible');
+
+        let html = `<button class="crumb-btn" id="crumb-hubs">← Hubs</button>`;
+        html += `<span class="crumb-sep">›</span>`;
+
+        const hubLabel = selectedHub.title.length > 14 ? selectedHub.title.slice(0, 14) + '…' : selectedHub.title;
+        if (!selectedCategory) {
+            html += `<span class="crumb-btn active-crumb">${hubLabel}</span>`;
+        } else {
+            html += `<button class="crumb-btn" id="crumb-hub">${hubLabel}</button>`;
+            html += `<span class="crumb-sep">›</span>`;
+
+            const catLabel = selectedCategory.name.length > 12 ? selectedCategory.name.slice(0, 12) + '…' : selectedCategory.name;
+            if (!selectedTopic) {
+                html += `<span class="crumb-label cat">${catLabel}</span>`;
+            } else {
+                html += `<button class="crumb-btn" id="crumb-cat">${catLabel}</button>`;
+                html += `<span class="crumb-sep">›</span>`;
+                const topicLabel = selectedTopic.name.length > 12 ? selectedTopic.name.slice(0, 12) + '…' : selectedTopic.name;
+                html += `<span class="crumb-label topic">${topicLabel}</span>`;
             }
         }
 
-        function renderResources(items) {
-            const grid = document.getElementById('resources-grid');
-            grid.innerHTML = '';
+        bar.innerHTML = html;
+
+        const hubbtn = document.getElementById('crumb-hubs');
+        if (hubbtn) hubbtn.addEventListener('click', () => goToHubs());
+
+        const hubcrumb = document.getElementById('crumb-hub');
+        if (hubcrumb) hubcrumb.addEventListener('click', () => goToCategories());
+
+        const catcrumb = document.getElementById('crumb-cat');
+        if (catcrumb) catcrumb.addEventListener('click', () => goToTopics());
+    }
+
+    function updateBackBtn() {
+        // Back button now goes up one layer
+    }
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+        if (selectedTopic) {
+            goToTopics();
+        } else if (selectedCategory) {
+            goToCategories();
+        } else if (selectedHub) {
+            goToHubs();
+        } else {
+            window.location.href = '/';
+        }
+    });
+
+    function goToHubs() {
+        selectedHub = null;
+        selectedCategory = null;
+        selectedTopic = null;
+        allResources = [];
+        showView('view-hubs');
+        renderHubs(allHubs);
+    }
+
+    function goToCategories() {
+        selectedCategory = null;
+        selectedTopic = null;
+        showView('view-categories');
+    }
+
+    function goToTopics() {
+        selectedTopic = null;
+        showView('view-topics');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // FETCH
+    // ═══════════════════════════════════════════════════════
+    async function fetchHubs() {
+        try {
+            const res = await fetch('/api/hubs');
+            const data = await res.json();
+            if (data.success) {
+                allHubs = (data.hubs || []).filter(h => h.visibility !== 'private');
+                renderHubs(allHubs);
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            document.getElementById('hubs-loading').style.display = 'none';
+            document.getElementById('hubs-grid').style.display = 'grid';
+        }
+    }
+
+    async function fetchResources(hubId) {
+        document.getElementById('res-loading').style.display = 'flex';
+        document.getElementById('resources-list').innerHTML = '';
+        try {
+            const res = await fetch(`/api/resources?hubId=${hubId}`);
+            const data = await res.json();
+            if (data.success) {
+                allResources = data.resources || [];
+                renderResources();
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            document.getElementById('res-loading').style.display = 'none';
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // RENDER HUBS (Layer 1)
+    // ═══════════════════════════════════════════════════════
+    function renderHubs(hubs) {
+        const grid = document.getElementById('hubs-grid');
+        grid.innerHTML = '';
+        if (!hubs.length) {
+            grid.innerHTML = emptyState('No public hubs found.');
+            return;
+        }
+
+        const pinned = hubs.filter(h => pinnedHubs.has(h.id));
+        const others = hubs.filter(h => !pinnedHubs.has(h.id));
+
+        function makeHubCard(hub) {
+            const isPinned = pinnedHubs.has(hub.id);
+            const card = document.createElement('div');
+            card.className = 'hub-card' + (isPinned ? ' is-pinned' : '');
+            card.innerHTML = `
+                <div class="hub-card-top">
+                    <div class="hub-title">${esc(hub.title)}</div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <div class="hub-id">${esc(hub.id)}</div>
+                        <button class="pin-btn${isPinned ? ' pinned' : ''}" data-hub-id="${esc(hub.id)}" title="${isPinned ? 'Unpin hub' : 'Pin hub'}" aria-label="${isPinned ? 'Unpin' : 'Pin'}">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="${isPinned ? '#f59e0b' : 'none'}" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.27V17a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1.73a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                ${hub.description ? `<div class="hub-desc">${esc(hub.description)}</div>` : ''}
+                <div class="hub-footer">
+                    <span class="hub-owner">${esc(hub.creatorName || hub.creatorEmail || 'Anonymous')}</span>
+                    <span class="hub-arrow">→</span>
+                </div>
+            `;
+            // Navigate on card click (not on pin button)
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.pin-btn')) return;
+                enterHub(hub);
+            });
+            // Pin toggle
+            card.querySelector('.pin-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePinHub(hub.id);
+                renderHubs(allHubs.filter(h => {
+                    const q = document.getElementById('hub-search').value.toLowerCase();
+                    return !q || h.title.toLowerCase().includes(q) || (h.description && h.description.toLowerCase().includes(q)) || h.id.toLowerCase().includes(q);
+                }));
+            });
+            return card;
+        }
+
+        if (pinned.length > 0) {
+            const pinnedLabel = document.createElement('div');
+            pinnedLabel.className = 'pinned-section-label';
+            pinnedLabel.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.27V17a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1.73a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>Pinned`;
+            grid.appendChild(pinnedLabel);
+            pinned.forEach(hub => grid.appendChild(makeHubCard(hub)));
+        }
+
+        if (others.length > 0) {
+            if (pinned.length > 0) {
+                const otherLabel = document.createElement('div');
+                otherLabel.className = 'other-section-label';
+                otherLabel.textContent = 'All Hubs';
+                grid.appendChild(otherLabel);
+            }
+            others.forEach(hub => grid.appendChild(makeHubCard(hub)));
+        }
+    }
+
+    function enterHub(hub) {
+        selectedHub = hub;
+        selectedCategory = null;
+        selectedTopic = null;
+
+        // Fetch resources for this hub
+        fetchResources(hub.id);
+
+        // Decide next step
+        if (hub.categories && hub.categories.length > 0) {
+            renderCategories();
+            showView('view-categories');
+        } else {
+            // No categories — go straight to resources
+            showView('view-resources');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // RENDER CATEGORIES (Layer 2)
+    // ═══════════════════════════════════════════════════════
+    function renderCategories() {
+        document.getElementById('cat-label').textContent = `Step 2 · Select Category in ${selectedHub.title}`;
+        const grid = document.getElementById('categories-grid');
+        grid.innerHTML = '';
+
+        (selectedHub.categories || []).forEach(cat => {
+            // Calculate date range of topics in this category
+            const topicDates = (cat.topics || [])
+                .map(t => t.name)
+                .filter(name => /^\d{4}-\d{2}-\d{2}$/.test(name))
+                .sort();
             
-            if (items.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 20px;">No resources found.</div>';
-                return;
+            let dateRangeStr = "No active sessions";
+            if (topicDates.length > 0) {
+                const minDate = topicDates[0];
+                const maxDate = topicDates[topicDates.length - 1];
+                dateRangeStr = minDate === maxDate ? minDate : `${minDate} ➔ ${maxDate}`;
             }
 
-            items.forEach(res => {
-                const card = document.createElement('div');
-                card.className = 'resource-card';
-                card.innerHTML = `
-                    <div class="card-top">
-                        <span class="type-badge">${res.type}</span>
-                        <span style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;">${res.language || ''}</span>
+            const topicsCount = cat.topics?.length || 0;
+
+            const card = document.createElement('div');
+            card.className = 'grid-card cat-card';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+            card.style.minHeight = '120px';
+            card.style.padding = '16px';
+            card.style.gap = '8px';
+
+            card.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Collection Badge -->
+                    <div style="display: flex;">
+                        <span class="tag type" style="font-size: 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(56,189,248,0.2); background: rgba(56,189,248,0.08); color: #38bdf8; padding: 2px 6px; border-radius: 9999px;">
+                            <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                            Collection
+                        </span>
                     </div>
-                    <h3 class="resource-title">${res.title}</h3>
-                    <div class="code-preview">${escapeHtml(res.content)}</div>
-                    <div class="card-footer">
-                        <span>By ${res.creatorName || 'Anonymous'}</span>
-                        <div class="actions-wrap">
-                            <button class="action-btn copy-btn" data-id="${res.id}" data-content="${encodeURIComponent(res.content)}">Copy</button>
-                            <button class="action-btn send-btn" data-id="${res.id}" data-content="${encodeURIComponent(res.content)}" data-title="${encodeURIComponent(res.title)}" data-type="${res.type}" data-lang="${res.language || ''}">Send to LANpad</button>
+
+                    <!-- Title -->
+                    <div class="gc-name" style="font-size: 13px; font-weight: 800; margin-bottom: 0;">${esc(cat.name)}</div>
+
+                    <!-- Date range -->
+                    <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; opacity: 0.8; font-size: 8px;">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        <span>${dateRangeStr}</span>
+                    </div>
+                </div>
+
+                <!-- Footer with Sessions Count -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto;">
+                    <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; font-size: 8px;">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        <span>${topicsCount} ${topicsCount === 1 ? "Session" : "Sessions"}</span>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: #38bdf8; opacity: 0.75;"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+            `;
+            card.addEventListener('click', () => enterCategory(cat));
+            grid.appendChild(card);
+        });
+    }
+
+    function enterCategory(cat) {
+        selectedCategory = cat;
+        selectedTopic = null;
+        renderTopics();
+        showView('view-topics');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // RENDER TOPICS (Layer 3)
+    // ═══════════════════════════════════════════════════════
+    function renderTopics() {
+        document.getElementById('topic-label').textContent = `Step 3 · Select Topic in ${selectedCategory.name}`;
+        const todayContainer = document.getElementById('today-topic-container');
+        const grid = document.getElementById('topics-grid');
+        todayContainer.innerHTML = '';
+        grid.innerHTML = '';
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayTopic = (selectedCategory.topics || []).find(t => t.name === todayStr);
+
+        // Today card count
+        const todayCount = allResources.filter(r =>
+            (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+             r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+            r.topic === todayStr
+        ).length;
+
+        // Render Today card in its featured wrapper
+        const todayCard = document.createElement('div');
+        todayCard.className = 'grid-card today-card-featured';
+        todayCard.style.display = 'flex';
+        todayCard.style.flexDirection = 'column';
+        todayCard.style.justifyContent = 'space-between';
+        todayCard.style.minHeight = '120px';
+        todayCard.style.padding = '16px';
+        todayCard.style.gap = '8px';
+        todayCard.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Category Tag Badge -->
+                <div style="display: flex;">
+                    <span class="tag type" style="font-size: 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); color: #6ee7b7; padding: 2px 6px; border-radius: 9999px;">
+                        <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                        ${esc(selectedCategory.name)}
+                    </span>
+                </div>
+
+                <!-- Title -->
+                <div class="gc-name" style="font-size: 13px; font-weight: 800; margin-bottom: 0;">${esc(todayTopic?.title || "Today's Content")}</div>
+
+                <!-- Date -->
+                <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; opacity: 0.8; font-size: 8px;">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <span>${todayStr}</span>
+                </div>
+            </div>
+
+            <!-- Footer: Snippet Count & Arrow -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(16,185,129,0.15); margin-top: auto;">
+                <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; font-size: 8px;">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <span>${todayCount} ${todayCount === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: #6ee7b7; opacity: 0.75;"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+        `;
+        todayCard.addEventListener('click', () => enterTopic({ name: todayStr }));
+        todayContainer.appendChild(todayCard);
+
+        // Custom topics grid
+        (selectedCategory.topics || []).forEach(topic => {
+            if (topic.name === todayStr) return; // skip duplicate
+            const count = allResources.filter(r =>
+                (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                 r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                r.topic?.toLowerCase() === topic.name.toLowerCase()
+            ).length;
+
+            const card = document.createElement('div');
+            card.className = 'grid-card topic-card';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+            card.style.minHeight = '120px';
+            card.style.padding = '16px';
+            card.style.gap = '8px';
+            card.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Category Tag Badge -->
+                    <div style="display: flex;">
+                        <span class="tag type" style="font-size: 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(56,189,248,0.2); background: rgba(56,189,248,0.08); color: #38bdf8; padding: 2px 6px; border-radius: 9999px;">
+                            <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                            ${esc(selectedCategory.name)}
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="gc-name" style="font-size: 13px; font-weight: 800; margin-bottom: 0;">${esc(topic.title || topic.name)}</div>
+
+                    <!-- Date -->
+                    <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; opacity: 0.8; font-size: 8px;">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        <span>${topic.name}</span>
+                    </div>
+                </div>
+
+                <!-- Footer: Snippet Count & Arrow -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto;">
+                    <div class="gc-sub" style="display: flex; align-items: center; gap: 4px; font-size: 8px;">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        <span>${count} ${count === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: #38bdf8; opacity: 0.75;"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+            `;
+            card.addEventListener('click', () => enterTopic(topic));
+            grid.appendChild(card);
+        });
+
+        // All Topics card
+        const allCount = allResources.filter(r =>
+            r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+            r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()
+        ).length;
+
+        const allCard = document.createElement('div');
+        allCard.className = 'grid-card all-card';
+        allCard.style.display = 'flex';
+        allCard.style.flexDirection = 'column';
+        allCard.style.justifyContent = 'space-between';
+        allCard.style.minHeight = '120px';
+        allCard.style.padding = '16px';
+        allCard.style.gap = '8px';
+        allCard.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Category Tag Badge -->
+                <div style="display: flex;">
+                    <span class="tag type" style="font-size: 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 9999px;">
+                        All
+                    </span>
+                </div>
+                <div class="gc-name" style="font-size: 13px; font-weight: 800; color:rgba(255,255,255,0.4); margin-bottom: 0;">All Topics</div>
+                <div class="gc-sub" style="font-size: 8px;">Show all in ${esc(selectedCategory.name)}</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; align-items: center; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); margin-top: auto;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: #38bdf8; opacity: 0.75;"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+        `;
+        allCard.addEventListener('click', () => enterTopic({ name: 'All Topics' }));
+        grid.appendChild(allCard);
+    }
+
+    function enterTopic(topic) {
+        selectedTopic = topic;
+        renderResources();
+        showView('view-resources');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // RENDER RESOURCES (Layer 4)
+    // ═══════════════════════════════════════════════════════
+    function getFilteredResources() {
+        const q = document.getElementById('res-search').value.toLowerCase();
+        const typeF = document.getElementById('type-filter').value;
+
+        return allResources.filter(r => {
+            // Category filter
+            const matchCat = selectedCategory
+                ? r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                  r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()
+                : true;
+
+            // Topic filter
+            const matchTopic = selectedTopic
+                ? selectedTopic.name === 'All Topics'
+                    ? true
+                    : r.topic?.toLowerCase() === selectedTopic.name.toLowerCase()
+                : true;
+
+            const matchSearch = q
+                ? r.title.toLowerCase().includes(q) ||
+                  r.content.toLowerCase().includes(q) ||
+                  (r.tags || []).some(t => t.toLowerCase().includes(q))
+                : true;
+
+            const matchType = typeF ? r.type === typeF : true;
+
+            return matchCat && matchTopic && matchSearch && matchType;
+        });
+    }
+
+    function renderResources() {
+        const list = document.getElementById('resources-list');
+        const items = getFilteredResources();
+
+        // Update label
+        let labelText = 'Resources';
+        if (selectedTopic) labelText = `Resources · ${selectedTopic.name}`;
+        if (selectedCategory && selectedTopic) labelText = `${selectedCategory.name} · ${selectedTopic.name}`;
+        document.getElementById('res-label').textContent = labelText;
+
+        list.innerHTML = '';
+
+        if (!items.length) {
+            list.innerHTML = `<div class="empty-state">
+                <svg class="empty-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+                <p>No resources found.</p>
+            </div>`;
+            return;
+        }
+
+        items.forEach((res, idx) => {
+            const card = document.createElement('div');
+            card.className = 'resource-card';
+            card.dataset.id = res.id;
+
+            // Language badge (replaces pin button)
+            const langLabel = res.language ? res.language.toUpperCase().slice(0, 6) : (res.type || 'TXT').toUpperCase().slice(0, 6);
+
+            // Tags HTML (below title)
+            let tagsHtml = `<span class="tag type">${esc(res.type)}</span>`;
+            if (res.category || res.subCategory) tagsHtml += `<span class="tag cat">${esc(res.category || res.subCategory)}</span>`;
+            if (res.topic) tagsHtml += `<span class="tag topic">${esc(res.topic)}</span>`;
+            (res.tags || []).slice(0, 2).forEach(t => {
+                tagsHtml += `<span class="tag misc">#${esc(t)}</span>`;
+            });
+            if ((res.tags || []).length > 2) {
+                tagsHtml += `<span class="tag misc">+${res.tags.length - 2}</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="rc-inner" style="background: rgba(0,0,0,0.3); padding: 0;">
+                    <!-- Top row -->
+                    <div style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                            <span style="color: #38bdf8; font-family: monospace; font-size: 11px; font-weight: 700;">&gt;_</span>
+                            <div class="rc-title" style="margin-bottom: 0; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">
+                                Snippet ${idx + 1}: ${esc(res.title)}
+                            </div>
+                        </div>
+                        <div class="rc-actions" style="display: flex; align-items: center; gap: 10px;">
+                            <!-- Copy button -->
+                            <button class="act-btn copy-btn" title="Copy content" data-id="${res.id}" data-content="${encodeURIComponent(res.content)}" style="background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 2px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </button>
+                            <!-- Open button icon -->
+                            <button class="act-btn open-btn" title="Open details view" style="background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 2px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            </button>
+                            <!-- Lang badge -->
+                            ${res.language ? `<span class="lang-badge" style="font-size: 8px; font-family: monospace; font-weight: 700; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;">${esc(res.language)}</span>` : ''}
+                            <!-- Chevron expand icon -->
+                            <svg class="chevron-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: rgba(255,255,255,0.4); transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
                         </div>
                     </div>
-                `;
 
-                // Copy handler
-                card.querySelector('.copy-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const btn = e.target;
-                    const content = decodeURIComponent(btn.getAttribute('data-content'));
-                    const id = btn.getAttribute('data-id');
-                    try {
-                        await navigator.clipboard.writeText(content);
-                        btn.textContent = 'Copied!';
-                        btn.classList.add('copied');
-                        setTimeout(() => {
-                            btn.textContent = 'Copy';
-                            btn.classList.remove('copied');
-                        }, 2000);
+                    <!-- Code Preview Container -->
+                    <div class="rc-code" id="code-${res.id}" style="display: none; padding: 0 14px 14px 14px;">
+                        <div style="border: 1px solid rgba(255,255,255,0.05); background: #000; border-radius: 16px; padding: 14px; overflow: hidden;">
+                            <pre class="code-body" style="margin: 0; background: none; border: none; font-size: 10px; color: #a5d6ff; max-height: 220px; white-space: pre-wrap; word-break: break-all; line-height: 1.5; font-family: monospace;">${esc(res.content)}</pre>
+                        </div>
+                    </div>
 
-                        // Increment metrics
-                        fetch(`/api/resources/${id}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'copy' })
-                        });
-                    } catch (err) {
-                        console.error(err);
-                    }
-                });
+                    <!-- Bottom row -->
+                    <div class="rc-footer" style="padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); display: flex; justify-content: space-between; align-items: center; margin-top: 0;">
+                        <span style="font-size: 10px; color: rgba(255,255,255,0.5);">by: <strong style="color: #fff;">${esc(res.creatorName || 'Anonymous')}</strong></span>
+                        <button class="center-btn" data-id="${res.id}" data-content="${encodeURIComponent(res.content)}" data-title="${encodeURIComponent(res.title)}" data-type="${res.type}" data-lang="${res.language || ''}" title="Open in Command Center" style="background: #0077C0; border: 1px solid #0088dd; color: #fff; border-radius: 9999px; padding: 4px 12px; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            Command Center
+                        </button>
+                    </div>
+                </div>
+            `;
 
-                // Send handler
-                card.querySelector('.send-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const btn = e.target;
-                    const id = btn.getAttribute('data-id');
-                    const content = decodeURIComponent(btn.getAttribute('data-content'));
-                    const title = decodeURIComponent(btn.getAttribute('data-title'));
-                    const type = btn.getAttribute('data-type');
-                    const language = btn.getAttribute('data-lang');
-
-                    btn.textContent = 'Sending...';
-                    try {
-                        // Increment metrics
-                        fetch(`/api/resources/${id}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'sends' })
-                        });
-
-                        // Post directly to local paired server bridge
-                        const response = await fetch('/receive_resource', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title, content, type, language })
-                        });
-
-                        if (response.ok) {
-                            btn.textContent = 'Sent!';
-                            setTimeout(() => btn.textContent = 'Send to LANpad', 2000);
-                        } else {
-                            btn.textContent = 'Error';
-                            setTimeout(() => btn.textContent = 'Send to LANpad', 2000);
-                        }
-                    } catch (err) {
-                        btn.textContent = 'Offline';
-                        setTimeout(() => btn.textContent = 'Send to LANpad', 2000);
-                    }
-                });
-
-                grid.appendChild(card);
+            // Toggle expand on card click (not on buttons)
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.act-btn') || e.target.closest('.center-btn')) return;
+                const codeEl = card.querySelector('.rc-code');
+                const chevronEl = card.querySelector('.chevron-icon');
+                const isOpen = codeEl.style.display === 'block';
+                
+                // Collapse all first
+                document.querySelectorAll('.rc-code').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.chevron-icon').forEach(el => el.style.transform = 'rotate(0deg)');
+                
+                if (!isOpen) {
+                    codeEl.style.display = 'block';
+                    if (chevronEl) chevronEl.style.transform = 'rotate(180deg)';
+                }
             });
-        }
 
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+            // Copy button — copies content to clipboard
+            card.querySelector('.copy-btn').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const btn = e.currentTarget;
+                const content = decodeURIComponent(btn.dataset.content);
+                const id = btn.dataset.id;
+                try {
+                    await navigator.clipboard.writeText(content);
+                    btn.classList.add('copied');
+                    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+                    }, 2000);
+                    fetch(`/api/resources/${id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'copy'}) });
+                } catch(err) { console.error(err); }
+            });
 
-        // Live search filter
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = resources.filter(res => 
-                res.title.toLowerCase().includes(query) || 
-                res.content.toLowerCase().includes(query) ||
-                (res.language && res.language.toLowerCase().includes(query))
-            );
-            renderResources(filtered);
+
+
+            // Open modal button
+            card.querySelector('.open-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openReadingModal(res);
+            });
+
+            // Command Center button — send snippet then navigate
+            card.querySelector('.center-btn').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const btn = e.currentTarget;
+                const content = decodeURIComponent(btn.dataset.content);
+                const title = decodeURIComponent(btn.dataset.title);
+                const type = btn.dataset.type;
+                const language = btn.dataset.lang;
+                const id = btn.dataset.id;
+
+                btn.style.opacity = '0.5';
+                try {
+                    fetch(`/api/resources/${id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'sends'}) });
+                    await fetch('/receive_resource', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content, type, language })
+                    });
+                } catch(err) { /* navigate anyway */ }
+                window.location.href = '/center';
+            });
+
+            list.appendChild(card);
         });
+    }
 
-        // Initialize load
-        fetchResources();
+
+    }
+
+    let activeReadingResource = null;
+    let zoomLevel = 1.0;
+
+    function updateZoom() {
+        document.getElementById('read-code').style.fontSize = (zoomLevel * 11) + 'px';
+        document.getElementById('read-zoom-val').textContent = Math.round(zoomLevel * 100) + '%';
+    }
+
+    function openReadingModal(res) {
+        activeReadingResource = res;
+        zoomLevel = 1.0;
+        updateZoom();
+        
+        // Fill elements
+        document.getElementById('read-title').textContent = res.title;
+        document.getElementById('read-type').textContent = res.type;
+        
+        const langEl = document.getElementById('read-lang');
+        if (res.language) {
+            langEl.textContent = res.language;
+            langEl.style.display = 'inline-block';
+        } else {
+            langEl.style.display = 'none';
+        }
+        
+        document.getElementById('read-code').textContent = res.content;
+        document.getElementById('read-author').textContent = res.creatorName || 'Anonymous';
+        
+        const hubCreatorRow = document.getElementById('read-hub-creator-row');
+        const hubCreatorVal = document.getElementById('read-hub-creator');
+        if (selectedHub && selectedHub.creatorName) {
+            hubCreatorVal.textContent = selectedHub.creatorName;
+            hubCreatorRow.style.display = 'block';
+        } else {
+            hubCreatorRow.style.display = 'none';
+        }
+        
+        // Show overlay
+        document.getElementById('read-overlay').classList.add('active');
+        setFullscreenMode(false);
+    }
+
+    function setFullscreenMode(fullscreen) {
+        const card = document.getElementById('read-card');
+        const fsControls = document.getElementById('read-fs-controls');
+        const header = document.getElementById('read-header');
+        const footer = document.getElementById('read-footer');
+        
+        if (fullscreen) {
+            card.classList.add('fullscreen');
+            fsControls.style.display = 'flex';
+            header.style.display = 'none';
+            footer.style.display = 'none';
+        } else {
+            card.classList.remove('fullscreen');
+            fsControls.style.display = 'none';
+            header.style.display = 'flex';
+            footer.style.display = 'flex';
+        }
+    }
+
+    // Modal action listeners
+    document.getElementById('read-close').addEventListener('click', () => {
+        document.getElementById('read-overlay').classList.remove('active');
+    });
+
+    document.getElementById('read-overlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('read-overlay')) {
+            document.getElementById('read-overlay').classList.remove('active');
+        }
+    });
+
+    // Zoom listeners
+    document.getElementById('read-zoom-in').addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomLevel = Math.min(2.5, zoomLevel + 0.15);
+        updateZoom();
+    });
+    document.getElementById('read-zoom-out').addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomLevel = Math.max(0.6, zoomLevel - 0.15);
+        updateZoom();
+    });
+
+    // Floating Zoom listeners
+    document.getElementById('read-fs-zoom-in').addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomLevel = Math.min(2.5, zoomLevel + 0.15);
+        updateZoom();
+    });
+    document.getElementById('read-fs-zoom-out').addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomLevel = Math.max(0.6, zoomLevel - 0.15);
+        updateZoom();
+    });
+    document.getElementById('read-fs-zoom-reset').addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomLevel = 1.0;
+        updateZoom();
+    });
+    document.getElementById('read-fs-exit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        setFullscreenMode(false);
+    });
+
+    document.getElementById('read-fullscreen').addEventListener('click', () => {
+        setFullscreenMode(true);
+    });
+
+    document.getElementById('read-copy').addEventListener('click', async () => {
+        if (!activeReadingResource) return;
+        try {
+            await navigator.clipboard.writeText(activeReadingResource.content);
+            const btn = document.getElementById('read-copy');
+            btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg> Copied`;
+            setTimeout(() => {
+                btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy`;
+            }, 2000);
+            fetch(`/api/resources/${activeReadingResource.id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'copy'}) });
+        } catch(err) { console.error(err); }
+    });
+
+    document.getElementById('read-center-btn').addEventListener('click', async () => {
+        if (!activeReadingResource) return;
+        const res = activeReadingResource;
+        try {
+            fetch(`/api/resources/${res.id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'sends'}) });
+            await fetch('/receive_resource', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: res.title, content: res.content, type: res.type, language: res.language })
+            });
+        } catch(err) { }
+        window.location.href = '/center';
+    });
+
+    // Report Actions
+    document.getElementById('read-report-btn').addEventListener('click', () => {
+        document.getElementById('report-reason').value = 'spam';
+        document.getElementById('report-details').value = '';
+        document.getElementById('report-overlay').classList.add('active');
+    });
+
+    document.getElementById('report-cancel').addEventListener('click', () => {
+        document.getElementById('report-overlay').classList.remove('active');
+    });
+
+    document.getElementById('report-overlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('report-overlay')) {
+            document.getElementById('report-overlay').classList.remove('active');
+        }
+    });
+
+    document.getElementById('report-submit').addEventListener('click', async () => {
+        if (!activeReadingResource) return;
+        const btn = document.getElementById('report-submit');
+        btn.textContent = 'Submitting...';
+        btn.disabled = true;
+        
+        try {
+            const reason = document.getElementById('report-reason').value;
+            const details = document.getElementById('report-details').value;
+            
+            const resp = await fetch('/api/reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_type: 'resource',
+                    target_id: activeReadingResource.id,
+                    reason: reason,
+                    details: details
+                })
+            });
+            if (resp.ok) {
+                alert('Thank you. Report received and flagged for administrator moderation.');
+                document.getElementById('report-overlay').classList.remove('active');
+            } else {
+                alert('Failed to submit report. Please try again.');
+            }
+        } catch(err) {
+            console.error(err);
+            alert('Error submitting report.');
+        } finally {
+            btn.textContent = 'Submit';
+            btn.disabled = false;
+        }
+    });
+
+    // Live filter listeners
+    document.getElementById('res-search').addEventListener('input', renderResources);
+    document.getElementById('type-filter').addEventListener('change', renderResources);
+
+    // Hub search
+    document.getElementById('hub-search').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const filtered = allHubs.filter(h =>
+            h.title.toLowerCase().includes(q) ||
+            (h.description && h.description.toLowerCase().includes(q)) ||
+            h.id.toLowerCase().includes(q)
+        );
+        renderHubs(filtered);
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // UTILS
+    // ═══════════════════════════════════════════════════════
+    function esc(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function emptyState(msg) {
+        return `<div class="empty-state"><svg class="empty-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><p>${msg}</p></div>`;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════
+    fetchHubs();
     </script>
 </body>
 </html>

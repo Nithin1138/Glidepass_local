@@ -1315,6 +1315,103 @@ async def get_connections():
     }
 
 
+# ── Cloud resource catalog proxy ──────────────────────────────────────────────
+# The mobile resources.html page runs on the LOCAL server (localhost:8000).
+# The actual hub/resource data lives on the Next.js server.
+# Try localhost:3000 (dev) first, then fall back to lanpad.app (production).
+# Both are tried because the Next.js API routes may not yet be deployed.
+
+_API_BASES = ["http://127.0.0.1:3000", "https://lanpad.app"]
+
+import time
+_local_api_online = True
+_local_api_last_checked = 0
+
+async def is_local_api_online():
+    global _local_api_online, _local_api_last_checked
+    now = time.time()
+    if now - _local_api_last_checked < 15:
+        return _local_api_online
+    
+    try:
+        # Do a very fast check to see if the local Next.js server port is open
+        async with httpx.AsyncClient(timeout=httpx.Timeout(0.2, connect=0.2)) as client:
+            r = await client.get("http://127.0.0.1:3000/api/hubs")
+            _local_api_online = (r.status_code == 200)
+    except Exception:
+        _local_api_online = False
+    
+    _local_api_last_checked = now
+    return _local_api_online
+
+
+async def _proxy_get(path: str, params: dict):
+    """Try each API base in order; return the first successful JSON response."""
+    last_err = "No API base available"
+    local_online = await is_local_api_online()
+    bases = _API_BASES if local_online else ["https://lanpad.app"]
+    
+    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=0.5), follow_redirects=True) as client:
+        for base in bases:
+            try:
+                r = await client.get(f"{base}{path}", params=params)
+                if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
+                    return r.json()
+            except Exception as e:
+                last_err = str(e)
+    return None, last_err
+
+
+async def _proxy_post(path: str, body: dict):
+    """Try each API base in order for POST requests."""
+    last_err = "No API base available"
+    local_online = await is_local_api_online()
+    bases = _API_BASES if local_online else ["https://lanpad.app"]
+    
+    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=0.5), follow_redirects=True) as client:
+        for base in bases:
+            try:
+                r = await client.post(f"{base}{path}", json=body, headers={"Content-Type": "application/json"})
+                if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
+                    return r.json()
+            except Exception as e:
+                last_err = str(e)
+    return None, last_err
+
+
+@app.get("/api/hubs")
+async def proxy_hubs(request: Request):
+    """Proxy GET /api/hubs → Next.js API (dev:3000 → prod:lanpad.app)."""
+    params = dict(request.query_params)
+    result = await _proxy_get("/api/hubs", params)
+    if isinstance(result, dict):
+        return result
+    return {"success": True, "hubs": []}
+
+
+@app.get("/api/resources")
+async def proxy_resources(request: Request):
+    """Proxy GET /api/resources → Next.js API (dev:3000 → prod:lanpad.app)."""
+    params = dict(request.query_params)
+    result = await _proxy_get("/api/resources", params)
+    if isinstance(result, dict):
+        return result
+    return {"success": True, "resources": []}
+
+
+@app.post("/api/resources/{resource_id}")
+async def proxy_resource_action(resource_id: str, request: Request):
+    """Proxy POST /api/resources/{id} → Next.js API (copy/send metrics)."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    result = await _proxy_post(f"/api/resources/{resource_id}", body)
+    if isinstance(result, dict):
+        return result
+    return {"success": False, "error": "Metrics server unavailable"}
+
+
 # ── Paste / input endpoints ───────────────────────────────────────────────────
 
 @app.post("/input/send")

@@ -48,6 +48,15 @@ export default function ResourcesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  
+  // Reading mode & Report states
+  const [readingResource, setReadingResource] = useState<Resource | null>(null);
+  const [readingMode, setReadingMode] = useState<"normal" | "fullscreen">("normal");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("spam");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reporting, setReporting] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   useEffect(() => {
     fetchHubs();
@@ -149,6 +158,35 @@ export default function ResourcesPage() {
     }
   }
 
+  async function handleReportSubmit() {
+    if (!readingResource) return;
+    setReporting(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_type: "resource",
+          target_id: readingResource.id,
+          reason: reportReason,
+          details: reportDetails,
+        }),
+      });
+      if (res.ok) {
+        alert("Thank you. Report received and flagged for administrator moderation.");
+        setShowReportModal(false);
+        setReportDetails("");
+      } else {
+        alert("Failed to submit report. Please try again.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error submitting report.");
+    } finally {
+      setReporting(false);
+    }
+  }
+
   const filteredHubs = hubs.filter((h) => {
     const q = exploreQuery.toLowerCase();
     return (
@@ -205,8 +243,8 @@ export default function ResourcesPage() {
   });
 
   return (
-    <div className={`min-h-screen ${cardBg} ${textPrimary} ${theme} font-sans antialiased selection:bg-[#C7EEFF]/20 selection:text-[#C7EEFF] relative overflow-hidden transition-colors duration-200`}>
-      {/* Decorative gradient glow */}
+    <div className={`h-[100dvh] flex flex-col ${cardBg} ${textPrimary} font-sans antialiased relative overflow-hidden transition-colors duration-200`}>
+      {/* Decorative glow */}
       {dk && (
         <>
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,119,192,0.08)_0,transparent_60%)] pointer-events-none" />
@@ -214,464 +252,793 @@ export default function ResourcesPage() {
         </>
       )}
 
-      {/* Header */}
-      <header className={`border-b ${borderLight} backdrop-blur-md sticky top-0 z-50 ${dk ? "bg-[#050505]/80" : "bg-[#EDEAE0]/80"}`}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className={`text-xl font-bold tracking-tight ${dk ? "bg-gradient-to-r from-white via-[#C7EEFF] to-[#0077C0] bg-clip-text text-transparent" : "text-gray-900"} font-outfit`}>
-              LANpad
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <nav className="flex items-center gap-6">
-              <Link href="/" className={`text-sm ${textSecondary} hover:text-sky-500 transition-colors`}>
-                Home
+      {/* ── NAV ── */}
+      <header className={`shrink-0 border-b ${borderLight} backdrop-blur-md z-50 ${dk ? "bg-[#050505]/80" : "bg-[#EDEAE0]/80"}`}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {selectedHub ? (
+              <button
+                onClick={() => {
+                  if (selectedTopic) {
+                    setSelectedTopic(null);
+                  } else if (selectedCategory) {
+                    setSelectedCategory(null);
+                  } else {
+                    setSelectedHub(null);
+                  }
+                }}
+                className={`flex items-center gap-1.5 text-[10px] font-bold ${textSecondary} hover:text-sky-500 transition-colors cursor-pointer`}
+              >
+                <ArrowLeft size={13} /> Back
+              </button>
+            ) : (
+              <Link href="/" className={`flex items-center gap-1.5 text-[10px] font-bold ${textSecondary} hover:text-sky-500 transition-colors`}>
+                <ArrowLeft size={13} /> Home
               </Link>
-            </nav>
+            )}
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${dk ? "border-sky-400/20 bg-sky-400/5 text-sky-400" : "border-sky-600/20 bg-sky-600/5 text-sky-600"}`}>
+              Resources
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors cursor-pointer`}
               title="Toggle Theme"
             >
-              {dk ? (
-                <Sun size={14} className="text-white/60" />
-              ) : (
-                <Moon size={14} className="text-gray-700" />
-              )}
+              {dk ? <Sun size={13} className="text-white/60" /> : <Moon size={13} className="text-gray-700" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Body */}
-      <main className="max-w-7xl mx-auto px-6 py-12 relative z-10">
+      {/* ── BREADCRUMB PILL BAR (layers 2/3/4) ── */}
+      {selectedHub && (
+        <div className={`shrink-0 border-b ${borderLight} ${dk ? "bg-black/70" : "bg-white/70"} backdrop-blur-md z-30`}>
+          <div className="w-full max-w-7xl mx-auto px-3 md:px-6 h-10 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => {
+                if (selectedTopic) {
+                  setSelectedTopic(null);
+                } else if (selectedCategory) {
+                  setSelectedCategory(null);
+                } else {
+                  setSelectedHub(null);
+                }
+              }}
+              className="flex items-center gap-1 shrink-0 text-[10px] font-bold text-sky-500 hover:opacity-75 transition-all"
+            >
+              <ArrowLeft size={11} />
+              <span className="hidden sm:inline">Hubs</span>
+              <span className="sm:hidden">←</span>
+            </button>
+            <span className="text-white/20 shrink-0">›</span>
+            <button
+              onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
+              className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                !selectedCategory ? `${dk ? "bg-white/10 text-white" : "bg-black/10 text-black"}` : "text-white/50 hover:text-white"
+              }`}
+            >
+              {selectedHub.title.length > 14 ? selectedHub.title.slice(0, 14) + "…" : selectedHub.title}
+            </button>
+            {selectedCategory && (
+              <>
+                <span className="text-white/20 shrink-0">›</span>
+                <button
+                  onClick={() => setSelectedTopic(null)}
+                  className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                    !selectedTopic ? "bg-purple-400/15 text-purple-300" : "text-white/50 hover:text-purple-300"
+                  }`}
+                >
+                  {selectedCategory.name.length > 12 ? selectedCategory.name.slice(0, 12) + "…" : selectedCategory.name}
+                </button>
+              </>
+            )}
+            {selectedTopic && (
+              <>
+                <span className="text-white/20 shrink-0">›</span>
+                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/15 text-emerald-300">
+                  {selectedTopic.name.length > 12 ? selectedTopic.name.slice(0, 12) + "…" : selectedTopic.name}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MAIN ── */}
+      <main className="flex-1 min-h-0 flex flex-col w-full max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6 overflow-hidden relative z-10">
         <AnimatePresence mode="wait">
           {!selectedHub ? (
-            /* ==================== STEP 1: HUB SELECTOR ==================== */
+            /* ==================== LAYER 1: HUB SELECTOR ==================== */
             <motion.div
               key="hub-select"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="space-y-8"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex-1 min-h-0 flex flex-col gap-3"
             >
-              {/* Split Header: Text Left, Search Right */}
-              <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b ${borderLight}`}>
-                <div className="space-y-3 text-left">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${borderLight} ${dk ? "bg-white/[0.03] text-[#C7EEFF]" : "bg-black/[0.03] text-sky-600"} text-xs font-bold`}>
-                    <Sparkles size={12} />
-                    Step 1: Select Community Hub
+              {/* Header + Search */}
+              <div className="shrink-0 flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${borderLight} ${dk ? "bg-white/[0.03] text-[#C7EEFF]" : "bg-black/[0.03] text-sky-600"} text-[10px] font-bold mb-1`}>
+                    <Sparkles size={10} /> Discovery Browser
                   </div>
-                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-outfit">
-                    Resource Discovery
-                  </h1>
-                  <p className={`text-sm ${textSecondary} max-w-xl`}>
-                    Choose a shared community hub below to explore organized code categories, templates, and active resources.
-                  </p>
+                  <h1 className={`text-lg md:text-2xl font-extrabold tracking-tight font-outfit ${textPrimary}`}>Community Hubs</h1>
+                  <p className={`text-[10px] md:text-xs ${textSecondary} mt-0.5`}>Browse public hubs to explore code, templates and resources.</p>
                 </div>
-
-                {/* Hub search bar at right */}
-                <div className="relative max-w-xs w-full shrink-0">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary} w-4 h-4`} />
+                <div className="relative w-full sm:w-64">
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${textSecondary}`} />
                   <input
                     type="text"
-                    placeholder="Search shared hubs..."
+                    placeholder="Search hubs…"
                     value={exploreQuery}
                     onChange={(e) => setExploreQuery(e.target.value)}
-                    className={`w-full bg-[#0b0b0b] ${dk ? "text-white" : "text-gray-900 bg-white"} border ${borderLight} focus:border-[#0077C0] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all`}
+                    className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${dk ? "bg-white/5 border-white/10 text-white" : "bg-black/5 border-black/10 text-gray-900"}`}
                   />
                 </div>
               </div>
 
-              {/* Hub Cards List */}
-              {loadingHubs ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-t-[#0077C0] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-                  <p className={`text-xs ${textSecondary}`}>Loading available hubs...</p>
-                </div>
-              ) : filteredHubs.length === 0 ? (
-                <div className={`text-center py-20 border border-dashed ${borderLight} rounded-3xl`}>
-                  <Users className={`w-10 h-10 mx-auto ${textSecondary} mb-4`} />
-                  <h3 className="font-bold mb-1">No community hubs found</h3>
-                  <p className={`text-xs ${textSecondary}`}>Try adjusting your search query.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredHubs.map((hub) => (
-                    <div
-                      key={hub.id}
-                      onClick={() => {
-                        setSelectedHub(hub);
-                        setSelectedCategory(null);
-                        setSelectedTopic(null);
-                      }}
-                      className={`group p-6 rounded-2xl border ${borderLight} ${clayBg} hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between min-h-[160px] relative overflow-hidden`}
-                    >
-                      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-bold group-hover:text-sky-500 transition-colors text-lg truncate max-w-[200px]">
-                            {hub.title}
-                          </h3>
-                          <span className={`text-[9px] font-mono px-2 py-0.5 rounded border ${dk ? "border-[#0077C0]/20 bg-[#0077C0]/5 text-[#C7EEFF]" : "border-[#0077C0]/40 bg-[#0077C0]/10 text-[#0077C0]"}`}>
-                            {hub.id}
-                          </span>
+              {/* Hub Cards */}
+              <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                {loadingHubs ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-8 h-8 rounded-full border-2 border-t-[#0077C0] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                  </div>
+                ) : filteredHubs.length === 0 ? (
+                  <div className={`text-center py-16 border border-dashed ${borderLight} rounded-3xl`}>
+                    <Users className={`w-8 h-8 mx-auto ${textSecondary} mb-3`} />
+                    <p className={`text-xs ${textSecondary}`}>No public hubs found.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {filteredHubs.map((hub) => (
+                      <div
+                        key={hub.id}
+                        onClick={() => { setSelectedHub(hub); setSelectedCategory(null); setSelectedTopic(null); }}
+                        className={`group p-4 rounded-[20px] border ${borderLight} ${clayBg} hover:border-[#0077C0]/40 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden`}
+                      >
+                        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="space-y-1 mb-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className={`font-bold group-hover:text-sky-500 transition-colors text-sm uppercase tracking-wide ${textPrimary} truncate flex-1`}>{hub.title}</h3>
+                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${dk ? "border-[#0077C0]/20 bg-[#0077C0]/5 text-[#C7EEFF]" : "border-[#0077C0]/40 bg-[#0077C0]/10 text-[#0077C0]"}`}>{hub.id}</span>
+                          </div>
+                          {hub.description && <p className={`text-[10px] ${textSecondary} line-clamp-2 leading-relaxed`}>{hub.description}</p>}
                         </div>
-                        {hub.description && (
-                          <p className={`text-xs ${textSecondary} line-clamp-2 leading-relaxed`}>
-                            {hub.description}
-                          </p>
-                        )}
+                        <div className={`flex items-center justify-between pt-2 border-t ${borderLight}`}>
+                          <span className={`text-[9px] ${textSecondary} truncate`}>{hub.creatorName || "Anonymous"}</span>
+                          <span className="text-[10px] font-bold text-[#0077C0] group-hover:translate-x-0.5 transition-transform">→</span>
+                        </div>
                       </div>
-
-                      <div className={`pt-4 flex items-center justify-between border-t ${borderLight}`}>
-                        <span className={`text-[10px] ${textSecondary}`}>
-                          Owner: {hub.creatorName || "Anonymous"}
-                        </span>
-                        <span className="text-xs font-bold text-[#0077C0] group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                          Enter Hub &rarr;
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
+
           ) : (
-            /* ==================== STEPS 2, 3, 4: HUB CONDUIT FLOW ==================== */
+            /* ==================== LAYERS 2 / 3 / 4 ==================== */
             <motion.div
               key="hub-conduit-flow"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="space-y-8"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="flex-1 min-h-0 flex flex-col gap-3"
             >
-              {/* Back / Breadcrumbs Navigation bar */}
-              <div className={`flex flex-wrap items-center gap-3 pb-4 border-b ${borderLight}`}>
-                <button
-                  onClick={() => {
-                    setSelectedHub(null);
-                    setSelectedCategory(null);
-                    setSelectedTopic(null);
-                  }}
-                  className="flex items-center gap-1.5 text-xs font-bold text-[#0077C0] hover:opacity-75 transition-all cursor-pointer bg-transparent border-0 outline-none"
-                >
-                  <ArrowLeft size={14} /> Switch Hubs
-                </button>
-                {selectedCategory && (
-                  <>
-                    <span className="text-white/30">&bull;</span>
-                    <button
-                      onClick={() => {
-                        setSelectedCategory(null);
-                        setSelectedTopic(null);
-                      }}
-                      className="flex items-center gap-1.5 text-xs font-bold text-purple-500 hover:opacity-75 transition-all cursor-pointer bg-transparent border-0 outline-none"
-                    >
-                      <ChevronLeft size={14} /> Category: {selectedCategory.name}
-                    </button>
-                  </>
-                )}
-                {selectedTopic && (
-                  <>
-                    <span className="text-white/30">&bull;</span>
-                    <button
-                      onClick={() => setSelectedTopic(null)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:opacity-75 transition-all cursor-pointer bg-transparent border-0 outline-none"
-                    >
-                      <ChevronLeft size={14} /> Topic: {selectedTopic.name}
-                    </button>
-                  </>
-                )}
-                <span className={`text-white/30 ml-auto`}>&bull;</span>
-                <span className={`text-[10px] font-mono ${textSecondary}`}>Active Hub: {selectedHub.title}</span>
-              </div>
-
-              {/* STEP 2: Category Selector */}
+              {/* LAYER 2: Category */}
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
-                <div className="space-y-6">
-                  <div className="text-left space-y-1">
-                    <h2 className="text-xl font-bold font-outfit uppercase tracking-wide">Step 2: Choose Category</h2>
-                    <p className={`text-xs ${textSecondary}`}>Select a sub-category context within {selectedHub.title}.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Category in {selectedHub.title}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedHub.categories.map((cat: any) => {
-                      const count = resources.filter(r => r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase()).length;
+                      // Calculate date range of topics in this category
+                      const topicDates = (cat.topics || [])
+                        .map((t: any) => t.name)
+                        .filter((name: string) => /^\d{4}-\d{2}-\d{2}$/.test(name))
+                        .sort();
+                      
+                      let dateRangeStr = "No active sessions";
+                      if (topicDates.length > 0) {
+                        const minDate = topicDates[0];
+                        const maxDate = topicDates[topicDates.length - 1];
+                        dateRangeStr = minDate === maxDate ? minDate : `${minDate} ➔ ${maxDate}`;
+                      }
+
+                      const topicsCount = cat.topics?.length || 0;
+
                       return (
                         <div
                           key={cat.name}
-                          onClick={() => {
-                            setSelectedCategory(cat);
-                            setSelectedTopic(null);
-                          }}
-                          className={`group p-6 rounded-2xl border ${borderLight} ${clayBg} hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between min-h-[140px] relative overflow-hidden`}
+                          onClick={() => { setSelectedCategory(cat); setSelectedTopic(null); }}
+                          className={`group p-5 rounded-[22px] border ${borderLight} ${dk ? "bg-white/[0.015] hover:bg-white/[0.04]" : "bg-black/[0.01] hover:bg-black/[0.03]"} hover:border-sky-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-2">
-                            <h4 className="font-bold group-hover:text-purple-500 transition-colors text-base uppercase tracking-wider">
+                          <div className="space-y-3">
+                            {/* Collection Badge */}
+                            <div className="flex">
+                              <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                dk ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" : "bg-sky-50 text-sky-700 border border-sky-200"
+                              }`}>
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                                Collection
+                              </span>
+                            </div>
+
+                            {/* Title */}
+                            <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} leading-tight`}>
                               {cat.name}
                             </h4>
-                            <p className={`text-xs ${textSecondary} leading-relaxed`}>
-                              Browse configurations. Allowed: {cat.allowedTypes?.join(", ") || "All"}.
-                            </p>
+
+                            {/* Date range */}
+                            <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                              <span>{dateRangeStr}</span>
+                            </div>
                           </div>
-                          <div className={`pt-4 flex items-center justify-between border-t ${borderLight}`}>
-                            <span className="text-[10px] text-purple-500 bg-purple-500/10 px-2.5 py-0.5 rounded border border-purple-500/20">
-                              {count} resources
-                            </span>
-                            <span className="text-xs font-bold text-purple-500 group-hover:translate-x-1 transition-transform">
-                              Select Category &rarr;
-                            </span>
+
+                          {/* Sessions Count Footer */}
+                          <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
+                            <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                              <span>{topicsCount} {topicsCount === 1 ? "Session" : "Sessions"}</span>
+                            </div>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              ) : selectedHub.categories && selectedHub.categories.length > 0 && selectedCategory && !selectedTopic ? (
-                /* STEP 3: Topic Selector */
-                <div className="space-y-6">
-                  <div className="text-left space-y-1">
-                    <h2 className="text-xl font-bold font-outfit uppercase tracking-wide">Step 3: Choose Topic</h2>
-                    <p className={`text-xs ${textSecondary}`}>Filter down into sub-categories by date or topic within {selectedCategory.name}.</p>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Today's Date Topic */}
-                    {(() => {
-                      const todayStr = new Date().toISOString().split("T")[0];
-                      const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic === todayStr).length;
-                      return (
-                        <div
-                          onClick={() => setSelectedTopic({ name: todayStr })}
-                          className={`group p-6 rounded-2xl border ${borderLight} ${clayBg} hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between min-h-[140px] relative overflow-hidden`}
-                        >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-2">
-                            <h4 className="font-bold group-hover:text-emerald-500 transition-colors text-base uppercase tracking-wider">
-                              Today's Date
-                            </h4>
-                            <p className={`text-xs ${textSecondary} leading-relaxed font-mono`}>
-                              {todayStr}
-                            </p>
+              ) : selectedHub.categories && selectedHub.categories.length > 0 && selectedCategory && !selectedTopic ? (
+                /* LAYER 3: Topic */
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 space-y-4">
+                  <p className={`text-[9px] font-bold uppercase tracking-widest text-emerald-500`}>Step 3 · Select Topic in {selectedCategory.name}</p>
+                  
+                  {/* Today Card Section */}
+                  {(() => {
+                    const todayStr = new Date().toISOString().split("T")[0];
+                    const todayTopic = (selectedCategory.topics || []).find((t: any) => t.name === todayStr);
+                    const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic === todayStr).length;
+                    
+                    return (
+                      <div
+                        onClick={() => setSelectedTopic({ name: todayStr })}
+                        className={`group p-5 rounded-[22px] border border-emerald-500/50 ${dk ? "bg-emerald-950/[0.05] hover:bg-emerald-950/10" : "bg-emerald-50/10 hover:bg-emerald-50/20"} transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
+                      >
+                        <div className="space-y-3">
+                          {/* Badge: Category */}
+                          <div className="flex">
+                            <span className="inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                              {selectedCategory.name}
+                            </span>
                           </div>
-                          <div className={`pt-4 flex items-center justify-between border-t ${borderLight}`}>
-                            <span className="text-[10px] text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
-                              {count} resources
-                            </span>
-                            <span className="text-xs font-bold text-emerald-500 group-hover:translate-x-1 transition-transform">
-                              Select Topic &rarr;
-                            </span>
+
+                          {/* Title */}
+                          <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} group-hover:text-emerald-400 transition-colors leading-tight`}>
+                            {todayTopic?.title || "Today's Content"}
+                          </h4>
+
+                          {/* Date */}
+                          <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                            <span>{todayStr}</span>
                           </div>
                         </div>
-                      );
-                    })()}
 
-                    {/* Creator Custom Topics */}
+                        {/* Footer: Snippet Count & Arrow */}
+                        <div className="flex justify-between items-center pt-3 border-t border-emerald-500/10 mt-2">
+                          <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            <span>{count} {count === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* All Other Topics Grid */}
+                  <div className="flex flex-col gap-4 pt-2">
                     {(selectedCategory.topics || []).map((topic: any) => {
                       const todayStr = new Date().toISOString().split("T")[0];
-                      if (topic.name === todayStr) return null; // Avoid duplicates
+                      if (topic.name === todayStr) return null;
                       const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
                       return (
                         <div
                           key={topic.name}
                           onClick={() => setSelectedTopic(topic)}
-                          className={`group p-6 rounded-2xl border ${borderLight} ${clayBg} hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between min-h-[140px] relative overflow-hidden`}
+                          className={`group p-5 rounded-[22px] border ${borderLight} ${dk ? "bg-white/[0.015] hover:bg-white/[0.04]" : "bg-black/[0.01] hover:bg-black/[0.03]"} hover:border-emerald-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-2">
-                            <h4 className="font-bold group-hover:text-emerald-500 transition-colors text-base uppercase tracking-wider">
-                              {topic.name}
+                          <div className="space-y-3">
+                            {/* Badge: Category */}
+                            <div className="flex">
+                              <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                                dk ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" : "bg-sky-50 text-sky-700 border border-sky-200"
+                              }`}>
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                                {selectedCategory.name}
+                              </span>
+                            </div>
+
+                            {/* Title */}
+                            <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} leading-tight`}>
+                              {topic.title || topic.name}
                             </h4>
-                            <p className={`text-xs ${textSecondary} leading-relaxed`}>
-                              Explore resources filed under this custom topic.
-                            </p>
+
+                            {/* Date */}
+                            <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                              <span>{topic.name}</span>
+                            </div>
                           </div>
-                          <div className={`pt-4 flex items-center justify-between border-t ${borderLight}`}>
-                            <span className="text-[10px] text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
-                              {count} resources
-                            </span>
-                            <span className="text-xs font-bold text-emerald-500 group-hover:translate-x-1 transition-transform">
-                              Select Topic &rarr;
-                            </span>
+
+                          {/* Footer */}
+                          <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
+                            <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                              <span>{count} {count === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                            </div>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                           </div>
                         </div>
                       );
                     })}
 
-                    {/* All Topics option */}
+                    {/* All Topics */}
                     <div
                       onClick={() => setSelectedTopic({ name: "All Topics" })}
-                      className={`group p-6 rounded-2xl border ${borderLight} ${clayBg} hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between min-h-[140px] relative overflow-hidden`}
+                      className={`group p-5 rounded-[22px] border border-dashed ${borderLight} ${dk ? "bg-white/[0.01] hover:bg-white/[0.03]" : "bg-black/[0.01] hover:bg-black/[0.02]"} hover:border-sky-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                     >
-                      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="space-y-2">
-                        <h4 className="font-bold group-hover:text-sky-500 transition-colors text-base uppercase tracking-wider">
+                      <div className="space-y-3">
+                        <div className="flex">
+                          <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                            dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
+                          }`}>
+                            All
+                          </span>
+                        </div>
+                        <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textSecondary} group-hover:text-sky-500 transition-colors leading-tight`}>
                           All Topics
                         </h4>
-                        <p className={`text-xs ${textSecondary} leading-relaxed`}>
-                          View all topics inside the {selectedCategory.name} category.
-                        </p>
+                        <p className={`text-[9px] md:text-[10px] ${textSecondary}`}>Show all in {selectedCategory.name}</p>
                       </div>
-                      <div className={`pt-4 flex items-center justify-between border-t ${borderLight}`}>
-                        <span className="text-[10px] text-sky-500 bg-sky-500/10 px-2.5 py-0.5 rounded border border-sky-500/20">
-                          {resources.filter(r => r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()).length} resources
-                        </span>
-                        <span className="text-xs font-bold text-sky-500 group-hover:translate-x-1 transition-transform">
-                          Browse All &rarr;
-                        </span>
+                      <div className="flex justify-end pt-3 border-t border-dashed border-white/[0.04] mt-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                       </div>
                     </div>
                   </div>
                 </div>
+
               ) : (
-                /* STEP 4: Resource Catalog Grid view */
-                <div className="space-y-6">
-                  {/* Filter bar */}
-                  <div className="flex flex-col md:flex-row items-center gap-4 w-full">
-                    <div className="flex-1 relative w-full">
-                      <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary} w-4 h-4`} />
+                /* LAYER 4: Resources */
+                <div className="flex-1 min-h-0 flex flex-col gap-3">
+                  {/* Filter toolbar */}
+                  <div className="shrink-0 flex flex-wrap items-center gap-2">
+                    <div className="relative flex-1 min-w-[140px]">
+                      <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${textSecondary}`} />
                       <input
                         type="text"
-                        placeholder="Search resources..."
+                        placeholder="Search resources…"
                         value={resourceSearch}
                         onChange={(e) => setResourceSearch(e.target.value)}
-                        className={`w-full ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} border ${borderLight} focus:border-[#0077C0] rounded-full pl-11 pr-5 py-3 text-sm outline-none transition-all shadow-sm`}
+                        className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${dk ? "bg-white/5 border-white/10 text-white" : "bg-black/5 border-black/10 text-gray-900"}`}
                       />
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-3 shrink-0">
-                      {/* Type Filter */}
-                      <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className={`border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} text-sm rounded-full px-5 py-3 outline-none cursor-pointer hover:border-[#0077C0] transition-colors shadow-sm`}
-                      >
-                        <option value="">All Types</option>
-                        <option value="code">Code Snippets</option>
-                        <option value="link">Links</option>
-                        <option value="text">Rich Text</option>
-                      </select>
-
-                      {/* Sort */}
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className={`border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} text-sm rounded-full px-5 py-3 outline-none cursor-pointer hover:border-[#0077C0] transition-colors shadow-sm`}
-                      >
-                        <option value="recent">Most Recent</option>
-                        <option value="views">Most Viewed</option>
-                        <option value="sends">Most Sent</option>
-                        <option value="copies">Most Copied</option>
-                      </select>
-                    </div>
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer`}
+                    >
+                      <option value="">All Types</option>
+                      <option value="code">Code</option>
+                      <option value="link">Links</option>
+                      <option value="text">Text</option>
+                    </select>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer`}
+                    >
+                      <option value="recent">Recent</option>
+                      <option value="views">Views</option>
+                      <option value="sends">Sent</option>
+                      <option value="copies">Copied</option>
+                    </select>
                   </div>
 
-                  {/* List of Resource cards */}
-                  {loadingResources ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3">
-                      <div className="w-8 h-8 rounded-full border-2 border-t-[#0077C0] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-                      <p className={`text-xs ${textSecondary}`}>Loading resources...</p>
-                    </div>
-                  ) : sortedResources.length === 0 ? (
-                    <div className={`text-center py-20 border border-dashed ${borderLight} rounded-3xl`}>
-                      <AlertCircle className={`w-10 h-10 mx-auto ${textSecondary} mb-4`} />
-                      <h3 className="font-bold mb-1">No resources found</h3>
-                      <p className={`text-xs ${textSecondary}`}>No snippets are matching the current filters.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3">
-                      {sortedResources.map((res, idx) => (
-                        <div
-                          key={res.id}
-                          onClick={() => setExpandedResId(expandedResId === res.id ? null : res.id)}
-                          className={`group p-1.5 rounded-[24px] border ${borderLight} ${clayBg} hover:border-[#0077C0]/40 transition-all cursor-pointer relative overflow-hidden`}
-                        >
-                          <div className={`p-4 rounded-[18px] ${dk ? "bg-black/40" : "bg-white/60"} flex flex-col space-y-3.5`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-3 min-w-0 flex-1">
-                                <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded-lg text-[10px] font-bold mt-0.5 bg-[#0077C0]/10 text-sky-400">{idx + 1}</span>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <h4 className="text-sm font-bold truncate">{res.title}</h4>
-                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                    <span className={`text-[8px] font-mono uppercase px-2 py-0.5 rounded border ${borderLight} ${dk ? "bg-white/5 text-white/60" : "bg-black/5 text-gray-700"}`}>{res.type}</span>
-                                    {res.language && (
-                                      <span className="text-[8px] font-mono uppercase px-2 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-500">{res.language}</span>
-                                    )}
-                                    {res.tags.map(t => (
-                                      <span key={t} className={`text-[8px] font-mono uppercase px-2 py-0.5 rounded border ${borderLight} ${dk ? "bg-white/[0.02] text-white/40" : "bg-black/[0.02] text-gray-500"}`}>#{t}</span>
-                                    ))}
-                                  </div>
-                                </div>
+                  {/* Resource list */}
+                  <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                    {loadingResources ? (
+                      <div className="flex items-center justify-center py-16">
+                        <div className="w-8 h-8 rounded-full border-2 border-t-[#0077C0] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                      </div>
+                    ) : sortedResources.length === 0 ? (
+                      <div className={`text-center py-16 border border-dashed ${borderLight} rounded-3xl`}>
+                        <Code className={`w-8 h-8 mx-auto ${textSecondary} mb-3`} />
+                        <p className={`text-xs ${textSecondary}`}>No resources match your filters.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {sortedResources.map((res, idx) => (
+                          <div
+                            key={res.id}
+                            onClick={() => setExpandedResId(expandedResId === res.id ? null : res.id)}
+                            className={`rounded-[18px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-black/[0.015] hover:bg-black/[0.03]"} transition-all cursor-pointer overflow-hidden`}
+                          >
+                            {/* Top row */}
+                            <div className="p-4 flex items-center justify-between gap-3">
+                              {/* Title / Snippet Num */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-sky-500 font-mono text-[11px] font-bold shrink-0">&gt;_</span>
+                                <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
+                                  Snippet {idx + 1}: {res.title}
+                                </h4>
                               </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0 ml-3">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleSendToLanpad(res); }}
-                                  disabled={sendingId === res.id}
-                                  className={`p-1.5 rounded-xl border ${borderLight} hover:bg-white/5 transition-all cursor-pointer bg-transparent outline-none flex items-center justify-center`}
-                                  title="Send to LANpad"
-                                >
-                                  <Zap size={12} className={sendingId === res.id ? "animate-pulse text-amber-500" : "text-amber-500"} />
-                                </button>
+                              {/* Action Items & Language */}
+                              <div className="flex items-center gap-2.5 shrink-0">
+                                {/* Copy Button */}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleCopy(res.id, res.content); }}
-                                  className={`p-1.5 rounded-xl border ${borderLight} hover:bg-white/5 transition-all cursor-pointer bg-transparent outline-none`}
-                                  title="Copy Content"
+                                  className="text-gray-400 hover:text-white transition-colors"
+                                  title="Copy content"
                                 >
-                                  {copiedId === res.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} className="text-sky-500" />}
+                                  {copiedId === res.id ? (
+                                    <Check size={13} className="text-emerald-400" />
+                                  ) : (
+                                    <Copy size={13} />
+                                  )}
                                 </button>
-                                <Link
-                                  href={`/resources/${res.id}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className={`p-1.5 rounded-xl border ${borderLight} hover:bg-white/5 transition-all flex items-center justify-center`}
-                                  title="View Details"
+
+                                {/* Open Details Modal Icon Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReadingResource(res);
+                                    setReadingMode("normal");
+                                  }}
+                                  className="text-gray-400 hover:text-white transition-colors"
+                                  title="Open details view"
                                 >
-                                  <ExternalLink size={12} />
-                                </Link>
+                                  <BookOpen size={13} />
+                                </button>
+
+                                {/* Lang Badge */}
+                                {res.language && (
+                                  <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                                    dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
+                                  }`}>
+                                    {res.language}
+                                  </span>
+                                )}
+
+                                {/* Chevron Expand Icon */}
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`text-gray-400 transition-transform ${expandedResId === res.id ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
                               </div>
                             </div>
 
+                            {/* Expanded code preview */}
                             <AnimatePresence>
                               {expandedResId === res.id && (
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: "auto", opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  className="overflow-hidden mt-3"
+                                  className="overflow-hidden"
                                 >
-                                  <div className="rounded-xl overflow-hidden border border-white/10 relative">
-                                    <div className="absolute top-0 left-0 right-0 h-6 flex items-center px-3 border-b border-white/5 bg-black/60">
-                                      <div className="flex gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
-                                      </div>
+                                  <div className="px-4 pb-4">
+                                    <div className="rounded-[16px] border border-white/[0.05] bg-black p-4 overflow-hidden">
+                                      <pre className="text-[11px] font-mono overflow-x-auto text-[#a5d6ff] text-left max-h-60 scrollbar-none leading-relaxed">
+                                        <code>{res.content}</code>
+                                      </pre>
                                     </div>
-                                    <pre className="text-[11px] font-mono p-3 pt-8 overflow-x-auto bg-[#0d1117] text-[#c9d1d9] text-left">
-                                      <code>{res.content}</code>
-                                    </pre>
                                   </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>
 
-                            <div className={`text-[10px] ${textSecondary} flex items-center justify-between pt-2 border-t ${borderLight}`}>
-                              <span>By {res.creatorName || "Anonymous"}</span>
-                              <span className="text-[9px] uppercase tracking-wider opacity-60">Click card to expand/collapse</span>
+                            {/* Bottom row */}
+                            <div className="px-4 py-3 border-t border-white/[0.04] bg-white/[0.01] flex items-center justify-between gap-3">
+                              <span className={`text-[10px] ${textSecondary}`}>
+                                by: <strong className={textPrimary}>{res.creatorName || "Anonymous"}</strong>
+                              </span>
+
+                              {/* Command Center button */}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleSendToLanpad(res); }}
+                                disabled={sendingId === res.id}
+                                className={`inline-flex items-center gap-1 bg-[#0077C0] hover:bg-[#0095f0] text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full shadow-sm hover:shadow transition-all disabled:opacity-50`}
+                              >
+                                <Zap size={10} className={sendingId === res.id ? "animate-pulse" : ""} />
+                                Command Center
+                              </button>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* READING MODE MODAL */}
+      <AnimatePresence>
+        {readingResource && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 ${
+              dk ? "bg-black/85 backdrop-blur-md" : "bg-black/40 backdrop-blur-sm"
+            }`}
+            onClick={() => setReadingResource(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`flex flex-col transition-all duration-300 relative border ${
+                dk ? "bg-[#05070a] border-white/10 text-white" : "bg-[#EDEAE0] border-black/10 text-gray-900"
+              } ${
+                readingMode === "fullscreen" 
+                  ? "w-screen h-screen rounded-none border-none" 
+                  : "w-full max-w-4xl h-[85vh] rounded-[24px]"
+              }`}
+            >
+              {/* Floating Fullscreen Controls */}
+              {readingMode === "fullscreen" && (
+                <div className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 p-2 rounded-2xl">
+                  {/* Zoom controls */}
+                  <button
+                    onClick={() => setZoomLevel(prev => Math.min(2.5, prev + 0.15))}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+                    title="Zoom In"
+                  >
+                    A+
+                  </button>
+                  <button
+                    onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+                    title="Zoom Out"
+                  >
+                    A-
+                  </button>
+                  <button
+                    onClick={() => setZoomLevel(1)}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+                    title="Reset Zoom"
+                  >
+                    Reset
+                  </button>
+                  
+                  {/* Exit Fullscreen */}
+                  <button
+                    onClick={() => setReadingMode("normal")}
+                    className="p-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold transition-all flex items-center gap-1"
+                  >
+                    Exit Fullscreen
+                  </button>
+                </div>
+              )}
+
+              {/* Header (Only in Normal mode) */}
+              {readingMode === "normal" && (
+                <div className={`p-4 md:p-5 border-b flex items-center justify-between gap-4 shrink-0 ${
+                  dk ? "border-white/10 bg-black/30" : "border-black/10 bg-black/5"
+                }`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[9px] font-bold font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        {readingResource.type}
+                      </span>
+                      {readingResource.language && (
+                        <span className={`text-[9px] font-bold font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${
+                          dk ? "bg-white/5 text-white/70 border-white/10" : "bg-black/5 text-gray-700 border-black/10"
+                        }`}>
+                          {readingResource.language}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className={`text-sm md:text-lg font-extrabold truncate leading-tight ${textPrimary}`}>
+                      {readingResource.title}
+                    </h3>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Zoom In/Out */}
+                    <div className={`flex items-center gap-1 border rounded-xl px-1.5 py-0.5 ${
+                      dk ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
+                    }`}>
+                      <button
+                        onClick={() => setZoomLevel(prev => Math.min(2.5, prev + 0.15))}
+                        className={`p-1 text-[10px] font-extrabold rounded hover:bg-white/10 ${dk ? "text-white" : "text-black"}`}
+                        title="Zoom In"
+                      >
+                        A+
+                      </button>
+                      <span className={`text-[9px] px-1 font-mono ${dk ? "text-gray-400" : "text-gray-600"}`}>
+                        {Math.round(zoomLevel * 100)}%
+                      </span>
+                      <button
+                        onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
+                        className={`p-1 text-[10px] font-extrabold rounded hover:bg-white/10 ${dk ? "text-white" : "text-black"}`}
+                        title="Zoom Out"
+                      >
+                        A-
+                      </button>
+                    </div>
+
+                    {/* Copy */}
+                    <button
+                      onClick={() => handleCopy(readingResource.id, readingResource.content)}
+                      className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                        dk ? "border-white/10 hover:bg-white/10 text-sky-400" : "border-black/10 hover:bg-black/5 text-sky-600"
+                      }`}
+                    >
+                      {copiedId === readingResource.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                      <span className="hidden sm:inline">{copiedId === readingResource.id ? "Copied" : "Copy"}</span>
+                    </button>
+
+                    {/* Mode Toggle */}
+                    <button
+                      onClick={() => setReadingMode("fullscreen")}
+                      className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                        dk ? "border-white/10 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-800"
+                      }`}
+                      title="Fullscreen Mode"
+                    >
+                      <Sparkles size={14} className="text-yellow-500" />
+                      <span className="hidden sm:inline">Fullscreen</span>
+                    </button>
+
+                    {/* Close */}
+                    <button
+                      onClick={() => setReadingResource(null)}
+                      className={`p-2 rounded-xl border transition-all text-xs font-bold ${
+                        dk ? "border-white/10 hover:bg-white/10 text-gray-400 hover:text-white" : "border-black/10 hover:bg-black/5 text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Content Body */}
+              <div className={`flex-1 min-h-0 overflow-y-auto p-4 md:p-6 ${
+                dk ? "bg-black" : "bg-white"
+              }`}>
+                <pre 
+                  style={{ fontSize: `${zoomLevel * 12}px` }}
+                  className={`font-mono leading-relaxed whitespace-pre-wrap select-text break-all transition-all duration-150 ${
+                    dk ? "text-[#a5d6ff]" : "text-gray-800"
+                  }`}
+                >
+                  <code>{readingResource.content}</code>
+                </pre>
+              </div>
+
+              {/* Footer (Only in Normal mode) */}
+              {readingMode === "normal" && (
+                <div className={`p-4 md:p-5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 text-xs ${
+                  dk ? "border-white/10 bg-black/40 text-gray-400" : "border-black/10 bg-black/5 text-gray-600"
+                }`}>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>contributed by:</span>
+                      <strong className={textPrimary}>{readingResource.creatorName || "Anonymous"}</strong>
+                    </div>
+                    {selectedHub && (
+                      <div className="flex items-center gap-1.5 text-[11px] opacity-80">
+                        <span>hub creator:</span>
+                        <strong className={textPrimary}>{selectedHub.creatorName || "Anonymous"}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-3">
+                    {/* Report Button */}
+                    <button
+                      onClick={() => {
+                        setReportReason("spam");
+                        setReportDetails("");
+                        setShowReportModal(true);
+                      }}
+                      className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1 px-3 py-1.5 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-all text-xs"
+                    >
+                      <AlertCircle size={13} />
+                      Report Abuse
+                    </button>
+
+                    {/* Command Center */}
+                    <button
+                      onClick={() => handleSendToLanpad(readingResource)}
+                      disabled={sendingId === readingResource.id}
+                      className="bg-[#0077C0] hover:bg-[#0095f0] text-white font-bold px-4 py-2 rounded-xl shadow transition-all flex items-center gap-1.5 text-xs disabled:opacity-50"
+                    >
+                      <Zap size={13} className={sendingId === readingResource.id ? "animate-pulse" : ""} />
+                      Command Center
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* REPORT SUBMIT OVERLAY MODAL */}
+      <AnimatePresence>
+        {showReportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="w-full max-w-md bg-[#090b0e] border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl"
+            >
+              <h3 className="text-lg font-bold text-white">Report Inappropriate Content</h3>
+              
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-gray-400 mb-1.5">Reason for Report</label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full bg-black border border-white/15 rounded-xl p-3 outline-none text-white focus:border-red-500"
+                  >
+                    <option value="spam">Spam / Advertising</option>
+                    <option value="abuse">Harmful or Dangerous Code</option>
+                    <option value="copyright">Copyright Infringement</option>
+                    <option value="other">Other Violation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 mb-1.5">Details (Optional)</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Provide details about why this content is violating policies..."
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    className="w-full bg-black border border-white/15 rounded-xl p-3 outline-none text-white focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 text-xs">
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReportSubmit}
+                  disabled={reporting}
+                  className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition-all disabled:opacity-50"
+                >
+                  {reporting ? "Submitting..." : "Submit Report"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

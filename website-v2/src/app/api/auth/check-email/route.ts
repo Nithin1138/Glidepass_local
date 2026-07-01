@@ -13,11 +13,18 @@ export async function GET(req: NextRequest) {
     }
 
     const users = await getDbUsers();
-    const exists = users.some(
+    const foundUser = users.find(
       (u: any) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
     );
 
-    return NextResponse.json({ exists });
+    if (foundUser) {
+      return NextResponse.json({ 
+        exists: true, 
+        suspended: foundUser.status === "suspended" 
+      });
+    }
+
+    return NextResponse.json({ exists: false });
   } catch (error: any) {
     console.error("check-email error:", error);
     return NextResponse.json({ exists: false, error: error.message }, { status: 500 });
