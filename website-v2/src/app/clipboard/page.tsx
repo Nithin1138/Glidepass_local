@@ -57,9 +57,10 @@ export default function ClipboardPage() {
   });
   const dk = theme === "dark";
 
-  const cardBg = dk ? "bg-[#08080c]" : "bg-[#EDEAE0]";
+  const cardBg = dk ? "bg-[#0d0d14]" : "bg-[#EDEAE0]";
   const borderLight = dk ? "border-white/10" : "border-black/10";
   const clayBg = dk ? "clay-dark" : "clay-light";
+  const cardDark = dk ? "bg-[#111118] border-white/8" : "";
   const textPrimary = dk ? "text-white" : "text-gray-900";
   const textSecondary = dk ? "text-[#A0AEC0]" : "text-gray-600";
 
@@ -931,8 +932,8 @@ export default function ClipboardPage() {
                             +30m
                           </button>
                         ) : (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none whitespace-nowrap">
-                            Extended <Check size={8} strokeWidth={3} />
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none whitespace-nowrap">
+                            Extended ✓
                           </span>
                         )}
                         <button
