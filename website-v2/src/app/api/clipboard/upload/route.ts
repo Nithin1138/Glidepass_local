@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure upload directory exists
-    const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
+    const isServerless = !!process.env.VERCEL;
     const uploadDir = isServerless ? "/tmp/glidepass_uploads" : path.join(process.cwd(), "data", "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
 

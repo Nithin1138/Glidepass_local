@@ -31,13 +31,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "This clipboard item is not a file" }, { status: 400 });
     }
 
+    // Resolve path dynamically using basename to handle system-to-system movements
+    const isServerless = !!process.env.VERCEL;
+    const uploadDir = isServerless ? "/tmp/glidepass_uploads" : path.join(process.cwd(), "data", "uploads");
+    const fileNameOnDisk = path.basename(fileInfo.filePath);
+    const resolvedPath = path.join(uploadDir, fileNameOnDisk);
+
+    // Fallback: check if the original path exists if the dynamic resolution doesn't find it
+    let finalPath = resolvedPath;
+    if (!fs.existsSync(resolvedPath) && fs.existsSync(fileInfo.filePath)) {
+      finalPath = fileInfo.filePath;
+    }
+
     // Check if file exists on disk
-    if (!fs.existsSync(fileInfo.filePath)) {
+    if (!fs.existsSync(finalPath)) {
       return NextResponse.json({ success: false, error: "File has been removed or is no longer available on this server" }, { status: 404 });
     }
 
     // Read file bytes
-    const fileBuffer = fs.readFileSync(fileInfo.filePath);
+    const fileBuffer = fs.readFileSync(finalPath);
 
     const isInline = fileInfo.fileType.startsWith("image/") || 
                      fileInfo.fileType.startsWith("video/") || 
@@ -50,7 +62,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": fileInfo.fileType || "application/octet-stream",
         "Content-Disposition": `${dispositionType}; filename="${encodeURIComponent(fileInfo.fileName)}"`,
-        "Content-Length": fileInfo.fileSize.toString()
+        "Content-Length": fileBuffer.length.toString()
       }
     });
   } catch (error: any) {
