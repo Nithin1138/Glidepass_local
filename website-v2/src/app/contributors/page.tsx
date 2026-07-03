@@ -238,6 +238,39 @@ function ContributorsDashboard() {
   const [resLanguage, setResLanguage] = useState("");
   const [resTags, setResTags] = useState("");
   const [resDescription, setResDescription] = useState("");
+
+  const sortedLanguages = React.useMemo(() => {
+    const defaultLanguages = [
+      { id: "python", name: "Python" },
+      { id: "javascript", name: "JavaScript" },
+      { id: "typescript", name: "TypeScript" },
+      { id: "bash", name: "Bash / Shell" },
+      { id: "powershell", name: "PowerShell" },
+      { id: "yaml", name: "YAML" },
+      { id: "json", name: "JSON" },
+      { id: "cpp", name: "C++" },
+      { id: "go", name: "Go" },
+      { id: "rust", name: "Rust" },
+      { id: "java", name: "Java" },
+      { id: "html", name: "HTML" },
+      { id: "css", name: "CSS" },
+      { id: "other", name: "Other / Plain Text" }
+    ];
+
+    const langCounts: Record<string, number> = {};
+    resources.forEach(r => {
+      if (r.language) {
+        const langLower = r.language.toLowerCase();
+        langCounts[langLower] = (langCounts[langLower] || 0) + 1;
+      }
+    });
+
+    return [...defaultLanguages].sort((a, b) => {
+      const countA = langCounts[a.id] || 0;
+      const countB = langCounts[b.id] || 0;
+      return countB - countA;
+    });
+  }, [resources]);
   const [resContent, setResContent] = useState("");
   const [resSubCategory, setResSubCategory] = useState("");
   const [selectedSubCategoryTab, setSelectedSubCategoryTab] = useState("All");
@@ -380,7 +413,7 @@ function ContributorsDashboard() {
         setResContent("");
         setResTags("");
         setResDescription("");
-        setResLanguage("");
+        // Do not reset resLanguage to keep the last used language
         setResSubCategory("");
         setShowAddModal(false);
         fetchResources(selectedHub.id);
@@ -813,6 +846,14 @@ function ContributorsDashboard() {
                   onClick={() => {
                     const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
                     setResType(allowed[0] || "code");
+                    if (selectedCategory && selectedHub?.subCategories) {
+                      const matchedSubCat = selectedHub.subCategories.find(
+                        (sc: string) => sc.toLowerCase() === selectedCategory.name.toLowerCase()
+                      );
+                      if (matchedSubCat) {
+                        setResSubCategory(matchedSubCat);
+                      }
+                    }
                     setShowAddModal(true);
                   }}
                   className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
@@ -1110,20 +1151,9 @@ function ContributorsDashboard() {
                           className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 disabled:opacity-40 cursor-pointer"
                         >
                           <option value="">Select Language</option>
-                          <option value="python">Python</option>
-                          <option value="javascript">JavaScript</option>
-                          <option value="typescript">TypeScript</option>
-                          <option value="bash">Bash / Shell</option>
-                          <option value="powershell">PowerShell</option>
-                          <option value="yaml">YAML</option>
-                          <option value="json">JSON</option>
-                          <option value="cpp">C++</option>
-                          <option value="go">Go</option>
-                          <option value="rust">Rust</option>
-                          <option value="java">Java</option>
-                          <option value="html">HTML</option>
-                          <option value="css">CSS</option>
-                          <option value="other">Other / Plain Text</option>
+                          {sortedLanguages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -1137,20 +1167,9 @@ function ContributorsDashboard() {
                           className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer"
                         >
                           <option value="">Select Language</option>
-                          <option value="python">Python</option>
-                          <option value="javascript">JavaScript</option>
-                          <option value="typescript">TypeScript</option>
-                          <option value="bash">Bash / Shell</option>
-                          <option value="powershell">PowerShell</option>
-                          <option value="yaml">YAML</option>
-                          <option value="json">JSON</option>
-                          <option value="cpp">C++</option>
-                          <option value="go">Go</option>
-                          <option value="rust">Rust</option>
-                          <option value="java">Java</option>
-                          <option value="html">HTML</option>
-                          <option value="css">CSS</option>
-                          <option value="other">Other / Plain Text</option>
+                          {sortedLanguages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
                         </select>
                       </div>
                     )
