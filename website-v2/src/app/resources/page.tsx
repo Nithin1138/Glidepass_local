@@ -438,7 +438,7 @@ export default function ResourcesPage() {
                         .filter((name: string) => /^\d{4}-\d{2}-\d{2}$/.test(name))
                         .sort();
                       
-                      let dateRangeStr = "No active sessions";
+                      let dateRangeStr = "No active topics";
                       if (topicDates.length > 0) {
                         const minDate = topicDates[0];
                         const maxDate = topicDates[topicDates.length - 1];
@@ -476,11 +476,11 @@ export default function ResourcesPage() {
                             </div>
                           </div>
 
-                          {/* Sessions Count Footer */}
+                          {/* Topics Count Footer */}
                           <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
                             <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                              <span>{topicsCount} {topicsCount === 1 ? "Session" : "Sessions"}</span>
+                              <span>{topicsCount} {topicsCount === 1 ? "Topic" : "Topics"}</span>
                             </div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                           </div>
