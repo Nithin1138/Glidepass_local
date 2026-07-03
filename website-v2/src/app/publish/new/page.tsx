@@ -278,13 +278,14 @@ export default function NewResourcePage() {
               >
                 <option value="">Select Language</option>
                 <option value="python">Python</option>
+                <option value="c">C</option>
+                <option value="cpp">C++</option>
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
                 <option value="bash">Bash / Shell</option>
                 <option value="powershell">PowerShell</option>
                 <option value="yaml">YAML</option>
                 <option value="json">JSON</option>
-                <option value="cpp">C++</option>
                 <option value="go">Go</option>
                 <option value="rust">Rust</option>
                 <option value="java">Java</option>

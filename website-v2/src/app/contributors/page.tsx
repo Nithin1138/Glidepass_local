@@ -242,13 +242,14 @@ function ContributorsDashboard() {
   const sortedLanguages = React.useMemo(() => {
     const defaultLanguages = [
       { id: "python", name: "Python" },
+      { id: "c", name: "C" },
+      { id: "cpp", name: "C++" },
       { id: "javascript", name: "JavaScript" },
       { id: "typescript", name: "TypeScript" },
       { id: "bash", name: "Bash / Shell" },
       { id: "powershell", name: "PowerShell" },
       { id: "yaml", name: "YAML" },
       { id: "json", name: "JSON" },
-      { id: "cpp", name: "C++" },
       { id: "go", name: "Go" },
       { id: "rust", name: "Rust" },
       { id: "java", name: "Java" },
@@ -1301,20 +1302,9 @@ function ContributorsDashboard() {
                           className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 disabled:opacity-40 cursor-pointer"
                         >
                           <option value="">Select Language</option>
-                          <option value="python">Python</option>
-                          <option value="javascript">JavaScript</option>
-                          <option value="typescript">TypeScript</option>
-                          <option value="bash">Bash / Shell</option>
-                          <option value="powershell">PowerShell</option>
-                          <option value="yaml">YAML</option>
-                          <option value="json">JSON</option>
-                          <option value="cpp">C++</option>
-                          <option value="go">Go</option>
-                          <option value="rust">Rust</option>
-                          <option value="java">Java</option>
-                          <option value="html">HTML</option>
-                          <option value="css">CSS</option>
-                          <option value="other">Other / Plain Text</option>
+                          {sortedLanguages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -1328,20 +1318,9 @@ function ContributorsDashboard() {
                           className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer"
                         >
                           <option value="">Select Language</option>
-                          <option value="python">Python</option>
-                          <option value="javascript">JavaScript</option>
-                          <option value="typescript">TypeScript</option>
-                          <option value="bash">Bash / Shell</option>
-                          <option value="powershell">PowerShell</option>
-                          <option value="yaml">YAML</option>
-                          <option value="json">JSON</option>
-                          <option value="cpp">C++</option>
-                          <option value="go">Go</option>
-                          <option value="rust">Rust</option>
-                          <option value="java">Java</option>
-                          <option value="html">HTML</option>
-                          <option value="css">CSS</option>
-                          <option value="other">Other / Plain Text</option>
+                          {sortedLanguages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
                         </select>
                       </div>
                     )
