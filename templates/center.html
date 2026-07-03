@@ -31,11 +31,8 @@
         }
 
         html, body {
-            height: 100%;
+            min-height: 100%;
             width: 100%;
-            overflow: hidden;
-            position: fixed;
-            overscroll-behavior: none;
         }
 
         body {
@@ -50,7 +47,7 @@
             position: relative;
             width: 100%;
             max-width: 450px;
-            height: 100%;
+            min-height: 100vh;
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
