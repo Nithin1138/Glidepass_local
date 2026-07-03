@@ -2365,8 +2365,8 @@ class LANpadLauncher:
         cv, tid = self._info_cards["State"]
         cv.itemconfig(tid, text="Live", fill=self.GREEN)
 
-        # Delay Hybrid Relay tunnel execution by 8 seconds
-        self.root.after(8000, self._start_relay_if_needed)
+        # Delay Hybrid Relay tunnel execution by 500ms
+        self.root.after(500, self._start_relay_if_needed)
 
         ip = self.get_local_ip()
         # If we detected more than one LAN IP, show the primary one
@@ -2393,7 +2393,7 @@ class LANpadLauncher:
                 data = json.loads(resp.read().decode("utf-8"))
                 count = data.get("count", 0)
                 if count == 0:
-                    print("[lanpad] No local connections detected after 8s delay, starting Hybrid Relay tunnel...")
+                    print("[lanpad] No local connections detected after 500ms delay, starting Hybrid Relay tunnel...")
                     self.start_tunnel()
                 else:
                     print(f"[lanpad] {count} local connection(s) active, skipping Hybrid Relay tunnel startup.")
