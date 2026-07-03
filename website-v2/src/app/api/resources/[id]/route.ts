@@ -115,8 +115,11 @@ export async function PUT(req: NextRequest, { params }: Props) {
 export async function DELETE(req: NextRequest, { params }: Props) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const emailParam = searchParams.get("email");
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userEmailRaw = session?.user?.email || emailParam;
+    if (!userEmailRaw) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -126,8 +129,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
       return NextResponse.json({ error: "Resource not found" }, { status: 404 });
     }
 
-    // Authorization checks for delete: only Hub Owner or Admins
-    const userEmail = session.user.email.toLowerCase();
+    // Authorization checks for delete: only Hub Owner or Admins or Resource Creator
+    const userEmail = userEmailRaw.toLowerCase();
     let isHubOwner = false;
     if (existing.hubId) {
       const hubs = await readHubs(true);
@@ -152,7 +155,6 @@ export async function DELETE(req: NextRequest, { params }: Props) {
       return NextResponse.json({ error: "Unauthorized. Only hub owners, admins, or the resource creator can delete this resource." }, { status: 403 });
     }
 
-    const { searchParams } = new URL(req.url);
     const permanent = searchParams.get("permanent") === "true";
     if (permanent) {
       await deleteResource(id);

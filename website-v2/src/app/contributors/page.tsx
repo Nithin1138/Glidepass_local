@@ -398,13 +398,18 @@ function ContributorsDashboard() {
     e.stopPropagation();
     if (!confirm("Are you sure you want to delete this resource?")) return;
     try {
-      const res = await fetch(`/api/resources/${resId}`, { method: "DELETE" });
-      if (res.ok) {
+      const emailParam = effectiveSession?.user?.email || "";
+      const res = await fetch(`/api/resources/${resId}?email=${encodeURIComponent(emailParam)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
         showToast("success", "Resource deleted successfully.");
         if (selectedHub) fetchResources(selectedHub.id);
+      } else {
+        showToast("error", data.error || "Failed to delete resource.");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err: any) {
+      console.error(err);
+      showToast("error", err.message || "An unexpected error occurred.");
     }
   };
 

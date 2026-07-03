@@ -108,7 +108,7 @@ export default function HubManagementPage() {
   const handleDeleteResource = async (resId: string) => {
     if (!confirm("Delete this resource?")) return;
     try {
-      const res = await fetch(`/api/resources/${resId}`, { method: "DELETE" });
+      const res = await fetch(`/api/resources/${resId}?email=${encodeURIComponent(email)}`, { method: "DELETE" });
       if (res.ok) fetchResources();
     } catch { /* noop */ }
   };
