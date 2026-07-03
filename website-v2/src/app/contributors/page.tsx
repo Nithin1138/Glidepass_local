@@ -665,7 +665,7 @@ function ContributorsDashboard() {
 
       {/* ─── LAYER BREADCRUMB (mobile-friendly sticky pill bar) ─── */}
       {selectedHub && (
-        <div className={`shrink-0 border-b ${borderLight} ${dk ? 'bg-black/70' : 'bg-white/70'} backdrop-blur-md z-30`}>
+        <div className={`shrink-0 border-b ${borderLight} ${dk ? 'bg-[#08080c]/70' : 'bg-[#F4F6F8]/70'} backdrop-blur-md z-30`}>
           <div className="w-full max-w-7xl mx-auto px-3 md:px-12 h-10 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             {/* Layer 1 */}
             <button
