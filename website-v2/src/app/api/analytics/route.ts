@@ -22,8 +22,14 @@ export async function GET(req: NextRequest) {
       readHubs(true)
     ]);
     
+    const ownedHubs = allHubs.filter(h => h.creatorEmail?.toLowerCase() === email.toLowerCase());
+    const ownedHubIds = new Set(ownedHubs.map(h => h.id));
+
     const creatorResources = allResources.filter(
-      (r) => r.creatorEmail?.toLowerCase() === email.toLowerCase()
+      (r) => !r.isDeleted && (
+        r.creatorEmail?.toLowerCase() === email.toLowerCase() ||
+        (r.hubId && ownedHubIds.has(r.hubId))
+      )
     );
 
     const totalViews = creatorResources.reduce((acc, r) => acc + (r.views || 0), 0);

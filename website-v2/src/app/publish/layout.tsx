@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, PenSquare, Layers, ArrowLeft, BarChart3,
@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { CreatorContext, type CreatorAuth } from "./context";
 
-export default function PublishLayout({ children }: { children: React.ReactNode }) {
+function PublishLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   /* ── Auth state ────────────────────────────────── */
@@ -102,13 +102,8 @@ export default function PublishLayout({ children }: { children: React.ReactNode 
   /* ── Context ───────────────────────────────────── */
   const ctx: CreatorAuth = { email, name, licenseKey, theme, dk, setTheme, logout: handleLogout };
 
-  const [currentView, setCurrentView] = useState("");
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setCurrentView(params.get("view") || "");
-    }
-  }, [pathname]);
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "";
 
   /* ── Nav items ─────────────────────────────────── */
   const nav = [
@@ -327,5 +322,17 @@ export default function PublishLayout({ children }: { children: React.ReactNode 
         </main>
       </div>
     </CreatorContext.Provider>
+  );
+}
+
+export default function PublishLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <div className="w-5 h-5 border-2 border-[#0077C0] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <PublishLayoutContent>{children}</PublishLayoutContent>
+    </Suspense>
   );
 }
