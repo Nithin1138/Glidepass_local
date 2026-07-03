@@ -62,8 +62,10 @@
             display: none;
             flex-direction: column;
             padding: 15px;
-            /* Reduced padding */
             box-sizing: border-box;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
         }
 
         .view.active {
@@ -282,13 +284,12 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            flex: 1;
         }
 
         .textarea-wrapper {
             position: relative;
-            flex: 1;
-            min-height: 180px;
+            min-height: 160px;
+            max-height: 200px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             backdrop-filter: blur(20px) saturate(150%);
