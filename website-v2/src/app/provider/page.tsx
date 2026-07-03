@@ -20,6 +20,14 @@ export default function ProviderOnboardingPage() {
       if (saved === "light" || saved === "dark") {
         setTheme(saved as "light" | "dark");
       }
+
+      const creatorSession = localStorage.getItem("glidepass-creator-user");
+      const contributorSession = localStorage.getItem("glidepass-contributor-user");
+      if (creatorSession) {
+        window.location.replace("/publish");
+      } else if (contributorSession) {
+        window.location.replace("/contributors");
+      }
     }
   }, []);
 
