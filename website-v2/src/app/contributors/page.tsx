@@ -876,7 +876,7 @@ function ContributorsDashboard() {
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
                 /* ── LAYER 2: Category Grid ── */
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
-                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Category</p>
+                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Collection</p>
                   <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {selectedHub.categories.map((cat: any) => {
                       const count = resources.filter(r => r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase()).length;
@@ -1184,13 +1184,13 @@ function ContributorsDashboard() {
 
                   {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-category</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-collection</label>
                       <select
                         value={resSubCategory}
                         onChange={(e) => setResSubCategory(e.target.value)}
                         className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
                       >
-                        <option value="">-- Select Sub-category (Optional) --</option>
+                        <option value="">-- Select Sub-collection (Optional) --</option>
                         {selectedHub.subCategories.map((cat: string) => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))}
@@ -1334,13 +1334,13 @@ function ContributorsDashboard() {
 
                   {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-category</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-collection</label>
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
                         className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
                       >
-                        <option value="">-- Select Sub-category (Optional) --</option>
+                        <option value="">-- Select Sub-collection (Optional) --</option>
                         {selectedHub.subCategories.map((cat: string) => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))}

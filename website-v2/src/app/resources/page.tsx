@@ -431,7 +431,7 @@ export default function ResourcesPage() {
               {/* LAYER 2: Category */}
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
-                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Category in {selectedHub.title}</p>
+                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Collection in {selectedHub.title}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedHub.categories.map((cat: any) => {
                       const todayStr = new Date().toISOString().split("T")[0];
@@ -541,7 +541,7 @@ export default function ResourcesPage() {
                         <div className="flex justify-between items-center pt-3 border-t border-emerald-500/10 mt-2">
                           <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                            <span>{count} {count === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                            <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
                           </div>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                         </div>
@@ -588,7 +588,7 @@ export default function ResourcesPage() {
                           <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
                             <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                              <span>{count} {count === 1 ? "Snippet Available" : "Snippets Available"}</span>
+                              <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
                             </div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                           </div>
@@ -683,7 +683,7 @@ export default function ResourcesPage() {
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className="text-sky-500 font-mono text-[11px] font-bold shrink-0">&gt;_</span>
                                 <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
-                                  Snippet {idx + 1}: {res.title}
+                                  Resource {idx + 1}: {res.title}
                                 </h4>
                               </div>
 

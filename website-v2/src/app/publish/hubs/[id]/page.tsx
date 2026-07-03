@@ -745,9 +745,9 @@ export default function HubManagementPage() {
 
               {/* Add Category */}
               <div className={`p-4 rounded-xl border space-y-3 ${dk ? 'border-white/[0.04] bg-white/[0.01]' : 'border-black/[0.04] bg-[#F9FAFB]/50'}`}>
-                <p className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Add Category</p>
+                <p className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Add Collection</p>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <input type="text" placeholder="Category name" value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                  <input type="text" placeholder="Collection name" value={newCatName} onChange={e => setNewCatName(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
                   <input type="number" placeholder="Resources / Day" value={newCatLimit} onChange={e => setNewCatLimit(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
@@ -783,14 +783,14 @@ export default function HubManagementPage() {
                   ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.06] text-white/70'
                   : 'bg-black/[0.03] hover:bg-black/[0.05] border border-black/[0.06] text-[#374151]'
                 }`}>
-                  Add Category
+                  Add Collection
                 </button>
               </div>
 
               {/* Category List */}
               <div className="space-y-2">
                 {settingsCategories.length === 0 ? (
-                  <p className={`text-xs italic ${dk ? 'text-white/25' : 'text-[#9CA3AF]'}`}>No categories defined yet.</p>
+                  <p className={`text-xs italic ${dk ? 'text-white/25' : 'text-[#9CA3AF]'}`}>No collections defined yet.</p>
                 ) : settingsCategories.map((cat: any, idx: number) => {
                   const isOpen = selectedCatIdx === idx;
                   return (
@@ -858,7 +858,7 @@ export default function HubManagementPage() {
 
                           {/* Category name */}
                           <div className="space-y-1">
-                            <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Category Name</label>
+                            <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Collection Name</label>
                             <input
                               type="text" placeholder="e.g. Frontend" value={editCatName}
                               onChange={e => setEditCatName(e.target.value)}
@@ -1060,9 +1060,9 @@ export default function HubManagementPage() {
             }`}
           >
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-500" />
-            <h3 className="text-base font-extrabold font-outfit tracking-tight text-red-500 mb-2">Delete Category Verification</h3>
+            <h3 className="text-base font-extrabold font-outfit tracking-tight text-red-500 mb-2">Delete Collection Verification</h3>
             <p className={`text-xs mb-4 ${dk ? 'text-white/60' : 'text-[#6B7280]'}`}>
-              This will remove the category. To verify, please type the category name <span className="font-bold font-mono underline">{settingsCategories[catToDeleteIdx]?.name}</span> below:
+              This will remove the collection. To verify, please type the collection name <span className="font-bold font-mono underline">{settingsCategories[catToDeleteIdx]?.name}</span> below:
             </p>
             <input
               type="text"
@@ -1098,7 +1098,7 @@ export default function HubManagementPage() {
                 disabled={deleteCatConfirmText !== settingsCategories[catToDeleteIdx]?.name}
                 className="bg-red-500 hover:bg-red-600 disabled:opacity-30 text-white px-4 py-2.5 rounded-xl transition-all shadow-md"
               >
-                Delete Category
+                Delete Collection
               </button>
             </div>
           </div>
