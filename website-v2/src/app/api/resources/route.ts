@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const userMonthlyCount = allResources.filter(r => 
+      !r.isDeleted &&
       r.creatorEmail?.toLowerCase() === creatorEmail.toLowerCase() &&
       r.createdAt && new Date(r.createdAt) >= startOfMonth
     ).length;

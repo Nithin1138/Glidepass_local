@@ -146,9 +146,10 @@ export async function DELETE(req: NextRequest, { params }: Props) {
       }
     } catch (e) {}
 
-    const isAuthorizedDelete = isHubOwner || isAdmin;
+    const isResourceCreator = existing.creatorEmail?.toLowerCase() === userEmail;
+    const isAuthorizedDelete = isHubOwner || isAdmin || isResourceCreator;
     if (!isAuthorizedDelete) {
-      return NextResponse.json({ error: "Unauthorized. Only hub owners or admins can delete resources." }, { status: 403 });
+      return NextResponse.json({ error: "Unauthorized. Only hub owners, admins, or the resource creator can delete this resource." }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
