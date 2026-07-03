@@ -364,7 +364,13 @@ function ContributorsDashboard() {
 
           hubId: selectedHub.id,
           category: selectedCategory ? selectedCategory.name : undefined,
-          topic: selectedTopic ? selectedTopic.name : undefined
+          topic: (() => {
+            const todayStr = new Date().toISOString().split("T")[0];
+            if (!selectedTopic || selectedTopic.name === "All Topics") {
+              return todayStr;
+            }
+            return selectedTopic.name;
+          })()
         })
       });
       const data = await res.json();

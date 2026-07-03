@@ -496,15 +496,51 @@ export default function HubManagementPage() {
                       </div>
                     );
                   })}
+
+                  {/* All Topics Shortcut Card */}
+                  <div onClick={() => setSelectedTopic({ name: "All Topics" })}
+                    className={`group p-5 rounded-2xl border border-dashed cursor-pointer flex flex-col justify-between min-h-[120px] transition-all duration-200 ${
+                      dk
+                        ? 'border-white/[0.1] bg-white/[0.005] hover:border-emerald-500/30 hover:bg-[#0077C0]/[0.02]'
+                        : 'border-black/[0.1] bg-black/[0.005] shadow-sm hover:border-[#0077C0]/30 hover:bg-white/80'
+                    }`}
+                  >
+                    <div>
+                      <h4 className={`text-sm font-bold uppercase tracking-wider transition-colors ${dk ? 'text-white/70 group-hover:text-white' : 'text-gray-600 group-hover:text-black'}`}>
+                        All Topics
+                      </h4>
+                      <p className={`text-[11px] mt-1 ${dk ? 'text-white/40' : 'text-[#6B7280]'}`}>
+                        Show everything in {selectedCategory.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-end mt-4">
+                      <span className="text-[11px] font-bold text-[#0077C0] group-hover:translate-x-0.5 transition-transform">→</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
               /* Level 4: Resources List */
               (() => {
-                const filtered = resources.filter(r =>
-                  (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
-                  r.topic?.toLowerCase() === selectedTopic.name.toLowerCase()
-                );
+                const todayStr = new Date().toISOString().split("T")[0];
+                const filteredRaw = resources.filter(r => {
+                  const matchesCategory = r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase();
+                  if (!matchesCategory) return false;
+
+                  if (selectedTopic.name === "All Topics") {
+                    // Exclude today's content from All Topics
+                    if (r.topic === todayStr) return false;
+                    return true;
+                  }
+                  return r.topic?.toLowerCase() === selectedTopic.name.toLowerCase();
+                });
+
+                // Sort by newest first (by createdAt date)
+                const filtered = [...filteredRaw].sort((a, b) => {
+                  const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return timeB - timeA;
+                });
                 return filtered.length === 0 ? (
                   <div className={`text-center py-12 rounded-2xl border-2 border-dashed ${dk ? 'border-white/[0.04]' : 'border-black/[0.06]'}`}>
                     <FileCode size={28} className={`mx-auto mb-2 ${dk ? 'text-white/15' : 'text-[#D1D5DB]'}`} />
