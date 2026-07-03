@@ -498,7 +498,7 @@ function ContributorsDashboard() {
   );
 
   // Filter resources inside selected hub
-  const filteredResources = resources.filter(r => {
+  const filteredResourcesRaw = resources.filter(r => {
     const matchesSearch = r.title.toLowerCase().includes(resourceSearch.toLowerCase()) ||
       r.content.toLowerCase().includes(resourceSearch.toLowerCase()) ||
       r.tags.some(t => t.toLowerCase().includes(resourceSearch.toLowerCase()));
@@ -507,16 +507,31 @@ function ContributorsDashboard() {
 
     // Level 2 Category check
     if (selectedCategory) {
-      if (r.category?.toLowerCase() !== selectedCategory.name.toLowerCase() && r.subCategory?.toLowerCase() !== selectedCategory.name.toLowerCase()) return false;
+      const catName = selectedCategory.name.toLowerCase();
+      const rCat = r.category?.toLowerCase();
+      const rSubCat = r.subCategory?.toLowerCase();
+      if (rCat !== catName && rSubCat !== catName) return false;
     }
 
     // Level 3 Topic check
     if (selectedTopic) {
-      if (selectedTopic.name === "All Topics") return true;
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (selectedTopic.name === "All Topics") {
+        // Exclude today's content from All Topics
+        if (r.topic === todayStr) return false;
+        return true;
+      }
       if (r.topic?.toLowerCase() !== selectedTopic.name.toLowerCase()) return false;
     }
 
     return true;
+  });
+
+  // Sort resources: newest first
+  const filteredResources = [...filteredResourcesRaw].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
   });
 
   const cardBg = dk ? "bg-[#08080c]" : "bg-[#F4F6F8]";
