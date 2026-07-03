@@ -683,7 +683,7 @@ export default function ResourcesPage() {
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className="text-sky-500 font-mono text-[11px] font-bold shrink-0">&gt;_</span>
                                 <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
-                                  Resource {idx + 1}: {res.title}
+                                  {idx + 1}: {res.title}
                                 </h4>
                               </div>
 
@@ -750,7 +750,7 @@ export default function ResourcesPage() {
                             </AnimatePresence>
 
                             {/* Bottom row */}
-                            <div className="px-4 py-3 border-t border-white/[0.04] bg-white/[0.01] flex items-center justify-between gap-3">
+                            <div className={`px-4 py-3 border-t ${borderLight} bg-white/[0.01] flex items-center justify-between gap-3`}>
                               <span className={`text-[10px] ${textSecondary}`}>
                                 by: <strong className={textPrimary}>{res.creatorName || "Anonymous"}</strong>
                               </span>
