@@ -429,7 +429,8 @@ export async function initDb() {
         is_deleted BOOLEAN DEFAULT false,
         visibility TEXT DEFAULT 'public',
         allowed_types TEXT DEFAULT '["code","link","text"]',
-        sub_categories TEXT DEFAULT '[]'
+        sub_categories TEXT DEFAULT '[]',
+        categories TEXT DEFAULT '[]'
       );
     `);
 
@@ -437,6 +438,7 @@ export async function initDb() {
       await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public';");
       await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS allowed_types TEXT DEFAULT '[\"code\",\"link\",\"text\"]';");
       await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS sub_categories TEXT DEFAULT '[]';");
+      await client.query("ALTER TABLE hubs ADD COLUMN IF NOT EXISTS categories TEXT DEFAULT '[]';");
     } catch (e) {
       console.error("Failed to add columns to hubs:", e);
     }
