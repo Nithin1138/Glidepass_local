@@ -583,7 +583,7 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://lanpad.app", "https://www.lanpad.app", "https://lanpad.vercel.app"],
-    allow_origin_regex=r"https?://.*\.trycloudflare\.com|https?://.*\.localhost\.run|https?://.*\.bore\.pub|chrome-extension://.*|http://192\.168\..*|http://10\..*|http://172\..*",
+    allow_origin_regex=r"https?://.*\.trycloudflare\.com|https?://.*\.localhost\.run|https?://.*\.lhr\.life|https?://.*\.lhr\.rocks|https?://.*\.bore\.pub|chrome-extension://.*|http://192\.168\..*|http://10\..*|http://172\..*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1428,7 +1428,7 @@ async def paste(request: Request, data: dict):
     if origin:
         import re
         allowed_pattern = re.compile(
-            r"^(chrome-extension://.*|https?://.*\.trycloudflare\.com|https?://.*\.localhost\.run|https?://.*\.bore\.pub|http://localhost(:.*)?|http://127\.0\.0\.1(:.*)?|http://192\.168\..*|http://10\..*|http://172\..*|https://lanpad\.vercel\.app|https://lanpad\.app|https://www\.lanpad\.app)$"
+            r"^(chrome-extension://.*|https?://.*\.trycloudflare\.com|https?://.*\.localhost\.run|https?://.*\.lhr\.life|https?://.*\.lhr\.rocks|https?://.*\.bore\.pub|http://localhost(:.*)?|http://127\.0\.0\.1(:.*)?|http://192\.168\..*|http://10\..*|http://172\..*|https://lanpad\.vercel\.app|https://lanpad\.app|https://www\.lanpad\.app)$"
         )
         if not allowed_pattern.match(origin):
             from fastapi.responses import JSONResponse

@@ -932,8 +932,15 @@ class LANpadLauncher:
                         except Exception:
                             pass
 
-                    # Run localhost.run SSH command
-                    ssh_cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", "-R", "80:127.0.0.1:8000", "nokey@localhost.run"]
+                    ssh_cmd = [
+                        "ssh", "-C",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=10",
+                        "-o", "ServerAliveInterval=1",
+                        "-o", "ServerAliveCountMax=3",
+                        "-R", "80:127.0.0.1:8000",
+                        "nokey@localhost.run"
+                    ]
                     
                     proc = subprocess.Popen(
                         ssh_cmd,
