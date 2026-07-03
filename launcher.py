@@ -906,7 +906,7 @@ class LANpadLauncher:
                     import threading as _thr
                     reader = _thr.Thread(target=_read_lines, daemon=True)
                     reader.start()
-                    reader.join(timeout=8)
+                    reader.join(timeout=20)
 
                     if not url_found:
                         raise Exception("Cloudflare Tunnel timed out")
@@ -938,6 +938,8 @@ class LANpadLauncher:
                         "-o", "ConnectTimeout=10",
                         "-o", "ServerAliveInterval=1",
                         "-o", "ServerAliveCountMax=3",
+                        "-o", "GSSAPIAuthentication=no",
+                        "-o", "AddressFamily=inet",
                         "-R", "80:127.0.0.1:8000",
                         "nokey@localhost.run"
                     ]
