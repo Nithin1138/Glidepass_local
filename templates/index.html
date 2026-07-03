@@ -51,7 +51,6 @@
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
         .view {
@@ -207,8 +206,11 @@
             justify-content: center;
             text-align: center;
             flex: 1;
+            min-height: 100vh;
             gap: 24px;
             z-index: 1;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
 
         .logo-stack {
@@ -651,7 +653,7 @@
 <body>
     <div id="app-wrapper">
         <!-- Initial View -->
-        <div id="initial-view" class="view active" style="overflow: hidden; position: relative;">
+        <div id="initial-view" class="view active" style="position: relative;">
             <div id="support-button-home" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="window.location.href='https://lanpad.app/support'">
                 <i data-lucide="help-circle" style="color: var(--text-main);"></i>
             </div>
