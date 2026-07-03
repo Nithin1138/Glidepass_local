@@ -145,11 +145,7 @@ function ResourcesPageContent() {
                 setSelectedTopic({ name: "All Topics" });
               } else {
                 const foundTopic = (foundCol.topics || []).find((t: any) => t.name === topicVal);
-                if (foundTopic) {
-                  setSelectedTopic(foundTopic);
-                } else {
-                  setSelectedTopic(null);
-                }
+                setSelectedTopic(foundTopic || { name: topicVal });
               }
             } else {
               setSelectedTopic(null);
