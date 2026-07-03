@@ -675,24 +675,30 @@ export default function ResourcesPage() {
                           <div
                             key={res.id}
                             onClick={() => setExpandedResId(expandedResId === res.id ? null : res.id)}
-                            className={`rounded-[18px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-black/[0.015] hover:bg-black/[0.03]"} transition-all cursor-pointer overflow-hidden`}
+                            className={`rounded-[20px] border ${borderLight} ${
+                              dk
+                                ? "bg-[#090b0e] hover:bg-[#0e1116] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                                : "bg-white hover:bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
+                            } hover:border-sky-500/30 hover:-translate-y-[1px] transition-all duration-200 cursor-pointer overflow-hidden`}
                           >
                             {/* Top row */}
                             <div className="p-4 flex items-center justify-between gap-3">
                               {/* Title / Snippet Num */}
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="text-sky-500 font-mono text-[11px] font-bold shrink-0">&gt;_</span>
-                                <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
-                                  {idx + 1}: {res.title}
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <span className={`px-2 py-0.5 text-[9px] font-extrabold font-mono rounded-lg bg-sky-500/10 text-sky-500 border border-sky-500/20 shrink-0`}>
+                                  #{idx + 1}
+                                </span>
+                                <h4 className={`text-xs md:text-sm font-extrabold truncate ${textPrimary}`}>
+                                  {res.title}
                                 </h4>
                               </div>
 
                               {/* Action Items & Language */}
-                              <div className="flex items-center gap-2.5 shrink-0">
+                              <div className="flex items-center gap-2 shrink-0">
                                 {/* Copy Button */}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleCopy(res.id, res.content); }}
-                                  className="text-gray-400 hover:text-white transition-colors"
+                                  className={`p-1.5 rounded-lg text-gray-400 hover:text-sky-500 ${dk ? "hover:bg-white/5" : "hover:bg-black/5"} transition-all`}
                                   title="Copy content"
                                 >
                                   {copiedId === res.id ? (
@@ -709,7 +715,7 @@ export default function ResourcesPage() {
                                     setReadingResource(res);
                                     setReadingMode("normal");
                                   }}
-                                  className="text-gray-400 hover:text-white transition-colors"
+                                  className={`p-1.5 rounded-lg text-gray-400 hover:text-sky-500 ${dk ? "hover:bg-white/5" : "hover:bg-black/5"} transition-all`}
                                   title="Open details view"
                                 >
                                   <BookOpen size={13} />
@@ -725,7 +731,9 @@ export default function ResourcesPage() {
                                 )}
 
                                 {/* Chevron Expand Icon */}
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`text-gray-400 transition-transform ${expandedResId === res.id ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+                                <div className="p-1 text-gray-400">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition-transform ${expandedResId === res.id ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+                                </div>
                               </div>
                             </div>
 
@@ -751,15 +759,16 @@ export default function ResourcesPage() {
 
                             {/* Bottom row */}
                             <div className={`px-4 py-3 border-t ${borderLight} bg-white/[0.01] flex items-center justify-between gap-3`}>
-                              <span className={`text-[10px] ${textSecondary}`}>
-                                by: <strong className={textPrimary}>{res.creatorName || "Anonymous"}</strong>
+                              <span className={`inline-flex items-center gap-1 text-[10px] ${textSecondary}`}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="opacity-60"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span>by: <strong className={textPrimary}>{res.creatorName || "Anonymous"}</strong></span>
                               </span>
 
                               {/* Command Center button */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleSendToLanpad(res); }}
                                 disabled={sendingId === res.id}
-                                className={`inline-flex items-center gap-1 bg-[#0077C0] hover:bg-[#0095f0] text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full shadow-sm hover:shadow transition-all disabled:opacity-50`}
+                                className={`inline-flex items-center gap-1.5 bg-gradient-to-r from-sky-500 to-[#0077C0] hover:from-sky-400 hover:to-[#008be0] active:scale-[0.97] text-white text-[9px] font-extrabold uppercase px-3.5 py-1.5 rounded-xl shadow-sm hover:shadow transition-all disabled:opacity-50`}
                               >
                                 <Zap size={10} className={sendingId === res.id ? "animate-pulse" : ""} />
                                 Command Center
