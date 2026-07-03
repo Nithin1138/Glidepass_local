@@ -291,9 +291,9 @@ function ContributorsDashboard() {
   const allowedFormats = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
 
   // Fetch Hubs with user relationship status
-  const fetchHubs = async () => {
+  const fetchHubs = async (quiet = false) => {
     if (!effectiveSession?.user?.email) return;
-    setLoadingHubs(true);
+    if (!quiet) setLoadingHubs(true);
     try {
       const res = await fetch(`/api/hubs?contributorEmail=${effectiveSession.user.email}`);
       const data = await res.json();
@@ -302,9 +302,9 @@ function ContributorsDashboard() {
       }
     } catch (e) {
       console.error(e);
-      showToast("error", "Failed to fetch community hubs.");
+      if (!quiet) showToast("error", "Failed to fetch community hubs.");
     } finally {
-      setLoadingHubs(false);
+      if (!quiet) setLoadingHubs(false);
     }
   };
 
@@ -328,6 +328,10 @@ function ContributorsDashboard() {
   useEffect(() => {
     if (effectiveStatus === "authenticated" && effectiveSession?.user?.email) {
       fetchHubs();
+      const interval = setInterval(() => {
+        fetchHubs(true);
+      }, 5000);
+      return () => clearInterval(interval);
     }
   }, [effectiveStatus, effectiveSession?.user?.email]);
 

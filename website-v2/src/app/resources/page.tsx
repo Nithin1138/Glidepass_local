@@ -60,18 +60,22 @@ export default function ResourcesPage() {
 
   useEffect(() => {
     fetchHubs();
+    const interval = setInterval(() => fetchHubs(true), 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (selectedHub) {
       fetchResources(selectedHub.id);
+      const interval = setInterval(() => fetchResources(selectedHub.id, true), 5000);
+      return () => clearInterval(interval);
     } else {
       setResources([]);
     }
   }, [selectedHub]);
 
-  async function fetchHubs() {
-    setLoadingHubs(true);
+  async function fetchHubs(quiet = false) {
+    if (!quiet) setLoadingHubs(true);
     try {
       const res = await fetch("/api/hubs");
       const data = await res.json();
@@ -82,12 +86,12 @@ export default function ResourcesPage() {
     } catch (e) {
       console.error("Failed to load hubs", e);
     } finally {
-      setLoadingHubs(false);
+      if (!quiet) setLoadingHubs(false);
     }
   }
 
-  async function fetchResources(hubId: string) {
-    setLoadingResources(true);
+  async function fetchResources(hubId: string, quiet = false) {
+    if (!quiet) setLoadingResources(true);
     try {
       const res = await fetch(`/api/resources?hubId=${hubId}`);
       const data = await res.json();
@@ -97,7 +101,7 @@ export default function ResourcesPage() {
     } catch (e) {
       console.error("Failed to load resources", e);
     } finally {
-      setLoadingResources(false);
+      if (!quiet) setLoadingResources(false);
     }
   }
 

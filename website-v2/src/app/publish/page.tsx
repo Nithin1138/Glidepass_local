@@ -37,9 +37,9 @@ function DashboardContent() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [analyticsError, setAnalyticsError] = useState("");
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (quiet = false) => {
     if (!email) return;
-    setLoadingAnalytics(true);
+    if (!quiet) setLoadingAnalytics(true);
     setAnalyticsError("");
     try {
       const res = await fetch(`/api/analytics?email=${encodeURIComponent(email)}&licenseKey=${encodeURIComponent(licenseKey || "")}`);
@@ -48,35 +48,44 @@ function DashboardContent() {
         setStats(data.stats);
         setResources(data.resources || []);
       } else {
-        setAnalyticsError(data.error || "Failed to load analytics.");
+        if (!quiet) setAnalyticsError(data.error || "Failed to load analytics.");
       }
     } catch (err: any) {
-      setAnalyticsError(err.message || "Failed to fetch analytics data.");
+      if (!quiet) setAnalyticsError(err.message || "Failed to fetch analytics data.");
     } finally {
-      setLoadingAnalytics(false);
+      if (!quiet) setLoadingAnalytics(false);
     }
   };
 
   useEffect(() => {
     if (currentView === "analytics" && email) {
       fetchAnalytics();
+      const interval = setInterval(() => fetchAnalytics(true), 5000);
+      return () => clearInterval(interval);
     }
   }, [currentView, email]);
 
-  useEffect(() => {
+  const fetchHubs = async (quiet = false) => {
     if (!email) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/hubs?contributorEmail=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        if (res.ok && data.success) {
-          const hubsList: any[] = data.hubs || [];
-          setOwnedHubs(hubsList.filter((h: any) => h.creatorEmail.toLowerCase() === email.toLowerCase()));
-          setJoinedHubs(hubsList.filter((h: any) => h.creatorEmail.toLowerCase() !== email.toLowerCase() && h.myStatus === "approved"));
-        }
-      } catch { /* noop */ }
-      finally { setLoading(false); }
-    })();
+    if (!quiet) setLoading(true);
+    try {
+      const res = await fetch(`/api/hubs?contributorEmail=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const hubsList: any[] = data.hubs || [];
+        setOwnedHubs(hubsList.filter((h: any) => h.creatorEmail.toLowerCase() === email.toLowerCase()));
+        setJoinedHubs(hubsList.filter((h: any) => h.creatorEmail.toLowerCase() !== email.toLowerCase() && h.myStatus === "approved"));
+      }
+    } catch { /* noop */ }
+    finally { if (!quiet) setLoading(false); }
+  };
+
+  useEffect(() => {
+    if (email) {
+      fetchHubs();
+      const interval = setInterval(() => fetchHubs(true), 5000);
+      return () => clearInterval(interval);
+    }
   }, [email]);
 
   const totalHubs = ownedHubs.length + joinedHubs.length;
@@ -129,7 +138,7 @@ function DashboardContent() {
             <p className={`text-xs mt-1 ${dk ? 'text-white/40' : 'text-[#6B7280]'}`}>Real-time performance metrics for your published resources</p>
           </div>
           <button
-            onClick={fetchAnalytics}
+            onClick={() => fetchAnalytics()}
             className={`p-2.5 rounded-xl border transition-all ${
               dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70 hover:text-white' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70 hover:text-black'
             }`}
