@@ -872,7 +872,7 @@ class LANpadLauncher:
             # ── Cloudflare Quick Tunnel ──────────────────────────────────────────
             if cloudflared_bin and (forced_tunnel is None or forced_tunnel == "cloudflare"):
                 try:
-                    cmd = [cloudflared_bin, "tunnel", "--url", "http://127.0.0.1:8000"]
+                    cmd = [cloudflared_bin, "tunnel", "--protocol", "http2", "--url", "http://127.0.0.1:8000"]
                     proc = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
