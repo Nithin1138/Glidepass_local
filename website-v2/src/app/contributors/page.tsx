@@ -158,7 +158,7 @@ function ContributorsDashboard() {
 
   // Merged effective session: prefer NextAuth, fall back to localStorage
   const effectiveSession = session ?? (localSession ? { user: { email: localSession.email, name: localSession.name, image: null } } : null);
-  const effectiveStatus = status !== "loading" ? (effectiveSession ? "authenticated" : "unauthenticated") : "loading";
+  const effectiveStatus = (status !== "loading" || localSession) ? (effectiveSession ? "authenticated" : "unauthenticated") : "loading";
 
   // active verification for suspended or deleted accounts
   useEffect(() => {
