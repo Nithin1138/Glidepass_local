@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ExternalLink, Zap, Sparkles, AlertCircle, Copy, Check, ChevronLeft, ArrowLeft, Users, Code, BookOpen, Sun, Moon } from "lucide-react";
 import Link from "next/link";
@@ -22,7 +23,7 @@ interface Resource {
   createdAt?: string;
 }
 
-export default function ResourcesPage() {
+function ResourcesPageContent() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const dk = theme === "dark";
 
@@ -57,6 +58,135 @@ export default function ResourcesPage() {
   const [reportDetails, setReportDetails] = useState("");
   const [reporting, setReporting] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const updateParams = (newParams: {
+    hub?: string | null;
+    collection?: string | null;
+    topic?: string | null;
+    resource?: string | null;
+  }) => {
+    const params = new URLSearchParams(window.location.search);
+    Object.entries(newParams).forEach(([key, val]) => {
+      if (val === null) {
+        params.delete(key);
+      } else if (val !== undefined) {
+        params.set(key, val);
+      }
+    });
+    router.push(`/resources?${params.toString()}`);
+  };
+
+  const selectHub = (hub: any | null) => {
+    if (hub) {
+      updateParams({ hub: hub.id, collection: null, topic: null, resource: null });
+    } else {
+      updateParams({ hub: null, collection: null, topic: null, resource: null });
+    }
+  };
+
+  const selectCategory = (cat: any | null) => {
+    if (cat) {
+      updateParams({ collection: cat.name || cat.id, topic: null, resource: null });
+    } else {
+      updateParams({ collection: null, topic: null, resource: null });
+    }
+  };
+
+  const selectTopic = (topic: any | null) => {
+    if (topic) {
+      updateParams({ topic: topic.name, resource: null });
+    } else {
+      updateParams({ topic: null, resource: null });
+    }
+  };
+
+  const selectResource = (res: Resource | null) => {
+    if (res) {
+      updateParams({ resource: res.id });
+    } else {
+      updateParams({ resource: null });
+    }
+  };
+
+  const handleBackNavigation = () => {
+    if (readingResource) {
+      selectResource(null);
+    } else if (selectedTopic) {
+      selectTopic(null);
+    } else if (selectedCategory) {
+      selectCategory(null);
+    } else {
+      selectHub(null);
+    }
+  };
+
+  // Sync state from query parameters on mount & search param change
+  useEffect(() => {
+    if (hubs.length === 0) return;
+    
+    const hubId = searchParams.get("hub");
+    if (hubId) {
+      const foundHub = hubs.find(h => h.id === hubId);
+      if (foundHub) {
+        setSelectedHub(foundHub);
+        
+        const colVal = searchParams.get("collection");
+        if (colVal && foundHub.categories) {
+          const foundCol = foundHub.categories.find((c: any) => c.id === colVal || c.name === colVal);
+          if (foundCol) {
+            setSelectedCategory(foundCol);
+            
+            const topicVal = searchParams.get("topic");
+            if (topicVal) {
+              if (topicVal === "All Topics") {
+                setSelectedTopic({ name: "All Topics" });
+              } else {
+                const foundTopic = (foundCol.topics || []).find((t: any) => t.name === topicVal);
+                if (foundTopic) {
+                  setSelectedTopic(foundTopic);
+                } else {
+                  setSelectedTopic(null);
+                }
+              }
+            } else {
+              setSelectedTopic(null);
+            }
+          } else {
+            setSelectedCategory(null);
+            setSelectedTopic(null);
+          }
+        } else {
+          setSelectedCategory(null);
+          setSelectedTopic(null);
+        }
+      } else {
+        setSelectedHub(null);
+        setSelectedCategory(null);
+        setSelectedTopic(null);
+      }
+    } else {
+      setSelectedHub(null);
+      setSelectedCategory(null);
+      setSelectedTopic(null);
+    }
+  }, [searchParams, hubs]);
+
+  useEffect(() => {
+    const resId = searchParams.get("resource");
+    if (resId && resources.length > 0) {
+      const foundRes = resources.find(r => r.id === resId);
+      if (foundRes) {
+        setReadingResource(foundRes);
+      } else {
+        setReadingResource(null);
+      }
+    } else {
+      setReadingResource(null);
+    }
+  }, [searchParams, resources]);
 
   useEffect(() => {
     fetchHubs();
@@ -262,15 +392,7 @@ export default function ResourcesPage() {
           <div className="flex items-center gap-3">
             {selectedHub ? (
               <button
-                onClick={() => {
-                  if (selectedTopic) {
-                    setSelectedTopic(null);
-                  } else if (selectedCategory) {
-                    setSelectedCategory(null);
-                  } else {
-                    setSelectedHub(null);
-                  }
-                }}
+                onClick={handleBackNavigation}
                 className={`flex items-center gap-1.5 text-[10px] font-bold ${textSecondary} hover:text-sky-500 transition-colors cursor-pointer`}
               >
                 <ArrowLeft size={13} /> Back
@@ -301,15 +423,7 @@ export default function ResourcesPage() {
         <div className={`shrink-0 border-b ${borderLight} ${dk ? "bg-[#050505]/70" : "bg-[#EDEAE0]/70"} backdrop-blur-md z-30`}>
           <div className="w-full max-w-7xl mx-auto px-3 md:px-6 h-10 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             <button
-              onClick={() => {
-                if (selectedTopic) {
-                  setSelectedTopic(null);
-                } else if (selectedCategory) {
-                  setSelectedCategory(null);
-                } else {
-                  setSelectedHub(null);
-                }
-              }}
+              onClick={handleBackNavigation}
               className="flex items-center gap-1 shrink-0 text-[10px] font-bold text-sky-500 hover:opacity-75 transition-all"
             >
               <ArrowLeft size={11} />
@@ -318,7 +432,7 @@ export default function ResourcesPage() {
             </button>
             <span className={`${dk ? "text-white/20" : "text-black/20"} shrink-0`}>›</span>
             <button
-              onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
+              onClick={() => updateParams({ collection: null, topic: null, resource: null })}
               className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
                 !selectedCategory ? `${dk ? "bg-white/10 text-white" : "bg-black/10 text-black"}` : `${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"}`
               }`}
@@ -329,7 +443,7 @@ export default function ResourcesPage() {
               <>
                 <span className={`${dk ? "text-white/20" : "text-black/20"} shrink-0`}>›</span>
                 <button
-                  onClick={() => setSelectedTopic(null)}
+                  onClick={() => selectTopic(null)}
                   className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
                     !selectedTopic ? `${dk ? "bg-purple-400/15 text-purple-300" : "bg-purple-500/10 text-purple-600"}` : `${dk ? "text-white/50 hover:text-purple-300" : "text-black/50 hover:text-purple-600"}`
                   }`}
@@ -401,7 +515,7 @@ export default function ResourcesPage() {
                     {filteredHubs.map((hub) => (
                       <div
                         key={hub.id}
-                        onClick={() => { setSelectedHub(hub); setSelectedCategory(null); setSelectedTopic(null); }}
+                        onClick={() => selectHub(hub)}
                         className={`group p-4 rounded-[20px] border ${borderLight} ${clayBg} hover:border-[#0077C0]/40 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden`}
                       >
                         <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -464,7 +578,7 @@ export default function ResourcesPage() {
                       return (
                         <div
                           key={cat.name}
-                          onClick={() => { setSelectedCategory(cat); setSelectedTopic(null); }}
+                          onClick={() => selectCategory(cat)}
                           className={`group p-5 rounded-[22px] border ${borderLight} ${dk ? "bg-white/[0.015] hover:bg-white/[0.04]" : "bg-black/[0.01] hover:bg-black/[0.03]"} hover:border-sky-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                         >
                           <div className="space-y-3">
@@ -517,7 +631,7 @@ export default function ResourcesPage() {
                     
                     return (
                       <div
-                        onClick={() => setSelectedTopic({ name: todayStr })}
+                        onClick={() => selectTopic({ name: todayStr })}
                         className={`group p-5 rounded-[22px] border border-emerald-500/50 ${dk ? "bg-emerald-950/[0.05] hover:bg-emerald-950/10" : "bg-emerald-50/10 hover:bg-emerald-50/20"} transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                       >
                         <div className="space-y-3">
@@ -562,7 +676,7 @@ export default function ResourcesPage() {
                       return (
                         <div
                           key={topic.name}
-                          onClick={() => setSelectedTopic(topic)}
+                          onClick={() => selectTopic(topic)}
                           className={`group p-5 rounded-[22px] border ${borderLight} ${dk ? "bg-white/[0.015] hover:bg-white/[0.04]" : "bg-black/[0.01] hover:bg-black/[0.03]"} hover:border-emerald-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                         >
                           <div className="space-y-3">
@@ -602,7 +716,7 @@ export default function ResourcesPage() {
 
                     {/* All Topics */}
                     <div
-                      onClick={() => setSelectedTopic({ name: "All Topics" })}
+                      onClick={() => selectTopic({ name: "All Topics" })}
                       className={`group p-5 rounded-[22px] border border-dashed ${borderLight} ${dk ? "bg-white/[0.01] hover:bg-white/[0.03]" : "bg-black/[0.01] hover:bg-black/[0.02]"} hover:border-sky-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
                     >
                       <div className="space-y-3">
@@ -716,7 +830,7 @@ export default function ResourcesPage() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setReadingResource(res);
+                                    selectResource(res);
                                     setReadingMode("normal");
                                   }}
                                   className={`p-1.5 rounded-lg text-gray-400 hover:text-sky-500 ${dk ? "hover:bg-white/5" : "hover:bg-black/5"} transition-all`}
@@ -800,7 +914,7 @@ export default function ResourcesPage() {
             className={`fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 ${
               dk ? "bg-black/85 backdrop-blur-md" : "bg-black/40 backdrop-blur-sm"
             }`}
-            onClick={() => setReadingResource(null)}
+            onClick={() => selectResource(null)}
           >
             <motion.div
               initial={{ scale: 0.95, y: 15 }}
@@ -924,7 +1038,7 @@ export default function ResourcesPage() {
 
                     {/* Close */}
                     <button
-                      onClick={() => setReadingResource(null)}
+                      onClick={() => selectResource(null)}
                       className={`p-2 rounded-xl border transition-all text-xs font-bold ${
                         dk ? "border-white/10 hover:bg-white/10 text-gray-400 hover:text-white" : "border-black/10 hover:bg-black/5 text-gray-600 hover:text-gray-900"
                       }`}
@@ -1062,6 +1176,18 @@ export default function ResourcesPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function ResourcesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#EDEAE0]">
+        <div className="w-6 h-6 border-2 border-[#0077C0] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ResourcesPageContent />
+    </Suspense>
   );
 }
 
