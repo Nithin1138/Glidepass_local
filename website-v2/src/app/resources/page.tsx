@@ -312,22 +312,22 @@ export default function ResourcesPage() {
               <span className="hidden sm:inline">Hubs</span>
               <span className="sm:hidden">←</span>
             </button>
-            <span className="text-white/20 shrink-0">›</span>
+            <span className={`${dk ? "text-white/20" : "text-black/20"} shrink-0`}>›</span>
             <button
               onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
               className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                !selectedCategory ? `${dk ? "bg-white/10 text-white" : "bg-black/10 text-black"}` : "text-white/50 hover:text-white"
+                !selectedCategory ? `${dk ? "bg-white/10 text-white" : "bg-black/10 text-black"}` : `${dk ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"}`
               }`}
             >
               {selectedHub.title.length > 14 ? selectedHub.title.slice(0, 14) + "…" : selectedHub.title}
             </button>
             {selectedCategory && (
               <>
-                <span className="text-white/20 shrink-0">›</span>
+                <span className={`${dk ? "text-white/20" : "text-black/20"} shrink-0`}>›</span>
                 <button
                   onClick={() => setSelectedTopic(null)}
                   className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                    !selectedTopic ? "bg-purple-400/15 text-purple-300" : "text-white/50 hover:text-purple-300"
+                    !selectedTopic ? `${dk ? "bg-purple-400/15 text-purple-300" : "bg-purple-500/10 text-purple-600"}` : `${dk ? "text-white/50 hover:text-purple-300" : "text-black/50 hover:text-purple-600"}`
                   }`}
                 >
                   {selectedCategory.name.length > 12 ? selectedCategory.name.slice(0, 12) + "…" : selectedCategory.name}
@@ -336,8 +336,10 @@ export default function ResourcesPage() {
             )}
             {selectedTopic && (
               <>
-                <span className="text-white/20 shrink-0">›</span>
-                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/15 text-emerald-300">
+                <span className={`${dk ? "text-white/20" : "text-black/20"} shrink-0`}>›</span>
+                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  dk ? "bg-emerald-400/15 text-emerald-300" : "bg-emerald-500/10 text-emerald-600"
+                }`}>
                   {selectedTopic.name.length > 12 ? selectedTopic.name.slice(0, 12) + "…" : selectedTopic.name}
                 </span>
               </>
@@ -432,6 +434,14 @@ export default function ResourcesPage() {
                   <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Category in {selectedHub.title}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedHub.categories.map((cat: any) => {
+                      const todayStr = new Date().toISOString().split("T")[0];
+                      const hasTodayResource = resources.some(r =>
+                        !(r as any).isDeleted &&
+                        (r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase()) &&
+                        r.topic === todayStr
+                      );
+                      const isTodayInCustomTopics = (cat.topics || []).some((t: any) => t.name === todayStr);
+
                       // Calculate date range of topics in this category
                       const topicDates = (cat.topics || [])
                         .map((t: any) => t.name)
@@ -445,7 +455,7 @@ export default function ResourcesPage() {
                         dateRangeStr = minDate === maxDate ? minDate : `${minDate} ➔ ${maxDate}`;
                       }
 
-                      const topicsCount = cat.topics?.length || 0;
+                      const topicsCount = (cat.topics?.length || 0) + (hasTodayResource && !isTodayInCustomTopics ? 1 : 0);
 
                       return (
                         <div
