@@ -491,7 +491,7 @@ export default function ResourcesPage() {
                           </div>
 
                           {/* Topics Count Footer */}
-                          <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
+                          <div className={`flex justify-between items-center pt-3 border-t ${dk ? "border-white/[0.06]" : "border-black/[0.06]"} mt-2`}>
                             <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                               <span>{topicsCount} {topicsCount === 1 ? "Topic" : "Topics"}</span>
@@ -542,7 +542,7 @@ export default function ResourcesPage() {
                         </div>
 
                         {/* Footer: Snippet Count & Arrow */}
-                        <div className="flex justify-between items-center pt-3 border-t border-emerald-500/10 mt-2">
+                        <div className={`flex justify-between items-center pt-3 border-t ${dk ? "border-emerald-500/20" : "border-emerald-500/30"} mt-2`}>
                           <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                             <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
@@ -589,7 +589,7 @@ export default function ResourcesPage() {
                           </div>
 
                           {/* Footer */}
-                          <div className="flex justify-between items-center pt-3 border-t border-white/[0.04] mt-2">
+                          <div className={`flex justify-between items-center pt-3 border-t ${dk ? "border-white/[0.06]" : "border-black/[0.06]"} mt-2`}>
                             <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                               <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
@@ -618,7 +618,7 @@ export default function ResourcesPage() {
                         </h4>
                         <p className={`text-[9px] md:text-[10px] ${textSecondary}`}>Show all in {selectedCategory.name}</p>
                       </div>
-                      <div className="flex justify-end pt-3 border-t border-dashed border-white/[0.04] mt-2">
+                      <div className={`flex justify-end pt-3 border-t border-dashed ${dk ? "border-white/[0.06]" : "border-black/[0.06]"} mt-2`}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                       </div>
                     </div>
