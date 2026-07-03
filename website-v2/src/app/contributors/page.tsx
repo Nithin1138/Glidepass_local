@@ -157,7 +157,9 @@ function ContributorsDashboard() {
   }, []);
 
   // Merged effective session: prefer NextAuth, fall back to localStorage
-  const effectiveSession = session ?? (localSession ? { user: { email: localSession.email, name: localSession.name, image: null } } : null);
+  const effectiveSession = React.useMemo(() => {
+    return session ?? (localSession ? { user: { email: localSession.email, name: localSession.name, image: null } } : null);
+  }, [session, localSession]);
   const effectiveStatus = (status !== "loading" || localSession) ? (effectiveSession ? "authenticated" : "unauthenticated") : "loading";
 
   // active verification for suspended or deleted accounts
@@ -293,7 +295,7 @@ function ContributorsDashboard() {
     if (effectiveStatus === "authenticated" && effectiveSession?.user?.email) {
       fetchHubs();
     }
-  }, [effectiveStatus, effectiveSession]);
+  }, [effectiveStatus, effectiveSession?.user?.email]);
 
 
   useEffect(() => {
