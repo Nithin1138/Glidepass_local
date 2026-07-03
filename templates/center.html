@@ -680,30 +680,34 @@
 </head>
 
 <body>
-    <div id="app-wrapper">
+<div id="app-wrapper">
         <!-- Command Center View -->
         <div id="command-center-view" class="view active">
             <div class="command-center">
                 <header>
-                     <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
                             <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
-                                <i data-lucide="arrow-left" size="16"></i>
+                                <i data-lucide="arrow-left" size="14"></i>
                             </button>
-                             <i data-lucide="wifi" size="12"></i>
-                             <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: bottom; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em;">COMMAND CENTER <span class="status-dot"></span></span>
-                         </div>
-                         <div style="display: flex; gap: 4px;">
-                             <button id="history-toggle-btn" style="display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: var(--accent-color); padding: 3px 8px; font-size: 0.6rem; font-weight: 700; cursor: pointer;">
-                                 <i data-lucide="history" size="10"></i>
-                                 <span>History</span>
-                             </button>
-                             <button id="refill-btn" style="display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: var(--accent-color); padding: 3px 8px; font-size: 0.6rem; font-weight: 700; cursor: pointer; position: relative;">
-                                 <i data-lucide="rotate-ccw" size="10"></i>
-                                 <span>Refill</span>
-                             </button>
-                         </div>
-                     </div>
+                             <i data-lucide="wifi" size="11" style="color: var(--accent-color);"></i>
+                             <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; display: flex; align-items: center; gap: 6px; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-color);">
+                                 COMMAND CENTER
+                                 <span class="status-dot"></span>
+                             </span>
+                          </div>
+                          <div style="display: flex; gap: 6px;">
+                              <button id="history-toggle-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.68rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                                  <i data-lucide="history" size="12"></i>
+                                  <span>History</span>
+                              </button>
+                              <button id="refill-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: var(--accent-color); padding: 4px 10px; font-size: 0.68rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                                  <i data-lucide="rotate-ccw" size="12"></i>
+                                  <span>Refill</span>
+                              </button>
+                          </div>
+                      </div>
+                 </header>
                     <div class="controls-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div class="header-btn" id="live-sync-toggle" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                             <i data-lucide="refresh-cw" size="16"></i>
