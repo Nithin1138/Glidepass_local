@@ -936,7 +936,7 @@ class LANpadLauncher:
                         "ssh", "-C",
                         "-o", "StrictHostKeyChecking=no",
                         "-o", "ConnectTimeout=10",
-                        "-o", "ServerAliveInterval=1",
+                        "-o", "ServerAliveInterval=10",
                         "-o", "ServerAliveCountMax=3",
                         "-o", "GSSAPIAuthentication=no",
                         "-o", "AddressFamily=inet",
@@ -983,7 +983,7 @@ class LANpadLauncher:
                             
                     lhr_reader = threading.Thread(target=_read_lhr, daemon=True)
                     lhr_reader.start()
-                    lhr_reader.join(timeout=15)
+                    lhr_reader.join(timeout=30)
                     
                     if not url_found:
                         raise Exception("localhost.run timed out")
