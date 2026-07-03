@@ -429,6 +429,80 @@
             animation: fadeIn 0.3s ease;
         }
 
+        /* WPM Selector Styles */
+        .wpm-selector-row {
+            padding: 5px 0;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Custom Switch Toggle Styles */
+        .switch-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .switch-container:active {
+            transform: scale(0.98);
+        }
+
+        .switch-label {
+            font-size: 0.72rem;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .2s;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #fff;
+            transition: .2s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .switch input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        .switch input:checked + .slider:before {
+            transform: translateX(14px);
+        }
+
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
@@ -443,13 +517,18 @@
             cursor: pointer;
             margin-top: -6px;
             box-shadow: 0 0 10px var(--accent-glow);
+            transition: transform 0.1s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
         }
 
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             cursor: pointer;
-            background: #333;
+            background: rgba(255,255,255,0.08);
             border-radius: 2px;
         }
 
@@ -655,8 +734,8 @@
                     <div class="mode-card" id="inject-mode">
                         <div class="mode-header">
                             <div class="mode-title">
-                                <i data-lucide="keyboard" size="18"></i>
-                                <span>Inject</span>
+                                <i data-lucide="align-left" size="18"></i>
+                                <span>Inline</span>
                             </div>
                         </div>
                         <p>One line flash</p>
@@ -664,7 +743,7 @@
                     <div class="mode-card" id="typing-mode">
                         <div class="mode-header">
                             <div class="mode-title">
-                                <i data-lucide="navigation" size="18"></i>
+                                <i data-lucide="keyboard" size="18"></i>
                                 <span>Typing</span>
                             </div>
                         </div>
@@ -674,16 +753,19 @@
 
                 <!-- Horizontal WPM Selector -->
                 <div class="wpm-selector-row" id="wpm-selector" style="display: none;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
-                        <input type="checkbox" id="is-coding-checkbox" style="accent-color: var(--accent-color); width: 16px; height: 16px; cursor: pointer;">
-                        <label for="is-coding-checkbox" style="font-size: 0.8rem; color: #fff; font-weight: 600; cursor: pointer;">Coding? (Handle IDE auto-brackets)</label>
-                    </div>
+                    <label class="switch-container" for="is-coding-checkbox">
+                        <span class="switch-label">Coding Mode (Handle IDE auto-brackets)</span>
+                        <div class="switch">
+                            <input type="checkbox" id="is-coding-checkbox">
+                            <span class="slider"></span>
+                        </div>
+                    </label>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
                         <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em;">TYPING SPEED</span>
                         <span id="wpm-display" style="font-size: 0.8rem; color: var(--accent-color); font-weight: 800;">40 WPM</span>
                     </div>
                     <input type="range" id="wpm-slider" min="30" max="120" value="40" step="5" style="width: 100%; margin-bottom: 5px;">
-                    <div id="expected-time-display" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 8px;">Expected Time: 0s</div>
+                    <div id="expected-time-display" style="font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 8px; background: rgba(255,255,255,0.02); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); display: inline-block; width: 100%;">Expected Time: 0s</div>
                 </div>
 
                 <button class="primary-action" id="send-btn">
