@@ -1249,10 +1249,12 @@ function ContributorsDashboard() {
                       <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
                     </div>
                   ) : filteredResources.length === 0 ? (
-                    <div className={`py-16 text-center rounded-[24px] border border-dashed ${borderLight}`}>
-                      <Code size={28} className="mx-auto mb-3 opacity-30 text-sky-400" />
-                      <p className={`text-xs ${textSecondary}`}>No resources found.</p>
-                      <p className={`text-[10px] ${textMuted} mt-1`}>Try a different filter or add the first resource.</p>
+                    <div className="py-24 text-center rounded-[24px] border border-dashed border-zinc-900 bg-zinc-950/10 flex flex-col items-center justify-center">
+                      <Code size={36} className="mb-4 opacity-25 text-[#0077C0]" />
+                      <p className="text-sm text-zinc-400">No resources in this topic.</p>
+                      <p className="text-xs text-zinc-600 mt-1">
+                        Click <span className="text-[#0077C0] font-semibold">"Add Resource"</span> to start contributing.
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-3.5">
