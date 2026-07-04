@@ -1335,7 +1335,7 @@ async def is_local_api_online():
     
     try:
         # Do a very fast check to see if the local Next.js server port is open
-        async with httpx.AsyncClient(timeout=httpx.Timeout(0.2, connect=0.2)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(0.2, connect=0.2), verify=False) as client:
             r = await client.get("http://127.0.0.1:3000/api/hubs")
             _local_api_online = (r.status_code == 200)
     except Exception:
@@ -1351,12 +1351,14 @@ async def _proxy_get(path: str, params: dict):
     local_online = await is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
-    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=0.5), follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
         for base in bases:
             try:
                 r = await client.get(f"{base}{path}", params=params)
                 if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
                     return r.json()
+                else:
+                    last_err = f"Status {r.status_code}, content-type {r.headers.get('content-type')}"
             except Exception as e:
                 last_err = str(e)
     return None, last_err
@@ -1368,12 +1370,14 @@ async def _proxy_post(path: str, body: dict):
     local_online = await is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
-    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=0.5), follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
         for base in bases:
             try:
                 r = await client.post(f"{base}{path}", json=body, headers={"Content-Type": "application/json"})
                 if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
                     return r.json()
+                else:
+                    last_err = f"Status {r.status_code}, content-type {r.headers.get('content-type')}"
             except Exception as e:
                 last_err = str(e)
     return None, last_err
@@ -1382,10 +1386,13 @@ async def _proxy_post(path: str, body: dict):
 @app.get("/api/hubs")
 async def proxy_hubs(request: Request):
     """Proxy GET /api/hubs → Next.js API (dev:3000 → prod:lanpad.app)."""
+    print("[PROXY] GET /api/hubs called")
     params = dict(request.query_params)
     result = await _proxy_get("/api/hubs", params)
+    print(f"[PROXY] GET /api/hubs result: {type(result)}")
     if isinstance(result, dict):
         return result
+    print(f"[PROXY] GET /api/hubs failed: {result}")
     return {"success": True, "hubs": []}
 
 
