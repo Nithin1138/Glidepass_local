@@ -385,6 +385,25 @@ function ContributorsDashboard() {
     }
   }, [selectedCategory, selectedTopic, resources]);
 
+  const addBtnText = React.useMemo(() => {
+    if (!selectedCategory) return "";
+    if (!selectedTopic) {
+      if (isAddDisabled) {
+        return `Capped (${selectedCategory.topicsLimit} Max)`;
+      }
+      return "Add Topic";
+    } else {
+      if (isAddDisabled) {
+        let limit = selectedTopic.limit;
+        if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
+          limit = selectedCategory.resourcesPerTopic;
+        }
+        return `Capped (${limit} Max)`;
+      }
+      return "Add Resource";
+    }
+  }, [selectedCategory, selectedTopic, isAddDisabled]);
+
   // Fetch Hubs with user relationship status
   const fetchHubs = async (quiet = false) => {
     if (!effectiveSession?.user?.email) return;
@@ -978,7 +997,7 @@ function ContributorsDashboard() {
                   style={{ background: isAddDisabled ? undefined : P.blue }}
                 >
                   <Plus size={13} />
-                  <span>{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
+                  <span>{addBtnText}</span>
                 </button>
               </div>
             )}
