@@ -1322,10 +1322,6 @@ function ContributorsDashboard() {
                           if (selectedTopic.name === "All Topics") {
                             return (
                               <div className={`flex items-center gap-2 flex-wrap ${textSecondary} font-mono text-[10px]`}>
-                                <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase`}>
-                                  {selectedCategory.name}
-                                </span>
-                                <span>•</span>
                                 <span>All Topics View</span>
                               </div>
                             );
@@ -1340,10 +1336,6 @@ function ContributorsDashboard() {
 
                           return (
                             <div className={`flex items-center gap-2 flex-wrap ${textSecondary} font-mono text-[10px] w-full`}>
-                              <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase`}>
-                                {selectedCategory.name}
-                              </span>
-                              <span>•</span>
                               {hasCustomTitle && (
                                 <>
                                   <span>{formatDate(selectedTopic.name)}</span>
