@@ -958,19 +958,19 @@ function ContributorsDashboard() {
               exit={{ opacity: 0, x: 20 }}
               className="flex-1 min-h-0 flex flex-col gap-3"
             >
-              {/* Toolbar: search + add (always visible) */}
-              <div className="shrink-0 flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 w-3.5 h-3.5" />
-                  <input
-                    type="text"
-                    placeholder="Search resources…"
-                    value={resourceSearch}
-                    onChange={(e) => setResourceSearch(e.target.value)}
-                    className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                  />
-                </div>
-                {selectedCategory && (
+              {/* Toolbar: search + add (only visible when a collection is selected) */}
+              {selectedCategory && (
+                <div className="shrink-0 flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 w-3.5 h-3.5" />
+                    <input
+                      type="text"
+                      placeholder="Search resources…"
+                      value={resourceSearch}
+                      onChange={(e) => setResourceSearch(e.target.value)}
+                      className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    />
+                  </div>
                   <button
                     onClick={() => {
                       if (!selectedTopic) {
@@ -995,33 +995,66 @@ function ContributorsDashboard() {
                     <span className="hidden sm:inline">{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
                     <span className="sm:hidden">{!selectedTopic ? "Topic" : "Add"}</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* 4-Layer Content */}
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
                 /* ── LAYER 2: Category Grid ── */
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
-                  <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Collection</p>
                   <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {selectedHub.categories.map((cat: any) => {
-                      const count = resources.filter(r => r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase()).length;
+                      // Resources count
+                      const resourcesCount = resources.filter(r => 
+                        !r.isDeleted && 
+                        (r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase())
+                      ).length;
+
+                      // Sessions / Unique topic dates count
+                      const resourceTopics = Array.from(new Set(resources
+                        .filter(r => 
+                          !r.isDeleted && 
+                          (r.category?.toLowerCase() === cat.name.toLowerCase() || r.subCategory?.toLowerCase() === cat.name.toLowerCase()) &&
+                          r.topic && /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                        )
+                        .map(r => r.topic)
+                      ));
+                      const allTopicNames = Array.from(new Set([
+                        ...(cat.topics || []).map((t: any) => t.name),
+                        ...resourceTopics
+                      ]));
+                      const sessionsCount = allTopicNames.length;
+
+                      // Check if today's topic is created
+                      const todayStr = new Date().toISOString().split("T")[0];
+                      const hasTodayTopic = allTopicNames.includes(todayStr);
+
                       return (
                         <div
                           key={cat.name}
                           onClick={() => { setSelectedCategory(cat); setSelectedTopic(null); }}
-                          className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border ${borderLight} ${dk ? 'bg-white/[0.02] hover:bg-white/[0.05]' : 'bg-black/[0.02] hover:bg-black/[0.04]'} hover:border-white/20 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
+                          className={`p-4 md:p-5 rounded-2xl border ${borderLight} ${dk ? 'bg-zinc-950/60 hover:bg-zinc-900/60' : 'bg-white hover:bg-zinc-50'} hover:border-[#0077C0]/30 transition-all cursor-pointer group flex items-center justify-between min-h-[85px] relative overflow-hidden`}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-1">
-                            <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-sky-400 transition-colors leading-tight`}>{cat.name}</h4>
-                            <p className={`text-[9px] md:text-[11px] ${textSecondary} leading-relaxed hidden sm:block`}>
-                              {cat.allowedTypes?.join(", ") || "All types"}
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <h4 className={`text-xs md:text-sm font-black uppercase tracking-wider ${textPrimary} group-hover:text-[#0077C0] transition-colors leading-tight truncate`}>
+                              {cat.name}
+                            </h4>
+                            <p className={`text-[9px] md:text-[10px] font-medium font-mono text-zinc-500`}>
+                              {sessionsCount} Session{sessionsCount !== 1 ? 's' : ''} &nbsp;•&nbsp; {resourcesCount} Code{resourcesCount !== 1 ? 's' : ''}
                             </p>
                           </div>
-                          <div className="flex justify-between items-center pt-2">
-                            <span className="text-[8px] font-mono text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded border border-sky-400/20">{count}</span>
-                            <span className="text-[9px] font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">→</span>
+                          
+                          {/* Colored Dot Indicator */}
+                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                            <span 
+                              className={`w-2 h-2 rounded-full ${
+                                hasTodayTopic 
+                                  ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
+                                  : 'bg-red-500 shadow-[0_0_8px_#ef4444]'
+                              }`}
+                              title={hasTodayTopic ? "Today's Topic Created" : "Today's Topic Not Created"}
+                            />
+                            <span className="text-[10px] font-bold text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
                           </div>
                         </div>
                       );
