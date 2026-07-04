@@ -28,6 +28,7 @@ interface Resource {
   id: string;
   title: string;
   type: string;
+  description?: string;
   language?: string;
   tags: string[];
   content: string;
@@ -1196,7 +1197,42 @@ function ContributorsDashboard() {
 
               ) : (
                 /* ── LAYER 4: Resources ── */
-                <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 flex flex-col gap-4">
+                  {/* Topic Detail Header */}
+                  {selectedTopic && (
+                    <div className="shrink-0 flex items-center gap-2.5 pb-2 border-b border-zinc-900 select-none flex-wrap">
+                      <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider font-outfit">
+                        {selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name))}
+                      </h2>
+                      {selectedTopic.name !== "All Topics" && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-300 uppercase font-mono">
+                            {selectedCategory.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-500">
+                            {formatDate(selectedTopic.name)}
+                          </span>
+                          <span className="text-zinc-700 font-mono">•</span>
+                          <span className="text-[10px] font-mono text-zinc-500">
+                            {filteredResources.length} Resource{filteredResources.length !== 1 ? 's' : ''}
+                          </span>
+                          {(() => {
+                            let limit = selectedTopic.limit;
+                            if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
+                              limit = selectedCategory.resourcesPerTopic;
+                            }
+                            const isCapped = limit !== undefined && limit !== null && filteredResources.length >= limit;
+                            return isCapped ? (
+                              <span className="px-2 py-0.5 text-[8px] font-bold uppercase rounded-full border border-red-950/20 bg-red-950/20 text-red-500 font-mono">
+                                Capped (Max {limit})
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {loadingResources ? (
                     <div className="flex items-center justify-center py-16">
                       <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
@@ -1213,65 +1249,82 @@ function ContributorsDashboard() {
                         <div
                           key={r.id}
                           onClick={() => setExpandedResId(expandedResId === r.id ? null : r.id)}
-                          className={`rounded-[20px] border ${borderLight} ${clayBg} relative overflow-hidden cursor-pointer hover:border-white/20 transition-all`}
+                          className="relative p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between overflow-hidden"
                         >
-                          <div className={`p-3 md:p-4 rounded-[18px] ${dk ? 'bg-black/40' : 'bg-white/40'} flex flex-col space-y-2.5`}>
-                            {/* Title row */}
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-2 min-w-0 flex-1">
-                                <span className="w-5 h-5 md:w-6 md:h-6 shrink-0 flex items-center justify-center rounded-lg text-[9px] md:text-[10px] font-bold mt-0.5 bg-[#0077C0]/10 text-sky-400">{idx + 1}</span>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <h4 className={`text-xs md:text-sm font-bold ${textPrimary} truncate`}>{r.title}</h4>
-                                  {/* Tags on mobile: compact horizontal scroll */}
-                                  <div className="flex flex-nowrap gap-1 mt-1 overflow-x-auto scrollbar-none">
-                                    <span className={`shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border ${borderLight} ${dk ? 'bg-white/5 text-white/60' : 'bg-black/5 text-black/60'}`}>{r.type}</span>
-                                    {(r.category || r.subCategory) && (
-                                      <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-400">{r.category || r.subCategory}</span>
-                                    )}
-                                    {r.topic && (
-                                      <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">{formatDate(r.topic)}</span>
-                                    )}
-                                    {r.language && (
-                                      <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-400">{r.language}</span>
-                                    )}
-                                    {r.tags.slice(0, 2).map(t => (
-                                      <span key={t} className={`shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border ${borderLight} ${dk ? 'bg-white/[0.02] text-white/40' : 'bg-black/[0.02] text-black/40'}`}>#{t}</span>
-                                    ))}
-                                    {r.tags.length > 2 && <span className={`shrink-0 text-[8px] ${textMuted} px-1`}>+{r.tags.length - 2}</span>}
-                                  </div>
-                                </div>
-                              </div>
+                          {/* Top edge highlight glow on hover */}
+                          <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                              {/* Action buttons */}
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  onClick={(e) => openEditModal(r, e)}
-                                  className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5 transition-all ${r.isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
-                                  title={r.isLocked ? "Locked" : "Edit"}
-                                >
-                                  <Edit size={11} className={r.isLocked ? "text-gray-400" : "text-sky-400"} />
-                                </button>
-                                {(r.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase() ||
-                                  selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase()) && (
-                                  <button
-                                    onClick={(e) => handleToggleLock(r, e)}
-                                    className={`p-1.5 rounded-lg border ${borderLight} hover:bg-white/5 transition-all`}
-                                    title={r.isLocked ? "Unlock" : "Lock"}
-                                  >
-                                    {r.isLocked ? <Lock size={11} className="text-amber-500" /> : <Unlock size={11} className="text-emerald-500" />}
-                                  </button>
-                                )}
-                                {selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase() && (
-                                  <button
-                                    onClick={(e) => handleDeleteResource(r.id, e)}
-                                    className="p-1.5 rounded-lg border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={11} className="text-red-400" />
-                                  </button>
-                                )}
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            {/* Left side: Circular index and Title/Description */}
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-zinc-950 border border-zinc-900 text-zinc-500 text-xs font-bold font-mono">
+                                {idx + 1}
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <h4 className="text-sm font-bold text-white leading-tight truncate">
+                                  {r.title}
+                                </h4>
+                                <p className="text-[10px] font-mono text-zinc-500 mt-0.5 leading-tight truncate">
+                                  {r.description || "No description provided"}
+                                </p>
                               </div>
                             </div>
+
+                            {/* Right side: Action buttons & Language Badge */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Copy Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(r.content);
+                                  showToast("success", "Copied to clipboard!");
+                                }}
+                                className="p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+                                title="Copy content"
+                              >
+                                <Copy size={11} />
+                              </button>
+
+                              {/* Edit Button */}
+                              <button
+                                onClick={(e) => openEditModal(r, e)}
+                                className={`p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer ${r.isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                                title={r.isLocked ? "Locked" : "Edit"}
+                              >
+                                <Edit size={11} />
+                              </button>
+
+                              {/* Lock / Unlock */}
+                              {(r.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase() ||
+                                selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase()) && (
+                                <button
+                                  onClick={(e) => handleToggleLock(r, e)}
+                                  className="p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 hover:bg-zinc-800 transition-all cursor-pointer"
+                                  title={r.isLocked ? "Unlock" : "Lock"}
+                                >
+                                  {r.isLocked ? <Lock size={11} className="text-amber-500" /> : <Unlock size={11} className="text-emerald-500" />}
+                                </button>
+                              )}
+
+                              {/* Delete */}
+                              {selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase() && (
+                                <button
+                                  onClick={(e) => handleDeleteResource(r.id, e)}
+                                  className="p-1.5 rounded-lg border border-red-950/20 bg-red-950/10 text-red-400 hover:bg-red-950/20 hover:border-red-900/30 transition-all cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              )}
+
+                              {/* Language Badge */}
+                              {r.language && (
+                                <span className="px-2 py-0.5 rounded-[4px] text-[8px] font-bold bg-zinc-900 border border-zinc-850 text-zinc-400 uppercase font-mono">
+                                  {r.language}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
                             {/* Expanded content */}
                             <AnimatePresence>
@@ -1296,8 +1349,7 @@ function ContributorsDashboard() {
                                   </div>
                                 </motion.div>
                               )}
-                            </AnimatePresence>
-                          </div>
+                          </AnimatePresence>
                         </div>
                       ))}
                     </div>
