@@ -324,6 +324,7 @@ function ContributorsDashboard() {
   const [editContent, setEditContent] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editTopic, setEditTopic] = useState("");
+  const [editReason, setEditReason] = useState("");
 
   const allowedFormats = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
 
@@ -632,12 +633,17 @@ function ContributorsDashboard() {
     setEditContent(r.content);
     setEditCategory(r.category || r.subCategory || "");
     setEditTopic(r.topic || "");
+    setEditReason("");
     setShowEditModal(true);
   };
 
   const handleUpdateResource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingResource || !selectedHub) return;
+    if (!editReason) {
+      showToast("error", "Reason for edit is required.");
+      return;
+    }
     setPublishing(true);
 
     const tags = editTags
@@ -656,7 +662,8 @@ function ContributorsDashboard() {
           tags,
           content: editContent,
           category: editCategory || undefined,
-          topic: editTopic || undefined
+          topic: editTopic || undefined,
+          reason: editReason
         })
       });
       const data = await res.json();
@@ -1686,21 +1693,42 @@ function ContributorsDashboard() {
                     </div>
                   )}
 
-                  {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
+                  {/* Collection and Reason for Edit Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
+                        <select
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                        >
+                          <option value="">-- Select Collection (Optional) --</option>
+                          {selectedHub.subCategories.map((cat: string) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="hidden md:block" />
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-red-500 font-extrabold">Reason for Edit (Required)</label>
                       <select
-                        value={editCategory}
-                        onChange={(e) => setEditCategory(e.target.value)}
+                        required
+                        value={editReason}
+                        onChange={(e) => setEditReason(e.target.value)}
                         className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
                       >
-                        <option value="">-- Select Collection (Optional) --</option>
-                        {selectedHub.subCategories.map((cat: string) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
+                        <option value="">Select a reason...</option>
+                        <option value="Optimized code">Optimized code</option>
+                        <option value="Error solved">Error solved</option>
+                        <option value="All test cases passed">All test cases passed</option>
+                        <option value="More test cases passed than previous one">More test cases passed than previous one</option>
                       </select>
                     </div>
-                  )}
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
