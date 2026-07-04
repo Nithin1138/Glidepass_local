@@ -1480,30 +1480,7 @@ function ContributorsDashboard() {
 
               {/* Form */}
               <form onSubmit={handleCreateTopic} className="space-y-5">
-                {/* Collection / Exam Type Dropdown */}
-                <div className="space-y-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
-                    Collection Type
-                  </label>
-                  <div className="relative">
-                    <select
-                      disabled
-                      value={selectedCategory?.name || ""}
-                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white/90 appearance-none cursor-not-allowed outline-none"
-                    >
-                      <option value={selectedCategory?.name || ""}>
-                        {selectedCategory?.name || "No Collection Selected"}
-                      </option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Session Date */}
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
                     Topic Date
