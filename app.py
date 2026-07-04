@@ -1324,20 +1324,23 @@ async def get_connections():
 _API_BASES = ["http://127.0.0.1:3000", "https://lanpad.app"]
 
 import time
+import socket
+
 _local_api_online = True
 _local_api_last_checked = 0
 
-async def is_local_api_online():
+def is_local_api_online():
     global _local_api_online, _local_api_last_checked
     now = time.time()
     if now - _local_api_last_checked < 15:
         return _local_api_online
     
     try:
-        # Do a very fast check to see if the local Next.js server port is open
-        async with httpx.AsyncClient(timeout=httpx.Timeout(0.2, connect=0.2), verify=False) as client:
-            r = await client.get("http://127.0.0.1:3000/api/hubs")
-            _local_api_online = (r.status_code == 200)
+        # Extremely lightweight and fast raw TCP socket check
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.15)
+            # Try to connect to port 3000 directly. 0 means success.
+            _local_api_online = (s.connect_ex(("127.0.0.1", 3000)) == 0)
     except Exception:
         _local_api_online = False
     
@@ -1348,7 +1351,7 @@ async def is_local_api_online():
 async def _proxy_get(path: str, params: dict):
     """Try each API base in order; return the first successful JSON response."""
     last_err = "No API base available"
-    local_online = await is_local_api_online()
+    local_online = is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
     async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
@@ -1367,7 +1370,7 @@ async def _proxy_get(path: str, params: dict):
 async def _proxy_post(path: str, body: dict):
     """Try each API base in order for POST requests."""
     last_err = "No API base available"
-    local_online = await is_local_api_online()
+    local_online = is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
     async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
