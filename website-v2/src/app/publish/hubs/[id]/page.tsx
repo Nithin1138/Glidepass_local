@@ -20,7 +20,28 @@ const formatDate = (dateStr: string) => {
 export default function HubManagementPage() {
   const params = useParams();
   const hubId = params.id as string;
-  const { email, dk } = useCreator();
+  const { email: contextEmail, dk } = useCreator();
+
+  const effectiveEmail = React.useMemo(() => {
+    if (contextEmail) return contextEmail;
+    if (typeof window !== "undefined") {
+      const savedCreator = localStorage.getItem("glidepass-creator-user");
+      if (savedCreator) {
+        try {
+          const parsed = JSON.parse(savedCreator);
+          if (parsed?.email) return parsed.email;
+        } catch (_) {}
+      }
+      const savedContrib = localStorage.getItem("glidepass-contributor-user");
+      if (savedContrib) {
+        try {
+          const parsed = JSON.parse(savedContrib);
+          if (parsed?.email) return parsed.email;
+        } catch (_) {}
+      }
+    }
+    return "";
+  }, [contextEmail]);
 
   /* ── State ─────────────────────────────────────── */
   const [hub, setHub] = useState<any>(null);
@@ -109,7 +130,7 @@ export default function HubManagementPage() {
       await fetch(`/api/hubs/${hubId}/contributors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, email: contributorEmail, requesterEmail: email })
+        body: JSON.stringify({ action, email: contributorEmail, requesterEmail: effectiveEmail })
       });
       fetchContributors();
     } catch { /* noop */ }
@@ -118,14 +139,14 @@ export default function HubManagementPage() {
   const handleDeleteResource = async (resId: string) => {
     if (!confirm("Delete this resource?")) return;
     try {
-      const res = await fetch(`/api/resources/${resId}?email=${encodeURIComponent(email)}`, { method: "DELETE" });
+      const res = await fetch(`/api/resources/${resId}?email=${encodeURIComponent(effectiveEmail)}`, { method: "DELETE" });
       if (res.ok) fetchResources();
     } catch { /* noop */ }
   };
 
   const handleDeleteHub = async () => {
     try {
-      const res = await fetch(`/api/hubs?id=${hubId}&creatorEmail=${email}`, { method: "DELETE" });
+      const res = await fetch(`/api/hubs?id=${hubId}&creatorEmail=${effectiveEmail}`, { method: "DELETE" });
       const data = await res.json();
       if (res.ok && data.success) window.location.href = "/publish/hubs";
       else alert(data.error || "Failed to delete hub");
@@ -140,7 +161,7 @@ export default function HubManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           isLocked: !r.isLocked,
-          requesterEmail: email
+          requesterEmail: effectiveEmail
         })
       });
       const data = await res.json();
@@ -160,7 +181,7 @@ export default function HubManagementPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: hubId, creatorEmail: email,
+          id: hubId, creatorEmail: effectiveEmail,
           visibility: settingsVisibility,
           allowedTypes: settingsAllowedTypes,
           subCategories: settingsCategories.map((c: any) => c.name),
@@ -177,7 +198,7 @@ export default function HubManagementPage() {
   /* ── Helpers ───────────────────────────────────── */
   const pending = contributors.filter(c => c.status === "pending");
   const approved = contributors.filter(c => c.status === "approved");
-  const isOwner = hub?.creatorEmail?.toLowerCase() === email.toLowerCase();
+  const isOwner = hub?.creatorEmail?.toLowerCase() === effectiveEmail.toLowerCase();
 
   const inputClass = dk
     ? 'bg-[#0b0b0b] border border-white/[0.06] focus:border-[#0077C0] text-white'
