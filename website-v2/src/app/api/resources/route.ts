@@ -128,29 +128,25 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Check Category Resource Limit (enforced per topic date, as it is defined as Resources/Day in UI)
+          // Check Category Resource Limit
           if (catConfig.limit !== undefined && catConfig.limit !== null) {
-            const count = allResources.filter(r => 
-              r.hubId === hubId && 
-              !r.isDeleted && 
-              (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
-              r.topic && topic && r.topic.trim().toLowerCase() === topic.trim().toLowerCase()
-            ).length;
+            const count = allResources.filter(r => r.hubId === hubId && !r.isDeleted && (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase())).length;
             if (count >= catConfig.limit) {
-              return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${catConfig.limit}` }, { status: 429 });
+              return NextResponse.json({ error: `Upload limit reached for category "${category}". Maximum allowed: ${catConfig.limit}` }, { status: 429 });
             }
           }
 
-          // Check Category Daily Resource Limit
-          if (catConfig.dailyLimit !== undefined && catConfig.dailyLimit !== null) {
+          // Check Category Daily Resource Limit (using topicsLimit from DB / dailyLimit)
+          const dailyLimit = catConfig.topicsLimit !== undefined ? catConfig.topicsLimit : catConfig.dailyLimit;
+          if (dailyLimit !== undefined && dailyLimit !== null) {
             const dailyCount = allResources.filter(r => 
               r.hubId === hubId && 
               !r.isDeleted && 
               (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
               r.topic && topic && r.topic.trim().toLowerCase() === topic.trim().toLowerCase()
             ).length;
-            if (dailyCount >= catConfig.dailyLimit) {
-              return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${catConfig.dailyLimit}` }, { status: 429 });
+            if (dailyCount >= dailyLimit) {
+              return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${dailyLimit}` }, { status: 429 });
             }
           }
 
