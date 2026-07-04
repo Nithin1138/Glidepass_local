@@ -934,6 +934,32 @@
     let expandedResId = null;
     let copiedResId = null;
 
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        }
+        return new Promise((resolve, reject) => {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) resolve();
+                else reject(new Error('Fallback copy failed'));
+            } catch (err) {
+                document.body.removeChild(textArea);
+                reject(err);
+            }
+        });
+    }
+
     // ── Pin persistence (localStorage) ──────────────────────────────────────
     const PINNED_HUBS_KEY = 'lanpad_pinned_hubs';
     const PINNED_RES_KEY  = 'lanpad_pinned_resources';
@@ -1533,7 +1559,7 @@
                 const content = decodeURIComponent(btn.dataset.content);
                 const id = btn.dataset.id;
                 try {
-                    await navigator.clipboard.writeText(content);
+                    await copyToClipboard(content);
                     btn.classList.add('copied');
                     btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
                     setTimeout(() => {
@@ -1693,7 +1719,7 @@
     document.getElementById('read-copy').addEventListener('click', async () => {
         if (!activeReadingResource) return;
         try {
-            await navigator.clipboard.writeText(activeReadingResource.content);
+            await copyToClipboard(activeReadingResource.content);
             const btn = document.getElementById('read-copy');
             btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg> Copied`;
             setTimeout(() => {

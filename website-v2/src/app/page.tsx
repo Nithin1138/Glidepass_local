@@ -10,6 +10,34 @@ import { QRCodeCanvas } from "qrcode.react";
 
 const RippleGrid = dynamic(() => import("../components/RippleGrid"), { ssr: false });
 
+const copyToClipboard = (text: string) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+};
+
+const fallbackCopyText = (text: string) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('Fallback copy failed', err);
+  }
+  document.body.removeChild(textArea);
+};
+
 const ThemeContext = createContext({ dk: false, setTheme: (t: string) => { } });
 const useTheme = () => useContext(ThemeContext);
 
@@ -1293,7 +1321,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           if (d.installCommand) {
-                            navigator.clipboard.writeText(d.installCommand);
+                            copyToClipboard(d.installCommand);
                             alert("Install command copied to clipboard! Paste it in your Terminal.");
                           }
                         }}
