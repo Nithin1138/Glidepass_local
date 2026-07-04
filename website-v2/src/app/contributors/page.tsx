@@ -1403,14 +1403,15 @@ function ContributorsDashboard() {
       {/* ADD RESOURCE MODAL */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg p-1.5 rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
-              <div className="p-6 rounded-[28px] bg-[#050505] space-y-4">
+              <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-white/5">
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Hub Resource</h3>
                   <button onClick={() => setShowAddModal(false)} className="p-1 rounded hover:bg-white/5 border border-white/10">
@@ -1429,7 +1430,7 @@ function ContributorsDashboard() {
                         placeholder="e.g. Docker Compose File"
                         value={resTitle}
                         onChange={(e) => setResTitle(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
+                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
                       />
                     </div>
 
