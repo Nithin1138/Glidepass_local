@@ -1387,65 +1387,93 @@ function ContributorsDashboard() {
       {/* ADD TOPIC MODAL */}
       <AnimatePresence>
         {showAddTopicModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md p-1.5 rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+              className="relative w-full max-w-[450px] p-6 rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
             >
-              <div className="p-6 rounded-[28px] bg-[#050505] space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Collection Topic</h3>
-                  <button onClick={() => setShowAddTopicModal(false)} className="p-1 rounded hover:bg-white/5 border border-white/10">
-                    <X size={14} />
-                  </button>
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-black tracking-tight text-white font-outfit uppercase">
+                  Create Session
+                </h3>
+                <button
+                  onClick={() => setShowAddTopicModal(false)}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-zinc-800 hover:bg-zinc-950 hover:border-zinc-700 text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleCreateTopic} className="space-y-5">
+                {/* Collection / Exam Type Dropdown */}
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
+                    Exam Type
+                  </label>
+                  <div className="relative">
+                    <select
+                      disabled
+                      value={selectedCategory?.name || ""}
+                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white/90 appearance-none cursor-not-allowed outline-none"
+                    >
+                      <option value={selectedCategory?.name || ""}>
+                        {selectedCategory?.name || "No Collection Selected"}
+                      </option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
-                <form onSubmit={handleCreateTopic} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Topic Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Day 1: Getting Started"
-                      value={topicTitle}
-                      onChange={(e) => setTopicTitle(e.target.value)}
-                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Description</label>
-                    <input
-                      type="text"
-                      placeholder="Topic description (optional)"
-                      value={topicDescription}
-                      onChange={(e) => setTopicDescription(e.target.value)}
-                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Topic Date</label>
+                {/* Session Date */}
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
+                    Session Date
+                  </label>
+                  <div className="relative">
                     <input
                       type="date"
                       required
                       value={topicDate}
                       onChange={(e) => setTopicDate(e.target.value)}
-                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
+                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white outline-none focus:border-zinc-700 transition-colors"
                     />
                   </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-[#0077C0] to-[#009BF5] hover:opacity-90 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus size={14} />
-                    Create Topic
-                  </button>
-                </form>
-              </div>
+                {/* Optional Title */}
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
+                    Optional Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Morning Batch"
+                    value={topicTitle}
+                    onChange={(e) => setTopicTitle(e.target.value)}
+                    className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white placeholder-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+                  />
+                </div>
+
+                {/* Description (Keep hidden or styled as needed; let's bind it so it compiles, but hidden or small input) */}
+                <input type="hidden" value={topicDescription} />
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2"
+                >
+                  <Check size={14} strokeWidth={3} />
+                  Create Session
+                </button>
+              </form>
             </motion.div>
           </div>
         )}
