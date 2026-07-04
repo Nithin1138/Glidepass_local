@@ -11,7 +11,7 @@ import { QRCodeCanvas } from "qrcode.react";
 const RippleGrid = dynamic(() => import("../components/RippleGrid"), { ssr: false });
 
 const copyToClipboard = (text: string) => {
-  if (navigator.clipboard && window.isSecureContext) {
+  if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).catch(() => {
       fallbackCopyText(text);
     });
@@ -23,15 +23,34 @@ const copyToClipboard = (text: string) => {
 const fallbackCopyText = (text: string) => {
   const textArea = document.createElement("textarea");
   textArea.value = text;
+  // Position offscreen but keep it technically visible to bypass Safari's copy restrictions
+  textArea.style.position = "absolute";
+  textArea.style.left = "-9999px";
   textArea.style.top = "0";
-  textArea.style.left = "0";
-  textArea.style.position = "fixed";
-  textArea.style.opacity = "0";
+  // Avoid auto-zooming in mobile browsers
+  textArea.style.fontSize = "12pt";
   document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
+  
+  // Selection logic for iOS/Safari
+  const isIOS = navigator.userAgent.match(/ipad|iphone/i);
+  if (isIOS) {
+    const range = document.createRange();
+    range.selectNodeContents(textArea);
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    textArea.setSelectionRange(0, 999999);
+  } else {
+    textArea.select();
+  }
+
   try {
-    document.execCommand('copy');
+    const successful = document.execCommand('copy');
+    if (!successful) {
+      console.warn("execCommand('copy') returned false");
+    }
   } catch (err) {
     console.error('Fallback copy failed', err);
   }
