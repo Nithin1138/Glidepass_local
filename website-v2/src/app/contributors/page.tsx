@@ -1244,7 +1244,7 @@ function ContributorsDashboard() {
                       <p className={`text-[10px] ${textMuted} mt-1`}>Try a different filter or add the first resource.</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-2.5">
+                    <div className="grid grid-cols-1 gap-3.5">
                       {filteredResources.map((r, idx) => (
                         <div
                           key={r.id}
@@ -1333,7 +1333,7 @@ function ContributorsDashboard() {
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: "auto", opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  className="overflow-hidden"
+                                  className="overflow-hidden mt-3.5"
                                 >
                                   <div className="rounded-xl overflow-hidden border border-white/10 relative">
                                     <div className="absolute top-0 left-0 right-0 h-6 flex items-center px-3 border-b border-white/5 bg-black/60">
