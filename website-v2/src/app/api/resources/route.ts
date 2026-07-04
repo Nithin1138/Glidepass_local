@@ -128,11 +128,16 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Check Category Resource Limit
+          // Check Category Resource Limit (enforced per topic date, as it is defined as Resources/Day in UI)
           if (catConfig.limit !== undefined && catConfig.limit !== null) {
-            const count = allResources.filter(r => r.hubId === hubId && !r.isDeleted && (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase())).length;
+            const count = allResources.filter(r => 
+              r.hubId === hubId && 
+              !r.isDeleted && 
+              (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
+              r.topic && topic && r.topic.trim().toLowerCase() === topic.trim().toLowerCase()
+            ).length;
             if (count >= catConfig.limit) {
-              return NextResponse.json({ error: `Upload limit reached for category "${category}". Maximum allowed: ${catConfig.limit}` }, { status: 429 });
+              return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${catConfig.limit}` }, { status: 429 });
             }
           }
 
