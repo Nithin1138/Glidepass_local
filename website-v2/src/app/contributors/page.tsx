@@ -1428,7 +1428,7 @@ function ContributorsDashboard() {
                         <select
                           value={resLanguage}
                           onChange={(e) => setResLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer"
+                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1445,7 +1445,7 @@ function ContributorsDashboard() {
                       <select
                         value={resType}
                         onChange={(e) => setResType(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
                       >
                         {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
                         {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
@@ -1518,12 +1518,13 @@ function ContributorsDashboard() {
       {/* ADD TOPIC MODAL */}
       <AnimatePresence>
         {showAddTopicModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-[450px] p-6 rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
             >
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
@@ -1540,7 +1541,6 @@ function ContributorsDashboard() {
 
               {/* Form */}
               <form onSubmit={handleCreateTopic} className="space-y-5">
-
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
                     Topic Date
@@ -1570,7 +1570,7 @@ function ContributorsDashboard() {
                   />
                 </div>
 
-                {/* Description (Keep hidden or styled as needed; let's bind it so it compiles, but hidden or small input) */}
+                {/* Description */}
                 <input type="hidden" value={topicDescription} />
 
                 {/* Submit Button */}
@@ -1586,17 +1586,19 @@ function ContributorsDashboard() {
           </div>
         )}
       </AnimatePresence>
+
       {/* EDIT RESOURCE MODAL */}
       <AnimatePresence>
         {showEditModal && editingResource && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg p-1.5 rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
-              <div className="p-6 rounded-[28px] bg-[#050505] space-y-4">
+              <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-white/5">
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Edit Hub Resource</h3>
                   <button
@@ -1611,56 +1613,27 @@ function ContributorsDashboard() {
                 </div>
 
                 <form onSubmit={handleUpdateResource} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Docker Compose File"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10`}
-                    />
-                  </div>
-
-                  {allowedFormats.length > 1 ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
-                        <select
-                          value={editType}
-                          onChange={(e) => setEditType(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10"
-                        >
-                          {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
-                          {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
-                          {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
-                        </select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language (if Code)</label>
-                        <select
-                          disabled={editType !== "code"}
-                          value={editLanguage}
-                          onChange={(e) => setEditLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 disabled:opacity-40 cursor-pointer"
-                        >
-                          <option value="">Select Language</option>
-                          {sortedLanguages.map(lang => (
-                            <option key={lang.id} value={lang.id}>{lang.name}</option>
-                          ))}
-                        </select>
-                      </div>
+                  {/* Title and Language Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={editType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Docker Compose File"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
+                      />
                     </div>
-                  ) : (
-                    editType === "code" && (
-                      <div className="space-y-1">
+
+                    {editType === "code" && (
+                      <div className="md:col-span-1 space-y-1">
                         <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language</label>
                         <select
                           value={editLanguage}
                           onChange={(e) => setEditLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer"
+                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1668,7 +1641,22 @@ function ContributorsDashboard() {
                           ))}
                         </select>
                       </div>
-                    )
+                    )}
+                  </div>
+
+                  {allowedFormats.length > 1 && (
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
+                      <select
+                        value={editType}
+                        onChange={(e) => setEditType(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                      >
+                        {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
+                        {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
+                        {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
+                      </select>
+                    </div>
                   )}
 
                   {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
@@ -1677,7 +1665,7 @@ function ContributorsDashboard() {
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
+                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
                       >
                         <option value="">-- Select Collection (Optional) --</option>
                         {selectedHub.subCategories.map((cat: string) => (
@@ -1687,37 +1675,63 @@ function ContributorsDashboard() {
                     </div>
                   )}
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Tags (Comma-separated)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. docker, compose, web"
-                      value={editTags}
-                      onChange={(e) => setEditTags(e.target.value)}
-                      className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">
+                        {editType === "code" ? "Comments (Optional)" : "Description"}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={editType === "code" ? "Optional comments" : "Short description"}
+                        value={resDescription}
+                        onChange={(e) => setResDescription(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Tags (Comma-separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. docker, compose, web"
+                        value={editTags}
+                        onChange={(e) => setEditTags(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Content</label>
                     <textarea
                       required
-                      rows={6}
-                      placeholder="Paste your configuration code, link, or text..."
+                      rows={8}
+                      placeholder={editType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className={`w-full text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none bg-[#0d1117] border-white/10 text-sky-400`}
+                      className="w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none bg-[#09090b] border-zinc-800 text-zinc-200 focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y"
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={publishing}
-                    className="w-full bg-gradient-to-r from-[#0077C0] to-[#009BF5] hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload size={14} />
-                    {publishing ? "Saving Changes..." : "Save Changes"}
-                  </button>
+                  {/* Footer Action Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditingResource(null);
+                      }}
+                      className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-transparent hover:bg-zinc-900/40 text-zinc-300 font-semibold text-xs transition-all duration-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={publishing}
+                      className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
+                    >
+                      {publishing ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>
