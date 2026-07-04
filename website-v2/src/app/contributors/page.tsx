@@ -127,7 +127,7 @@ const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
-    return `${match[3]}/${match[2]}/${match[1]}`;
+    return `${match[3]}-${match[2]}-${match[1]}`;
   }
   return dateStr;
 };
@@ -1140,7 +1140,7 @@ function ContributorsDashboard() {
                                     <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-900 border border-zinc-850 text-zinc-400 uppercase font-mono">
                                       {selectedCategory.name}
                                     </span>
-                                    <span className="text-[10px] font-mono text-zinc-600">
+                                    <span className="text-[10px] font-mono text-zinc-650">
                                       {formatDate(topic.name)}
                                     </span>
                                   </div>
@@ -1153,15 +1153,14 @@ function ContributorsDashboard() {
 
                                 {/* Middle row: Title */}
                                 <div className="mb-3">
-                                  <h4 className="text-sm md:text-base font-black text-white uppercase tracking-wider leading-tight truncate">
+                                  <h4 className="text-sm md:text-base font-black text-white leading-tight truncate">
                                     {displayTitle}
                                   </h4>
                                 </div>
 
                                 {/* Bottom row: count */}
-                                <div className="pt-2 border-t border-zinc-900/60 flex items-center justify-between text-[10px] md:text-xs font-mono text-[#52525b]">
+                                <div className="text-[10px] md:text-xs font-mono text-[#52525b]">
                                   <span>{count} Resource{count !== 1 ? 's' : ''} Contributed</span>
-                                  <span className="text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
                                 </div>
                               </div>
                             );
@@ -1182,9 +1181,8 @@ function ContributorsDashboard() {
                                 All Topics
                               </h4>
                             </div>
-                            <div className="pt-2 border-t border-dashed border-zinc-900 flex items-center justify-between text-[10px] md:text-xs font-mono text-zinc-500">
+                            <div className="text-[10px] md:text-xs font-mono text-zinc-505">
                               <span>Show everything in {selectedCategory.name}</span>
-                              <span className="text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
                             </div>
                           </div>
                         </div>
