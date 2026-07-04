@@ -1069,94 +1069,128 @@ function ContributorsDashboard() {
               ) : selectedHub.categories && selectedHub.categories.length > 0 && selectedCategory && !selectedTopic ? (
                 /* ── LAYER 3: Topic Grid ── */
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
-                  <p className={`text-[9px] font-bold uppercase tracking-widest text-purple-400 mb-3`}>Step 3 · Select Topic in {selectedCategory.name}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                    {/* Today */}
-                    {(() => {
-                      const todayStr = new Date().toISOString().split("T")[0];
-                      const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic === todayStr).length;
-                      const topicConfig = selectedCategory.topics?.find((t: any) => t.name === todayStr);
-                      return (
-                        <div
-                          onClick={() => setSelectedTopic({ name: todayStr, limit: topicConfig?.limit })}
-                          className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border ${borderLight} ${dk ? 'bg-white/[0.02] hover:bg-white/[0.05]' : 'bg-black/[0.02] hover:bg-black/[0.04]'} hover:border-purple-400/30 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
-                        >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-1">
-                            <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>Today</h4>
-                            <p className={`text-[9px] md:text-[11px] font-mono ${textMuted}`}>{formatDate(todayStr)}</p>
-                          </div>
-                          <div className="flex justify-between items-center pt-2">
-                            <span className="text-[8px] font-mono text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20">{count}</span>
-                            <span className="text-[9px] font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">→</span>
+                  {(() => {
+                    const todayStr = new Date().toISOString().split("T")[0];
+                    const resourceTopics = Array.from(new Set(resources
+                      .filter(r => 
+                        !r.isDeleted &&
+                        (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                         r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                        r.topic && 
+                        /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                      )
+                      .map(r => r.topic)
+                    ));
+                    const allTopicNames = Array.from(new Set([
+                      ...(selectedCategory.topics || []).map((t: any) => t.name),
+                      ...resourceTopics
+                    ]));
+                    const sortedTopics = allTopicNames
+                      .map(name => {
+                        const existing = (selectedCategory.topics || []).find((t: any) => t.name === name);
+                        return existing || { name, title: name };
+                      })
+                      .sort((a, b) => b.name.localeCompare(a.name));
+
+                    const totalCategoryResources = resources.filter(r => 
+                      !r.isDeleted && 
+                      (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase())
+                    ).length;
+
+                    return (
+                      <div className="space-y-4">
+                        {/* Header Details */}
+                        <div className="mb-5 space-y-1">
+                          <h2 className="text-base md:text-lg font-black text-[#0077C0] uppercase tracking-wider font-outfit">
+                            {selectedCategory.name}
+                          </h2>
+                          <p className="text-[10px] md:text-xs font-mono text-[#52525b]">
+                            {sortedTopics.length} Topic{sortedTopics.length !== 1 ? 's' : ''} &nbsp;•&nbsp; {totalCategoryResources} Resource{totalCategoryResources !== 1 ? 's' : ''} Contributed
+                          </p>
+                        </div>
+
+                        {/* Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                          {sortedTopics.map((topic: any) => {
+                            const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                            
+                            // Check limit
+                            let limit = topic.limit;
+                            if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
+                              limit = selectedCategory.resourcesPerTopic;
+                            }
+                            const isCapped = limit !== undefined && limit !== null && count >= limit;
+
+                            // Title if have, otherwise date
+                            const hasCustomTitle = topic.title && topic.title !== topic.name;
+                            const displayTitle = hasCustomTitle ? topic.title : (topic.name === todayStr ? "Today" : formatDate(topic.name));
+
+                            return (
+                              <div
+                                key={topic.name}
+                                onClick={() => setSelectedTopic({ name: topic.name, limit: topic.limit })}
+                                className="relative p-5 md:p-6 rounded-[22px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[120px] overflow-hidden"
+                              >
+                                {/* Top edge highlight glow on hover */}
+                                <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                {/* Top row: Badges, Date, and Capped status */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-900 border border-zinc-850 text-zinc-400 uppercase font-mono">
+                                      {selectedCategory.name}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-zinc-600">
+                                      {formatDate(topic.name)}
+                                    </span>
+                                  </div>
+                                  {isCapped && (
+                                    <span className="px-2 py-0.5 text-[8px] font-extrabold uppercase rounded border border-rose-950 bg-rose-950/20 text-rose-500 font-mono">
+                                      Capped (Max {limit})
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Middle row: Title */}
+                                <div className="mb-3">
+                                  <h4 className="text-sm md:text-base font-black text-white uppercase tracking-wider leading-tight truncate">
+                                    {displayTitle}
+                                  </h4>
+                                </div>
+
+                                {/* Bottom row: count */}
+                                <div className="pt-2 border-t border-zinc-900/60 flex items-center justify-between text-[10px] md:text-xs font-mono text-[#52525b]">
+                                  <span>{count} Resource{count !== 1 ? 's' : ''} Contributed</span>
+                                  <span className="text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* All Topics Shortcut Card */}
+                          <div
+                            onClick={() => setSelectedTopic({ name: "All Topics" })}
+                            className="relative p-5 md:p-6 rounded-[22px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[120px] overflow-hidden"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-900 border border-zinc-850 text-zinc-500 uppercase font-mono">
+                                ALL
+                              </span>
+                            </div>
+                            <div className="mb-3">
+                              <h4 className="text-sm md:text-base font-black text-zinc-400 group-hover:text-white uppercase tracking-wider leading-tight">
+                                All Topics
+                              </h4>
+                            </div>
+                            <div className="pt-2 border-t border-dashed border-zinc-900 flex items-center justify-between text-[10px] md:text-xs font-mono text-zinc-500">
+                              <span>Show everything in {selectedCategory.name}</span>
+                              <span className="text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
+                            </div>
                           </div>
                         </div>
-                      );
-                    })()}
-
-                    {(() => {
-                      const todayStr = new Date().toISOString().split("T")[0];
-                      const resourceTopics = Array.from(new Set(resources
-                        .filter(r => 
-                          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
-                           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
-                          r.topic && 
-                          /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
-                        )
-                        .map(r => r.topic)
-                      ));
-                      const allTopicNames = Array.from(new Set([
-                        ...(selectedCategory.topics || []).map((t: any) => t.name),
-                        ...resourceTopics
-                      ]));
-                      const sortedPastTopics = allTopicNames
-                        .filter(name => name !== todayStr)
-                        .map(name => {
-                          const existing = (selectedCategory.topics || []).find((t: any) => t.name === name);
-                          return existing || { name, title: name };
-                        })
-                        .sort((a, b) => b.name.localeCompare(a.name));
-
-                      return sortedPastTopics.map((topic: any) => {
-                        const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
-                        const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || "") ? formatDate(topic.name) : topic.name;
-
-                        return (
-                          <div
-                            key={topic.name}
-                            onClick={() => setSelectedTopic(topic)}
-                            className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border ${borderLight} ${dk ? 'bg-white/[0.02] hover:bg-white/[0.05]' : 'bg-black/[0.02] hover:bg-black/[0.04]'} hover:border-purple-400/30 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
-                          >
-                            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="space-y-1">
-                              <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>{displayTitle}</h4>
-                              <p className={`text-[9px] md:text-[11px] ${textSecondary} leading-relaxed hidden sm:block`}>
-                                {topic.limit ? `Limit: ${topic.limit}` : "Browse files"}
-                              </p>
-                            </div>
-                            <div className="flex justify-between items-center pt-2">
-                              <span className="text-[8px] font-mono text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20">{count}</span>
-                              <span className="text-[9px] font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-
-                    {/* All topics shortcut */}
-                    <div
-                      onClick={() => setSelectedTopic({ name: "All Topics" })}
-                      className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border border-dashed ${borderLight} ${dk ? 'bg-white/[0.01] hover:bg-white/[0.03]' : 'bg-black/[0.01] hover:bg-black/[0.02]'} hover:border-sky-400/30 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
-                    >
-                      <div className="space-y-1">
-                        <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textMuted} group-hover:text-sky-400 transition-colors leading-tight`}>All Topics</h4>
-                        <p className={`text-[9px] ${textMuted} hidden sm:block`}>Show everything in {selectedCategory.name}</p>
                       </div>
-                      <div className="flex justify-end pt-2">
-                        <span className="text-[9px] font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
               ) : (
