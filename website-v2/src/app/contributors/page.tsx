@@ -555,11 +555,6 @@ function ContributorsDashboard() {
     setResContent("");
     setResTags("");
     setResDescription("");
-
-    // Open Add Resource modal
-    setTimeout(() => {
-      setShowAddModal(true);
-    }, 100);
   };
 
   const handleDeleteResource = async (resId: string, e: React.MouseEvent) => {
