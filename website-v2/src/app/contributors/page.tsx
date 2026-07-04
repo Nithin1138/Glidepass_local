@@ -1103,10 +1103,7 @@ function ContributorsDashboard() {
                     return (
                       <div className="space-y-4">
                         {/* Header Details */}
-                        <div className="mb-5 space-y-1">
-                          <h2 className="text-base md:text-lg font-black text-[#0077C0] uppercase tracking-wider font-outfit">
-                            {selectedCategory.name}
-                          </h2>
+                        <div className="mb-5">
                           <p className="text-[10px] md:text-xs font-mono text-[#52525b]">
                             {sortedTopics.length} Topic{sortedTopics.length !== 1 ? 's' : ''} &nbsp;•&nbsp; {totalCategoryResources} Resource{totalCategoryResources !== 1 ? 's' : ''} Contributed
                           </p>
