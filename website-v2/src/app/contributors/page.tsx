@@ -809,121 +809,128 @@ function ContributorsDashboard() {
         </div>
       </nav>
 
-      {/* ─── LAYER BREADCRUMB (floating glassmorphism toolbar card) ─── */}
-      {selectedHub && (
-        <div className="w-full max-w-7xl mx-auto px-3 md:px-12 mt-4 z-30">
-          <div className={`w-full p-3 md:px-5 md:py-3.5 rounded-[22px] border ${
-            dk ? 'bg-zinc-950/30 border-zinc-900 backdrop-blur-md shadow-2xl/40' : 'bg-white/50 border-black/5 backdrop-blur-md shadow-lg/5'
-          } flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`}>
-            {/* Left side: Breadcrumbs path */}
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              {/* Layer 1 */}
+      {/* Main Content Area */}
+      <main className="flex-1 min-h-0 flex flex-col relative w-full max-w-7xl mx-auto px-3 md:px-12 py-4 md:py-6 overflow-hidden">
+        {selectedHub && (
+          <div className="shrink-0 mb-6 pb-5 border-b border-zinc-900/60 relative">
+            {/* Top row: Breadcrumb navigation pathway */}
+            <div className="flex items-center gap-1.5 mb-2 text-[10px] md:text-xs font-mono tracking-wider text-zinc-500 uppercase">
               <button
                 onClick={() => {
-                  if (selectedTopic) {
-                    setSelectedTopic(null);
-                  } else if (selectedCategory) {
-                    setSelectedCategory(null);
-                  } else {
-                    setSelectedHub(null);
-                    setResources([]);
-                  }
+                  setSelectedHub(null);
+                  setResources([]);
+                  setSelectedCategory(null);
+                  setSelectedTopic(null);
                 }}
-                className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg hover:bg-white/5 text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-all cursor-pointer"
+                className="hover:text-sky-400 transition-colors cursor-pointer"
               >
-                <ArrowLeft size={11} strokeWidth={2.5} />
-                <span>Hubs</span>
+                Hubs
               </button>
               
-              <svg className="w-2.5 h-2.5 text-zinc-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <svg className="w-2.5 h-2.5 text-zinc-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
 
-              {/* Layer 2: Hub */}
               <button
                 onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
-                className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-                  !selectedCategory
-                    ? `${dk ? 'bg-white/10 text-white' : 'bg-black/10 text-black'}`
-                    : `${dk ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-black/50 hover:text-black hover:bg-black/5'}`
-                }`}
+                className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedCategory ? 'text-zinc-300 font-bold' : ''}`}
               >
-                {selectedHub.title.length > 14 ? selectedHub.title.slice(0, 14) + "…" : selectedHub.title}
+                {selectedHub.title}
               </button>
 
               {selectedCategory && (
                 <>
-                  <svg className="w-2.5 h-2.5 text-zinc-650 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                  {/* Layer 3: Category */}
+                  <svg className="w-2.5 h-2.5 text-zinc-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                   <button
                     onClick={() => setSelectedTopic(null)}
-                    className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-                      !selectedTopic
-                        ? `${dk ? 'bg-purple-400/15 text-purple-300 border border-purple-500/20' : 'bg-purple-500/10 text-purple-600 border border-purple-500/15'}`
-                        : `${dk ? 'text-zinc-400 hover:text-purple-300 hover:bg-white/5' : 'text-black/50 hover:text-purple-600 hover:bg-black/5'}`
-                    }`}
+                    className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedTopic ? 'text-zinc-300 font-bold' : ''}`}
                   >
-                    {selectedCategory.name.length > 12 ? selectedCategory.name.slice(0, 12) + "…" : selectedCategory.name}
+                    {selectedCategory.name}
                   </button>
                 </>
               )}
 
               {selectedTopic && (
                 <>
-                  <svg className="w-2.5 h-2.5 text-zinc-650 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                  {/* Layer 4: Topic → Resources */}
-                  <span className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
-                    dk ? 'bg-emerald-400/15 text-emerald-300 border-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/15'
-                  }`}>
-                    {selectedTopic.name.length > 12 ? selectedTopic.name.slice(0, 12) + "…" : selectedTopic.name}
+                  <svg className="w-2.5 h-2.5 text-zinc-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  <span className="text-zinc-300 font-bold">
+                    {selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name))}
                   </span>
                 </>
               )}
             </div>
 
-            {/* Right side: Search + Add button (only when selectedCategory is set) */}
-            {selectedCategory && (
-              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 w-3.5 h-3.5" />
-                  <input
-                    type="text"
-                    placeholder="Search resources…"
-                    value={resourceSearch}
-                    onChange={(e) => setResourceSearch(e.target.value)}
-                    className={`w-full text-xs rounded-xl pl-9 pr-3 h-[32px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    if (!selectedTopic) {
-                      // Create Topic Modal
-                      setTopicTitle("");
-                      setTopicDescription("");
-                      setTopicDate(new Date().toISOString().split("T")[0]);
-                      setShowAddTopicModal(true);
-                    } else {
-                      // Create Resource Modal
-                      const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
-                      setResType(allowed[0] || "code");
-                      setResSubCategory(selectedCategory.name);
-                      setResDate(selectedTopic.name);
-                      setShowAddModal(true);
+            {/* Bottom row: Page Title & Search/Actions */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl md:text-2xl font-black font-outfit uppercase tracking-tight text-white flex items-center gap-2.5 flex-wrap">
+                  {(() => {
+                    if (selectedTopic) {
+                      return selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name));
                     }
-                  }}
-                  className="flex items-center justify-center gap-1.5 px-4 h-[32px] rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
-                  style={{ background: P.blue }}
-                >
-                  <Plus size={13} />
-                  <span className="hidden sm:inline">{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
-                  <span className="sm:hidden">{!selectedTopic ? "Topic" : "Add"}</span>
-                </button>
+                    if (selectedCategory) {
+                      return selectedCategory.name;
+                    }
+                    return selectedHub.title;
+                  })()}
+                  {selectedTopic && selectedTopic.name !== "All Topics" && (
+                    <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase font-mono h-fit">
+                      {selectedCategory.name}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-[10px] md:text-xs text-zinc-500 font-mono mt-1">
+                  {selectedTopic 
+                    ? `Viewing resource contributions under this topic` 
+                    : selectedCategory 
+                      ? `Select a topic below to view or submit resources` 
+                      : `Select a category collection to access topics and resources`
+                  }
+                </p>
               </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 min-h-0 flex flex-col relative w-full max-w-7xl mx-auto px-3 md:px-12 py-4 md:py-6 overflow-hidden">
+              {/* Search + Action Button */}
+              {selectedCategory && (
+                <div className="flex items-center gap-3 w-full md:w-auto justify-start md:justify-end shrink-0">
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 w-3.5 h-3.5" />
+                    <input
+                      type="text"
+                      placeholder="Search resources…"
+                      value={resourceSearch}
+                      onChange={(e) => setResourceSearch(e.target.value)}
+                      className={`w-full text-xs rounded-xl pl-9 pr-3 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!selectedTopic) {
+                        // Create Topic Modal
+                        setTopicTitle("");
+                        setTopicDescription("");
+                        setTopicDate(new Date().toISOString().split("T")[0]);
+                        setShowAddTopicModal(true);
+                      } else {
+                        // Create Resource Modal
+                        const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
+                        setResType(allowed[0] || "code");
+                        setResSubCategory(selectedCategory.name);
+                        setResDate(selectedTopic.name);
+                        setShowAddModal(true);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 px-4.5 h-[38px] rounded-xl text-white font-bold text-xs shadow-lg active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
+                    style={{ background: P.blue }}
+                  >
+                    <Plus size={14} />
+                    <span>{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Premium blue gradient accent line overlaying the border bottom */}
+            <div className="absolute bottom-0 left-0 w-24 h-[1.5px] bg-[#0077C0]" />
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {!selectedHub ? (
             /* ==================== LAYER 1: HUB SELECTOR ==================== */
