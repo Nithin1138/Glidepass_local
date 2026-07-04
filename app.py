@@ -416,14 +416,14 @@ def fetch_ota_templates():
     for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html"]:
         success = False
         
-        # 0. Try local templates directory in workspace
-        local_path = os.path.join("templates", tmpl)
+        # 0. Try local templates directory (works in source runs and PyInstaller bundles)
+        local_path = resource_path(os.path.join("templates", tmpl))
         if os.path.exists(local_path):
             try:
                 import shutil
                 shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
                 success = True
-                print(f"[OTA] Successfully copied {tmpl} from local repository templates")
+                print(f"[OTA] Successfully copied {tmpl} from local repository/bundled templates")
             except Exception as e:
                 print(f"[OTA] Failed to copy {tmpl} from local repository: {e}")
 
