@@ -1489,7 +1489,7 @@ function ContributorsDashboard() {
                     <select
                       disabled
                       value={selectedCategory?.name || ""}
-                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white/90 appearance-none cursor-not-allowed outline-none"
+                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white/90 appearance-none cursor-not-allowed outline-none"
                     >
                       <option value={selectedCategory?.name || ""}>
                         {selectedCategory?.name || "No Collection Selected"}
@@ -1514,7 +1514,7 @@ function ContributorsDashboard() {
                       required
                       value={topicDate}
                       onChange={(e) => setTopicDate(e.target.value)}
-                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white outline-none focus:border-zinc-700 transition-colors"
+                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white outline-none focus:border-zinc-700 transition-colors"
                     />
                   </div>
                 </div>
@@ -1529,7 +1529,7 @@ function ContributorsDashboard() {
                     placeholder="e.g. Morning Batch"
                     value={topicTitle}
                     onChange={(e) => setTopicTitle(e.target.value)}
-                    className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-850 bg-[#0c0c0e] text-white placeholder-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+                    className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white placeholder-zinc-600 outline-none focus:border-zinc-700 transition-colors"
                   />
                 </div>
 
