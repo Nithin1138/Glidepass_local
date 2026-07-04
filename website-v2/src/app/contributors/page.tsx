@@ -71,16 +71,17 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
   onJoin: (id: string) => void; onEnter: () => void;
   clayBg: string; gradientLine: string; textPrimary: string; textSecondary: string; textMuted: string; dk: boolean;
 }) {
-  const borderLight = dk ? "border-white/10" : "border-black/10";
+  const borderLight = dk ? "border-zinc-900" : "border-black/10";
   return (
-    <div className={`p-4 rounded-[20px] border ${clayBg} flex flex-col justify-between transition-all group relative overflow-hidden`}>
-      <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
+    <div className={`p-5 rounded-[24px] border ${dk ? "border-zinc-900 bg-[#09090b] hover:border-zinc-800" : "border-black/10 bg-white/80"} flex flex-col justify-between transition-all duration-300 group relative overflow-hidden`}>
+      {/* Top edge highlight glow on hover */}
+      <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Header row */}
       <div className="flex justify-between items-start gap-2 mb-2">
-        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
           <h3 className={`text-sm font-extrabold uppercase tracking-wide ${textPrimary} truncate`}>{h.title}</h3>
-          <span className={`text-[8px] font-bold uppercase self-start px-1.5 rounded border ${
+          <span className={`text-[8px] font-bold uppercase self-start px-1.5 py-0.5 rounded border ${
             h.visibility === "private" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : "text-sky-400 bg-sky-500/10 border-sky-500/20"
           }`}>{h.visibility || "public"}</span>
         </div>
@@ -89,8 +90,8 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
           onClick={(e) => onPin(h.id, e)}
           className={`p-1.5 rounded-lg border transition-all shrink-0 ${
             pinned
-              ? "border-amber-400/30 bg-amber-400/10 text-amber-400"
-              : `${borderLight} ${dk ? "text-white/30 hover:text-amber-400 hover:border-amber-400/30" : "text-black/30 hover:text-amber-500 hover:border-amber-400/30"}`
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+              : `${borderLight} ${dk ? "border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-amber-400 hover:border-amber-400/30" : "text-black/30 hover:text-amber-500 hover:border-amber-400/30"}`
           }`}
           title={pinned ? "Unpin hub" : "Pin hub"}
         >
@@ -105,18 +106,28 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
 
       {/* Action button */}
       {isApproved ? (
-        <button onClick={onEnter} className="w-full bg-[#0077C0] text-white font-bold py-2 px-3 rounded-xl text-xs shadow-md transition-all active:scale-[0.98]">
+        <button
+          onClick={onEnter}
+          className="w-full mt-2 py-2 px-3 rounded-xl text-xs font-bold transition-all duration-300 bg-[#0077C0]/10 border border-[#0077C0]/35 text-sky-400 hover:bg-[#0077C0] hover:text-white hover:border-[#0077C0] hover:shadow-[0_0_12px_rgba(0,119,192,0.25)] active:scale-[0.98]"
+        >
           Enter Hub{isOwner ? " (Owner)" : ""}
         </button>
       ) : isPending ? (
-        <button disabled className="w-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold py-2 px-3 rounded-xl text-xs cursor-not-allowed">
+        <button
+          disabled
+          className="w-full mt-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold py-2 px-3 rounded-xl text-xs cursor-not-allowed"
+        >
           Pending
         </button>
       ) : (
         <button
           onClick={() => onJoin(h.id)}
           disabled={joiningHub && requestingHubId === h.id}
-          className={`w-full border font-bold py-2 px-3 rounded-xl text-xs transition-all ${dk ? "bg-white/5 hover:bg-white/10 border-white/10 text-white" : "bg-black/5 hover:bg-black/10 border-black/10 text-black"}`}
+          className={`w-full mt-2 border font-bold py-2 px-3 rounded-xl text-xs transition-all duration-300 ${
+            dk
+              ? "bg-white/5 hover:bg-[#0077C0] hover:text-white border-zinc-800 text-zinc-300 hover:border-[#0077C0]"
+              : "bg-black/5 hover:bg-black/10 border-black/10 text-black"
+          }`}
         >
           {joiningHub && requestingHubId === h.id ? "Requesting…" : "Request Join"}
         </button>
