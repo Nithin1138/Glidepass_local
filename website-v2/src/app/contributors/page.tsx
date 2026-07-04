@@ -1405,10 +1405,10 @@ function ContributorsDashboard() {
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ y: "100%", opacity: 0.5 }}
+              initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
               <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
@@ -1532,10 +1532,10 @@ function ContributorsDashboard() {
         {showAddTopicModal && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm">
             <motion.div
-              initial={{ y: "100%", opacity: 0.5 }}
+              initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
             >
               {/* Header */}
@@ -1604,10 +1604,10 @@ function ContributorsDashboard() {
         {showEditModal && editingResource && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ y: "100%", opacity: 0.5 }}
+              initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
               <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
