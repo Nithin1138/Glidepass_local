@@ -809,12 +809,14 @@ function ContributorsDashboard() {
         </div>
       </nav>
 
-      {/* ─── LAYER BREADCRUMB (mobile-friendly sticky pill bar) ─── */}
+      {/* ─── LAYER BREADCRUMB (floating glassmorphism toolbar card) ─── */}
       {selectedHub && (
-        <div className={`shrink-0 border-b ${borderLight} ${dk ? 'bg-[#08080c]/70' : 'bg-[#F4F6F8]/70'} backdrop-blur-md z-30`}>
-          <div className="w-full max-w-7xl mx-auto px-3 md:px-12 min-h-12 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-x-auto scrollbar-none">
+        <div className="w-full max-w-7xl mx-auto px-3 md:px-12 mt-4 z-30">
+          <div className={`w-full p-3 md:px-5 md:py-3.5 rounded-[22px] border ${
+            dk ? 'bg-zinc-950/30 border-zinc-900 backdrop-blur-md shadow-2xl/40' : 'bg-white/50 border-black/5 backdrop-blur-md shadow-lg/5'
+          } flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`}>
             {/* Left side: Breadcrumbs path */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
               {/* Layer 1 */}
               <button
                 onClick={() => {
@@ -827,46 +829,49 @@ function ContributorsDashboard() {
                     setResources([]);
                   }
                 }}
-                className="flex items-center gap-1 shrink-0 text-[10px] font-bold text-sky-400 hover:opacity-75 transition-all"
+                className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg hover:bg-white/5 text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-all cursor-pointer"
               >
-                <ArrowLeft size={11} />
-                <span className="hidden sm:inline">Hubs</span>
-                <span className="sm:hidden">←</span>
+                <ArrowLeft size={11} strokeWidth={2.5} />
+                <span>Hubs</span>
               </button>
-              <span className={`${dk ? 'text-white/20' : 'text-black/20'} shrink-0`}>›</span>
+              
+              <svg className="w-2.5 h-2.5 text-zinc-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+
               {/* Layer 2: Hub */}
               <button
                 onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
-                className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
                   !selectedCategory
                     ? `${dk ? 'bg-white/10 text-white' : 'bg-black/10 text-black'}`
-                    : `${dk ? 'text-white/50 hover:text-white' : 'text-black/50 hover:text-black'}`
+                    : `${dk ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-black/50 hover:text-black hover:bg-black/5'}`
                 }`}
               >
                 {selectedHub.title.length > 14 ? selectedHub.title.slice(0, 14) + "…" : selectedHub.title}
               </button>
+
               {selectedCategory && (
                 <>
-                  <span className={`${dk ? 'text-white/20' : 'text-black/20'} shrink-0`}>›</span>
+                  <svg className="w-2.5 h-2.5 text-zinc-650 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                   {/* Layer 3: Category */}
                   <button
                     onClick={() => setSelectedTopic(null)}
-                    className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                    className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
                       !selectedTopic
-                        ? `${dk ? 'bg-purple-400/15 text-purple-300' : 'bg-purple-500/10 text-purple-600'}`
-                        : `${dk ? 'text-white/50 hover:text-purple-300' : 'text-black/50 hover:text-purple-600'}`
+                        ? `${dk ? 'bg-purple-400/15 text-purple-300 border border-purple-500/20' : 'bg-purple-500/10 text-purple-600 border border-purple-500/15'}`
+                        : `${dk ? 'text-zinc-400 hover:text-purple-300 hover:bg-white/5' : 'text-black/50 hover:text-purple-600 hover:bg-black/5'}`
                     }`}
                   >
                     {selectedCategory.name.length > 12 ? selectedCategory.name.slice(0, 12) + "…" : selectedCategory.name}
                   </button>
                 </>
               )}
+
               {selectedTopic && (
                 <>
-                  <span className={`${dk ? 'text-white/20' : 'text-black/20'} shrink-0`}>›</span>
+                  <svg className="w-2.5 h-2.5 text-zinc-650 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                   {/* Layer 4: Topic → Resources */}
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    dk ? 'bg-emerald-400/15 text-emerald-300' : 'bg-emerald-500/10 text-emerald-600'
+                  <span className={`shrink-0 px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
+                    dk ? 'bg-emerald-400/15 text-emerald-300 border-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/15'
                   }`}>
                     {selectedTopic.name.length > 12 ? selectedTopic.name.slice(0, 12) + "…" : selectedTopic.name}
                   </span>
@@ -876,7 +881,7 @@ function ContributorsDashboard() {
 
             {/* Right side: Search + Add button (only when selectedCategory is set) */}
             {selectedCategory && (
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 w-3.5 h-3.5" />
                   <input
@@ -884,7 +889,7 @@ function ContributorsDashboard() {
                     placeholder="Search resources…"
                     value={resourceSearch}
                     onChange={(e) => setResourceSearch(e.target.value)}
-                    className={`w-full text-xs rounded-xl pl-9 pr-3 py-1.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    className={`w-full text-xs rounded-xl pl-9 pr-3 h-[32px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                   />
                 </div>
                 <button
@@ -904,7 +909,7 @@ function ContributorsDashboard() {
                       setShowAddModal(true);
                     }
                   }}
-                  className="flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
+                  className="flex items-center justify-center gap-1.5 px-4 h-[32px] rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{ background: P.blue }}
                 >
                   <Plus size={13} />
