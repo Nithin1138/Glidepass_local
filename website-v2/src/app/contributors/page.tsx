@@ -1129,23 +1129,23 @@ function ContributorsDashboard() {
                               <div
                                 key={topic.name}
                                 onClick={() => setSelectedTopic({ name: topic.name, limit: topic.limit })}
-                                className="relative p-5 rounded-[24px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[125px] overflow-hidden"
+                                className="relative p-4.5 rounded-[20px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden"
                               >
                                 {/* Top edge highlight glow on hover */}
-                                <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                                 {/* Top row: Badges, Date, and Capped status */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-300 uppercase font-mono">
+                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase font-mono">
                                       {selectedCategory.name}
                                     </span>
-                                    <span className="text-[10px] font-mono text-zinc-500">
+                                    <span className="text-[9px] font-mono text-zinc-500">
                                       {formatDate(topic.name)}
                                     </span>
                                   </div>
                                   {isCapped && (
-                                    <span className="px-2.5 py-0.5 text-[9px] font-bold uppercase rounded-full border border-red-900/30 bg-red-950/20 text-red-500 font-mono">
+                                    <span className="px-2 py-0.5 text-[8px] font-bold uppercase rounded-full border border-red-900/30 bg-red-950/20 text-red-500 font-mono">
                                       Capped (Max {limit})
                                     </span>
                                   )}
@@ -1153,13 +1153,13 @@ function ContributorsDashboard() {
 
                                 {/* Middle row: Title */}
                                 <div className="mb-2">
-                                  <h4 className="text-sm md:text-[15px] font-bold text-white leading-tight truncate">
+                                  <h4 className="text-xs md:text-[13px] font-bold text-white leading-tight truncate">
                                     {displayTitle}
                                   </h4>
                                 </div>
 
                                 {/* Bottom row: count */}
-                                <div className="text-[10px] md:text-xs font-mono text-zinc-500">
+                                <div className="text-[9px] md:text-[10px] font-mono text-zinc-500">
                                   <span>{count} Resource{count !== 1 ? 's' : ''} Contributed</span>
                                 </div>
                               </div>
@@ -1169,22 +1169,22 @@ function ContributorsDashboard() {
                           {/* All Topics Shortcut Card */}
                           <div
                             onClick={() => setSelectedTopic({ name: "All Topics" })}
-                            className="relative p-5 rounded-[24px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[125px] overflow-hidden"
+                            className="relative p-4.5 rounded-[20px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden"
                           >
                             {/* Top edge highlight glow on hover */}
-                            <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-300 uppercase font-mono">
+                            <div className="flex items-center justify-between mb-2.5">
+                              <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase font-mono">
                                 ALL
                               </span>
                             </div>
                             <div className="mb-2">
-                              <h4 className="text-sm md:text-[15px] font-bold text-zinc-400 group-hover:text-white leading-tight">
+                              <h4 className="text-xs md:text-[13px] font-bold text-zinc-400 group-hover:text-white leading-tight">
                                 All Topics
                               </h4>
                             </div>
-                            <div className="text-[10px] md:text-xs font-mono text-zinc-500">
+                            <div className="text-[9px] md:text-[10px] font-mono text-zinc-500">
                               <span>Show everything in {selectedCategory.name}</span>
                             </div>
                           </div>
