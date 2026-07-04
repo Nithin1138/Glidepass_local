@@ -138,13 +138,11 @@ export async function POST(req: NextRequest) {
 
           // Check Category Daily Resource Limit
           if (catConfig.dailyLimit !== undefined && catConfig.dailyLimit !== null) {
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
             const dailyCount = allResources.filter(r => 
               r.hubId === hubId && 
               !r.isDeleted && 
               (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
-              r.createdAt && new Date(r.createdAt) >= startOfToday
+              r.topic && topic && r.topic.trim().toLowerCase() === topic.trim().toLowerCase()
             ).length;
             if (dailyCount >= catConfig.dailyLimit) {
               return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${catConfig.dailyLimit}` }, { status: 429 });
