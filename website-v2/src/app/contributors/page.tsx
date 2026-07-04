@@ -532,7 +532,22 @@ function ContributorsDashboard() {
 
     setSelectedTopic(newPendingTopic);
     setShowAddTopicModal(false);
-    showToast("success", "Topic created temporarily! Add at least one resource to save it.");
+    showToast("success", "Topic created! Add resource details below to save it.");
+
+    // Prefill Add Resource fields for this topic
+    const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
+    setResType(allowed[0] || "code");
+    setResSubCategory(selectedCategory.name);
+    setResDate(topicDate);
+    setResTitle("");
+    setResContent("");
+    setResTags("");
+    setResDescription("");
+
+    // Open Add Resource modal
+    setTimeout(() => {
+      setShowAddModal(true);
+    }, 100);
   };
 
   const handleDeleteResource = async (resId: string, e: React.MouseEvent) => {
