@@ -680,55 +680,76 @@ function ResourcesPageContent() {
 
                   {/* All Other Topics Grid */}
                   <div className="flex flex-col gap-4 pt-2">
-                    {(selectedCategory.topics || []).map((topic: any) => {
+                    {(() => {
                       const todayStr = new Date().toISOString().split("T")[0];
-                      if (topic.name === todayStr) return null;
-                      const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
-                      
-                      const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.title || "") ? formatDate(topic.title) : (topic.title || formatDate(topic.name));
+                      const resourceTopics = Array.from(new Set(resources
+                        .filter(r => 
+                          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                          r.topic && 
+                          /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                        )
+                        .map(r => r.topic)
+                      ));
+                      const allTopicNames = Array.from(new Set([
+                        ...(selectedCategory.topics || []).map((t: any) => t.name),
+                        ...resourceTopics
+                      ]));
+                      const sortedPastTopics = allTopicNames
+                        .filter(name => name !== todayStr)
+                        .map(name => {
+                          const existing = (selectedCategory.topics || []).find((t: any) => t.name === name);
+                          return existing || { name, title: name };
+                        })
+                        .sort((a, b) => b.name.localeCompare(a.name));
 
-                      return (
-                        <div
-                          key={topic.name}
-                          onClick={() => selectTopic(topic)}
-                          className={`group rounded-[22px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-white"} hover:border-emerald-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
-                        >
-                          <div className="p-4 flex-1">
-                            <div className="space-y-3">
-                              {/* Badge: Category */}
-                              <div className="flex">
-                                <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                                  dk ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" : "bg-sky-50 text-sky-700 border border-sky-200"
-                                }`}>
-                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-                                  {selectedCategory.name}
-                                </span>
+                      return sortedPastTopics.map((topic: any) => {
+                        const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                        const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.title || "") ? formatDate(topic.title) : (topic.title || formatDate(topic.name));
+
+                        return (
+                          <div
+                            key={topic.name}
+                            onClick={() => selectTopic(topic)}
+                            className={`group rounded-[22px] border ${borderLight} ${dk ? "bg-[#090b0e] hover:bg-[#0e1116]" : "bg-white"} hover:border-emerald-400/30 transition-all cursor-pointer flex flex-col justify-between min-h-[130px] relative overflow-hidden`}
+                          >
+                            <div className="p-4 flex-1">
+                              <div className="space-y-3">
+                                {/* Badge: Category */}
+                                <div className="flex">
+                                  <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                                    dk ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" : "bg-sky-50 text-sky-700 border border-sky-200"
+                                  }`}>
+                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                                    {selectedCategory.name}
+                                  </span>
+                                </div>
+
+                                {/* Title */}
+                                <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} leading-tight`}>
+                                  {displayTitle}
+                                </h4>
+
+                                {/* Date */}
+                                <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                  <span>{formatDate(topic.name)}</span>
+                                </div>
                               </div>
+                            </div>
 
-                              {/* Title */}
-                              <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} leading-tight`}>
-                                {displayTitle}
-                              </h4>
-
-                              {/* Date */}
+                            {/* Footer */}
+                            <div className={`px-4 py-3 border-t ${dk ? "border-white/[0.06]" : "border-black/[0.06]"} bg-black/[0.015] flex justify-between items-center`}>
                               <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                                <span>{formatDate(topic.name)}</span>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
                               </div>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
                             </div>
                           </div>
-
-                          {/* Footer */}
-                          <div className={`px-4 py-3 border-t ${dk ? "border-white/[0.06]" : "border-black/[0.06]"} bg-black/[0.015] flex justify-between items-center`}>
-                            <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                              <span>{count} {count === 1 ? "Resource Available" : "Resources Available"}</span>
-                            </div>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
 
                     {/* All Topics */}
                     <div

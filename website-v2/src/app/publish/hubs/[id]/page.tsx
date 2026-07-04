@@ -474,39 +474,60 @@ export default function HubManagementPage() {
                   })()}
 
                   {/* Custom Topics */}
-                  {(selectedCategory.topics || []).map((topic: any) => {
+                  {(() => {
                     const todayStr = new Date().toISOString().split("T")[0];
-                    if (topic.name === todayStr) return null;
-                    const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
-                    
-                    const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || '') ? formatDate(topic.name) : topic.name;
+                    const resourceTopics = Array.from(new Set(resources
+                      .filter(r => 
+                        (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                         r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                        r.topic && 
+                        /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                      )
+                      .map(r => r.topic)
+                    ));
+                    const allTopicNames = Array.from(new Set([
+                      ...(selectedCategory.topics || []).map((t: any) => t.name),
+                      ...resourceTopics
+                    ]));
+                    const sortedPastTopics = allTopicNames
+                      .filter(name => name !== todayStr)
+                      .map(name => {
+                        const existing = (selectedCategory.topics || []).find((t: any) => t.name === name);
+                        return existing || { name, title: name };
+                      })
+                      .sort((a, b) => b.name.localeCompare(a.name));
 
-                    return (
-                      <div key={topic.name} onClick={() => setSelectedTopic(topic)}
-                        className={`group p-5 rounded-2xl border cursor-pointer flex flex-col justify-between min-h-[120px] transition-all duration-200 ${
-                          dk
-                            ? 'bg-white/[0.015] border-white/[0.05] hover:border-emerald-500/30 hover:bg-[#0077C0]/[0.02]'
-                            : 'bg-white/60 border-black/[0.05] shadow-sm hover:border-[#0077C0]/30 hover:bg-white/80'
-                        }`}
-                      >
-                        <div>
-                          <h4 className={`text-sm font-bold uppercase tracking-wider transition-colors ${dk ? 'text-white' : 'text-[#111827]'}`}>
-                            {displayTitle}
-                          </h4>
-                          <p className={`text-[11px] mt-1 opacity-60 ${dk ? 'text-white' : 'text-[#6B7280]'}`}>
-                            Custom topic
-                          </p>
+                    return sortedPastTopics.map((topic: any) => {
+                      const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                      const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || '') ? formatDate(topic.name) : topic.name;
+
+                      return (
+                        <div key={topic.name} onClick={() => setSelectedTopic(topic)}
+                          className={`group p-5 rounded-2xl border cursor-pointer flex flex-col justify-between min-h-[120px] transition-all duration-200 ${
+                            dk
+                              ? 'bg-white/[0.015] border-white/[0.05] hover:border-emerald-500/30 hover:bg-[#0077C0]/[0.02]'
+                              : 'bg-white/60 border-black/[0.05] shadow-sm hover:border-[#0077C0]/30 hover:bg-white/80'
+                          }`}
+                        >
+                          <div>
+                            <h4 className={`text-sm font-bold uppercase tracking-wider transition-colors ${dk ? 'text-white' : 'text-[#111827]'}`}>
+                              {displayTitle}
+                            </h4>
+                            <p className={`text-[11px] mt-1 opacity-60 ${dk ? 'text-white' : 'text-[#6B7280]'}`}>
+                              Custom topic
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between mt-4">
+                            <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${
+                              dk ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-600'
+                            }`}>
+                              {count} resource{count !== 1 ? 's' : ''}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${
-                            dk ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-600'
-                          }`}>
-                            {count} resource{count !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
 
                   {/* All Topics Shortcut Card */}
                   <div onClick={() => setSelectedTopic({ name: "All Topics" })}

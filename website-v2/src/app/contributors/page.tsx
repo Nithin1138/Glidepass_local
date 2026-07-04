@@ -945,33 +945,54 @@ function ContributorsDashboard() {
                       );
                     })()}
 
-                    {(selectedCategory.topics || []).map((topic: any) => {
+                    {(() => {
                       const todayStr = new Date().toISOString().split("T")[0];
-                      if (topic.name === todayStr) return null;
-                      const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
-                      
-                      const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || "") ? formatDate(topic.name) : topic.name;
+                      const resourceTopics = Array.from(new Set(resources
+                        .filter(r => 
+                          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                          r.topic && 
+                          /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                        )
+                        .map(r => r.topic)
+                      ));
+                      const allTopicNames = Array.from(new Set([
+                        ...(selectedCategory.topics || []).map((t: any) => t.name),
+                        ...resourceTopics
+                      ]));
+                      const sortedPastTopics = allTopicNames
+                        .filter(name => name !== todayStr)
+                        .map(name => {
+                          const existing = (selectedCategory.topics || []).find((t: any) => t.name === name);
+                          return existing || { name, title: name };
+                        })
+                        .sort((a, b) => b.name.localeCompare(a.name));
 
-                      return (
-                        <div
-                          key={topic.name}
-                          onClick={() => setSelectedTopic(topic)}
-                          className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border ${borderLight} ${dk ? 'bg-white/[0.02] hover:bg-white/[0.05]' : 'bg-black/[0.02] hover:bg-black/[0.04]'} hover:border-purple-400/30 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
-                        >
-                          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="space-y-1">
-                            <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>{displayTitle}</h4>
-                            <p className={`text-[9px] md:text-[11px] ${textSecondary} leading-relaxed hidden sm:block`}>
-                              {topic.limit ? `Limit: ${topic.limit}` : "Browse files"}
-                            </p>
+                      return sortedPastTopics.map((topic: any) => {
+                        const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                        const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || "") ? formatDate(topic.name) : topic.name;
+
+                        return (
+                          <div
+                            key={topic.name}
+                            onClick={() => setSelectedTopic(topic)}
+                            className={`p-3.5 md:p-5 rounded-[18px] md:rounded-[24px] border ${borderLight} ${dk ? 'bg-white/[0.02] hover:bg-white/[0.05]' : 'bg-black/[0.02] hover:bg-black/[0.04]'} hover:border-purple-400/30 transition-all cursor-pointer group flex flex-col justify-between min-h-[100px] md:min-h-[130px] relative overflow-hidden`}
+                          >
+                            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="space-y-1">
+                              <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>{displayTitle}</h4>
+                              <p className={`text-[9px] md:text-[11px] ${textSecondary} leading-relaxed hidden sm:block`}>
+                                {topic.limit ? `Limit: ${topic.limit}` : "Browse files"}
+                              </p>
+                            </div>
+                            <div className="flex justify-between items-center pt-2">
+                              <span className="text-[8px] font-mono text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20">{count}</span>
+                              <span className="text-[9px] font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">→</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center pt-2">
-                            <span className="text-[8px] font-mono text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20">{count}</span>
-                            <span className="text-[9px] font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
 
                     {/* All topics shortcut */}
                     <div

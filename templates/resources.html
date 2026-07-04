@@ -1848,9 +1848,30 @@
             todayCard.addEventListener('click', () => enterTopic({ name: todayStr }));
             todayContainer.appendChild(todayCard);
 
+            // Get all unique topic dates from resources for this category
+            const resourceTopics = [...new Set(allResources
+                .filter(r => 
+                    (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+                     r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+                    r.topic && 
+                    /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+                )
+                .map(r => r.topic)
+            )];
+
+            // Combine pre-configured topics and resource topics
+            const allTopicNames = [...new Set([
+                ...(selectedCategory.topics || []).map(t => t.name),
+                ...resourceTopics
+            ])];
+
             // Custom topics sorted descending (newest first, e.g. yesterday, day before yesterday)
-            const sortedPastTopics = (selectedCategory.topics || [])
-                .filter(t => t.name !== todayStr)
+            const sortedPastTopics = allTopicNames
+                .filter(name => name !== todayStr)
+                .map(name => {
+                    const existing = (selectedCategory.topics || []).find(t => t.name === name);
+                    return existing || { name: name, title: name };
+                })
                 .sort((a, b) => b.name.localeCompare(a.name));
 
             sortedPastTopics.forEach(topic => {
