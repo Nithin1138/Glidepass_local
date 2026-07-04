@@ -16,29 +16,37 @@ echo "📥 Downloading LANpad DMG..."
 curl -L -# -o /tmp/LANpad_macOS.dmg "$DOWNLOAD_URL"
 
 echo "💿 Mounting DMG..."
-mkdir -p /tmp/LANpad_Mount
-hdiutil attach /tmp/LANpad_macOS.dmg -mountpoint /tmp/LANpad_Mount -nobrowse -quiet
+MOUNT_OUT=$(hdiutil attach /tmp/LANpad_macOS.dmg -nobrowse)
+MOUNT_DIR=$(echo "$MOUNT_OUT" | grep -o '/Volumes/.*')
+
+if [ -z "$MOUNT_DIR" ]; then
+    if [ -d "/Volumes/LANpad Installer" ]; then
+        MOUNT_DIR="/Volumes/LANpad Installer"
+    else
+        echo "❌ Error: Could not mount DMG."
+        rm -f /tmp/LANpad_macOS.dmg
+        exit 1
+    fi
+fi
 
 echo "📦 Copying LANpad.app to Applications folder..."
-if cp -R /tmp/LANpad_Mount/LANpad.app /Applications/ 2>/dev/null; then
+if cp -R "$MOUNT_DIR/LANpad.app" /Applications/ 2>/dev/null; then
     echo "⏏ Unmounting DMG..."
-    hdiutil detach /tmp/LANpad_Mount -quiet
+    hdiutil detach "$MOUNT_DIR" -quiet
 
     echo "🔓 Removing Apple security restrictions..."
     xattr -cr /Applications/LANpad.app 2>/dev/null
 
     echo "🧹 Cleaning up..."
     rm -f /tmp/LANpad_macOS.dmg
-    rm -rf /tmp/LANpad_Mount
 
     echo "✅ Installed successfully! You can now launch LANpad from your Applications folder."
 else
     echo "⏏ Unmounting DMG..."
-    hdiutil detach /tmp/LANpad_Mount -quiet
+    hdiutil detach "$MOUNT_DIR" -quiet
 
     echo "🧹 Cleaning up..."
     rm -f /tmp/LANpad_macOS.dmg
-    rm -rf /tmp/LANpad_Mount
 
     echo "❌ Installation failed: LANpad.app was not found in the installer package."
     exit 1
