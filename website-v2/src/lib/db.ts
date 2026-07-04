@@ -578,40 +578,41 @@ export async function readResources(includeDeleted = false): Promise<Resource[]>
     if (globalCache.cachedResources && globalCache.cachedResourcesTime && (now - globalCache.cachedResourcesTime < 5000)) {
       return includeDeleted ? globalCache.cachedResources : globalCache.cachedResources.filter(r => !r.isDeleted);
     }
-    await initDb();
-    const client = await pool.connect();
     try {
-      const query = "SELECT * FROM vit_resources ORDER BY created_at DESC";
-      const res = await client.query(query);
-      const rows = res.rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        type: row.type,
-        language: row.language || undefined,
-        tags: typeof row.tags === "string" ? JSON.parse(row.tags) : (Array.isArray(row.tags) ? row.tags : []),
-        content: row.content,
-        views: row.views || 0,
-        copies: row.copies || 0,
-        sends: row.sends || 0,
-        isDeleted: !!row.is_deleted,
-        isLocked: !!row.is_locked,
-        description: row.description || undefined,
-        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-        creatorEmail: row.creator_email || undefined,
-        creatorName: row.creator_name || undefined,
-        hubId: row.hub_id || undefined,
-        subCategory: row.sub_category || undefined,
-        category: row.category || undefined,
-        topic: row.topic || undefined,
-      }));
-      globalCache.cachedResources = rows;
-      globalCache.cachedResourcesTime = now;
-      return includeDeleted ? rows : rows.filter(r => !r.isDeleted);
+      await initDb();
+      const client = await pool.connect();
+      try {
+        const query = "SELECT * FROM vit_resources ORDER BY created_at DESC";
+        const res = await client.query(query);
+        const rows = res.rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          type: row.type,
+          language: row.language || undefined,
+          tags: typeof row.tags === "string" ? JSON.parse(row.tags) : (Array.isArray(row.tags) ? row.tags : []),
+          content: row.content,
+          views: row.views || 0,
+          copies: row.copies || 0,
+          sends: row.sends || 0,
+          isDeleted: !!row.is_deleted,
+          isLocked: !!row.is_locked,
+          description: row.description || undefined,
+          createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+          creatorEmail: row.creator_email || undefined,
+          creatorName: row.creator_name || undefined,
+          hubId: row.hub_id || undefined,
+          subCategory: row.sub_category || undefined,
+          category: row.category || undefined,
+          topic: row.topic || undefined,
+        }));
+        globalCache.cachedResources = rows;
+        globalCache.cachedResourcesTime = now;
+        return includeDeleted ? rows : rows.filter(r => !r.isDeleted);
+      } finally {
+        client.release();
+      }
     } catch (error) {
-      console.error("Error reading resources from Postgres:", error);
-      throw error;
-    } finally {
-      client.release();
+      console.error("Error reading resources from Postgres, falling back to JSON:", error);
     }
   }
 
@@ -2195,31 +2196,32 @@ export async function readHubs(includeDeleted = false): Promise<Hub[]> {
     if (globalCache.cachedHubs && globalCache.cachedHubsTime && (now - globalCache.cachedHubsTime < 5000)) {
       return includeDeleted ? globalCache.cachedHubs : globalCache.cachedHubs.filter(h => !h.isDeleted);
     }
-    await initDb();
-    const client = await pool.connect();
     try {
-      const query = "SELECT * FROM hubs ORDER BY created_at DESC";
-      const res = await client.query(query);
-      const rows = res.rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description || undefined,
-        creatorEmail: row.creator_email,
-        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-        isDeleted: !!row.is_deleted,
-        visibility: (row.visibility as any) || "public",
-        allowedTypes: row.allowed_types ? JSON.parse(row.allowed_types) : ["code", "link", "text"],
-        subCategories: row.sub_categories ? JSON.parse(row.sub_categories) : [],
-        categories: row.categories ? JSON.parse(row.categories) : [],
-      }));
-      globalCache.cachedHubs = rows;
-      globalCache.cachedHubsTime = now;
-      return includeDeleted ? rows : rows.filter(h => !h.isDeleted);
+      await initDb();
+      const client = await pool.connect();
+      try {
+        const query = "SELECT * FROM hubs ORDER BY created_at DESC";
+        const res = await client.query(query);
+        const rows = res.rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description || undefined,
+          creatorEmail: row.creator_email,
+          createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+          isDeleted: !!row.is_deleted,
+          visibility: (row.visibility as any) || "public",
+          allowedTypes: row.allowed_types ? JSON.parse(row.allowed_types) : ["code", "link", "text"],
+          subCategories: row.sub_categories ? JSON.parse(row.sub_categories) : [],
+          categories: row.categories ? JSON.parse(row.categories) : [],
+        }));
+        globalCache.cachedHubs = rows;
+        globalCache.cachedHubsTime = now;
+        return includeDeleted ? rows : rows.filter(h => !h.isDeleted);
+      } finally {
+        client.release();
+      }
     } catch (error) {
-      console.error("Error reading hubs from Postgres:", error);
-      throw error;
-    } finally {
-      client.release();
+      console.error("Error reading hubs from Postgres, falling back to JSON:", error);
     }
   }
 

@@ -1348,24 +1348,34 @@ def is_local_api_online():
     return _local_api_online
 
 
+def _sync_proxy_get(url: str, params: dict):
+    # Disable SSL verification to bypass local network issues
+    r = requests.get(url, params=params, timeout=(0.5, 3.0), verify=False)
+    if r.status_code == 200 and "application/json" in r.headers.get("content-type", "").lower():
+        return r.json()
+    raise Exception(f"Status {r.status_code}, Content-type {r.headers.get('content-type')}")
+
 async def _proxy_get(path: str, params: dict):
     """Try each API base in order; return the first successful JSON response."""
     last_err = "No API base available"
     local_online = is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
-    async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
-        for base in bases:
-            try:
-                r = await client.get(f"{base}{path}", params=params)
-                if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
-                    return r.json()
-                else:
-                    last_err = f"Status {r.status_code}, content-type {r.headers.get('content-type')}"
-            except Exception as e:
-                last_err = str(e)
+    for base in bases:
+        try:
+            url = f"{base}{path}"
+            result = await asyncio.to_thread(_sync_proxy_get, url, params)
+            return result
+        except Exception as e:
+            last_err = str(e)
     return None, last_err
 
+
+def _sync_proxy_post(url: str, body: dict):
+    r = requests.post(url, json=body, headers={"Content-Type": "application/json"}, timeout=(0.5, 3.0), verify=False)
+    if r.status_code == 200 and "application/json" in r.headers.get("content-type", "").lower():
+        return r.json()
+    raise Exception(f"Status {r.status_code}, Content-type {r.headers.get('content-type')}")
 
 async def _proxy_post(path: str, body: dict):
     """Try each API base in order for POST requests."""
@@ -1373,16 +1383,13 @@ async def _proxy_post(path: str, body: dict):
     local_online = is_local_api_online()
     bases = _API_BASES if local_online else ["https://lanpad.app"]
     
-    async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=0.5), follow_redirects=True, verify=False) as client:
-        for base in bases:
-            try:
-                r = await client.post(f"{base}{path}", json=body, headers={"Content-Type": "application/json"})
-                if r.status_code == 200 and "application/json" in r.headers.get("content-type", ""):
-                    return r.json()
-                else:
-                    last_err = f"Status {r.status_code}, content-type {r.headers.get('content-type')}"
-            except Exception as e:
-                last_err = str(e)
+    for base in bases:
+        try:
+            url = f"{base}{path}"
+            result = await asyncio.to_thread(_sync_proxy_post, url, body)
+            return result
+        except Exception as e:
+            last_err = str(e)
     return None, last_err
 
 
