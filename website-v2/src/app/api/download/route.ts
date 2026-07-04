@@ -120,9 +120,15 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Redirect and stamp the deduplication cookie on the response
-  const redirectUrl = downloadUrl.startsWith("http")
+  let redirectUrl = downloadUrl.startsWith("http")
     ? downloadUrl
     : new URL(downloadUrl, request.nextUrl.origin).toString();
+
+  // If redirecting to our own domains, force it to use the current origin domain to avoid stale Vercel URLs
+  if (redirectUrl.includes("lanpad.app") || redirectUrl.includes("vercel.app")) {
+    const relativePath = platform === "windows" ? "/downloads/LANpad.exe" : "/downloads/LANpad_macOS.dmg";
+    redirectUrl = new URL(relativePath, request.nextUrl.origin).toString();
+  }
 
   const response = NextResponse.redirect(redirectUrl, 302);
 
