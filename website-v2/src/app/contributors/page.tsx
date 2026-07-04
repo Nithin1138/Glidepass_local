@@ -1129,8 +1129,11 @@ function ContributorsDashboard() {
                               <div
                                 key={topic.name}
                                 onClick={() => setSelectedTopic({ name: topic.name, limit: topic.limit })}
-                                className="relative p-5 rounded-[24px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[110px]"
+                                className="relative p-5 rounded-[24px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[125px] overflow-hidden"
                               >
+                                {/* Top edge highlight glow on hover */}
+                                <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                                 {/* Top row: Badges, Date, and Capped status */}
                                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                   <div className="flex items-center gap-2">
@@ -1166,8 +1169,11 @@ function ContributorsDashboard() {
                           {/* All Topics Shortcut Card */}
                           <div
                             onClick={() => setSelectedTopic({ name: "All Topics" })}
-                            className="relative p-5 rounded-[24px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[110px]"
+                            className="relative p-5 rounded-[24px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[125px] overflow-hidden"
                           >
+                            {/* Top edge highlight glow on hover */}
+                            <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                             <div className="flex items-center justify-between mb-3">
                               <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-300 uppercase font-mono">
                                 ALL
