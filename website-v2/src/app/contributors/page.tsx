@@ -234,7 +234,12 @@ function ContributorsDashboard() {
   const [joiningHub, setJoiningHub] = useState(false);
 
   // Modals state
+  // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddTopicModal, setShowAddTopicModal] = useState(false);
+  const [topicTitle, setTopicTitle] = useState("");
+  const [topicDescription, setTopicDescription] = useState("");
+  const [topicDate, setTopicDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
@@ -417,6 +422,60 @@ function ContributorsDashboard() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        // If this is a pending/temporary topic, save it to the hub categories now!
+        if (selectedTopic && selectedTopic.isPending) {
+          try {
+            const updatedCategories = selectedHub.categories.map((cat: any) => {
+              if (cat.name.toLowerCase() === selectedCategory.name.toLowerCase()) {
+                const topics = cat.topics || [];
+                // Check if topic name already exists to avoid duplicates
+                if (!topics.some((t: any) => t.name.toLowerCase() === selectedTopic.name.toLowerCase())) {
+                  return {
+                    ...cat,
+                    topics: [...topics, {
+                      name: selectedTopic.name,
+                      title: selectedTopic.title || selectedTopic.name,
+                      description: selectedTopic.description || ""
+                    }]
+                  };
+                }
+              }
+              return cat;
+            });
+
+            const hubRes = await fetch("/api/hubs", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: selectedHub.id,
+                creatorEmail: effectiveSession?.user?.email || "anonymous",
+                categories: updatedCategories
+              })
+            });
+            const hubData = await hubRes.json();
+            if (hubRes.ok && hubData.success) {
+              const updatedHub = hubData.hub;
+              setSelectedHub(updatedHub);
+              const updatedCat = updatedHub.categories.find(
+                (c: any) => c.name.toLowerCase() === selectedCategory.name.toLowerCase()
+              );
+              if (updatedCat) {
+                setSelectedCategory(updatedCat);
+                const savedTopic = updatedCat.topics?.find(
+                  (t: any) => t.name.toLowerCase() === selectedTopic.name.toLowerCase()
+                );
+                if (savedTopic) {
+                  setSelectedTopic(savedTopic); // Clear the isPending flag
+                } else {
+                  setSelectedTopic({ name: selectedTopic.name, title: selectedTopic.title, description: selectedTopic.description });
+                }
+              }
+            }
+          } catch (hubErr) {
+            console.error("Failed to save topic config to hub:", hubErr);
+          }
+        }
+
         showToast("success", "Resource published successfully!");
         setResTitle("");
         setResContent("");
@@ -435,6 +494,45 @@ function ContributorsDashboard() {
     } finally {
       setPublishing(false);
     }
+  };
+
+  const handleCreateTopic = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topicDate) {
+      return showToast("error", "Date is required.");
+    }
+
+    // Limit check for topics in category
+    if (selectedCategory && selectedCategory.topicsLimit !== undefined && selectedCategory.topicsLimit !== null) {
+      const resourceTopics = Array.from(new Set(resources
+        .filter(r => 
+          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+          r.topic && 
+          /^\d{4}-\d{2}-\d{2}$/.test(r.topic)
+        )
+        .map(r => r.topic)
+      ));
+      const allTopicNames = Array.from(new Set([
+        ...(selectedCategory.topics || []).map((t: any) => t.name),
+        ...resourceTopics
+      ]));
+
+      if (!allTopicNames.includes(topicDate) && allTopicNames.length >= selectedCategory.topicsLimit) {
+        return showToast("error", `Maximum topics limit reached for collection "${selectedCategory.name}". Only ${selectedCategory.topicsLimit} unique topic dates allowed.`);
+      }
+    }
+
+    const newPendingTopic = {
+      name: topicDate,
+      title: topicTitle || topicDate,
+      description: topicDescription,
+      isPending: true
+    };
+
+    setSelectedTopic(newPendingTopic);
+    setShowAddTopicModal(false);
+    showToast("success", "Topic created temporarily! Add at least one resource to save it.");
   };
 
   const handleDeleteResource = async (resId: string, e: React.MouseEvent) => {
@@ -857,29 +955,32 @@ function ContributorsDashboard() {
                     className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
-                    setResType(allowed[0] || "code");
-                    if (selectedCategory) {
-                      setResSubCategory(selectedCategory.name);
-                    } else if (selectedHub?.categories && selectedHub.categories.length > 0) {
-                      setResSubCategory(selectedHub.categories[0].name);
-                    }
-                    if (selectedTopic && selectedTopic.name && /^\d{4}-\d{2}-\d{2}$/.test(selectedTopic.name)) {
-                      setResDate(selectedTopic.name);
-                    } else {
-                      setResDate(new Date().toISOString().split("T")[0]);
-                    }
-                    setShowAddModal(true);
-                  }}
-                  className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
-                  style={{ background: P.blue }}
-                >
-                  <Plus size={13} />
-                  <span className="hidden sm:inline">Add Resource</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
+                {selectedCategory && (
+                  <button
+                    onClick={() => {
+                      if (!selectedTopic) {
+                        // Create Topic Modal
+                        setTopicTitle("");
+                        setTopicDescription("");
+                        setTopicDate(new Date().toISOString().split("T")[0]);
+                        setShowAddTopicModal(true);
+                      } else {
+                        // Create Resource Modal
+                        const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
+                        setResType(allowed[0] || "code");
+                        setResSubCategory(selectedCategory.name);
+                        setResDate(selectedTopic.name);
+                        setShowAddModal(true);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
+                    style={{ background: P.blue }}
+                  >
+                    <Plus size={13} />
+                    <span className="hidden sm:inline">{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
+                    <span className="sm:hidden">{!selectedTopic ? "Topic" : "Add"}</span>
+                  </button>
+                )}
               </div>
 
               {/* 4-Layer Content */}
@@ -1216,42 +1317,7 @@ function ContributorsDashboard() {
                     )
                   )}
 
-                  {selectedHub?.categories && selectedHub.categories.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
-                        <select
-                          value={resSubCategory}
-                          onChange={(e) => setResSubCategory(e.target.value)}
-                          className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer`}
-                        >
-                          <option value="">-- Select Collection --</option>
-                          {selectedHub.categories.map((cat: any) => (
-                            <option key={cat.name} value={cat.name}>{cat.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date (Topic)</label>
-                        <input
-                          type="date"
-                          value={resDate}
-                          onChange={(e) => setResDate(e.target.value)}
-                          className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date (Topic)</label>
-                      <input
-                        type="date"
-                        value={resDate}
-                        onChange={(e) => setResDate(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
-                      />
-                    </div>
-                  )}
+                  {/* No Collection or Date inputs required now since they are pre-determined by navigation */}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -1295,6 +1361,73 @@ function ContributorsDashboard() {
                   >
                     <Upload size={14} />
                     {publishing ? "Publishing..." : "Add to Hub"}
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD TOPIC MODAL */}
+      <AnimatePresence>
+        {showAddTopicModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md p-1.5 rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+            >
+              <div className="p-6 rounded-[28px] bg-[#050505] space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Collection Topic</h3>
+                  <button onClick={() => setShowAddTopicModal(false)} className="p-1 rounded hover:bg-white/5 border border-white/10">
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateTopic} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Topic Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Day 1: Getting Started"
+                      value={topicTitle}
+                      onChange={(e) => setTopicTitle(e.target.value)}
+                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Description</label>
+                    <input
+                      type="text"
+                      placeholder="Topic description (optional)"
+                      value={topicDescription}
+                      onChange={(e) => setTopicDescription(e.target.value)}
+                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Topic Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={topicDate}
+                      onChange={(e) => setTopicDate(e.target.value)}
+                      className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10 text-white"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-[#0077C0] to-[#009BF5] hover:opacity-90 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={14} />
+                    Create Topic
                   </button>
                 </form>
               </div>

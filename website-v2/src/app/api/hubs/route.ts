@@ -121,8 +121,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Hub not found" }, { status: 404 });
     }
 
-    if (hub.creatorEmail.toLowerCase() !== creatorEmail.toLowerCase()) {
-      return NextResponse.json({ error: "Unauthorized. Only the hub creator can update settings." }, { status: 403 });
+    const isOwner = hub.creatorEmail.toLowerCase() === creatorEmail.toLowerCase();
+    const { isApprovedContributor } = await import("@/lib/db");
+    const isApproved = await isApprovedContributor(id, creatorEmail);
+
+    if (!isOwner && !isApproved) {
+      return NextResponse.json({ error: "Unauthorized. Only the hub creator or approved contributors can update settings." }, { status: 403 });
     }
 
     const updatedHub = {
