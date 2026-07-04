@@ -1408,7 +1408,7 @@ function ContributorsDashboard() {
               initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
               <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
@@ -1535,7 +1535,7 @@ function ContributorsDashboard() {
               initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className="relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
             >
               {/* Header */}
@@ -1607,7 +1607,7 @@ function ContributorsDashboard() {
               initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
             >
               <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
