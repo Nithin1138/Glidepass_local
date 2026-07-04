@@ -123,6 +123,14 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
     </div>
   );
 }
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return dateStr;
+};
 
 function ContributorsDashboard() {
 
@@ -274,6 +282,7 @@ function ContributorsDashboard() {
   }, [resources]);
   const [resContent, setResContent] = useState("");
   const [resSubCategory, setResSubCategory] = useState("");
+  const [resDate, setResDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [selectedSubCategoryTab, setSelectedSubCategoryTab] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
@@ -402,13 +411,7 @@ function ContributorsDashboard() {
 
           hubId: selectedHub.id,
           category: selectedCategory ? selectedCategory.name : undefined,
-          topic: (() => {
-            const todayStr = new Date().toISOString().split("T")[0];
-            if (!selectedTopic || selectedTopic.name === "All Topics") {
-              return todayStr;
-            }
-            return selectedTopic.name;
-          })()
+          topic: resDate
         })
       });
       const data = await res.json();
@@ -420,6 +423,7 @@ function ContributorsDashboard() {
         setResDescription("");
         // Do not reset resLanguage to keep the last used language
         setResSubCategory("");
+        setResDate(new Date().toISOString().split("T")[0]);
         setShowAddModal(false);
         fetchResources(selectedHub.id);
       } else {
@@ -865,6 +869,11 @@ function ContributorsDashboard() {
                         setResSubCategory(matchedSubCat);
                       }
                     }
+                    if (selectedTopic && selectedTopic.name && /^\d{4}-\d{2}-\d{2}$/.test(selectedTopic.name)) {
+                      setResDate(selectedTopic.name);
+                    } else {
+                      setResDate(new Date().toISOString().split("T")[0]);
+                    }
                     setShowAddModal(true);
                   }}
                   className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
@@ -925,7 +934,7 @@ function ContributorsDashboard() {
                           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="space-y-1">
                             <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>Today</h4>
-                            <p className={`text-[9px] md:text-[11px] font-mono ${textMuted}`}>{todayStr}</p>
+                            <p className={`text-[9px] md:text-[11px] font-mono ${textMuted}`}>{formatDate(todayStr)}</p>
                           </div>
                           <div className="flex justify-between items-center pt-2">
                             <span className="text-[8px] font-mono text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20">{count}</span>
@@ -939,6 +948,9 @@ function ContributorsDashboard() {
                       const todayStr = new Date().toISOString().split("T")[0];
                       if (topic.name === todayStr) return null;
                       const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                      
+                      const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || "") ? formatDate(topic.name) : topic.name;
+
                       return (
                         <div
                           key={topic.name}
@@ -947,7 +959,7 @@ function ContributorsDashboard() {
                         >
                           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="space-y-1">
-                            <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>{topic.name}</h4>
+                            <h4 className={`text-[11px] md:text-sm font-extrabold uppercase tracking-wider ${textPrimary} group-hover:text-purple-400 transition-colors leading-tight`}>{displayTitle}</h4>
                             <p className={`text-[9px] md:text-[11px] ${textSecondary} leading-relaxed hidden sm:block`}>
                               {topic.limit ? `Limit: ${topic.limit}` : "Browse files"}
                             </p>
@@ -1011,7 +1023,7 @@ function ContributorsDashboard() {
                                       <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-400">{r.category || r.subCategory}</span>
                                     )}
                                     {r.topic && (
-                                      <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">{r.topic}</span>
+                                      <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">{formatDate(r.topic)}</span>
                                     )}
                                     {r.language && (
                                       <span className="shrink-0 text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-400">{r.language}</span>
@@ -1186,19 +1198,40 @@ function ContributorsDashboard() {
                     )
                   )}
 
-                  {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
+                  {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
+                        <select
+                          value={resSubCategory}
+                          onChange={(e) => setResSubCategory(e.target.value)}
+                          className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer`}
+                        >
+                          <option value="">-- Select Collection (Optional) --</option>
+                          {selectedHub.subCategories.map((cat: string) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date</label>
+                        <input
+                          type="date"
+                          value={resDate}
+                          onChange={(e) => setResDate(e.target.value)}
+                          className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
+                        />
+                      </div>
+                    </div>
+                  ) : (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-collection</label>
-                      <select
-                        value={resSubCategory}
-                        onChange={(e) => setResSubCategory(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
-                      >
-                        <option value="">-- Select Sub-collection (Optional) --</option>
-                        {selectedHub.subCategories.map((cat: string) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date</label>
+                      <input
+                        type="date"
+                        value={resDate}
+                        onChange={(e) => setResDate(e.target.value)}
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
+                      />
                     </div>
                   )}
 
@@ -1338,13 +1371,13 @@ function ContributorsDashboard() {
 
                   {selectedHub?.subCategories && selectedHub.subCategories.length > 0 && (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Sub-collection</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
                         className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
                       >
-                        <option value="">-- Select Sub-collection (Optional) --</option>
+                        <option value="">-- Select Collection (Optional) --</option>
                         {selectedHub.subCategories.map((cat: string) => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))}

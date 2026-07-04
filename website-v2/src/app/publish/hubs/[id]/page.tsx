@@ -8,6 +8,14 @@ import {
   ArrowLeft, Settings, Users, FileCode, Trash2, Check, X, Eye, Copy, Send, Lock, Unlock, Pencil
 } from "lucide-react";
 import { useCreator } from "../../context";
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return dateStr;
+};
 
 export default function HubManagementPage() {
   const params = useParams();
@@ -451,7 +459,7 @@ export default function HubManagementPage() {
                             Today
                           </h4>
                           <p className={`text-[11px] font-mono mt-1 opacity-60 ${dk ? 'text-white font-semibold' : 'text-[#6B7280] font-semibold'}`}>
-                            {todayStr}
+                            {formatDate(todayStr)}
                           </p>
                         </div>
                         <div className="flex items-center justify-between mt-4">
@@ -470,6 +478,9 @@ export default function HubManagementPage() {
                     const todayStr = new Date().toISOString().split("T")[0];
                     if (topic.name === todayStr) return null;
                     const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                    
+                    const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.name || '') ? formatDate(topic.name) : topic.name;
+
                     return (
                       <div key={topic.name} onClick={() => setSelectedTopic(topic)}
                         className={`group p-5 rounded-2xl border cursor-pointer flex flex-col justify-between min-h-[120px] transition-all duration-200 ${
@@ -480,7 +491,7 @@ export default function HubManagementPage() {
                       >
                         <div>
                           <h4 className={`text-sm font-bold uppercase tracking-wider transition-colors ${dk ? 'text-white' : 'text-[#111827]'}`}>
-                            {topic.name}
+                            {displayTitle}
                           </h4>
                           <p className={`text-[11px] mt-1 opacity-60 ${dk ? 'text-white' : 'text-[#6B7280]'}`}>
                             Custom topic

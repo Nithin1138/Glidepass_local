@@ -23,6 +23,15 @@ interface Resource {
   createdAt?: string;
 }
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return dateStr;
+};
+
 function ResourcesPageContent() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const dk = theme === "dark";
@@ -646,13 +655,13 @@ function ResourcesPageContent() {
 
                             {/* Title */}
                             <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} group-hover:text-emerald-400 transition-colors leading-tight`}>
-                              {todayTopic?.title || "Today's Content"}
+                              {/^\d{4}-\d{2}-\d{2}$/.test(todayTopic?.title || "") ? formatDate(todayTopic.title) : (todayTopic?.title || "Today's Content")}
                             </h4>
 
                             {/* Date */}
                             <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                              <span>{todayStr}</span>
+                              <span>{formatDate(todayStr)}</span>
                             </div>
                           </div>
                         </div>
@@ -675,6 +684,9 @@ function ResourcesPageContent() {
                       const todayStr = new Date().toISOString().split("T")[0];
                       if (topic.name === todayStr) return null;
                       const count = resources.filter(r => (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) && r.topic?.toLowerCase() === topic.name.toLowerCase()).length;
+                      
+                      const displayTitle = /^\d{4}-\d{2}-\d{2}$/.test(topic.title || "") ? formatDate(topic.title) : (topic.title || formatDate(topic.name));
+
                       return (
                         <div
                           key={topic.name}
@@ -695,13 +707,13 @@ function ResourcesPageContent() {
 
                               {/* Title */}
                               <h4 className={`text-sm md:text-base font-extrabold tracking-tight ${textPrimary} leading-tight`}>
-                                {topic.title || topic.name}
+                                {displayTitle}
                               </h4>
 
                               {/* Date */}
                               <div className={`flex items-center gap-1.5 text-[9px] md:text-[10px] ${textSecondary}`}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                                <span>{topic.name}</span>
+                                <span>{formatDate(topic.name)}</span>
                               </div>
                             </div>
                           </div>
