@@ -78,11 +78,11 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
       <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Header row */}
-      <div className="flex justify-between items-start gap-2 mb-2">
-        <div className="flex flex-col gap-1 min-w-0 flex-1">
+      <div className="flex justify-between items-center gap-3 mb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
           <h3 className={`text-sm font-extrabold uppercase tracking-wide ${textPrimary} truncate`}>{h.title}</h3>
-          <span className={`text-[8px] font-bold uppercase self-start px-1.5 py-0.5 rounded border ${
-            h.visibility === "private" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : "text-sky-400 bg-sky-500/10 border-sky-500/20"
+          <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border shrink-0 ${
+            h.visibility === "private" ? "text-rose-400 bg-rose-500/10 border-rose-500/25" : "text-sky-400 bg-sky-500/10 border-sky-500/25"
           }`}>{h.visibility || "public"}</span>
         </div>
         {/* Pin Button */}
@@ -91,7 +91,7 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
           className={`p-1.5 rounded-lg border transition-all shrink-0 ${
             pinned
               ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-              : `${borderLight} ${dk ? "border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-amber-400 hover:border-amber-400/30" : "text-black/30 hover:text-amber-500 hover:border-amber-400/30"}`
+              : `${borderLight} ${dk ? "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:text-amber-400 hover:border-amber-400/30" : "text-black/30 hover:text-amber-500 hover:border-amber-400/30"}`
           }`}
           title={pinned ? "Unpin hub" : "Pin hub"}
         >
@@ -101,8 +101,19 @@ function HubCard({ h, isOwner, isApproved, isPending, pinned, onPin, joiningHub,
         </button>
       </div>
 
-      {h.description && <p className={`text-[10px] ${textSecondary} line-clamp-2 leading-relaxed mb-1`}>{h.description}</p>}
-      <p className={`text-[9px] ${textMuted} font-mono truncate mb-3`}>{h.id}</p>
+      {/* Description & ID Row */}
+      <div className="flex justify-between items-end gap-3 mt-1.5 mb-3.5">
+        <div className="min-w-0 flex-1">
+          {h.description ? (
+            <p className={`text-[10px] ${textSecondary} line-clamp-2 leading-relaxed font-medium`}>{h.description}</p>
+          ) : (
+            <p className={`text-[10px] text-zinc-600 italic`}>No description provided</p>
+          )}
+        </div>
+        <span className={`text-[8.5px] ${textMuted} font-mono bg-zinc-900/40 border border-zinc-800/80 px-2 py-0.5 rounded-md select-all shrink-0`}>
+          {h.id}
+        </span>
+      </div>
 
       {/* Action button */}
       {isApproved ? (
