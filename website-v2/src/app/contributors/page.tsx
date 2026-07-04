@@ -328,6 +328,41 @@ function ContributorsDashboard() {
 
   const allowedFormats = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
 
+  const isAddDisabled = React.useMemo(() => {
+    if (!selectedCategory) return false;
+    if (!selectedTopic) {
+      // Add Topic button
+      if (selectedCategory.topicsLimit === undefined || selectedCategory.topicsLimit === null) return false;
+      const dbTopicNames = resources
+        .filter(r => 
+          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+          r.topic
+        )
+        .map(r => r.topic);
+      const allTopicNames = Array.from(new Set([
+        ...dbTopicNames,
+        ...(selectedCategory.topics || []).map((t: any) => t.name),
+      ]));
+      return allTopicNames.length >= selectedCategory.topicsLimit;
+    } else {
+      // Add Resource button
+      if (selectedTopic.name === "All Topics") return true; // Can't add resource to "All Topics" directly without a specific topic date
+      let limit = selectedTopic.limit;
+      if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
+        limit = selectedCategory.resourcesPerTopic;
+      }
+      if (limit === undefined || limit === null) return false;
+      // Count resources in the current topic
+      const count = resources.filter(r => 
+        (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+         r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+        r.topic?.toLowerCase() === selectedTopic.name.toLowerCase()
+      ).length;
+      return count >= limit;
+    }
+  }, [selectedCategory, selectedTopic, resources]);
+
   // Fetch Hubs with user relationship status
   const fetchHubs = async (quiet = false) => {
     if (!effectiveSession?.user?.email) return;
@@ -877,6 +912,7 @@ function ContributorsDashboard() {
                   />
                 </div>
                 <button
+                  disabled={isAddDisabled}
                   onClick={() => {
                     if (!selectedTopic) {
                       // Create Topic Modal
@@ -893,8 +929,12 @@ function ContributorsDashboard() {
                       setShowAddModal(true);
                     }
                   }}
-                  className="flex items-center justify-center gap-1.5 px-4 h-[34px] rounded-xl text-white font-bold text-xs shadow-lg active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer shrink-0"
-                  style={{ background: P.blue }}
+                  className={`flex items-center justify-center gap-1.5 px-4 h-[34px] rounded-xl text-white font-bold text-xs shadow-lg transition-all whitespace-nowrap ${
+                    isAddDisabled 
+                      ? 'opacity-40 cursor-not-allowed bg-zinc-800 border border-zinc-700/20' 
+                      : 'active:scale-[0.98] cursor-pointer'
+                  } shrink-0`}
+                  style={{ background: isAddDisabled ? undefined : P.blue }}
                 >
                   <Plus size={13} />
                   <span>{!selectedTopic ? "Add Topic" : "Add Resource"}</span>
