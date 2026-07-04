@@ -1206,7 +1206,9 @@ function ContributorsDashboard() {
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 flex flex-col gap-4">
                   {/* Topic Detail Header */}
                   {selectedTopic && (
-                    <div className="shrink-0 p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] flex items-center justify-between select-none flex-wrap w-full">
+                    <div className="relative shrink-0 p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] flex items-center justify-between select-none flex-wrap w-full overflow-hidden">
+                      {/* Permanent top edge glow line highlight */}
+                      <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent" />
                       <div className="flex items-center gap-3.5 flex-wrap">
                         <h2 className="text-sm font-bold text-white uppercase tracking-wide">
                           {selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name))}
