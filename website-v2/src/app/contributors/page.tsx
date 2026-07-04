@@ -1405,57 +1405,28 @@ function ContributorsDashboard() {
                   </button>
                 </div>
 
-                <form onSubmit={handleAddResource} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Docker Compose File"
-                      value={resTitle}
-                      onChange={(e) => setResTitle(e.target.value)}
-                      className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-white/10`}
-                    />
-                  </div>
-
-                  {allowedFormats.length > 1 ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
-                        <select
-                          value={resType}
-                          onChange={(e) => setResType(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10"
-                        >
-                          {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
-                          {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
-                          {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
-                        </select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language (if Code)</label>
-                        <select
-                          disabled={resType !== "code"}
-                          value={resLanguage}
-                          onChange={(e) => setResLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 disabled:opacity-40 cursor-pointer"
-                        >
-                          <option value="">Select Language</option>
-                          {sortedLanguages.map(lang => (
-                            <option key={lang.id} value={lang.id}>{lang.name}</option>
-                          ))}
-                        </select>
-                      </div>
+                 <form onSubmit={handleAddResource} className="space-y-4">
+                  {/* Title and Language Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={resType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Docker Compose File"
+                        value={resTitle}
+                        onChange={(e) => setResTitle(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
+                      />
                     </div>
-                  ) : (
-                    resType === "code" && (
-                      <div className="space-y-1">
+
+                    {resType === "code" && (
+                      <div className="md:col-span-1 space-y-1">
                         <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language</label>
                         <select
                           value={resLanguage}
                           onChange={(e) => setResLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer"
+                          className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer"
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1463,10 +1434,23 @@ function ContributorsDashboard() {
                           ))}
                         </select>
                       </div>
-                    )
-                  )}
+                    )}
+                  </div>
 
-                  {/* No Collection or Date inputs required now since they are pre-determined by navigation */}
+                  {allowedFormats.length > 1 && (
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
+                      <select
+                        value={resType}
+                        onChange={(e) => setResType(e.target.value)}
+                        className="w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                      >
+                        {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
+                        {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
+                        {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
+                      </select>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -1476,7 +1460,7 @@ function ContributorsDashboard() {
                         placeholder="Short description"
                         value={resDescription}
                         onChange={(e) => setResDescription(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
+                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1486,7 +1470,7 @@ function ContributorsDashboard() {
                         placeholder="e.g. docker, compose, web"
                         value={resTags}
                         onChange={(e) => setResTags(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-white/10`}
+                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
                       />
                     </div>
                   </div>
@@ -1499,18 +1483,27 @@ function ContributorsDashboard() {
                       placeholder="Paste your configuration code, link, or text..."
                       value={resContent}
                       onChange={(e) => setResContent(e.target.value)}
-                      className={`w-full text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none bg-[#0d1117] border-white/10 text-sky-400`}
+                      className="w-full text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none bg-[#0d1117] border-zinc-800 text-sky-400"
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={publishing}
-                    className="w-full bg-gradient-to-r from-[#0077C0] to-[#009BF5] hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload size={14} />
-                    {publishing ? "Publishing..." : "Add to Hub"}
-                  </button>
+                  {/* Footer Action Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-transparent hover:bg-zinc-900/40 text-zinc-300 font-semibold text-xs transition-all duration-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={publishing}
+                      className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
+                    >
+                      {publishing ? "Publishing..." : "Add to Hub"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>
