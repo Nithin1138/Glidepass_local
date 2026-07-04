@@ -206,6 +206,10 @@ function ContributorsDashboard() {
             setLocalSession(null);
             if (session) signOut({ callbackUrl: "/provider" });
             else window.location.href = "/provider";
+          } else {
+            if (data.sayMyName !== undefined) {
+              setSayMyName(data.sayMyName);
+            }
           }
         })
         .catch((e) => console.error("Session verification failed:", e));
@@ -325,6 +329,24 @@ function ContributorsDashboard() {
   const [editCategory, setEditCategory] = useState("");
   const [editTopic, setEditTopic] = useState("");
   const [editReason, setEditReason] = useState("");
+  const [sayMyName, setSayMyName] = useState(true);
+
+  const toggleSayMyName = async () => {
+    const nextVal = !sayMyName;
+    setSayMyName(nextVal);
+    const email = effectiveSession?.user?.email;
+    if (email) {
+      try {
+        await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, sayMyName: nextVal })
+        });
+      } catch (e) {
+        console.error("Failed to update sayMyName:", e);
+      }
+    }
+  };
 
   const allowedFormats = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
 
@@ -471,7 +493,7 @@ function ContributorsDashboard() {
           content: resContent,
           description: resDescription,
           creatorEmail: effectiveSession?.user?.email || "anonymous",
-          creatorName: effectiveSession?.user?.name || "Anonymous",
+          creatorName: sayMyName ? (effectiveSession?.user?.name || "Anonymous") : "Anonymous",
 
           hubId: selectedHub.id,
           category: resSubCategory || (selectedCategory ? selectedCategory.name : undefined),
@@ -817,6 +839,25 @@ function ContributorsDashboard() {
 
           <div className="flex items-center gap-3">
             <span className={`hidden md:block text-xs font-mono ${dk ? 'text-white/50' : 'text-black/50'}`}>{effectiveSession?.user?.email}</span>
+
+            {/* SAY MY NAME Toggle */}
+            <div className={`flex items-center gap-2.5 px-3 rounded-xl border ${borderLight} h-[34px] ${dk ? 'bg-[#09090b]' : 'bg-black/5'}`}>
+              <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${dk ? 'text-zinc-400' : 'text-zinc-650'}`}>
+                Say My Name
+              </span>
+              <button
+                onClick={toggleSayMyName}
+                className={`relative w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer duration-300 focus:outline-none ${
+                  sayMyName ? 'bg-blue-500' : 'bg-zinc-700'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-md ${
+                    sayMyName ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
 
             <button
               onClick={() => {
@@ -1418,6 +1459,12 @@ function ContributorsDashboard() {
                                     <pre className="text-[10px] md:text-[11px] font-mono p-3 pt-8 overflow-x-auto bg-[#0d1117] text-[#c9d1d9] max-h-60">
                                       <code>{r.content}</code>
                                     </pre>
+                                  </div>
+                                  <div className="flex items-center justify-between mt-2 px-1 text-[9px] font-mono text-zinc-500">
+                                    <span>Contributor: <strong className="text-zinc-400">{r.creatorName || "Anonymous"}</strong></span>
+                                    {r.createdAt && (
+                                      <span>Shared: {new Date(r.createdAt).toLocaleDateString()}</span>
+                                    )}
                                   </div>
                                 </motion.div>
                               )}

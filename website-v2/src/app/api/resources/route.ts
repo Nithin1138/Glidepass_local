@@ -52,7 +52,24 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, resources });
+    const users = await getDbUsers();
+    const userMap = new Map<string, any>();
+    users.forEach((u: any) => {
+      if (u.email) userMap.set(u.email.toLowerCase(), u);
+    });
+
+    const anonymizedResources = resources.map((r) => {
+      const email = r.creatorEmail?.toLowerCase();
+      if (email) {
+        const userObj = userMap.get(email);
+        if (userObj && userObj.sayMyName === false) {
+          return { ...r, creatorName: "Anonymous" };
+        }
+      }
+      return r;
+    });
+
+    return NextResponse.json({ success: true, resources: anonymizedResources });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

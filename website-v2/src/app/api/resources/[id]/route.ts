@@ -20,6 +20,17 @@ export async function GET(req: NextRequest, { params }: Props) {
     // Default fetch increments views
     await incrementResourceStats(id, "views");
 
+    // Anonymize if sayMyName is off
+    const creatorEmail = resource.creatorEmail?.toLowerCase();
+    if (creatorEmail) {
+      const { getDbUsers } = await import("@/lib/db");
+      const users = await getDbUsers();
+      const userObj = users.find((u: any) => u.email?.toLowerCase() === creatorEmail);
+      if (userObj && userObj.sayMyName === false) {
+        resource.creatorName = "Anonymous";
+      }
+    }
+
     return NextResponse.json({ success: true, resource });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
