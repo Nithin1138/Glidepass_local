@@ -1033,28 +1033,32 @@ function ContributorsDashboard() {
                         <div
                           key={cat.name}
                           onClick={() => { setSelectedCategory(cat); setSelectedTopic(null); }}
-                          className={`p-4 md:p-5 rounded-2xl border ${borderLight} ${dk ? 'bg-zinc-950/60 hover:bg-zinc-900/60' : 'bg-white hover:bg-zinc-50'} hover:border-[#0077C0]/30 transition-all cursor-pointer group flex items-center justify-between min-h-[85px] relative overflow-hidden`}
+                          className="relative p-5 md:p-6 rounded-[22px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex items-center justify-between min-h-[90px] overflow-hidden"
                         >
-                          <div className="space-y-1.5 flex-1 min-w-0">
-                            <h4 className={`text-xs md:text-sm font-black uppercase tracking-wider ${textPrimary} group-hover:text-[#0077C0] transition-colors leading-tight truncate`}>
+                          {/* Top edge highlight glow on hover */}
+                          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                          <div className="space-y-2 flex-1 min-w-0">
+                            <h4 className="text-sm md:text-base font-black uppercase tracking-wider text-white font-outfit leading-tight truncate">
                               {cat.name}
                             </h4>
-                            <p className={`text-[9px] md:text-[10px] font-medium font-mono text-zinc-500`}>
-                              {sessionsCount} Session{sessionsCount !== 1 ? 's' : ''} &nbsp;•&nbsp; {resourcesCount} Code{resourcesCount !== 1 ? 's' : ''}
+                            <p className="text-[10px] md:text-xs font-mono text-[#52525b] flex items-center gap-1.5">
+                              <span>{sessionsCount} Session{sessionsCount !== 1 ? 's' : ''}</span>
+                              <span className="text-[#3f3f46]">•</span>
+                              <span>{resourcesCount} Code{resourcesCount !== 1 ? 's' : ''}</span>
                             </p>
                           </div>
                           
-                          {/* Colored Dot Indicator */}
-                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                          {/* Glowing Status Dot */}
+                          <div className="flex items-center shrink-0 ml-4">
                             <span 
-                              className={`w-2 h-2 rounded-full ${
+                              className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
                                 hasTodayTopic 
-                                  ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
-                                  : 'bg-red-500 shadow-[0_0_8px_#ef4444]'
+                                  ? 'bg-[#10b981] shadow-[0_0_12px_#10b981]' 
+                                  : 'bg-[#ef4444] shadow-[0_0_12px_#ef4444]'
                               }`}
                               title={hasTodayTopic ? "Today's Topic Created" : "Today's Topic Not Created"}
                             />
-                            <span className="text-[10px] font-bold text-zinc-600 group-hover:translate-x-0.5 transition-transform">→</span>
                           </div>
                         </div>
                       );
