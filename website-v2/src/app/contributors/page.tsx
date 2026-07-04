@@ -410,7 +410,8 @@ function ContributorsDashboard() {
           creatorName: effectiveSession?.user?.name || "Anonymous",
 
           hubId: selectedHub.id,
-          category: selectedCategory ? selectedCategory.name : undefined,
+          category: resSubCategory || (selectedCategory ? selectedCategory.name : undefined),
+          subCategory: resSubCategory || (selectedCategory ? selectedCategory.name : undefined),
           topic: resDate
         })
       });
