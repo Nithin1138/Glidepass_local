@@ -1274,9 +1274,11 @@ function ContributorsDashboard() {
                                 <h4 className="text-sm font-bold text-white leading-tight truncate">
                                   {r.title}
                                 </h4>
-                                <p className="text-[10px] font-mono text-zinc-500 mt-0.5 leading-tight truncate">
-                                  {r.description || "No description provided"}
-                                </p>
+                                {r.description && r.description.trim() !== "" && (
+                                  <p className="text-[10px] font-mono text-zinc-500 mt-0.5 leading-tight truncate">
+                                    {r.description}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
@@ -1454,10 +1456,12 @@ function ContributorsDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Description</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">
+                        {resType === "code" ? "Comments (Optional)" : "Description"}
+                      </label>
                       <input
                         type="text"
-                        placeholder="Short description"
+                        placeholder={resType === "code" ? "e.g. Added error handling helper" : "Short description"}
                         value={resDescription}
                         onChange={(e) => setResDescription(e.target.value)}
                         className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
@@ -1479,11 +1483,11 @@ function ContributorsDashboard() {
                     <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Content</label>
                     <textarea
                       required
-                      rows={6}
-                      placeholder="Paste your configuration code, link, or text..."
+                      rows={8}
+                      placeholder={resType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
                       value={resContent}
                       onChange={(e) => setResContent(e.target.value)}
-                      className="w-full text-xs font-mono rounded-xl p-3 border focus:outline-none resize-none bg-[#0d1117] border-zinc-800 text-sky-400"
+                      className="w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none bg-[#09090b] border-zinc-800 text-zinc-200 focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y"
                     />
                   </div>
 
