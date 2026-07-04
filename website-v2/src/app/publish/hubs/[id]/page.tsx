@@ -230,7 +230,7 @@ export default function HubManagementPage() {
   }
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto space-y-8">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-6">
       {/* Back + Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <Link href="/publish/hubs"
@@ -278,28 +278,31 @@ export default function HubManagementPage() {
       </motion.div>
 
       {/* Tab Bar */}
-      <div className={`flex gap-1.5 p-1 rounded-xl border w-fit ${dk ? 'bg-white/[0.02] border-white/[0.04]' : 'bg-[#F3F4F6] border-black/[0.04]'}`}>
-        <button onClick={() => setActiveTab("resources")} className={tabClass("resources")}>
-          <span className="flex items-center gap-1.5"><FileCode size={13} /> Resources</span>
-        </button>
-        {isOwner && (
-          <button onClick={() => setActiveTab("contributors")} className={tabClass("contributors")}>
-            <span className="flex items-center gap-1.5">
-              <Users size={13} /> Contributors
-              {pending.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
-                  {pending.length}
-                </span>
-              )}
-            </span>
+      <div className="overflow-x-auto scrollbar-none">
+        <div className={`flex gap-1.5 p-1 rounded-xl border w-max min-w-full sm:w-fit ${dk ? 'bg-white/[0.02] border-white/[0.04]' : 'bg-[#F3F4F6] border-black/[0.04]'}`}>
+          <button onClick={() => setActiveTab("resources")} className={tabClass("resources")}>
+            <span className="flex items-center gap-1.5"><FileCode size={13} /> Resources</span>
           </button>
-        )}
-        {isOwner && (
-          <button onClick={() => setActiveTab("settings")} className={tabClass("settings")}>
-            <span className="flex items-center gap-1.5"><Settings size={13} /> Settings</span>
-          </button>
-        )}
+          {isOwner && (
+            <button onClick={() => setActiveTab("contributors")} className={tabClass("contributors")}>
+              <span className="flex items-center gap-1.5">
+                <Users size={13} /> Contributors
+                {pending.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {pending.length}
+                  </span>
+                )}
+              </span>
+            </button>
+          )}
+          {isOwner && (
+            <button onClick={() => setActiveTab("settings")} className={tabClass("settings")}>
+              <span className="flex items-center gap-1.5"><Settings size={13} /> Settings</span>
+            </button>
+          )}
+        </div>
       </div>
+
 
       {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>

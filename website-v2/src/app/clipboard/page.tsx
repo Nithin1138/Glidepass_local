@@ -670,7 +670,7 @@ export default function ClipboardPage() {
               <ArrowLeft size={13} /> Back
             </Link>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${dk ? "border-[#468FEA]/20 bg-[#468FEA]/5 text-[#468FEA]" : "border-[#468FEA]/30 bg-[#468FEA]/5 text-[#468FEA]"}`}>
-              Temporary Clipboard
+              <span className="hidden sm:inline">Temporary </span>Clipboard
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -770,8 +770,8 @@ export default function ClipboardPage() {
           </div>
         ) : !currentRoom ? (
           /* ──────── DASHBOARD: CREATE OR JOIN ──────── */
-          <div className="max-w-5xl mx-auto w-full my-auto py-4 md:py-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full">
+          <div className="max-w-5xl mx-auto w-full my-auto py-3 md:py-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full">
             
             {/* Join Room */}
             <motion.div 
@@ -931,7 +931,7 @@ export default function ClipboardPage() {
 
                 <div className="h-px bg-black/10 dark:bg-white/10" />
 
-                <div className="grid grid-cols-3 gap-4 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div>
                     <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Expires In</div>
                     <div className="font-bold flex items-center gap-1 mt-1 text-[#F28500]">

@@ -859,18 +859,19 @@ function ContributorsDashboard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className={`hidden md:block text-xs font-mono ${dk ? 'text-white/50' : 'text-black/50'}`}>{effectiveSession?.user?.email}</span>
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Email — desktop only */}
+            <span className={`hidden lg:block text-xs font-mono truncate max-w-[160px] ${dk ? 'text-white/40' : 'text-black/40'}`}>{effectiveSession?.user?.email}</span>
 
-            {/* SAY MY NAME Toggle */}
-            <div className={`flex items-center gap-2.5 px-3 rounded-xl border ${borderLight} h-[34px] ${dk ? 'bg-[#09090b]' : 'bg-black/5'}`}>
-              <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${dk ? 'text-zinc-400' : 'text-zinc-650'}`}>
-                Say My Name
+            {/* SAY MY NAME Toggle — hidden on mobile, shown on sm+ */}
+            <div className={`hidden sm:flex items-center gap-2 px-2.5 rounded-xl border ${borderLight} h-[32px] ${dk ? 'bg-[#09090b]' : 'bg-black/5'}`}>
+              <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${dk ? 'text-zinc-400' : 'text-gray-500'}`}>
+                <span className="hidden md:inline">Say My </span>Name
               </span>
               <button
                 onClick={toggleSayMyName}
                 className={`relative w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer duration-300 focus:outline-none ${
-                  sayMyName ? 'bg-blue-500' : 'bg-zinc-700'
+                  sayMyName ? 'bg-blue-500' : (dk ? 'bg-zinc-700' : 'bg-gray-300')
                 }`}
               >
                 <div
@@ -881,13 +882,14 @@ function ContributorsDashboard() {
               </button>
             </div>
 
+            {/* Theme toggle */}
             <button
               onClick={() => {
                 const nextTheme = theme === "dark" ? "light" : "dark";
                 setTheme(nextTheme);
                 localStorage.setItem("glidepass-theme", nextTheme);
               }}
-              className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors`}
+              className={`p-2 rounded-xl border ${borderLight} ${dk ? 'hover:bg-white/5' : 'hover:bg-black/5'} transition-colors`}
               title="Toggle Theme"
             >
               {dk ? (
@@ -896,13 +898,27 @@ function ContributorsDashboard() {
                 <Moon size={14} className="text-black/60" />
               )}
             </button>
-            <button onClick={() => {
+
+            {/* Logout */}
+            <button
+              onClick={() => {
                 localStorage.removeItem("glidepass-contributor-user");
                 if (session) signOut({ callbackUrl: "/provider" });
                 else window.location.href = "/provider";
-              }} className={`p-2 rounded-xl border ${borderLight} hover:bg-white/5 transition-colors`}>
+              }}
+              className={`p-2 rounded-xl border ${borderLight} ${dk ? 'hover:bg-white/5' : 'hover:bg-black/5'} transition-colors`}
+              title="Logout"
+            >
               <LogOut size={14} className={dk ? "text-white/60" : "text-black/60"} />
             </button>
+
+            {/* Mobile: Say My Name popover toggle (sm and below) */}
+            <div className={`sm:hidden flex items-center gap-1.5 px-2 py-1.5 rounded-xl border ${borderLight} ${dk ? 'bg-[#09090b]' : 'bg-black/5'} cursor-pointer`} onClick={toggleSayMyName} title={sayMyName ? 'Stop showing name' : 'Show name'}>
+              <span className={`text-[8px] font-bold uppercase font-mono ${dk ? 'text-zinc-400' : 'text-gray-500'}`}>Anon</span>
+              <div className={`relative w-7 h-4 rounded-full p-0.5 transition-colors ${sayMyName ? 'bg-blue-500' : (dk ? 'bg-zinc-700' : 'bg-gray-300')}`}>
+                <div className={`w-3 h-3 bg-white rounded-full transition-transform shadow-md ${sayMyName ? 'translate-x-3' : 'translate-x-0'}`} />
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -1249,12 +1265,9 @@ function ContributorsDashboard() {
                                 {/* Top edge highlight glow on hover */}
                                 <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                {/* Top row: Badges, Date, and Capped status */}
+                                {/* Top row: Date and Capped status */}
                                 <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
                                   <div className="flex items-center gap-1.5">
-                                    <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase font-mono`}>
-                                      {selectedCategory.name}
-                                    </span>
                                     <span className={`text-[9px] font-mono ${textMuted}`}>
                                       {formatDate(topic.name)}
                                     </span>
@@ -1284,22 +1297,22 @@ function ContributorsDashboard() {
                           {/* All Topics Shortcut Card */}
                           <div
                             onClick={() => setSelectedTopic({ name: "All Topics" })}
-                            className="relative p-4.5 rounded-[20px] border border-dashed border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40 hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden"
+                            className={`relative p-4.5 rounded-[20px] border border-dashed ${dk ? 'border-zinc-800 bg-zinc-950/20 hover:border-sky-500/40' : 'border-black/10 bg-black/[0.02] hover:border-sky-500/40'} hover:bg-[#0077C0]/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden`}
                           >
                             {/* Top edge highlight glow on hover */}
                             <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                             <div className="flex items-center justify-between mb-2.5">
-                              <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase font-mono">
+                              <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-400' : 'bg-black/5 border-black/10 text-gray-500'} uppercase font-mono`}>
                                 ALL
                               </span>
                             </div>
                             <div className="mb-2">
-                              <h4 className="text-xs md:text-[13px] font-bold text-zinc-400 group-hover:text-white leading-tight">
+                              <h4 className={`text-xs md:text-[13px] font-bold ${dk ? 'text-zinc-400 group-hover:text-white' : 'text-gray-400 group-hover:text-gray-700'} leading-tight`}>
                                 All Topics
                               </h4>
                             </div>
-                            <div className="text-[9px] md:text-[10px] font-mono text-zinc-500">
+                            <div className={`text-[9px] md:text-[10px] font-mono ${textMuted}`}>
                               <span>Show everything in {selectedCategory.name}</span>
                             </div>
                           </div>
@@ -1402,7 +1415,7 @@ function ContributorsDashboard() {
                             </div>
 
                             {/* Right side: Action buttons & Language Badge */}
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                               {/* Copy Button */}
                               <button
                                 onClick={(e) => {
@@ -1410,7 +1423,7 @@ function ContributorsDashboard() {
                                   navigator.clipboard.writeText(r.content);
                                   showToast("success", "Copied to clipboard!");
                                 }}
-                                className="p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+                                className={`p-1.5 rounded-lg border ${dk ? 'border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800' : 'border-black/10 bg-black/5 text-gray-500 hover:text-gray-800 hover:bg-black/10'} transition-all cursor-pointer`}
                                 title="Copy content"
                               >
                                 <Copy size={11} />
@@ -1419,7 +1432,7 @@ function ContributorsDashboard() {
                               {/* Edit Button */}
                               <button
                                 onClick={(e) => openEditModal(r, e)}
-                                className={`p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer ${r.isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                                className={`p-1.5 rounded-lg border ${dk ? 'border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:text-white hover:bg-zinc-800' : 'border-black/10 bg-black/5 text-gray-500 hover:text-gray-800 hover:bg-black/10'} transition-all cursor-pointer ${r.isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
                                 title={r.isLocked ? "Locked" : "Edit"}
                               >
                                 <Edit size={11} />
@@ -1430,7 +1443,7 @@ function ContributorsDashboard() {
                                 selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase()) && (
                                 <button
                                   onClick={(e) => handleToggleLock(r, e)}
-                                  className="p-1.5 rounded-lg border border-zinc-850 bg-zinc-900/30 hover:bg-zinc-800 transition-all cursor-pointer"
+                                  className={`p-1.5 rounded-lg border ${dk ? 'border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800' : 'border-black/10 bg-black/5 hover:bg-black/10'} transition-all cursor-pointer`}
                                   title={r.isLocked ? "Unlock" : "Lock"}
                                 >
                                   {r.isLocked ? <Lock size={11} className="text-amber-500" /> : <Unlock size={11} className="text-emerald-500" />}
@@ -1450,7 +1463,7 @@ function ContributorsDashboard() {
 
                               {/* Language Badge */}
                               {r.language && (
-                                <span className="px-2 py-0.5 rounded-[4px] text-[8px] font-bold bg-zinc-900 border border-zinc-850 text-zinc-400 uppercase font-mono">
+                                <span className={`px-2 py-0.5 rounded-[4px] text-[8px] font-bold ${dk ? 'bg-zinc-900 border border-zinc-800 text-zinc-400' : 'bg-black/5 border border-black/10 text-gray-500'} uppercase font-mono`}>
                                   {r.language}
                                 </span>
                               )}
@@ -1474,12 +1487,14 @@ function ContributorsDashboard() {
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
                                       </div>
                                     </div>
-                                    <pre className="text-[10px] md:text-[11px] font-mono p-3 pt-8 overflow-x-auto bg-[#0d1117] text-[#c9d1d9] max-h-60">
-                                      <code>{r.content}</code>
-                                    </pre>
+                                    <div className="overflow-x-auto">
+                                      <pre className="text-[10px] md:text-[11px] font-mono p-3 pt-8 bg-[#0d1117] text-[#c9d1d9] max-h-60 min-w-0">
+                                        <code>{r.content}</code>
+                                      </pre>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center justify-between mt-2 px-1 text-[9px] font-mono text-zinc-500">
-                                    <span>Contributor: <strong className="text-zinc-400">{r.creatorName || "Anonymous"}</strong></span>
+                                  <div className={`flex items-center justify-between mt-2 px-1 text-[9px] font-mono ${textMuted}`}>
+                                    <span>Contributor: <strong className={textSecondary}>{r.creatorName || "Anonymous"}</strong></span>
                                     {r.createdAt && (
                                       <span>Shared: {new Date(r.createdAt).toLocaleDateString()}</span>
                                     )}
@@ -1505,11 +1520,14 @@ function ContributorsDashboard() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className={`fixed bottom-6 right-6 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-2xl text-xs font-bold ${toast.type === "success" ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400" : "bg-red-950/20 border-red-500/30 text-red-400"
-              }`}
+            className={`fixed bottom-6 right-4 md:right-6 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-2xl text-xs font-bold max-w-[calc(100vw-2rem)] ${
+              toast.type === "success"
+                ? (dk ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-800")
+                : (dk ? "bg-red-950/20 border-red-500/30 text-red-400" : "bg-rose-50 border-rose-200 text-rose-800")
+            }`}
           >
-            {toast.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-            <span>{toast.msg}</span>
+            {toast.type === "success" ? <CheckCircle size={14} className={dk ? "" : "text-emerald-600"} /> : <AlertCircle size={14} className={dk ? "" : "text-rose-600"} />}
+            <span className="truncate">{toast.msg}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1523,38 +1541,38 @@ function ContributorsDashboard() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-              className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+              className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} space-y-4`}>
+                <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Hub Resource</h3>
-                  <button onClick={() => setShowAddModal(false)} className="p-1 rounded hover:bg-white/5 border border-white/10">
+                  <button onClick={() => setShowAddModal(false)} className={`p-1 rounded hover:bg-white/5 border ${borderLight}`}>
                     <X size={14} />
                   </button>
                 </div>
 
-                 <form onSubmit={handleAddResource} className="space-y-4">
+                <form onSubmit={handleAddResource} className="space-y-4">
                   {/* Title and Language Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className={resType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Title</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Docker Compose File"
                         value={resTitle}
                         onChange={(e) => setResTitle(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
 
                     {resType === "code" && (
                       <div className="md:col-span-1 space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language</label>
+                        <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Language</label>
                         <select
                           value={resLanguage}
                           onChange={(e) => setResLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                          className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1567,11 +1585,11 @@ function ContributorsDashboard() {
 
                   {allowedFormats.length > 1 && (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Type</label>
                       <select
                         value={resType}
                         onChange={(e) => setResType(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                       >
                         {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
                         {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
@@ -1582,7 +1600,7 @@ function ContributorsDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>
                         {resType === "code" ? "Comments (Optional)" : "Description"}
                       </label>
                       <input
@@ -1590,30 +1608,30 @@ function ContributorsDashboard() {
                         placeholder={resType === "code" ? "e.g. Added error handling helper" : "Short description"}
                         value={resDescription}
                         onChange={(e) => setResDescription(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Tags (Comma-separated)</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Tags (Comma-separated)</label>
                       <input
                         type="text"
                         placeholder="e.g. docker, compose, web"
                         value={resTags}
                         onChange={(e) => setResTags(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Content</label>
+                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Content</label>
                     <textarea
                       required
                       rows={8}
                       placeholder={resType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
                       value={resContent}
                       onChange={(e) => setResContent(e.target.value)}
-                      className="w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none bg-[#09090b] border-zinc-800 text-zinc-200 focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y"
+                      className={`w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y`}
                     />
                   </div>
 
@@ -1622,7 +1640,7 @@ function ContributorsDashboard() {
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
-                      className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-transparent hover:bg-zinc-900/40 text-zinc-300 font-semibold text-xs transition-all duration-300 cursor-pointer"
+                      className={`px-4 py-2.5 rounded-xl border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-zinc-300' : 'text-zinc-700'} font-semibold text-xs transition-all duration-300 cursor-pointer`}
                     >
                       Cancel
                     </button>
@@ -1650,16 +1668,16 @@ function ContributorsDashboard() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-              className="relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border border-zinc-800 bg-[#09090b] shadow-2xl z-10"
+              className={`relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border ${borderLight} ${dk ? 'bg-[#09090b]' : 'bg-white'} shadow-2xl z-10`}
             >
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-base font-black tracking-tight text-white font-outfit uppercase">
+                <h3 className={`text-base font-black tracking-tight ${textPrimary} font-outfit uppercase`}>
                   Create Topic
                 </h3>
                 <button
                   onClick={() => setShowAddTopicModal(false)}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-zinc-800 hover:bg-zinc-950 hover:border-zinc-700 text-white transition-colors"
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}
                 >
                   <X size={16} />
                 </button>
@@ -1668,7 +1686,7 @@ function ContributorsDashboard() {
               {/* Form */}
               <form onSubmit={handleCreateTopic} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
+                  <label className={`text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
                     Topic Date
                   </label>
                   <div className="relative">
@@ -1677,14 +1695,14 @@ function ContributorsDashboard() {
                       required
                       value={topicDate}
                       onChange={(e) => setTopicDate(e.target.value)}
-                      className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white outline-none focus:border-zinc-700 transition-colors"
+                      className={`w-full text-xs rounded-2xl px-4 py-3.5 border ${borderLight} ${inputBg} outline-none`}
                     />
                   </div>
                 </div>
 
                 {/* Optional Title */}
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
+                  <label className={`text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
                     Title (optional)
                   </label>
                   <input
@@ -1692,7 +1710,7 @@ function ContributorsDashboard() {
                     placeholder="e.g. Morning Batch"
                     value={topicTitle}
                     onChange={(e) => setTopicTitle(e.target.value)}
-                    className="w-full text-xs rounded-2xl px-4 py-3.5 border border-zinc-800 bg-[#0c0c0e] text-white placeholder-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+                    className={`w-full text-xs rounded-2xl px-4 py-3.5 border ${borderLight} ${inputBg} placeholder-zinc-500 outline-none`}
                   />
                 </div>
 
@@ -1702,7 +1720,7 @@ function ContributorsDashboard() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2"
+                  className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
                 >
                   <Check size={14} strokeWidth={3} />
                   Create Topic
@@ -1722,17 +1740,17 @@ function ContributorsDashboard() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-              className="relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border border-white/10 bg-black shadow-2xl z-10"
+              className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className="p-6 rounded-t-[28px] sm:rounded-[28px] bg-[#050505] space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} space-y-4`}>
+                <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Edit Hub Resource</h3>
                   <button
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingResource(null);
                     }}
-                    className="p-1 rounded hover:bg-white/5 border border-white/10"
+                    className={`p-1 rounded hover:bg-white/5 border ${borderLight}`}
                   >
                     <X size={14} />
                   </button>
@@ -1742,24 +1760,24 @@ function ContributorsDashboard() {
                   {/* Title and Language Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className={editType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Title</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Title</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Docker Compose File"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
 
                     {editType === "code" && (
                       <div className="md:col-span-1 space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Language</label>
+                        <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Language</label>
                         <select
                           value={editLanguage}
                           onChange={(e) => setEditLanguage(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                          className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1772,11 +1790,11 @@ function ContributorsDashboard() {
 
                   {allowedFormats.length > 1 && (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Resource Type</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Type</label>
                       <select
                         value={editType}
                         onChange={(e) => setEditType(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                       >
                         {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
                         {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
@@ -1789,11 +1807,11 @@ function ContributorsDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
                       <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
+                        <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Collection</label>
                         <select
                           value={editCategory}
                           onChange={(e) => setEditCategory(e.target.value)}
-                          className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                          className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                         >
                           <option value="">-- Select Collection (Optional) --</option>
                           {selectedHub.subCategories.map((cat: string) => (
@@ -1811,7 +1829,7 @@ function ContributorsDashboard() {
                         required
                         value={editReason}
                         onChange={(e) => setEditReason(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none bg-white/5 border-zinc-800 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[right_10px_center] bg-no-repeat pr-8 bg-[length:16px_16px]"
+                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                       >
                         <option value="">Select a reason...</option>
                         <option value="Optimized code">Optimized code</option>
@@ -1824,7 +1842,7 @@ function ContributorsDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>
                         {editType === "code" ? "Comments (Optional)" : "Description"}
                       </label>
                       <input
@@ -1832,30 +1850,30 @@ function ContributorsDashboard() {
                         placeholder={editType === "code" ? "Optional comments" : "Short description"}
                         value={resDescription}
                         onChange={(e) => setResDescription(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Tags (Comma-separated)</label>
+                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Tags (Comma-separated)</label>
                       <input
                         type="text"
                         placeholder="e.g. docker, compose, web"
                         value={editTags}
                         onChange={(e) => setEditTags(e.target.value)}
-                        className="w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none bg-white/5 border-zinc-800"
+                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Content</label>
+                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Content</label>
                     <textarea
                       required
                       rows={8}
                       placeholder={editType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none bg-[#09090b] border-zinc-800 text-zinc-200 focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y"
+                      className={`w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y`}
                     />
                   </div>
 
@@ -1867,7 +1885,7 @@ function ContributorsDashboard() {
                         setShowEditModal(false);
                         setEditingResource(null);
                       }}
-                      className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-transparent hover:bg-zinc-900/40 text-zinc-300 font-semibold text-xs transition-all duration-300 cursor-pointer"
+                      className={`px-4 py-2.5 rounded-xl border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-zinc-300' : 'text-zinc-700'} font-semibold text-xs transition-all duration-300 cursor-pointer`}
                     >
                       Cancel
                     </button>

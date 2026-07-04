@@ -557,7 +557,7 @@ function ResourcesPageContent() {
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
                   <p className={`text-[9px] font-bold uppercase tracking-widest text-[#0077C0] mb-3`}>Step 2 · Select Collection in {selectedHub.title}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {selectedHub.categories.map((cat: any) => {
                       const todayStr = new Date().toISOString().split("T")[0];
                       const hasTodayResource = resources.some(r =>
@@ -782,8 +782,8 @@ function ResourcesPageContent() {
                 /* LAYER 4: Resources */
                 <div className="flex-1 min-h-0 flex flex-col gap-3">
                   {/* Filter toolbar */}
-                  <div className="shrink-0 flex flex-wrap items-center gap-2">
-                    <div className="relative flex-1 min-w-[140px]">
+                  <div className="shrink-0 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="relative w-full sm:flex-1">
                       <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${textSecondary}`} />
                       <input
                         type="text"
@@ -793,26 +793,28 @@ function ResourcesPageContent() {
                         className={`w-full text-xs rounded-xl pl-9 pr-3 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${dk ? "bg-white/5 border-white/10 text-white" : "bg-black/5 border-black/10 text-gray-900"}`}
                       />
                     </div>
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer`}
-                    >
-                      <option value="">All Types</option>
-                      <option value="code">Code</option>
-                      <option value="link">Links</option>
-                      <option value="text">Text</option>
-                    </select>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer`}
-                    >
-                      <option value="recent">Recent</option>
-                      <option value="views">Views</option>
-                      <option value="sends">Sent</option>
-                      <option value="copies">Copied</option>
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer flex-1 sm:flex-none`}
+                      >
+                        <option value="">All Types</option>
+                        <option value="code">Code</option>
+                        <option value="link">Links</option>
+                        <option value="text">Text</option>
+                      </select>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className={`text-xs border ${borderLight} ${dk ? "bg-black/40 text-white" : "bg-white text-gray-900"} rounded-xl px-3 py-2.5 outline-none cursor-pointer flex-1 sm:flex-none`}
+                      >
+                        <option value="recent">Recent</option>
+                        <option value="views">Views</option>
+                        <option value="sends">Sent</option>
+                        <option value="copies">Copied</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Resource list */}
@@ -851,7 +853,7 @@ function ResourcesPageContent() {
                               </div>
 
                               {/* Action Items & Language */}
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                                 {/* Copy Button */}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleCopy(res.id, res.content); }}
@@ -950,7 +952,7 @@ function ResourcesPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 ${
+            className={`fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6 ${
               dk ? "bg-black/85 backdrop-blur-md" : "bg-black/40 backdrop-blur-sm"
             }`}
             onClick={() => selectResource(null)}
@@ -965,7 +967,7 @@ function ResourcesPageContent() {
               } ${
                 readingMode === "fullscreen" 
                   ? "w-screen h-screen rounded-none border-none" 
-                  : "w-full max-w-4xl h-[85vh] rounded-[24px]"
+                  : "w-full max-w-4xl h-[100dvh] md:h-[85vh] rounded-none md:rounded-[24px]"
               }`}
             >
               {/* Floating Fullscreen Controls */}
@@ -1030,7 +1032,7 @@ function ResourcesPageContent() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Zoom In/Out */}
-                    <div className={`flex items-center gap-1 border rounded-xl px-1.5 py-0.5 ${
+                    <div className={`hidden sm:flex items-center gap-1 border rounded-xl px-1.5 py-0.5 ${
                       dk ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
                     }`}>
                       <button
@@ -1063,10 +1065,10 @@ function ResourcesPageContent() {
                       <span className="hidden sm:inline">{copiedId === readingResource.id ? "Copied" : "Copy"}</span>
                     </button>
 
-                    {/* Mode Toggle */}
+                    {/* Mode Toggle - hide on mobile since modal is already full height */}
                     <button
                       onClick={() => setReadingMode("fullscreen")}
-                      className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                      className={`hidden sm:flex p-2 rounded-xl border transition-all items-center gap-1.5 text-xs font-bold ${
                         dk ? "border-white/10 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-800"
                       }`}
                       title="Fullscreen Mode"

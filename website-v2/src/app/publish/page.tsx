@@ -131,8 +131,8 @@ function DashboardContent() {
   /* ── 1. Analytics View ── */
   if (currentView === "analytics") {
     return (
-      <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center justify-between border-b border-white/[0.06] pb-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-6 md:space-y-8">
+        <div className={`flex items-center justify-between border-b ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'} pb-5`}>
           <div>
             <h1 className={`text-3xl font-black font-outfit tracking-tight ${dk ? 'text-white' : 'text-[#111827]'}`}>Analytics</h1>
             <p className={`text-xs mt-1 ${dk ? 'text-white/40' : 'text-[#6B7280]'}`}>Real-time performance metrics for your published resources</p>
@@ -239,7 +239,7 @@ function DashboardContent() {
 
   /* ── 2. Dashboard View ── */
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto space-y-10">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-8">
       {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className={`text-3xl lg:text-4xl font-black font-outfit tracking-tight ${dk ? 'text-white' : 'text-[#111827]'}`}>
@@ -275,7 +275,7 @@ function DashboardContent() {
 
       {/* Stats */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid grid-cols-3 gap-4"
+        className="grid grid-cols-3 gap-2 sm:gap-4"
       >
         {statsList.map((s, i) => (
           <div key={i} className={`p-4 rounded-2xl border text-center ${dk

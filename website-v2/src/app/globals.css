@@ -42,6 +42,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Smooth theme transitions on every element */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+/* But don't transition things that should animate on their own terms */
+.transition-none, [class*="animate-"], .motion-safe\:transition-none {
+  transition: none !important;
+}
+
 .scroll-smooth {
   scroll-behavior: smooth;
 }
@@ -93,13 +104,21 @@ h1, h2, h3 {
     0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Light Theme Overrides (applies when parent has .light class) */
+/* ══════════════════════════════════════════════════════════ */
+/* LIGHT THEME — comprehensive overrides                      */
+/* ══════════════════════════════════════════════════════════ */
 .light {
   background: radial-gradient(circle at 0% 0%, #FAFAF9 0%, #EDEAE0 100%) !important;
   background-color: #EDEAE0 !important;
   color: #1F2937 !important;
 }
 
+/* Remove dark text-shadow in headings */
+.light h1, .light h2, .light h3, .light h4 {
+  text-shadow: none !important;
+}
+
+/* ── Text: white → near-black ── */
 .light .text-white,
 .light .text-white\/90,
 .light .group-hover\:text-white,
@@ -108,44 +127,84 @@ h1, h2, h3 {
   text-shadow: none !important;
 }
 
+/* ── Text: white with opacity → gray ── */
 .light .text-white\/60,
 .light .text-white\/55,
 .light .text-white\/50,
+.light .text-white\/45,
 .light .text-white\/40,
+.light .text-white\/35,
 .light .text-white\/30,
-.light .text-\[\#A0AEC0\],
-.light .text-purple-400,
-.light .text-sky-400,
-.light .text-emerald-400 {
+.light .text-white\/25,
+.light .text-white\/20,
+.light .text-white\/15 {
   color: #4B5563 !important;
 }
 
+/* ── Text: status colors in light mode ── */
+.light .text-purple-400 { color: #7c3aed !important; }
+.light .text-sky-400 { color: #0284c7 !important; }
+.light .text-emerald-400 { color: #059669 !important; }
+
+/* ── Non-standard zinc shades used in contributors ── */
+/* Tailwind doesn't generate zinc-650/450/350 — these are custom approximate values */
+.light .text-zinc-500 { color: #6B7280 !important; }
+.light .text-zinc-600 { color: #4B5563 !important; }
+.light .text-zinc-400 { color: #6B7280 !important; }
+.light .text-zinc-300 { color: #374151 !important; }
+.light .text-zinc-200 { color: #1F2937 !important; }
+.light .text-zinc-100 { color: #111827 !important; }
+
+/* ── Backgrounds: white-alpha → black-alpha ── */
 .light .bg-white\/5,
 .light .bg-white\/10,
 .light .bg-white\/\[0\.02\],
 .light .bg-white\/\[0\.01\],
 .light .bg-white\/\[0\.04\],
 .light .bg-white\/\[0\.08\],
+.light .bg-white\/\[0\.015\],
+.light .bg-white\/\[0\.03\],
 .light .bg-\[rgba\(250\,250\,250\,0\.01\)\] {
   background-color: rgba(0, 0, 0, 0.03) !important;
 }
 
+/* ── Borders: white-alpha → black-alpha ── */
 .light .border-white\/10,
 .light .border-white\/5,
 .light .border-white\/20,
 .light .border-white\/\[0\.08\],
+.light .border-white\/\[0\.04\],
+.light .border-white\/\[0\.06\],
 .light .border-\[rgba\(199\,238\,255\,0\.08\)\] {
-  border-color: rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(0, 0, 0, 0.07) !important;
 }
 
+/* ── Dark zinc backgrounds → white surfaces ── */
 .light .bg-\[\#0b0b0b\],
 .light .bg-\[\#050505\],
-.light .bg-\[\#121212\] {
+.light .bg-\[\#121212\],
+.light .bg-\[\#08080c\],
+.light .bg-\[\#09090b\] {
   background-color: #ffffff !important;
   color: #1F2937 !important;
 }
 
-/* Exclude code editor and dark code blocks from light theme overrides so they stay dark */
+/* ── zinc-900 / zinc-950 / zinc-800 backgrounds → near-white ── */
+.light .bg-zinc-950 { background-color: rgba(0,0,0,0.04) !important; }
+.light .bg-zinc-900 { background-color: rgba(0,0,0,0.05) !important; }
+.light .bg-zinc-900\/40 { background-color: rgba(0,0,0,0.04) !important; }
+.light .bg-zinc-800 { background-color: rgba(0,0,0,0.07) !important; }
+.light .bg-zinc-800\/40 { background-color: rgba(0,0,0,0.04) !important; }
+
+/* ── zinc-900 / zinc-800 borders → light ── */
+.light .border-zinc-900,
+.light .border-zinc-900\/60 { border-color: rgba(0,0,0,0.08) !important; }
+.light .border-zinc-800,
+.light .border-zinc-800\/80 { border-color: rgba(0,0,0,0.10) !important; }
+.light .border-zinc-700,
+.light .border-zinc-700\/20 { border-color: rgba(0,0,0,0.08) !important; }
+
+/* ── Exclude code editor / intentionally-dark blocks ── */
 .light .bg-\[\#0d1117\],
 .light pre:not(.theme-adaptive),
 .light code:not(.theme-adaptive) {
@@ -153,6 +212,7 @@ h1, h2, h3 {
   color: #c9d1d9 !important;
 }
 
+/* ── Form inputs ── */
 .light input,
 .light select,
 .light textarea {
@@ -179,6 +239,7 @@ h1, h2, h3 {
   color: #111827 !important;
 }
 
+/* ── Clay morphic in light ── */
 .light .clay-dark,
 .light .clay-light {
   background: rgba(255, 255, 255, 0.65) !important;
@@ -194,4 +255,12 @@ h1, h2, h3 {
   background-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* ── hover:bg-white/5 etc in light ── */
+.light .hover\:bg-white\/5:hover { background-color: rgba(0,0,0,0.04) !important; }
+.light .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(0,0,0,0.03) !important; }
 
+/* Mobile safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+}

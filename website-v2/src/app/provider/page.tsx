@@ -586,7 +586,7 @@ export default function ProviderOnboardingPage() {
   };
 
   return (
-    <div className={`min-h-screen ${dk ? "bg-[#08080c] text-white" : "bg-[#F5F5F0] text-gray-900"} font-sans flex flex-col justify-between p-6 md:p-12 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden antialiased select-none transition-colors duration-200`}>
+    <div className={`min-h-screen ${dk ? "bg-[#08080c] text-white" : "bg-[#F5F5F0] text-gray-900"} font-sans flex flex-col justify-between p-4 sm:p-6 md:p-12 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden antialiased select-none transition-colors duration-200`}>
       {/* Background Decorative Rings */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         {dk ? (
@@ -686,15 +686,15 @@ export default function ProviderOnboardingPage() {
 
         <div className="flex items-center gap-4">
           {step < 5 && step !== 1.5 && (
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
+            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${
               dk ? "bg-white/5 border-white/10" : "bg-white/50 border-white"
             }`}>
-              <span className={`text-xs font-black uppercase tracking-wider ${dk ? "text-gray-450" : "text-gray-400"}`}>Step {Math.floor(step)} of 4</span>
-              <div className="flex gap-1.5 ml-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider ${dk ? "text-gray-450" : "text-gray-400"}`}>Step {Math.floor(step)} of 4</span>
+              <div className="flex gap-1.5 ml-2">
                 {[1, 2, 3, 4].map((s) => (
                   <div
                     key={s}
-                    className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
+                    className={`h-2 w-2 rounded-full transition-all duration-300 ${
                       s <= Math.floor(step) ? "bg-[#0077C0]" : dk ? "bg-white/20" : "bg-gray-300"
                     }`}
                   />
@@ -1058,7 +1058,7 @@ export default function ProviderOnboardingPage() {
               </div>
 
               {/* Grid-based split layout */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto w-full pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto w-full pt-2">
                 
                 {/* Creator Card */}
                 <div
