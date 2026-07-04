@@ -1397,7 +1397,7 @@ function ContributorsDashboard() {
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-base font-black tracking-tight text-white font-outfit uppercase">
-                  Create Session
+                  Create Topic
                 </h3>
                 <button
                   onClick={() => setShowAddTopicModal(false)}
@@ -1412,7 +1412,7 @@ function ContributorsDashboard() {
                 {/* Collection / Exam Type Dropdown */}
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
-                    Exam Type
+                    Collection Type
                   </label>
                   <div className="relative">
                     <select
@@ -1435,7 +1435,7 @@ function ContributorsDashboard() {
                 {/* Session Date */}
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
-                    Session Date
+                    Topic Date
                   </label>
                   <div className="relative">
                     <input
@@ -1451,7 +1451,7 @@ function ContributorsDashboard() {
                 {/* Optional Title */}
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase font-black tracking-widest text-zinc-500">
-                    Optional Title
+                    Title (optional)
                   </label>
                   <input
                     type="text"
@@ -1471,7 +1471,7 @@ function ContributorsDashboard() {
                   className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2"
                 >
                   <Check size={14} strokeWidth={3} />
-                  Create Session
+                  Create Topic
                 </button>
               </form>
             </motion.div>
