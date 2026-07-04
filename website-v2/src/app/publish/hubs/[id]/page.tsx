@@ -48,6 +48,7 @@ export default function HubManagementPage() {
   const [newCatTypes, setNewCatTypes] = useState<string[]>(["code", "link", "text"]);
   const [newCatLimit, setNewCatLimit] = useState("");
   const [newCatTopicsLimit, setNewCatTopicsLimit] = useState("");
+  const [newCatResourcesPerTopic, setNewCatResourcesPerTopic] = useState("");
 
   const [selectedCatIdx, setSelectedCatIdx] = useState<number | null>(null);
   const [newTopicName, setNewTopicName] = useState("");
@@ -60,6 +61,7 @@ export default function HubManagementPage() {
   const [editCatTypes, setEditCatTypes] = useState<string[]>([]);
   const [editCatLimit, setEditCatLimit] = useState("");
   const [editCatTopicsLimit, setEditCatTopicsLimit] = useState("");
+  const [editCatResourcesPerTopic, setEditCatResourcesPerTopic] = useState("");
 
 
   /* ── Fetch ─────────────────────────────────────── */
@@ -778,14 +780,15 @@ export default function HubManagementPage() {
               {/* Add Category */}
               <div className={`p-4 rounded-xl border space-y-3 ${dk ? 'border-white/[0.04] bg-white/[0.01]' : 'border-black/[0.04] bg-[#F9FAFB]/50'}`}>
                 <p className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Add Collection</p>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input type="text" placeholder="Collection name" value={newCatName} onChange={e => setNewCatName(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-                  <input type="number" placeholder="Resources / Day" value={newCatLimit} onChange={e => setNewCatLimit(e.target.value)}
+                  <input type="number" placeholder="Max Total Resources" value={newCatLimit} onChange={e => setNewCatLimit(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-                  <input type="number" placeholder="Topics / Day" value={newCatTopicsLimit} onChange={e => setNewCatTopicsLimit(e.target.value)}
+                  <input type="number" placeholder="Max Topics (unique dates)" value={newCatTopicsLimit} onChange={e => setNewCatTopicsLimit(e.target.value)}
                     className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
-
+                  <input type="number" placeholder="Resources per Topic" value={newCatResourcesPerTopic} onChange={e => setNewCatResourcesPerTopic(e.target.value)}
+                    className={`rounded-lg px-3 py-2 text-xs outline-none ${inputClass}`} />
                 </div>
                 <div className="flex flex-wrap gap-3 items-center">
                   <span className={`text-[9px] uppercase font-bold tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Types:</span>
@@ -801,14 +804,15 @@ export default function HubManagementPage() {
                 <button type="button" onClick={() => {
                   const n = newCatName.trim();
                   if (n && !settingsCategories.some(c => c.name.toLowerCase() === n.toLowerCase())) {
-                    const lv = parseInt(newCatLimit), tv = parseInt(newCatTopicsLimit);
+                    const lv = parseInt(newCatLimit), tv = parseInt(newCatTopicsLimit), rv = parseInt(newCatResourcesPerTopic);
                     setSettingsCategories([...settingsCategories, {
                       name: n, allowedTypes: newCatTypes,
                       limit: isNaN(lv) ? undefined : lv,
                       topicsLimit: isNaN(tv) ? undefined : tv,
+                      resourcesPerTopic: isNaN(rv) ? undefined : rv,
                       topics: []
                     }]);
-                    setNewCatName(""); setNewCatLimit(""); setNewCatTopicsLimit("");
+                    setNewCatName(""); setNewCatLimit(""); setNewCatTopicsLimit(""); setNewCatResourcesPerTopic("");
                     setNewCatTypes(["code", "link", "text"]);
                   }
                 }} className={`w-full py-2 rounded-lg text-xs font-bold transition-all ${dk
@@ -834,8 +838,9 @@ export default function HubManagementPage() {
                         <div className="min-w-0">
                           <span className={`text-xs font-bold block truncate ${dk ? 'text-white' : 'text-[#111827]'}`}>{cat.name}</span>
                           <span className={`text-[9px] font-mono block truncate ${dk ? 'text-white/30' : 'text-[#9CA3AF]'}`}>
-                            Types: {cat.allowedTypes?.join(", ")} | Resources/day: {cat.limit ?? "∞"}
-                            {cat.topicsLimit != null ? ` | Topics/day: ${cat.topicsLimit}` : ""}
+                            Types: {cat.allowedTypes?.join(", ")} | Total limit: {cat.limit ?? "∞"}
+                            {cat.topicsLimit != null ? ` | Max topics: ${cat.topicsLimit}` : ""}
+                            {cat.resourcesPerTopic != null ? ` | Per topic: ${cat.resourcesPerTopic}` : ""}
 
                           </span>
                         </div>
@@ -858,7 +863,7 @@ export default function HubManagementPage() {
                               setEditCatTypes(cat.allowedTypes || []);
                               setEditCatLimit(cat.limit != null ? String(cat.limit) : "");
                               setEditCatTopicsLimit(cat.topicsLimit != null ? String(cat.topicsLimit) : "");
-
+                              setEditCatResourcesPerTopic(cat.resourcesPerTopic != null ? String(cat.resourcesPerTopic) : "");
                             }
                           }} className={`p-1 rounded-lg ${
                             editCatIdx === idx
@@ -901,7 +906,7 @@ export default function HubManagementPage() {
                           {/* Numeric limits */}
                           <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-1">
-                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Resources / Day</label>
+                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Total Limit</label>
                               <input
                                 type="number" placeholder="∞" value={editCatLimit}
                                 onChange={e => setEditCatLimit(e.target.value)}
@@ -909,14 +914,21 @@ export default function HubManagementPage() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Topics / Day</label>
+                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Max Topics</label>
                               <input
                                 type="number" placeholder="∞" value={editCatTopicsLimit}
                                 onChange={e => setEditCatTopicsLimit(e.target.value)}
                                 className={`w-full rounded-lg px-2 py-1.5 text-[10px] outline-none ${inputClass}`}
                               />
                             </div>
-
+                            <div className="space-y-1">
+                              <label className={`text-[8px] font-bold uppercase tracking-wider ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>Per Topic</label>
+                              <input
+                                type="number" placeholder="∞" value={editCatResourcesPerTopic}
+                                onChange={e => setEditCatResourcesPerTopic(e.target.value)}
+                                className={`w-full rounded-lg px-2 py-1.5 text-[10px] outline-none ${inputClass}`}
+                              />
+                            </div>
                           </div>
 
                           {/* Allowed types */}
@@ -948,7 +960,7 @@ export default function HubManagementPage() {
                                 allowedTypes: editCatTypes,
                                 limit: editCatLimit !== "" ? parseInt(editCatLimit) : undefined,
                                 topicsLimit: editCatTopicsLimit !== "" ? parseInt(editCatTopicsLimit) : undefined,
-
+                                resourcesPerTopic: editCatResourcesPerTopic !== "" ? parseInt(editCatResourcesPerTopic) : undefined,
                               };
                               setSettingsCategories(updated);
                               setEditCatIdx(null);

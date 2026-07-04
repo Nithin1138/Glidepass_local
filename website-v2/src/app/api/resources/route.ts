@@ -128,35 +128,57 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Check Category Resource Limit
+          // Check Category Overall Resource Limit
           if (catConfig.limit !== undefined && catConfig.limit !== null) {
             const count = allResources.filter(r => r.hubId === hubId && !r.isDeleted && (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase())).length;
             if (count >= catConfig.limit) {
-              return NextResponse.json({ error: `Upload limit reached for category "${category}". Maximum allowed: ${catConfig.limit}` }, { status: 429 });
+              return NextResponse.json({ error: `Upload limit reached for collection "${category}". Maximum allowed: ${catConfig.limit}` }, { status: 429 });
             }
           }
 
-          // Check Category Daily Resource Limit (using topicsLimit from DB / dailyLimit)
-          const dailyLimit = catConfig.topicsLimit !== undefined ? catConfig.topicsLimit : catConfig.dailyLimit;
-          if (dailyLimit !== undefined && dailyLimit !== null) {
-            const dailyCount = allResources.filter(r => 
-              r.hubId === hubId && 
-              !r.isDeleted && 
-              (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
-              r.topic && topic && r.topic.trim().toLowerCase() === topic.trim().toLowerCase()
-            ).length;
-            if (dailyCount >= dailyLimit) {
-              return NextResponse.json({ error: `Daily upload limit reached for category "${category}". Maximum allowed per day: ${dailyLimit}` }, { status: 429 });
+          // Check Topics Limit: max number of unique topic-dates allowed in this collection
+          const topicsMax = catConfig.topicsLimit;
+          if (topic && topicsMax !== undefined && topicsMax !== null) {
+            const catResources = allResources.filter(r =>
+              r.hubId === hubId &&
+              !r.isDeleted &&
+              (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase())
+            );
+            const existingTopics = new Set(catResources.map(r => r.topic?.toLowerCase()).filter(Boolean));
+            const incomingTopicLower = topic.trim().toLowerCase();
+            // If this topic doesn't exist yet and we're already at the max, reject
+            if (!existingTopics.has(incomingTopicLower) && existingTopics.size >= topicsMax) {
+              return NextResponse.json({ error: `Maximum topics limit reached for collection "${category}". Only ${topicsMax} unique topic dates allowed.` }, { status: 429 });
             }
           }
 
-          // Check Topic Resource Limit
-          if (topic && catConfig.topics) {
-            const topicConfig = catConfig.topics.find(t => t.name.toLowerCase() === topic.trim().toLowerCase());
-            if (topicConfig && topicConfig.limit !== undefined && topicConfig.limit !== null) {
-              const count = allResources.filter(r => r.hubId === hubId && !r.isDeleted && (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) && r.topic?.toLowerCase() === topic.trim().toLowerCase()).length;
-              if (count >= topicConfig.limit) {
-                return NextResponse.json({ error: `Upload limit reached for topic "${topic}" in category "${category}". Maximum allowed: ${topicConfig.limit}` }, { status: 429 });
+          // Check Per-Topic Resource Limit
+          if (topic) {
+            // Priority: individual topic.limit > collection-level resourcesPerTopic
+            let perTopicLimit: number | undefined = undefined;
+
+            // Check individual topic config limit first
+            if (catConfig.topics) {
+              const topicConfig = catConfig.topics.find((t: any) => t.name.toLowerCase() === topic.trim().toLowerCase());
+              if (topicConfig && topicConfig.limit !== undefined && topicConfig.limit !== null) {
+                perTopicLimit = topicConfig.limit;
+              }
+            }
+
+            // Fallback to collection-level resourcesPerTopic
+            if (perTopicLimit === undefined && catConfig.resourcesPerTopic !== undefined && catConfig.resourcesPerTopic !== null) {
+              perTopicLimit = catConfig.resourcesPerTopic;
+            }
+
+            if (perTopicLimit !== undefined) {
+              const topicCount = allResources.filter(r =>
+                r.hubId === hubId &&
+                !r.isDeleted &&
+                (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase()) &&
+                r.topic?.toLowerCase() === topic.trim().toLowerCase()
+              ).length;
+              if (topicCount >= perTopicLimit) {
+                return NextResponse.json({ error: `Upload limit reached for topic "${topic}" in collection "${category}". Maximum resources per topic: ${perTopicLimit}` }, { status: 429 });
               }
             }
           }

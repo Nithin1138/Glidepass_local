@@ -571,8 +571,7 @@ function ContributorsDashboard() {
     if (selectedTopic) {
       const todayStr = new Date().toISOString().split("T")[0];
       if (selectedTopic.name === "All Topics") {
-        // Exclude today's content from All Topics
-        if (r.topic === todayStr) return false;
+        // Show all resources in collection (including today)
         return true;
       }
       if (r.topic?.toLowerCase() !== selectedTopic.name.toLowerCase()) return false;
@@ -862,13 +861,10 @@ function ContributorsDashboard() {
                   onClick={() => {
                     const allowed = selectedCategory?.allowedTypes || selectedHub?.allowedTypes || ["code", "link", "text"];
                     setResType(allowed[0] || "code");
-                    if (selectedCategory && selectedHub?.subCategories) {
-                      const matchedSubCat = selectedHub.subCategories.find(
-                        (sc: string) => sc.toLowerCase() === selectedCategory.name.toLowerCase()
-                      );
-                      if (matchedSubCat) {
-                        setResSubCategory(matchedSubCat);
-                      }
+                    if (selectedCategory) {
+                      setResSubCategory(selectedCategory.name);
+                    } else if (selectedHub?.categories && selectedHub.categories.length > 0) {
+                      setResSubCategory(selectedHub.categories[0].name);
                     }
                     if (selectedTopic && selectedTopic.name && /^\d{4}-\d{2}-\d{2}$/.test(selectedTopic.name)) {
                       setResDate(selectedTopic.name);
@@ -1220,7 +1216,7 @@ function ContributorsDashboard() {
                     )
                   )}
 
-                  {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
+                  {selectedHub?.categories && selectedHub.categories.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Collection</label>
@@ -1229,14 +1225,14 @@ function ContributorsDashboard() {
                           onChange={(e) => setResSubCategory(e.target.value)}
                           className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none bg-white/5 border-white/10 cursor-pointer`}
                         >
-                          <option value="">-- Select Collection (Optional) --</option>
-                          {selectedHub.subCategories.map((cat: string) => (
-                            <option key={cat} value={cat}>{cat}</option>
+                          <option value="">-- Select Collection --</option>
+                          {selectedHub.categories.map((cat: any) => (
+                            <option key={cat.name} value={cat.name}>{cat.name}</option>
                           ))}
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date</label>
+                        <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date (Topic)</label>
                         <input
                           type="date"
                           value={resDate}
@@ -1247,7 +1243,7 @@ function ContributorsDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date</label>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-white/60">Date (Topic)</label>
                       <input
                         type="date"
                         value={resDate}

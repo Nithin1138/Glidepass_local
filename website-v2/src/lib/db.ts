@@ -527,6 +527,7 @@ export interface CategoryConfig {
   topics?: TopicConfig[];
   topicsLimit?: number;
   dailyLimit?: number;
+  resourcesPerTopic?: number;
 }
 
 export interface Resource {
