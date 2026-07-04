@@ -803,11 +803,14 @@ function ContributorsDashboard() {
 
   const cardBg = dk ? "bg-[#08080c]" : "bg-[#F4F6F8]";
   const clayBg = dk ? "clay-dark" : "clay-light";
-  const textPrimary = dk ? "text-white" : "text-black";
-  const textSecondary = dk ? "text-white/60" : "text-black/60";
-  const textMuted = dk ? "text-white/40" : "text-black/40";
+  const textPrimary = dk ? "text-white" : "text-zinc-900";
+  const textSecondary = dk ? "text-white/60" : "text-zinc-650";
+  const textMuted = dk ? "text-white/40" : "text-zinc-450";
   const borderLight = dk ? "border-white/10" : "border-black/10";
-  const inputBg = dk ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10";
+  const inputBg = dk ? "bg-white/5 border-white/10 text-zinc-100" : "bg-white border-black/10 text-zinc-900";
+  const cardInnerBg = dk ? "bg-[#09090b]" : "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.02)]";
+  const cardInnerHover = dk ? "hover:border-zinc-800" : "hover:border-zinc-350 hover:shadow-[0_8px_20px_rgba(0,0,0,0.05)]";
+  const cardBorder = dk ? "border-zinc-900" : "border-black/[0.08]";
 
   // ─── UNAUTHENTICATED STATE — redirect to /provider ───
   if (effectiveStatus === "unauthenticated") {
@@ -907,7 +910,7 @@ function ContributorsDashboard() {
       {/* Main Content Area */}
       <main className="flex-1 min-h-0 flex flex-col relative w-full max-w-7xl mx-auto px-3 md:px-12 py-4 md:py-6 overflow-hidden">
         {selectedHub && (
-          <div className="shrink-0 mb-5 pb-4 border-b border-zinc-900/60 relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className={`shrink-0 mb-5 pb-4 border-b ${borderLight} relative flex flex-col md:flex-row md:items-center md:justify-between gap-4`}>
             {/* Left side: Breadcrumb navigation pathway */}
             <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-mono tracking-wide text-zinc-500 uppercase">
               <button
@@ -926,7 +929,7 @@ function ContributorsDashboard() {
 
               <button
                 onClick={() => { setSelectedCategory(null); setSelectedTopic(null); }}
-                className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedCategory ? 'text-white font-bold' : ''}`}
+                className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedCategory ? `${textPrimary} font-bold` : ''}`}
               >
                 {selectedHub.title}
               </button>
@@ -936,7 +939,7 @@ function ContributorsDashboard() {
                   <svg className="w-2.5 h-2.5 text-zinc-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                   <button
                     onClick={() => setSelectedTopic(null)}
-                    className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedTopic ? 'text-white font-bold' : ''}`}
+                    className={`hover:text-sky-400 transition-colors cursor-pointer ${!selectedTopic ? `${textPrimary} font-bold` : ''}`}
                   >
                     {selectedCategory.name}
                   </button>
@@ -946,7 +949,7 @@ function ContributorsDashboard() {
               {selectedTopic && (
                 <>
                   <svg className="w-2.5 h-2.5 text-zinc-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                  <span className="text-white font-bold px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800/80">
+                  <span className={`${textPrimary} font-bold px-2 py-0.5 rounded-md ${dk ? 'bg-zinc-900 border-zinc-800/80' : 'bg-black/5 border-black/10'}`}>
                     {(() => {
                       const hasCustomTitle = selectedTopic.title && selectedTopic.title !== selectedTopic.name;
                       return selectedTopic.name === "All Topics" 
@@ -1148,18 +1151,18 @@ function ContributorsDashboard() {
                         <div
                           key={cat.name}
                           onClick={() => { setSelectedCategory(cat); setSelectedTopic(null); }}
-                          className="relative p-5 md:p-6 rounded-[22px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex items-center justify-between min-h-[90px] overflow-hidden"
+                          className={`relative p-5 md:p-6 rounded-[22px] border ${cardBorder} ${cardInnerBg} ${cardInnerHover} transition-all duration-300 cursor-pointer group flex items-center justify-between min-h-[90px] overflow-hidden`}
                         >
                           {/* Top edge highlight glow on hover */}
                           <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                           <div className="space-y-2 flex-1 min-w-0">
-                            <h4 className="text-sm md:text-base font-black uppercase tracking-wider text-white font-outfit leading-tight truncate">
+                            <h4 className={`text-sm md:text-base font-black uppercase tracking-wider ${textPrimary} font-outfit leading-tight truncate`}>
                               {cat.name}
                             </h4>
-                            <p className="text-[10px] md:text-xs font-mono text-[#52525b] flex items-center gap-1.5">
+                            <p className={`text-[10px] md:text-xs font-mono ${textSecondary} flex items-center gap-1.5`}>
                               <span>{sessionsCount} Topic{sessionsCount !== 1 ? 's' : ''}</span>
-                              <span className="text-[#3f3f46]">•</span>
+                              <span className="opacity-45">•</span>
                               <span>{resourcesCount} Resource{resourcesCount !== 1 ? 's' : ''}</span>
                             </p>
                           </div>
@@ -1241,7 +1244,7 @@ function ContributorsDashboard() {
                               <div
                                 key={topic.name}
                                 onClick={() => setSelectedTopic({ name: topic.name, limit: topic.limit })}
-                                className="relative p-4.5 rounded-[20px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden"
+                                className={`relative p-4.5 rounded-[20px] border ${cardBorder} ${cardInnerBg} ${cardInnerHover} transition-all duration-300 cursor-pointer group flex flex-col justify-between h-[112px] overflow-hidden`}
                               >
                                 {/* Top edge highlight glow on hover */}
                                 <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1249,10 +1252,10 @@ function ContributorsDashboard() {
                                 {/* Top row: Badges, Date, and Capped status */}
                                 <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase font-mono">
+                                    <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase font-mono`}>
                                       {selectedCategory.name}
                                     </span>
-                                    <span className="text-[9px] font-mono text-zinc-500">
+                                    <span className={`text-[9px] font-mono ${textMuted}`}>
                                       {formatDate(topic.name)}
                                     </span>
                                   </div>
@@ -1265,13 +1268,13 @@ function ContributorsDashboard() {
 
                                 {/* Middle row: Title */}
                                 <div className="mb-2">
-                                  <h4 className="text-xs md:text-[13px] font-bold text-white leading-tight truncate">
+                                  <h4 className={`text-xs md:text-[13px] font-bold ${textPrimary} leading-tight truncate`}>
                                     {displayTitle}
                                   </h4>
                                 </div>
 
                                 {/* Bottom row: count */}
-                                <div className="text-[9px] md:text-[10px] font-mono text-zinc-500">
+                                <div className={`text-[9px] md:text-[10px] font-mono ${textSecondary}`}>
                                   <span>{count} Resource{count !== 1 ? 's' : ''} Contributed</span>
                                 </div>
                               </div>
@@ -1311,15 +1314,15 @@ function ContributorsDashboard() {
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 flex flex-col gap-4">
                   {/* Topic Detail Header */}
                   {selectedTopic && (
-                    <div className="relative shrink-0 p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] flex items-center justify-between select-none flex-wrap w-full overflow-hidden">
+                    <div className={`relative shrink-0 p-4 rounded-[20px] border ${cardBorder} ${cardInnerBg} flex items-center justify-between select-none flex-wrap w-full overflow-hidden`}>
                       {/* Permanent top edge glow line highlight */}
                       <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0] to-transparent" />
                       <div className="flex items-center gap-3.5 flex-wrap w-full">
                         {(() => {
                           if (selectedTopic.name === "All Topics") {
                             return (
-                              <div className="flex items-center gap-2 flex-wrap text-zinc-500 font-mono text-[10px]">
-                                <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase">
+                              <div className={`flex items-center gap-2 flex-wrap ${textSecondary} font-mono text-[10px]`}>
+                                <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase`}>
                                   {selectedCategory.name}
                                 </span>
                                 <span>•</span>
@@ -1336,8 +1339,8 @@ function ContributorsDashboard() {
                           const isCapped = limit !== undefined && limit !== null && filteredResources.length >= limit;
 
                           return (
-                            <div className="flex items-center gap-2 flex-wrap text-zinc-500 font-mono text-[10px] w-full">
-                              <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase">
+                            <div className={`flex items-center gap-2 flex-wrap ${textSecondary} font-mono text-[10px] w-full`}>
+                              <span className={`px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded ${dk ? 'bg-zinc-800/40 border-zinc-700/20 text-zinc-350' : 'bg-black/5 border-black/10 text-zinc-600'} uppercase`}>
                                 {selectedCategory.name}
                               </span>
                               <span>•</span>
@@ -1383,7 +1386,7 @@ function ContributorsDashboard() {
                         <div
                           key={r.id}
                           onClick={() => setExpandedResId(expandedResId === r.id ? null : r.id)}
-                          className="relative p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] hover:border-zinc-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between overflow-hidden"
+                          className={`relative p-4 rounded-[20px] border ${cardBorder} ${cardInnerBg} ${cardInnerHover} transition-all duration-300 cursor-pointer group flex flex-col justify-between overflow-hidden`}
                         >
                           {/* Top edge highlight glow on hover */}
                           <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1391,15 +1394,15 @@ function ContributorsDashboard() {
                           <div className="flex items-center justify-between gap-3 w-full">
                             {/* Left side: Circular index and Title/Description */}
                             <div className="flex items-center gap-3.5 min-w-0">
-                              <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-zinc-950 border border-zinc-900 text-zinc-500 text-xs font-bold font-mono">
+                              <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full ${dk ? 'bg-zinc-950 border-zinc-900 text-zinc-500' : 'bg-black/5 border-black/10 text-zinc-600'} text-xs font-bold font-mono`}>
                                 {idx + 1}
                               </span>
                               <div className="flex flex-col min-w-0">
-                                <h4 className="text-sm font-bold text-white leading-tight truncate">
+                                <h4 className={`text-sm font-bold ${textPrimary} leading-tight truncate`}>
                                   {r.title}
                                 </h4>
                                 {r.description && r.description.trim() !== "" && (
-                                  <p className="text-[10px] font-mono text-zinc-500 mt-0.5 leading-tight truncate">
+                                  <p className={`text-[10px] font-mono ${textSecondary} mt-0.5 leading-tight truncate`}>
                                     {r.description}
                                   </p>
                                 )}
