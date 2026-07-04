@@ -1043,9 +1043,9 @@ function ContributorsDashboard() {
                               {cat.name}
                             </h4>
                             <p className="text-[10px] md:text-xs font-mono text-[#52525b] flex items-center gap-1.5">
-                              <span>{sessionsCount} Session{sessionsCount !== 1 ? 's' : ''}</span>
+                              <span>{sessionsCount} Topic{sessionsCount !== 1 ? 's' : ''}</span>
                               <span className="text-[#3f3f46]">•</span>
-                              <span>{resourcesCount} Code{resourcesCount !== 1 ? 's' : ''}</span>
+                              <span>{resourcesCount} Resource{resourcesCount !== 1 ? 's' : ''}</span>
                             </p>
                           </div>
                           
