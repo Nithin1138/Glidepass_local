@@ -1206,36 +1206,36 @@ function ContributorsDashboard() {
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 flex flex-col gap-4">
                   {/* Topic Detail Header */}
                   {selectedTopic && (
-                    <div className="shrink-0 flex items-center gap-2.5 pb-2 border-b border-zinc-900 select-none flex-wrap">
-                      <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider font-outfit">
-                        {selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name))}
-                      </h2>
-                      {selectedTopic.name !== "All Topics" && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-300 uppercase font-mono">
-                            {selectedCategory.name}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {formatDate(selectedTopic.name)}
-                          </span>
-                          <span className="text-zinc-700 font-mono">•</span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {filteredResources.length} Resource{filteredResources.length !== 1 ? 's' : ''}
-                          </span>
-                          {(() => {
-                            let limit = selectedTopic.limit;
-                            if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
-                              limit = selectedCategory.resourcesPerTopic;
-                            }
-                            const isCapped = limit !== undefined && limit !== null && filteredResources.length >= limit;
-                            return isCapped ? (
-                              <span className="px-2 py-0.5 text-[8px] font-bold uppercase rounded-full border border-red-950/20 bg-red-950/20 text-red-500 font-mono">
-                                Capped (Max {limit})
-                              </span>
-                            ) : null;
-                          })()}
-                        </div>
-                      )}
+                    <div className="shrink-0 p-4 rounded-[20px] border border-zinc-900 bg-[#09090b] flex items-center justify-between select-none flex-wrap w-full">
+                      <div className="flex items-center gap-3.5 flex-wrap">
+                        <h2 className="text-sm font-bold text-white uppercase tracking-wide">
+                          {selectedTopic.name === "All Topics" ? "All Topics" : (selectedTopic.title || formatDate(selectedTopic.name))}
+                        </h2>
+                        {selectedTopic.name !== "All Topics" && (
+                          <div className="flex items-center gap-2 flex-wrap text-zinc-500 font-mono text-[10px]">
+                            <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase">
+                              {selectedCategory.name}
+                            </span>
+                            <span>{formatDate(selectedTopic.name)}</span>
+                            <span>•</span>
+                            <span>
+                              {filteredResources.length} Resource{filteredResources.length !== 1 ? 's' : ''}
+                            </span>
+                            {(() => {
+                              let limit = selectedTopic.limit;
+                              if (limit === undefined && selectedCategory.resourcesPerTopic !== undefined) {
+                                limit = selectedCategory.resourcesPerTopic;
+                              }
+                              const isCapped = limit !== undefined && limit !== null && filteredResources.length >= limit;
+                              return isCapped ? (
+                                <span className="px-2 py-0.5 text-[8px] font-bold uppercase rounded-full border border-red-950/20 bg-red-950/20 text-red-500">
+                                  Capped (Max {limit})
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
