@@ -1229,8 +1229,12 @@ function ContributorsDashboard() {
                             <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider rounded bg-zinc-800/40 border border-zinc-700/20 text-zinc-350 uppercase">
                               {selectedCategory.name}
                             </span>
-                            <span>{formatDate(selectedTopic.name)}</span>
-                            <span>•</span>
+                            {selectedTopic.title && (
+                              <>
+                                <span>{formatDate(selectedTopic.name)}</span>
+                                <span>•</span>
+                              </>
+                            )}
                             <span>
                               {filteredResources.length} Resource{filteredResources.length !== 1 ? 's' : ''}
                             </span>
