@@ -1203,14 +1203,14 @@ function ContributorsDashboard() {
                           {/* Top edge highlight glow on hover */}
                           <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                          <div className="space-y-2 flex-1 min-w-0">
-                            <h4 className={`text-sm md:text-base font-black uppercase tracking-wider ${textPrimary} font-outfit leading-tight truncate`}>
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <h4 className={`text-base md:text-lg font-black uppercase tracking-tight ${textPrimary} leading-tight truncate`}>
                               {cat.name}
                             </h4>
-                            <p className={`text-[10px] md:text-xs font-mono ${textSecondary} flex items-center gap-1.5`}>
-                              <span>{sessionsCount} Topic{sessionsCount !== 1 ? 's' : ''}</span>
+                            <p className={`text-[10px] md:text-xs font-mono ${textMuted} flex items-center gap-1.5`}>
+                              <span>{sessionsCount} Session{sessionsCount !== 1 ? 's' : ''}</span>
                               <span className="opacity-45">•</span>
-                              <span>{resourcesCount} Resource{resourcesCount !== 1 ? 's' : ''}</span>
+                              <span>{resourcesCount} Code{resourcesCount !== 1 ? 's' : ''}</span>
                             </p>
                           </div>
                           
