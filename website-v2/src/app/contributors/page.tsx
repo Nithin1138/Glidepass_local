@@ -1419,7 +1419,7 @@ function ContributorsDashboard() {
                           {/* Top edge highlight glow on hover */}
                           <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                          <div className="flex items-center justify-between gap-3 w-full">
                             {/* Left side: Circular index and Title/Description */}
                             <div className="flex items-center gap-3.5 min-w-0">
                               <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full border ${dk ? 'bg-zinc-900 border-zinc-800/80 text-zinc-400' : 'bg-black/5 border-black/10 text-zinc-650'} text-xs font-extrabold font-mono`}>
