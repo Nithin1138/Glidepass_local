@@ -209,33 +209,37 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        <div className={`flex items-center ${isExpanded ? 'gap-2 px-1' : 'flex-col gap-2'}`}>
-          <button onClick={() => {
-            const next = dk ? "light" : "dark";
-            setTheme(next);
-            localStorage.setItem("glidepass-theme", next);
-          }}
-            className={`${isExpanded ? 'flex-1' : 'w-full'} flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold transition-all ${dk
-              ? 'bg-white/[0.04] hover:bg-white/[0.06] text-white/50'
-              : 'bg-black/[0.03] hover:bg-black/[0.05] text-[#6B7280]'
-            }`}
-            title={dk ? "Switch to Light" : "Switch to Dark"}
-          >
-            {dk ? <Sun size={13} /> : <Moon size={13} />}
-            <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[60px]' : 'opacity-0 max-w-0'}`}>
-              {dk ? "Light" : "Dark"}
-            </span>
-          </button>
-          <button onClick={handleLogout}
-            className={`hidden lg:flex items-center justify-center gap-2 py-2 ${isExpanded ? 'px-3.5' : 'w-full'} rounded-xl text-[11px] font-bold transition-all ${dk
-              ? 'hover:bg-red-500/10 text-white/30 hover:text-red-400'
-              : 'hover:bg-red-50 text-[#9CA3AF] hover:text-red-500'
-            }`}
-            title="Logout"
-          >
-            <LogOut size={13} />
-          </button>
-        </div>
+        {/* Theme Toggle */}
+        <button onClick={() => {
+          const next = dk ? "light" : "dark";
+          setTheme(next);
+          localStorage.setItem("glidepass-theme", next);
+        }}
+          className={`w-full flex items-center ${isExpanded ? 'px-3.5 py-2.5 justify-start gap-3' : 'justify-center py-2.5'} rounded-xl text-[13px] font-medium transition-all ${dk
+            ? 'bg-white/[0.04] hover:bg-white/[0.06] text-white/50'
+            : 'bg-black/[0.03] hover:bg-black/[0.05] text-[#6B7280]'
+          }`}
+          title={dk ? "Switch to Light" : "Switch to Dark"}
+        >
+          {dk ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
+          <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
+            {dk ? "Light Mode" : "Dark Mode"}
+          </span>
+        </button>
+
+        {/* Logout */}
+        <button onClick={handleLogout}
+          className={`w-full flex items-center ${isExpanded ? 'px-3.5 py-2.5 justify-start gap-3' : 'justify-center py-2.5'} rounded-xl text-[13px] font-medium transition-all ${dk
+            ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400'
+            : 'bg-red-50 hover:bg-red-100 text-red-650'
+          }`}
+          title="Logout"
+        >
+          <LogOut size={16} className="shrink-0" />
+          <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
+            Logout
+          </span>
+        </button>
       </div>
     </div>
   );
@@ -301,13 +305,11 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
                   : 'bg-white border-black/[0.06]'
                 }`}
               >
-                <div className={`flex items-center justify-end p-3 border-b ${dk ? 'border-white/[0.04]' : 'border-black/[0.04]'}`}>
-                  <button onClick={() => setMobileOpen(false)}
-                    className={`p-1.5 rounded-lg ${dk ? 'hover:bg-white/5 text-white/40' : 'hover:bg-black/5 text-[#9CA3AF]'}`}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
+                <button onClick={() => setMobileOpen(false)}
+                  className={`absolute top-4 right-4 z-50 p-2 rounded-xl border ${dk ? 'border-white/10 hover:bg-white/5 text-white/60' : 'border-black/10 hover:bg-black/5 text-[#9CA3AF]'}`}
+                >
+                  <X size={16} />
+                </button>
                 {renderSidebar(true)}
               </motion.aside>
             </>
