@@ -1008,11 +1008,14 @@ function ContributorsDashboard() {
                       setShowAddModal(true);
                     }
                   }}
-                  className={`flex items-center justify-center gap-1.5 px-4 h-[34px] rounded-xl text-white font-bold text-xs shadow-lg transition-all whitespace-nowrap ${
+                  className={`flex items-center justify-center gap-1.5 px-4 h-[34px] rounded-xl font-bold text-xs shadow-sm transition-all whitespace-nowrap shrink-0 border ${
                     isAddDisabled 
-                      ? 'opacity-40 cursor-not-allowed bg-zinc-800 border border-zinc-700/20' 
-                      : 'active:scale-[0.98] cursor-pointer'
-                  } shrink-0`}
+                      ? (dk 
+                          ? 'bg-zinc-900/80 text-zinc-650 border-zinc-800/80 cursor-not-allowed' 
+                          : 'bg-zinc-200/70 text-zinc-450 border-zinc-300/50 cursor-not-allowed'
+                        ) 
+                      : 'text-white active:scale-[0.98] cursor-pointer border-transparent'
+                  }`}
                   style={{ background: isAddDisabled ? undefined : P.blue }}
                 >
                   <Plus size={13} />
