@@ -1430,7 +1430,7 @@ function ContributorsDashboard() {
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
                             {/* Left side: Circular index and Title/Description */}
                             <div className="flex items-center gap-3.5 min-w-0">
-                              <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full ${dk ? 'bg-zinc-950 border-zinc-900 text-zinc-500' : 'bg-black/5 border-black/10 text-zinc-600'} text-xs font-bold font-mono`}>
+                              <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full border ${dk ? 'bg-zinc-900 border-zinc-800/80 text-zinc-400' : 'bg-black/5 border-black/10 text-zinc-650'} text-xs font-extrabold font-mono`}>
                                 {idx + 1}
                               </span>
                               <div className="flex flex-col min-w-0">
