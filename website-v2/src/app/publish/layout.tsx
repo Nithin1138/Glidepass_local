@@ -227,7 +227,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
             </span>
           </button>
           <button onClick={handleLogout}
-            className={`flex items-center justify-center gap-2 py-2 ${isExpanded ? 'px-3.5' : 'w-full'} rounded-xl text-[11px] font-bold transition-all ${dk
+            className={`hidden lg:flex items-center justify-center gap-2 py-2 ${isExpanded ? 'px-3.5' : 'w-full'} rounded-xl text-[11px] font-bold transition-all ${dk
               ? 'hover:bg-red-500/10 text-white/30 hover:text-red-400'
               : 'hover:bg-red-50 text-[#9CA3AF] hover:text-red-500'
             }`}
