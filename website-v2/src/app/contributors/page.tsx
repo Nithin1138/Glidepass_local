@@ -1764,9 +1764,11 @@ function ContributorsDashboard() {
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} max-h-[85vh] overflow-y-auto space-y-4 pb-12 sm:pb-6`}>
+              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-black" : "bg-white"} space-y-4 pb-8 sm:pb-6`}>
                 <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
-                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Edit Hub Resource</h3>
+                  <h3 className={`text-sm font-extrabold uppercase tracking-widest ${textPrimary} flex items-center gap-2`}>
+                    <Edit size={16} className="text-[#0077C0]" /> Edit Code Question
+                  </h3>
                   <button
                     onClick={() => {
                       setShowEditModal(false);
@@ -1779,22 +1781,23 @@ function ContributorsDashboard() {
                 </div>
 
                 <form onSubmit={handleUpdateResource} className="space-y-4">
-                  {/* Title and Language Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className={editType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Title</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Docker Compose File"
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
+                  {/* Title (Full Width) */}
+                  <div className="space-y-1">
+                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Question Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. sdsdf"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    />
+                  </div>
 
-                    {editType === "code" && (
-                      <div className="md:col-span-1 space-y-1">
+                  {/* Language (Left) & Collection (Right) Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {editType === "code" ? (
+                      <div className="space-y-1">
                         <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Language</label>
                         <select
                           value={editLanguage}
@@ -1807,26 +1810,10 @@ function ContributorsDashboard() {
                           ))}
                         </select>
                       </div>
+                    ) : (
+                      <div />
                     )}
-                  </div>
 
-                  {allowedFormats.length > 1 && (
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Type</label>
-                      <select
-                        value={editType}
-                        onChange={(e) => setEditType(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
-                      >
-                        {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
-                        {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
-                        {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Collection and Reason for Edit Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
                       <div className="space-y-1">
                         <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Collection</label>
@@ -1835,69 +1822,61 @@ function ContributorsDashboard() {
                           onChange={(e) => setEditCategory(e.target.value)}
                           className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                         >
-                          <option value="">-- Select Collection (Optional) --</option>
+                          <option value="">-- Select Collection --</option>
                           {selectedHub.subCategories.map((cat: string) => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>
                       </div>
                     ) : (
-                      <div className="hidden md:block" />
+                      <div />
                     )}
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-red-500 font-extrabold">Reason for Edit (Required)</label>
-                      <select
-                        required
-                        value={editReason}
-                        onChange={(e) => setEditReason(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
-                      >
-                        <option value="">Select a reason...</option>
-                        <option value="Optimized code">Optimized code</option>
-                        <option value="Error solved">Error solved</option>
-                        <option value="All test cases passed">All test cases passed</option>
-                        <option value="More test cases passed than previous one">More test cases passed than previous one</option>
-                      </select>
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>
-                        {editType === "code" ? "Comments (Optional)" : "Description"}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={editType === "code" ? "Optional comments" : "Short description"}
-                        value={resDescription}
-                        onChange={(e) => setResDescription(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Tags (Comma-separated)</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. docker, compose, web"
-                        value={editTags}
-                        onChange={(e) => setEditTags(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
-                  </div>
-
+                  {/* Comment (Optional) */}
                   <div className="space-y-1">
-                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Content</label>
-                    <textarea
-                      required
-                      rows={8}
-                      placeholder={editType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className={`w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y`}
+                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Comment (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Optional comments"
+                      value={resDescription}
+                      onChange={(e) => setResDescription(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
                     />
                   </div>
+
+                  {/* Reason for Edit */}
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-red-500 font-extrabold">Reason for Edit (Required)</label>
+                    <select
+                      required
+                      value={editReason}
+                      onChange={(e) => setEditReason(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
+                    >
+                      <option value="">Select a reason...</option>
+                      <option value="Optimized code">Optimized code</option>
+                      <option value="Error solved">Error solved</option>
+                      <option value="All test cases passed">All test cases passed</option>
+                      <option value="More test cases passed than previous one">More test cases passed than previous one</option>
+                    </select>
+                  </div>
+
+                  {/* Source Code */}
+                  <div className="space-y-1">
+                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Source Code</label>
+                    <textarea
+                      required
+                      rows={5}
+                      placeholder="Paste your source code here..."
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className={`w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-none`}
+                    />
+                  </div>
+
+                  {/* Divider line before footer */}
+                  <div className={`h-[1px] w-full ${borderLight} my-4`} />
 
                   {/* Footer Action Buttons */}
                   <div className="flex items-center justify-end gap-3 pt-2">
@@ -1907,16 +1886,16 @@ function ContributorsDashboard() {
                         setShowEditModal(false);
                         setEditingResource(null);
                       }}
-                      className={`px-4 py-2.5 rounded-xl border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-zinc-300' : 'text-zinc-700'} font-semibold text-xs transition-all duration-300 cursor-pointer`}
+                      className={`px-5 py-2.5 rounded-full border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-white border-zinc-800 hover:border-zinc-700' : 'text-zinc-700'} font-bold text-xs transition-all duration-300 cursor-pointer`}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={publishing}
-                      className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
                     >
-                      {publishing ? "Saving..." : "Save Changes"}
+                      {publishing ? "Saving..." : <><Check size={14} strokeWidth={3} /> Save Edit</>}
                     </button>
                   </div>
                 </form>
