@@ -1470,8 +1470,7 @@ function ContributorsDashboard() {
                               </button>
 
                               {/* Lock / Unlock */}
-                              {(r.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase() ||
-                                selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase()) && (
+                              {(selectedHub?.creatorEmail?.toLowerCase() === effectiveSession?.user?.email?.toLowerCase()) && (
                                 <button
                                   onClick={(e) => handleToggleLock(r, e)}
                                   className={`p-1.5 rounded-lg border ${dk ? 'border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800' : 'border-black/10 bg-black/5 hover:bg-black/10'} transition-all cursor-pointer`}
