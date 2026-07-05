@@ -366,7 +366,17 @@ function ContributorsDashboard() {
         ...dbTopicNames,
         ...(selectedCategory.topics || []).map((t: any) => t.name),
       ]));
-      return allTopicNames.length >= selectedCategory.topicsLimit;
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayTopicNames = allTopicNames.filter(name => {
+        if (name === todayStr) return true;
+        const topicResources = resources.filter(r => 
+          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+          r.topic?.toLowerCase() === name.toLowerCase()
+        );
+        return topicResources.some(r => r.createdAt && r.createdAt.startsWith(todayStr));
+      });
+      return todayTopicNames.length >= selectedCategory.topicsLimit;
     } else {
       // Add Resource button
       if (selectedTopic.name === "All Topics") return true; // Can't add resource to "All Topics" directly without a specific topic date
@@ -618,8 +628,26 @@ function ContributorsDashboard() {
         ...resourceTopics
       ]));
 
-      if (!allTopicNames.includes(topicDate) && allTopicNames.length >= selectedCategory.topicsLimit) {
-        return showToast("error", `Maximum topics limit reached for collection "${selectedCategory.name}". Only ${selectedCategory.topicsLimit} unique topic dates allowed.`);
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayTopicNames = allTopicNames.filter(name => {
+        if (name === todayStr) return true;
+        const topicResources = resources.filter(r => 
+          (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+           r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+          r.topic?.toLowerCase() === name.toLowerCase()
+        );
+        return topicResources.some(r => r.createdAt && r.createdAt.startsWith(todayStr));
+      });
+
+      const isTopicActiveToday = topicDate === todayStr || resources.some(r => 
+        (r.category?.toLowerCase() === selectedCategory.name.toLowerCase() ||
+         r.subCategory?.toLowerCase() === selectedCategory.name.toLowerCase()) &&
+        r.topic?.toLowerCase() === topicDate.toLowerCase() &&
+        r.createdAt && r.createdAt.startsWith(todayStr)
+      );
+
+      if (!isTopicActiveToday && todayTopicNames.length >= selectedCategory.topicsLimit) {
+        return showToast("error", `Daily topics limit reached for collection "${selectedCategory.name}". Only ${selectedCategory.topicsLimit} unique topics allowed per day.`);
       }
     }
 

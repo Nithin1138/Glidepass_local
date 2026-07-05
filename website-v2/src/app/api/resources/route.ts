@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Check Topics Limit: max number of unique topic-dates allowed in this collection
+          // Check Topics Limit: max number of unique topic-dates allowed in this collection (enforced per day)
           const topicsMax = catConfig.topicsLimit;
           if (topic && topicsMax !== undefined && topicsMax !== null) {
             const catResources = allResources.filter(r =>
@@ -161,11 +162,21 @@ export async function POST(req: NextRequest) {
               !r.isDeleted &&
               (r.category?.toLowerCase() === category.trim().toLowerCase() || r.subCategory?.toLowerCase() === category.trim().toLowerCase())
             );
-            const existingTopics = new Set(catResources.map(r => r.topic?.toLowerCase()).filter(Boolean));
+            const existingTopics = Array.from(new Set(catResources.map(r => r.topic?.toLowerCase()).filter(Boolean)));
+            const todayStr = new Date().toISOString().split("T")[0];
             const incomingTopicLower = topic.trim().toLowerCase();
-            // If this topic doesn't exist yet and we're already at the max, reject
-            if (!existingTopics.has(incomingTopicLower) && existingTopics.size >= topicsMax) {
-              return NextResponse.json({ error: `Maximum topics limit reached for collection "${category}". Only ${topicsMax} unique topic dates allowed.` }, { status: 429 });
+
+            // Count how many unique topics are active/created today
+            const todayActiveTopics = existingTopics.filter(name => {
+              if (name === todayStr) return true;
+              const topicResources = catResources.filter(r => r.topic?.toLowerCase() === name);
+              return topicResources.some(r => r.createdAt && r.createdAt.startsWith(todayStr));
+            });
+
+            // If the incoming topic is not yet active today, and we've reached the daily limit, reject
+            const isIncomingActiveToday = incomingTopicLower === todayStr || catResources.some(r => r.topic?.toLowerCase() === incomingTopicLower && r.createdAt && r.createdAt.startsWith(todayStr));
+            if (!isIncomingActiveToday && todayActiveTopics.length >= topicsMax) {
+              return NextResponse.json({ error: `Daily topics limit reached for collection "${category}". Only ${topicsMax} unique topics allowed per day.` }, { status: 429 });
             }
           }
 
