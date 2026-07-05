@@ -1565,36 +1565,39 @@ function ContributorsDashboard() {
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} max-h-[85vh] overflow-y-auto space-y-4 pb-12 sm:pb-6`}>
+              <div className={`p-4 md:p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-black" : "bg-white"} space-y-3.5 pb-8 sm:pb-6`}>
                 <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
-                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Hub Resource</h3>
-                  <button onClick={() => setShowAddModal(false)} className={`p-1 rounded hover:bg-white/5 border ${borderLight}`}>
-                    <X size={14} />
+                  <h3 className={`text-xs md:text-sm font-extrabold uppercase tracking-widest ${textPrimary} flex items-center gap-2`}>
+                    <Plus size={16} className="text-[#0077C0]" /> Add Hub Resource
+                  </h3>
+                  <button onClick={() => setShowAddModal(false)} className={`p-1.5 rounded hover:bg-white/5 border ${borderLight}`}>
+                    <X size={12} />
                   </button>
                 </div>
 
-                <form onSubmit={handleAddResource} className="space-y-4">
-                  {/* Title and Language Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className={resType === "code" ? "md:col-span-2 space-y-1" : "md:col-span-3 space-y-1"}>
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Title</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Docker Compose File"
-                        value={resTitle}
-                        onChange={(e) => setResTitle(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
+                <form onSubmit={handleAddResource} className="space-y-3 md:space-y-4">
+                  {/* Title (Full Width) */}
+                  <div className="space-y-1">
+                    <label className={`text-[8px] md:text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Docker Compose File"
+                      value={resTitle}
+                      onChange={(e) => setResTitle(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3.5 h-[34px] md:h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    />
+                  </div>
 
-                    {resType === "code" && (
-                      <div className="md:col-span-1 space-y-1">
-                        <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Language</label>
+                  {/* Language (Left) & Collection (Right) Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {resType === "code" ? (
+                      <div className="space-y-1">
+                        <label className={`text-[8px] md:text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Language</label>
                         <select
                           value={resLanguage}
                           onChange={(e) => setResLanguage(e.target.value)}
-                          className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
+                          className={`w-full text-xs rounded-xl px-3 h-[34px] md:h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
                         >
                           <option value="">Select Language</option>
                           {sortedLanguages.map(lang => (
@@ -1602,76 +1605,74 @@ function ContributorsDashboard() {
                           ))}
                         </select>
                       </div>
+                    ) : (
+                      <div />
+                    )}
+
+                    {selectedHub?.subCategories && selectedHub.subCategories.length > 0 ? (
+                      <div className="space-y-1">
+                        <label className={`text-[8px] md:text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Collection</label>
+                        <select
+                          value={resSubCategory}
+                          onChange={(e) => setResSubCategory(e.target.value)}
+                          className={`w-full text-xs rounded-xl px-3 h-[34px] md:h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
+                        >
+                          <option value="">-- Select Collection --</option>
+                          {selectedHub.subCategories.map((cat: string) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div />
                     )}
                   </div>
 
-                  {allowedFormats.length > 1 && (
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Resource Type</label>
-                      <select
-                        value={resType}
-                        onChange={(e) => setResType(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 h-[38px] border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg} cursor-pointer`}
-                      >
-                        {allowedFormats.includes("code") && <option value="code">Code / Script</option>}
-                        {allowedFormats.includes("link") && <option value="link">Link / URL</option>}
-                        {allowedFormats.includes("text") && <option value="text">Rich Text</option>}
-                      </select>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>
-                        {resType === "code" ? "Comments (Optional)" : "Description"}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={resType === "code" ? "e.g. Added error handling helper" : "Short description"}
-                        value={resDescription}
-                        onChange={(e) => setResDescription(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Tags (Comma-separated)</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. docker, compose, web"
-                        value={resTags}
-                        onChange={(e) => setResTags(e.target.value)}
-                        className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
-                      />
-                    </div>
+                  {/* Comment (Optional) */}
+                  <div className="space-y-1">
+                    <label className={`text-[8px] md:text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>
+                      {resType === "code" ? "Comments (Optional)" : "Description"}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={resType === "code" ? "e.g. Added error handling helper" : "Short description"}
+                      value={resDescription}
+                      onChange={(e) => setResDescription(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3.5 py-1.5 md:py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`}
+                    />
                   </div>
 
+                  {/* Content */}
                   <div className="space-y-1">
-                    <label className={`text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Content</label>
+                    <label className={`text-[8px] md:text-[9px] uppercase font-bold tracking-wider ${textSecondary}`}>Content</label>
                     <textarea
                       required
-                      rows={8}
+                      rows={5}
                       placeholder={resType === "code" ? "Paste your source code here..." : "Paste your configuration code, link, or text..."}
                       value={resContent}
                       onChange={(e) => setResContent(e.target.value)}
-                      className={`w-full text-xs font-mono rounded-xl p-3.5 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-y`}
+                      className={`w-full text-xs font-mono rounded-xl p-3 border focus:outline-none ${dk ? 'bg-[#09090b]' : 'bg-white'} ${borderLight} ${textPrimary} focus:border-[#0077C0] focus:ring-1 focus:ring-[#0077C0]/20 resize-none`}
                     />
                   </div>
+
+                  {/* Divider line before footer */}
+                  <div className={`h-[1px] w-full ${borderLight} my-4`} />
 
                   {/* Footer Action Buttons */}
                   <div className="flex items-center justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
-                      className={`px-4 py-2.5 rounded-xl border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-zinc-300' : 'text-zinc-700'} font-semibold text-xs transition-all duration-300 cursor-pointer`}
+                      className={`px-5 py-2 rounded-full border ${borderLight} bg-transparent hover:bg-black/5 dark:hover:bg-white/5 ${dk ? 'text-white border-zinc-800 hover:border-zinc-700' : 'text-zinc-700'} font-bold text-xs transition-all duration-300 cursor-pointer`}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={publishing}
-                      className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 px-6 py-2 rounded-full text-white font-bold text-xs bg-[#0077C0] hover:bg-[#0082D2] disabled:opacity-50 active:scale-[0.98] shadow-md transition-all cursor-pointer"
                     >
-                      {publishing ? "Publishing..." : "Add to Hub"}
+                      {publishing ? "Publishing..." : <><Check size={14} strokeWidth={3} /> Add to Hub</>}
                     </button>
                   </div>
                 </form>
@@ -1690,64 +1691,64 @@ function ContributorsDashboard() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-              className={`relative w-full sm:max-w-xl p-6 rounded-t-[28px] sm:rounded-[28px] border ${borderLight} ${dk ? 'bg-[#09090b]' : 'bg-white'} shadow-2xl z-10`}
+              className={`relative w-full sm:max-w-md p-4 md:p-6 rounded-t-[24px] sm:rounded-[24px] border ${borderLight} ${dk ? 'bg-[#09090b]' : 'bg-white'} shadow-2xl z-10 pb-8 sm:pb-6`}
             >
-              {/* Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h3 className={`text-base font-black tracking-tight ${textPrimary} font-outfit uppercase`}>
-                  Create Topic
-                </h3>
-                <button
-                  onClick={() => setShowAddTopicModal(false)}
-                  className={`w-9 h-9 flex items-center justify-center rounded-xl border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}
-                >
-                  <X size={16} />
-                </button>
-              </div>
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`text-xs md:text-sm font-extrabold tracking-tight ${textPrimary} font-outfit uppercase`}>
+                    Create Topic
+                  </h3>
+                  <button
+                    onClick={() => setShowAddTopicModal(false)}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
 
-              {/* Form */}
-              <form onSubmit={handleCreateTopic} className="space-y-5">
-                <div className="space-y-2">
-                  <label className={`text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
-                    Topic Date
-                  </label>
-                  <div className="relative">
+                {/* Form */}
+                <form onSubmit={handleCreateTopic} className="space-y-3.5">
+                  <div className="space-y-1">
+                    <label className={`text-[8px] md:text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
+                      Topic Date
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        required
+                        value={topicDate}
+                        onChange={(e) => setTopicDate(e.target.value)}
+                        className={`w-full text-xs rounded-xl px-3 py-2.5 border ${borderLight} ${inputBg} outline-none`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Optional Title */}
+                  <div className="space-y-1">
+                    <label className={`text-[8px] md:text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
+                      Title (optional)
+                    </label>
                     <input
-                      type="date"
-                      required
-                      value={topicDate}
-                      onChange={(e) => setTopicDate(e.target.value)}
-                      className={`w-full text-xs rounded-2xl px-4 py-3.5 border ${borderLight} ${inputBg} outline-none`}
+                      type="text"
+                      placeholder="e.g. Morning Batch"
+                      value={topicTitle}
+                      onChange={(e) => setTopicTitle(e.target.value)}
+                      className={`w-full text-xs rounded-xl px-3 py-2.5 border ${borderLight} ${inputBg} placeholder-zinc-500 outline-none`}
                     />
                   </div>
-                </div>
 
-                {/* Optional Title */}
-                <div className="space-y-2">
-                  <label className={`text-[9px] uppercase font-black tracking-widest ${textSecondary}`}>
-                    Title (optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Morning Batch"
-                    value={topicTitle}
-                    onChange={(e) => setTopicTitle(e.target.value)}
-                    className={`w-full text-xs rounded-2xl px-4 py-3.5 border ${borderLight} ${inputBg} placeholder-zinc-500 outline-none`}
-                  />
-                </div>
+                  {/* Description */}
+                  <input type="hidden" value={topicDescription} />
 
-                {/* Description */}
-                <input type="hidden" value={topicDescription} />
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
-                >
-                  <Check size={14} strokeWidth={3} />
-                  Create Topic
-                </button>
-              </form>
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    className="w-full bg-[#0077C0] hover:bg-[#008be0] active:scale-[0.99] text-white font-bold py-2.5 rounded-full text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                  >
+                    <Check size={14} strokeWidth={3} />
+                    Create Topic
+                  </button>
+                </form>
             </motion.div>
           </div>
         )}
