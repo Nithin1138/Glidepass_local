@@ -1167,7 +1167,7 @@ function ContributorsDashboard() {
               {selectedHub.categories && selectedHub.categories.length > 0 && !selectedCategory ? (
                 /* ── LAYER 2: Category Grid ── */
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {selectedHub.categories.map((cat: any) => {
                       // Resources count
                       const resourcesCount = resources.filter(r => 
@@ -1427,7 +1427,7 @@ function ContributorsDashboard() {
                           {/* Top edge highlight glow on hover */}
                           <div className="absolute top-0 left-5 right-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C0]/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                          <div className="flex items-center justify-between gap-3 w-full">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
                             {/* Left side: Circular index and Title/Description */}
                             <div className="flex items-center gap-3.5 min-w-0">
                               <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full ${dk ? 'bg-zinc-950 border-zinc-900 text-zinc-500' : 'bg-black/5 border-black/10 text-zinc-600'} text-xs font-bold font-mono`}>
@@ -1574,7 +1574,7 @@ function ContributorsDashboard() {
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} space-y-4`}>
+              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} max-h-[85vh] overflow-y-auto space-y-4 pb-12 sm:pb-6`}>
                 <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Add Hub Resource</h3>
                   <button onClick={() => setShowAddModal(false)} className={`p-1 rounded hover:bg-white/5 border ${borderLight}`}>
@@ -1773,7 +1773,7 @@ function ContributorsDashboard() {
               transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
               className={`relative w-full sm:max-w-2xl p-1.5 rounded-t-[32px] sm:rounded-[32px] border ${borderLight} ${dk ? 'bg-black' : 'bg-white'} shadow-2xl z-10`}
             >
-              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} space-y-4`}>
+              <div className={`p-6 rounded-t-[28px] sm:rounded-[28px] ${dk ? "bg-[#050505]" : "bg-white"} max-h-[85vh] overflow-y-auto space-y-4 pb-12 sm:pb-6`}>
                 <div className={`flex justify-between items-center pb-2 border-b ${borderLight}`}>
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#0077C0]">Edit Hub Resource</h3>
                   <button
