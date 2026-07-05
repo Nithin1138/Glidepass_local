@@ -882,8 +882,8 @@ function ContributorsDashboard() {
                 className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert' : ''}`}
               />
             </div>
-            <span className={`text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
-              LANpad <span className="text-blue-400 font-mono text-[10px] tracking-widest uppercase ml-2 px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/10">Contributors</span>
+            <span className={`text-base md:text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>
+              LANpad
             </span>
           </div>
 
@@ -891,10 +891,10 @@ function ContributorsDashboard() {
             {/* Email — desktop only */}
             <span className={`hidden lg:block text-xs font-mono truncate max-w-[160px] ${dk ? 'text-white/40' : 'text-black/40'}`}>{effectiveSession?.user?.email}</span>
 
-            {/* SAY MY NAME Toggle — hidden on mobile, shown on sm+ */}
-            <div className={`hidden sm:flex items-center gap-2 px-2.5 rounded-xl border ${borderLight} h-[32px] ${dk ? 'bg-[#09090b]' : 'bg-black/5'}`}>
-              <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${dk ? 'text-zinc-400' : 'text-gray-500'}`}>
-                <span className="hidden md:inline">Say My </span>Name
+            {/* SAY MY NAME Toggle */}
+            <div className={`flex items-center gap-2 px-2.5 rounded-xl border ${borderLight} h-[32px] ${dk ? 'bg-[#09090b]' : 'bg-black/5'}`}>
+              <span className={`text-[8px] sm:text-[9px] font-mono tracking-wider font-bold uppercase ${dk ? 'text-zinc-400' : 'text-gray-500'}`}>
+                SAY MY NAME
               </span>
               <button
                 onClick={toggleSayMyName}
@@ -939,14 +939,6 @@ function ContributorsDashboard() {
             >
               <LogOut size={14} className={dk ? "text-white/60" : "text-black/60"} />
             </button>
-
-            {/* Mobile: Say My Name popover toggle (sm and below) */}
-            <div className={`sm:hidden flex items-center gap-1.5 px-2 py-1.5 rounded-xl border ${borderLight} ${dk ? 'bg-[#09090b]' : 'bg-black/5'} cursor-pointer`} onClick={toggleSayMyName} title={sayMyName ? 'Stop showing name' : 'Show name'}>
-              <span className={`text-[8px] font-bold uppercase font-mono ${dk ? 'text-zinc-400' : 'text-gray-500'}`}>Anon</span>
-              <div className={`relative w-7 h-4 rounded-full p-0.5 transition-colors ${sayMyName ? 'bg-blue-500' : (dk ? 'bg-zinc-700' : 'bg-gray-300')}`}>
-                <div className={`w-3 h-3 bg-white rounded-full transition-transform shadow-md ${sayMyName ? 'translate-x-3' : 'translate-x-0'}`} />
-              </div>
-            </div>
           </div>
         </div>
       </nav>
