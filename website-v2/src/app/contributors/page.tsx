@@ -162,7 +162,7 @@ function ContributorsDashboard() {
   const authError = searchParams.get("error");
 
   // Theme settings
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   const dk = theme === "dark";
 
   // localStorage-based session for email/password onboarding path

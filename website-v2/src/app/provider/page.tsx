@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 export default function ProviderOnboardingPage() {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     if (typeof window !== "undefined") {

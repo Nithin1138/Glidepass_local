@@ -23,7 +23,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
   const [verifying, setVerifying] = useState(false);
 
   /* ── Theme ─────────────────────────────────────── */
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   const dk = theme === "dark";
 
   useEffect(() => {
