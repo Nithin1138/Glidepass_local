@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar, AlertTriangle } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar, AlertTriangle, Laptop } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -777,6 +777,24 @@ const Features = () => {
       desc: "Your data is never saved online. All messages stay temporarily in memory and only travel over your Wi-Fi.",
       icon: <ShieldCheck size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
+    },
+    {
+      title: "Temporary Clipboard Rooms",
+      desc: "Share snippets, notes, and commands with colleagues instantly in ephemeral, secure rooms without registering.",
+      icon: <Smartphone size={22} className="text-[#F28500]" />,
+      span: "md:col-span-1"
+    },
+    {
+      title: "Resource Sharing Ecosystem",
+      desc: "Browse and discover public templates, reference links, and code snippets, or publish your own work.",
+      icon: <FileCode size={22} className="text-[#468FEA]" />,
+      span: "md:col-span-1"
+    },
+    {
+      title: "Cross-Platform Bridge",
+      desc: "Run LANpad native backends on macOS or Windows and pair instantly with any iOS or Android phone browser.",
+      icon: <Laptop size={22} className="text-[#F28500]" />,
+      span: "md:col-span-1"
     }
   ];
 
@@ -791,7 +809,7 @@ const Features = () => {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-3 ml-12" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <motion.div
               key={i}
@@ -805,7 +823,7 @@ const Features = () => {
                 e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                 e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
               }}
-              className={`relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden ${f.span}`}
+              className="relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden"
             >
               {/* Spotlight overlay inside card */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.05)_0%,_transparent_60%)]" />
