@@ -2945,3 +2945,41 @@ export async function saveChannelVersion(channels: any[]): Promise<void> {
     );
   }
 }
+
+export const defaultFeatureFlags = {
+  maintenanceMode: false,
+  resourceCreation: true,
+  clipboardSync: true,
+  analyticsTracking: true,
+  couponsRedemption: true,
+  betaFeatures: false,
+  userRegistration: true,
+  publicHubs: true,
+  apiAccess: false,
+  emailNotifications: true
+};
+
+export async function getFeatureFlags(): Promise<Record<string, boolean>> {
+  if (pool) {
+    await initDb();
+    try {
+      const res = await pool.query("SELECT value FROM vit_settings WHERE key = 'feature_flags'");
+      if (res.rows.length > 0) {
+        return { ...defaultFeatureFlags, ...res.rows[0].value };
+      }
+    } catch (e) {
+      console.error("Failed to read feature_flags", e);
+    }
+  }
+  return defaultFeatureFlags;
+}
+
+export async function saveFeatureFlags(flags: Record<string, boolean>): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_settings (key, value) VALUES ('feature_flags', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [JSON.stringify(flags)]
+    );
+  }
+}

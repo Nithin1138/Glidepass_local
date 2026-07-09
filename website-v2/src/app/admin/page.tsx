@@ -379,8 +379,14 @@ export default function GlidePassAdmin() {
     resourceCreation: true,
     clipboardSync: true,
     analyticsTracking: true,
-    couponsRedemption: true
+    couponsRedemption: true,
+    betaFeatures: false,
+    userRegistration: true,
+    publicHubs: true,
+    apiAccess: false,
+    emailNotifications: true
   });
+  const [flagsSaving, setFlagsSaving] = useState(false);
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
   // ─── Subscriptions & Monetization ───
@@ -1191,6 +1197,45 @@ export default function GlidePassAdmin() {
         }
       }
     } catch (e) {}
+  };
+
+  const fetchFeatureFlags = async () => {
+    try {
+      const res = await fetch("/api/admin/feature-flags");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.flags) {
+          setFeatureFlags(prev => ({ ...prev, ...data.flags }));
+        }
+      }
+    } catch (e) {}
+  };
+
+  const toggleFeatureFlag = async (key: string, value: boolean) => {
+    // Optimistic UI update
+    setFeatureFlags(prev => ({ ...prev, [key]: value }));
+    setFlagsSaving(true);
+    try {
+      const res = await fetch("/api/admin/feature-flags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.flags) setFeatureFlags(data.flags);
+        showToast("success", `Flag saved to database.`);
+      } else {
+        // Revert on failure
+        setFeatureFlags(prev => ({ ...prev, [key]: !value }));
+        showToast("error", "Failed to persist flag change.");
+      }
+    } catch (e) {
+      setFeatureFlags(prev => ({ ...prev, [key]: !value }));
+      showToast("error", "Network error saving flag.");
+    } finally {
+      setFlagsSaving(false);
+    }
   };
 
   const handleTestEmail = async (recipient: string) => {
@@ -2014,8 +2059,15 @@ export default function GlidePassAdmin() {
         }, 5000);
         return () => clearInterval(interval);
       }
-      if (view === "email_logs" || view === "firewall" || view === "feature_flags") {
+      if (view === "email_logs" || view === "firewall") {
         const interval = setInterval(() => {}, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "feature_flags") {
+        fetchFeatureFlags();
+        const interval = setInterval(() => {
+          fetchFeatureFlags();
+        }, 10000);
         return () => clearInterval(interval);
       }
     }
@@ -7445,49 +7497,169 @@ export default function GlidePassAdmin() {
                         <div>
                           <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Feature Flags Console</h2>
                           <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                            Toggle core app modules and trigger API configuration flags in real time
+                            Toggle core app modules and persist configuration flags to the database in real time
                           </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {flagsSaving && (
+                            <span className="text-[9px] font-bold uppercase text-amber-400 animate-pulse">Saving...</span>
+                          )}
+                          <span className="text-[9px] font-bold uppercase px-3 py-1 rounded-full bg-sky-500/15 text-sky-400">
+                            {Object.values(featureFlags).filter(Boolean).length} / {Object.keys(featureFlags).length} Active
+                          </span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {[
-                          { key: "maintenanceMode", name: "Maintenance Mode", desc: "Block client write requests globally and display status banner.", icon: AlertTriangle },
-                          { key: "resourceCreation", name: "Allow Resource Creations", desc: "Allows providers and contributors to publish codes.", icon: BookOpen },
-                          { key: "clipboardSync", name: "Allow Clipboard Syncing", desc: "Enables clipboard room creation and synchronizations.", icon: Clipboard },
-                          { key: "analyticsTracking", name: "Analytics Telemetry", desc: "Record user dau/wau adoption signals dynamically.", icon: Activity },
-                          { key: "couponsRedemption", name: "Coupons & Discounts", desc: "Allows checking out premium tiers using codes.", icon: Tag }
+                          {
+                            key: "maintenanceMode",
+                            name: "Maintenance Mode",
+                            desc: "Blocks all client write requests globally and displays a maintenance status banner to users.",
+                            icon: AlertTriangle,
+                            danger: true
+                          },
+                          {
+                            key: "resourceCreation",
+                            name: "Resource Creation",
+                            desc: "Allows providers and contributors to publish and upload new resource codes to the platform.",
+                            icon: BookOpen,
+                            danger: false
+                          },
+                          {
+                            key: "clipboardSync",
+                            name: "Clipboard Sync",
+                            desc: "Enables clipboard room creation, chunk streaming, and real-time synchronization across devices.",
+                            icon: Clipboard,
+                            danger: false
+                          },
+                          {
+                            key: "analyticsTracking",
+                            name: "Analytics Telemetry",
+                            desc: "Records DAU/WAU adoption signals, session events, and behavioral analytics in real time.",
+                            icon: Activity,
+                            danger: false
+                          },
+                          {
+                            key: "couponsRedemption",
+                            name: "Coupons & Discounts",
+                            desc: "Permits users to apply promo codes and referral discounts during premium tier checkout.",
+                            icon: Tag,
+                            danger: false
+                          },
+                          {
+                            key: "betaFeatures",
+                            name: "Beta Feature Access",
+                            desc: "Unlocks experimental features and beta-only modules for enrolled beta-track users.",
+                            icon: Sparkles,
+                            danger: false
+                          },
+                          {
+                            key: "userRegistration",
+                            name: "User Registration",
+                            desc: "Controls whether new users can sign up and register accounts on the platform.",
+                            icon: UserCheck,
+                            danger: true
+                          },
+                          {
+                            key: "publicHubs",
+                            name: "Public Community Hubs",
+                            desc: "Enables discovery and browsing of public community hubs without authentication.",
+                            icon: Globe,
+                            danger: false
+                          },
+                          {
+                            key: "apiAccess",
+                            name: "External API Access",
+                            desc: "Allows external services to consume GlidePass APIs using issued API keys.",
+                            icon: Key,
+                            danger: true
+                          },
+                          {
+                            key: "emailNotifications",
+                            name: "Email Notifications",
+                            desc: "Controls whether the SMTP system dispatches invite, alert, and transactional emails.",
+                            icon: Mail,
+                            danger: false
+                          }
                         ].map(flag => {
-                          const active = featureFlags[flag.key];
+                          const active = featureFlags[flag.key] ?? false;
                           return (
-                            <div key={flag.key} className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
-                              style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                              <div>
-                                <div className="flex items-center gap-3 mb-3">
-                                  <flag.icon size={16} className={active ? "text-[#0077C0]" : "text-white/40"} />
-                                  <h4 className="text-xs font-extrabold uppercase tracking-wide">{flag.name}</h4>
+                            <div
+                              key={flag.key}
+                              className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between transition-all duration-300"
+                              style={{
+                                background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
+                                borderColor: active
+                                  ? dk ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.3)"
+                                  : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)"
+                              }}
+                            >
+                              {/* Status glow strip */}
+                              <div
+                                className="absolute top-0 left-0 right-0 h-[2px] transition-all duration-300"
+                                style={{ background: active ? "linear-gradient(90deg,#10B981,#34D399)" : "transparent" }}
+                              />
+
+                              <div className="mb-4">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                                      style={{
+                                        background: active
+                                          ? "rgba(16,185,129,0.15)"
+                                          : dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.05)"
+                                      }}
+                                    >
+                                      <flag.icon size={14} style={{ color: active ? "#10B981" : dk ? "rgba(199,238,255,0.4)" : "rgba(5,5,5,0.4)" }} />
+                                    </div>
+                                    <h4 className="text-[11px] font-extrabold uppercase tracking-wide leading-tight" style={{ color: dk ? P.white : P.black }}>{flag.name}</h4>
+                                  </div>
+                                  {flag.danger && (
+                                    <span className="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 flex-shrink-0">Critical</span>
+                                  )}
                                 </div>
-                                <p className="text-[10px] leading-relaxed opacity-60 mb-5" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{flag.desc}</p>
+                                <p className="text-[10px] leading-relaxed" style={{ color: dk ? `${P.sky}60` : `${P.black}50` }}>{flag.desc}</p>
                               </div>
+
                               <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                                <span className={`text-[10px] font-bold uppercase ${active ? "text-emerald-400" : "text-red-400"}`}>
-                                  {active ? "ON" : "OFF"}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-2 h-2 rounded-full transition-all duration-300"
+                                    style={{ background: active ? "#10B981" : "#EF4444" }}
+                                  />
+                                  <span className={`text-[10px] font-bold uppercase ${active ? "text-emerald-400" : "text-red-400"}`}>
+                                    {active ? "Enabled" : "Disabled"}
+                                  </span>
+                                </div>
+                                {/* Toggle switch */}
                                 <button
-                                  onClick={() => {
-                                    setFeatureFlags(prev => ({ ...prev, [flag.key]: !prev[flag.key] }));
-                                    showToast("success", `${flag.name} toggled successfully.`);
-                                  }}
-                                  className={`px-3.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer ${
-                                    active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-red-500/10 text-red-400 border-red-500/30"
+                                  disabled={flagsSaving}
+                                  onClick={() => toggleFeatureFlag(flag.key, !active)}
+                                  className={`relative w-12 h-6 rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-wait flex-shrink-0 ${
+                                    active ? "bg-emerald-500" : dk ? "bg-white/10" : "bg-black/10"
                                   }`}
+                                  aria-label={`Toggle ${flag.name}`}
                                 >
-                                  Toggle Flag
+                                  <span
+                                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300"
+                                    style={{ left: active ? "calc(100% - 22px)" : "2px" }}
+                                  />
                                 </button>
                               </div>
                             </div>
                           );
                         })}
+                      </div>
+
+                      {/* Danger Zone notice */}
+                      <div className="p-4 rounded-2xl border flex items-start gap-3"
+                        style={{ background: dk ? "rgba(239,68,68,0.05)" : "rgba(239,68,68,0.03)", borderColor: dk ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.15)" }}>
+                        <AlertTriangle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-[10px] leading-relaxed" style={{ color: dk ? `${P.sky}70` : `${P.black}60` }}>
+                          Flags marked <span className="text-red-400 font-bold">Critical</span> directly affect platform access and user flows. Changes are persisted immediately to the database and take effect within the next server polling cycle. Misconfigurations can lock out all users.
+                        </p>
                       </div>
                     </motion.div>
                   )}
