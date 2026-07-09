@@ -759,37 +759,37 @@ const Features = () => {
   const features = [
     {
       title: "Instant Text Sync",
-      desc: "Send text from your phone to your computer instantly. No lag, works securely over your local network.",
+      desc: "Send text from your phone to your computer instantly. Works securely over your local Wi-Fi network.",
       icon: <RefreshCw size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
       title: "Realistic Auto-Type",
-      desc: "Simulate keyboard input letter by letter automatically. Ideal for terminal shells or remote consoles with input restrictions.",
+      desc: "Type text automatically letter-by-letter. Great for terminals and command lines.",
       icon: <Keyboard size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     },
     {
       title: "Local-First Privacy",
-      desc: "Your data is never saved online. All messages stay temporarily in memory and only travel over your Wi-Fi.",
+      desc: "Your data is never saved online. All transfers stay in memory on your local Wi-Fi.",
       icon: <ShieldCheck size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
-      title: "Temporary Clipboard Rooms",
-      desc: "Share snippets, notes, and commands with colleagues instantly in ephemeral, secure rooms without registering.",
+      title: "Temporary Rooms",
+      desc: "Share notes and links with others in temporary rooms without creating an account.",
       icon: <Smartphone size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     },
     {
-      title: "Resource Sharing Ecosystem",
-      desc: "Browse and discover public templates, reference links, and code snippets, or publish your own work.",
+      title: "Resource Sharing",
+      desc: "Find and use public templates, code snippets, and study guides, or publish your own.",
       icon: <FileCode size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
       title: "Cross-Platform Bridge",
-      desc: "Run LANpad native backends on macOS or Windows and pair instantly with any iOS or Android phone browser.",
+      desc: "Run LANpad on Windows or macOS and pair instantly with any mobile phone browser.",
       icon: <Laptop size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     }
@@ -846,22 +846,22 @@ const UseCases = () => {
   const cases = [
     {
       title: "Coding & Lab Work",
-      desc: "Instantly transfer terminal commands, repository URLs, and code snippets from your phone or study materials to your laptop IDE without lag.",
+      desc: "Instantly send terminal commands, repository links, and code snippets from your phone to your computer IDE.",
       icon: <Terminal size={20} className="text-[#F28500]" />
     },
     {
-      title: "Revision & Study Groups",
-      desc: "Sync notes, lecture highlights, reference definitions, and search terms across devices during focused library sessions.",
+      title: "Group Study",
+      desc: "Sync notes, lecture highlights, reference definitions, and search terms across devices during library sessions.",
       icon: <BookOpen size={20} className="text-[#468FEA]" />
     },
     {
-      title: "Friction-Free Peer Sharing",
-      desc: "Generate temporary room URLs to paste snippets, templates, or links to team members during lab collaborations.",
+      title: "Quick Peer Sharing",
+      desc: "Create temporary room links to quickly share code snippets and reference links with team members in labs.",
       icon: <Globe size={20} className="text-[#F28500]" />
     },
     {
-      title: "Creator Distribution",
-      desc: "Publish valuable workspace configurations, script files, and cheat sheets to community-led hubs for other developers to discover.",
+      title: "Share Templates",
+      desc: "Publish your setup scripts, configurations, and cheat sheets for other students and developers to find.",
       icon: <FileCode size={20} className="text-[#468FEA]" />
     }
   ];
@@ -915,20 +915,20 @@ const ResourceEcosystem = () => {
               DISCOVER & PUBLISH KNOWLEDGE.
             </h2>
             <p className="text-gray-500 font-bold text-sm leading-relaxed">
-              LANpad is more than an input utility. Our Resource Sharing Ecosystem acts as a central hub where creators publish snippets, configurations, reference guides, and templates.
+              LANpad is more than just a copy-paste tool. It includes a resource sharing system where you can find and publish templates, guides, and notes.
             </p>
             <ul className="space-y-3 text-xs text-gray-500 font-bold">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Browse categorized hubs created by university clubs and developers
+                Browse templates and cheat sheets created by others.
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Join as a contributor to collaborate on topic-based folders
+                Join shared folders to build lists of links and commands together.
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Mirror useful codes directly into your local desktop application
+                Copy useful resources directly into your local desktop app.
               </li>
             </ul>
             <div className="pt-2">
@@ -943,7 +943,7 @@ const ResourceEcosystem = () => {
               <div className="text-[#468FEA] font-bold text-xs uppercase tracking-widest font-mono">// Creators Flow</div>
               <h3 className="text-lg font-black font-rubik text-gray-800">Publish Resources</h3>
               <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                Set up your public creator portfolio, manage category hubs, configure access levels, and track download/copy metrics.
+                Create your public page, share guides or code folders, and see how many times they are copied.
               </p>
               <Link href="/publish" className="inline-flex items-center gap-1.5 text-xs text-[#468FEA] font-bold hover:underline">
                 Creator Dashboard <ChevronRight size={14} />
@@ -954,7 +954,7 @@ const ResourceEcosystem = () => {
               <div className="text-[#F28500] font-bold text-xs uppercase tracking-widest font-mono">// Contributors Flow</div>
               <h3 className="text-lg font-black font-rubik text-gray-800">Join Topic Hubs</h3>
               <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                Regular users can join hubs as contributors to submit reference links, cheat sheets, and useful coding templates.
+                Join shared folders to contribute useful links, study notes, and code templates.
               </p>
               <Link href="/contributors" className="inline-flex items-center gap-1.5 text-xs text-[#F28500] font-bold hover:underline">
                 Contributor Portal <ChevronRight size={14} />
