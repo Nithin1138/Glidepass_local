@@ -802,6 +802,11 @@ export default function GlidePassAdmin() {
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
 
+  // ─── Admin Resource Flow ───
+  const [selectedAdminHub, setSelectedAdminHub] = useState<any | null>(null);
+  const [selectedAdminCategory, setSelectedAdminCategory] = useState<any | null>(null);
+  const [selectedAdminTopic, setSelectedAdminTopic] = useState<any | null>(null);
+
   // ─── VIT Bin States ───
   const [showBin, setShowBin] = useState(false);
   const [binTab, setBinTab] = useState<"sessions" | "questions">("sessions");
@@ -1195,7 +1200,11 @@ export default function GlidePassAdmin() {
       tags: parsedTags,
       content: qCode,
       creatorEmail: newLicenseEmail || currentUser?.email || "admin@glidepass.com",
-      creatorName: currentUser?.name || "Admin"
+      creatorName: currentUser?.name || "Admin",
+      hubId: selectedAdminHub?.id || "",
+      category: selectedAdminCategory?.name || "",
+      subCategory: selectedAdminCategory?.name || "",
+      topic: selectedAdminTopic?.name || ""
     };
 
     try {
@@ -1229,7 +1238,11 @@ export default function GlidePassAdmin() {
       language: qType === "snippet" ? qLang : "",
       tags: parsedTags,
       content: qCode,
-      creatorEmail: newLicenseEmail || currentUser?.email || "admin@glidepass.com"
+      creatorEmail: newLicenseEmail || currentUser?.email || "admin@glidepass.com",
+      hubId: selectedAdminHub?.id || "",
+      category: selectedAdminCategory?.name || "",
+      subCategory: selectedAdminCategory?.name || "",
+      topic: selectedAdminTopic?.name || ""
     };
 
     try {
@@ -1765,8 +1778,10 @@ export default function GlidePassAdmin() {
       }
       if (view === "vitcodes" || view === "contributors") {
         fetchVitCodes();
+        fetchCommunityHubs(true);
         const interval = setInterval(() => {
           fetchVitCodes(true);
+          fetchCommunityHubs(true);
         }, 15000);
         return () => clearInterval(interval);
       }
@@ -3959,7 +3974,7 @@ export default function GlidePassAdmin() {
                             {(telemetryData.events || [])
                               .filter((ev: any) => {
                                 const evName = (ev.event || "").toLowerCase();
-                                return evName.includes("inject") ||
+                                 return evName.includes("inject") ||
                                        evName.includes("type") ||
                                        evName.includes("sync") ||
                                        evName.includes("mobile") ||
@@ -3989,212 +4004,394 @@ export default function GlidePassAdmin() {
                   {/* ═══ RESOURCES MANAGER ═══ */}
                   {view === "vitcodes" && (
                     <motion.div key="resources" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-
-                      {/* ─── Header ─── */}
+                      
+                      {/* ─── Navigation Breadcrumb Header ─── */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
-                        <div>
-                          <h2 className="text-2xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Resources Manager</h2>
-                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                            {vitSessions.filter((r: any) => !r.isDeleted).length} active &bull; {vitSessions.filter((r: any) => r.isDeleted).length} in trash
-                          </p>
+                        <div className="flex items-center gap-3">
+                          {(selectedAdminHub || selectedAdminCategory || selectedAdminTopic) && (
+                            <button
+                              onClick={() => {
+                                if (selectedAdminTopic) {
+                                  setSelectedAdminTopic(null);
+                                } else if (selectedAdminCategory) {
+                                  setSelectedAdminCategory(null);
+                                } else if (selectedAdminHub) {
+                                  setSelectedAdminHub(null);
+                                }
+                              }}
+                              className={`p-2.5 rounded-xl border transition-all ${
+                                dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70 hover:text-white' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70 hover:text-black'
+                              }`}
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                          )}
+                          <div>
+                            <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Resources</h2>
+                            <div className="flex items-center gap-1.5 text-xs opacity-75 mt-0.5" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                              <span>Resources Manager</span>
+                              {selectedAdminHub && (
+                                <>
+                                  <span>&bull;</span>
+                                  <span className="font-bold text-[#0077C0]">{selectedAdminHub.title}</span>
+                                </>
+                              )}
+                              {selectedAdminCategory && (
+                                <>
+                                  <span>&bull;</span>
+                                  <span>{selectedAdminCategory.name}</span>
+                                </>
+                              )}
+                              {selectedAdminTopic && (
+                                <>
+                                  <span>&bull;</span>
+                                  <span>{selectedAdminTopic.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Top Actions */}
                         <div className="flex items-center gap-3 flex-wrap md:justify-end">
-                          {/* Search */}
                           <div className="relative">
                             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
                             <input
-                              id="resource-search"
                               type="text"
                               value={searchQuery}
                               onChange={e => setSearchQuery(e.target.value)}
-                              placeholder="Search resources..."
+                              placeholder="Search..."
                               className={`text-xs rounded-xl pl-8 pr-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 w-48 ${inputBg}`}
                             />
                           </div>
-                          {/* Type filter */}
-                          <select
-                            value={examTypeFilter === "snippet" || examTypeFilter === "macro" ? examTypeFilter : "all"}
-                            onChange={e => setExamTypeFilter(e.target.value)}
-                            className={`text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${inputBg}`}
-                          >
-                            <option value="all">All Types</option>
-                            <option value="snippet">Snippets</option>
-                            <option value="macro">Macros</option>
-                          </select>
-                          {/* Trash toggle */}
-                          <button
-                            onClick={() => setShowBin(b => !b)}
-                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all active:scale-[0.98] ${
-                              showBin ? "bg-red-500/15 border-red-500/40 text-red-400" : "bg-red-500/5 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            }`}
-                          >
-                            <Trash2 size={13} /> Trash ({vitSessions.filter((r: any) => r.isDeleted).length})
-                          </button>
-                          {/* New Resource */}
-                          {!showBin && (
+                          
+                          {/* New Resource button, enabled when in Step 4 */}
+                          {selectedAdminHub && selectedAdminCategory && selectedAdminTopic && (
                             <button
-                              id="new-resource-btn"
                               onClick={() => {
                                 setEditingResourceId(null);
-                                setQTitle(""); setQCode(""); setQLang("cpp"); setNewQTags(""); setNewLicenseEmail(""); setQType("snippet");
+                                setQTitle("");
+                                setQCode("");
+                                setQLang("javascript");
+                                setNewQTags("");
+                                setNewLicenseEmail("");
+                                setQType("snippet");
                                 setShowNewSessionModal(true);
                               }}
                               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all"
                               style={{ background: P.blue }}
                             >
-                              <Plus size={13} /> New Resource
+                              <Plus size={13} /> Add Resource
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* ─── Resource Grid ─── */}
-                      {loadingVit ? (
-                        <div className="flex items-center justify-center py-20">
-                          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                      {/* ─── Step 1: Select Community Hub ─── */}
+                      {!selectedAdminHub && (
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-[#0077C0]">Step 1 &bull; Select a Community Hub</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Virtual Unassigned Hub */}
+                            <div
+                              onClick={() => setSelectedAdminHub({ id: "unassigned", title: "Unassigned Resources", description: "Standalone files and resources not associated with any hub", categories: [] })}
+                              className={`group p-5 rounded-[24px] border transition-all hover:border-[#0077C0] cursor-pointer flex flex-col justify-between`}
+                              style={{
+                                background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.60)",
+                                borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)"
+                              }}
+                            >
+                              <div>
+                                <h3 className="font-bold text-sm uppercase tracking-wide group-hover:text-[#0077C0] transition-colors">Unassigned Resources</h3>
+                                <p className="text-[10px] opacity-75 mt-1.5 leading-relaxed">System-wide shared macros or snippets not bound to a hub.</p>
+                              </div>
+                              <div className="mt-4 pt-3 border-t flex items-center justify-between text-[10px]" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                <span className="font-bold text-[#0077C0]">Browse Items &rarr;</span>
+                              </div>
+                            </div>
+
+                            {/* Active Hubs list */}
+                            {communityHubs.filter(h => !h.isDeleted).filter(h => {
+                              const q = searchQuery.toLowerCase();
+                              return !q || h.title.toLowerCase().includes(q) || (h.description || "").toLowerCase().includes(q);
+                            }).map(hub => (
+                              <div
+                                key={hub.id}
+                                onClick={() => setSelectedAdminHub(hub)}
+                                className={`group p-5 rounded-[24px] border transition-all hover:border-[#0077C0] cursor-pointer flex flex-col justify-between`}
+                                style={{
+                                  background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.60)",
+                                  borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)"
+                                }}
+                              >
+                                <div>
+                                  <h3 className="font-bold text-sm uppercase tracking-wide group-hover:text-[#0077C0] transition-colors truncate">{hub.title}</h3>
+                                  <p className="text-[10px] opacity-75 mt-1.5 leading-relaxed line-clamp-2">{hub.description || "No description provided."}</p>
+                                </div>
+                                <div className="mt-4 pt-3 border-t flex items-center justify-between text-[10px]" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                  <span className="opacity-60">Created by {hub.creatorEmail}</span>
+                                  <span className="font-bold text-[#0077C0]">Open Hub &rarr;</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ) : (() => {
-                        const all: any[] = vitSessions.filter((r: any) => showBin ? r.isDeleted : !r.isDeleted);
-                        const tFilter = (examTypeFilter === "snippet" || examTypeFilter === "macro") ? examTypeFilter : null;
-                        const filtered = all.filter((r: any) => {
+                      )}
+
+                      {/* ─── Step 2: Select Category/Collection ─── */}
+                      {selectedAdminHub && !selectedAdminCategory && (() => {
+                        const hubCategories = selectedAdminHub.categories || [];
+                        
+                        // Extract any dynamic/existing categories from resources that match this hub
+                        const extraCats = Array.from(new Set(
+                          vitSessions
+                            .filter(r => !r.isDeleted && r.hubId === selectedAdminHub.id && r.category)
+                            .map(r => r.category)
+                        )).map(name => ({ name, topics: [] }));
+
+                        // Combine unique categories
+                        const combinedCats = [...hubCategories];
+                        extraCats.forEach(ec => {
+                          if (!combinedCats.some(c => c.name.toLowerCase() === ec.name.toLowerCase())) {
+                            combinedCats.push(ec);
+                          }
+                        });
+
+                        if (combinedCats.length === 0) {
+                          // Default fallback collection if empty
+                          combinedCats.push({ name: "General Collection", topics: [] });
+                        }
+
+                        const filteredCats = combinedCats.filter(c => {
                           const q = searchQuery.toLowerCase();
-                          const matchQ = !q || (r.title || "").toLowerCase().includes(q) || (r.language || "").toLowerCase().includes(q) || (r.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                          const matchT = !tFilter || r.type === tFilter;
-                          return matchQ && matchT;
+                          return !q || c.name.toLowerCase().includes(q);
+                        });
+
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#0077C0]">Step 2 &bull; Select a Collection / Category</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {filteredCats.map(cat => (
+                                <div
+                                  key={cat.name}
+                                  onClick={() => setSelectedAdminCategory(cat)}
+                                  className={`group p-5 rounded-[24px] border transition-all hover:border-[#0077C0] cursor-pointer flex flex-col justify-between`}
+                                  style={{
+                                    background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.60)",
+                                    borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)"
+                                  }}
+                                >
+                                  <div>
+                                    <h3 className="font-bold text-sm uppercase tracking-wide group-hover:text-[#0077C0] transition-colors">{cat.name}</h3>
+                                    <p className="text-[10px] opacity-75 mt-1.5">Collection grouping files and scripts</p>
+                                  </div>
+                                  <div className="mt-4 pt-3 border-t flex items-center justify-between text-[10px]" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                    <span className="font-bold text-[#0077C0]">Select Collection &rarr;</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* ─── Step 3: Select Topic ─── */}
+                      {selectedAdminHub && selectedAdminCategory && !selectedAdminTopic && (() => {
+                        const hubTopics = selectedAdminCategory.topics || [];
+                        
+                        // Extract existing topics from actual resources inside this category
+                        const extraTopics = Array.from(new Set(
+                          vitSessions
+                            .filter(r => !r.isDeleted && r.hubId === selectedAdminHub.id && (r.category?.toLowerCase() === selectedAdminCategory.name.toLowerCase() || r.subCategory?.toLowerCase() === selectedAdminCategory.name.toLowerCase()) && r.topic)
+                            .map(r => r.topic)
+                        )).map(name => ({ name }));
+
+                        const combinedTopics = [...hubTopics];
+                        extraTopics.forEach(et => {
+                          if (!combinedTopics.some(t => t.name.toLowerCase() === et.name.toLowerCase())) {
+                            combinedTopics.push(et);
+                          }
+                        });
+
+                        if (combinedTopics.length === 0) {
+                          // Default fallback topic
+                          combinedTopics.push({ name: "General Topic" });
+                        }
+
+                        const filteredTopics = combinedTopics.filter(t => {
+                          const q = searchQuery.toLowerCase();
+                          return !q || t.name.toLowerCase().includes(q);
+                        });
+
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#0077C0]">Step 3 &bull; Select a Topic / Date</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {filteredTopics.map(topic => (
+                                <div
+                                  key={topic.name}
+                                  onClick={() => setSelectedAdminTopic(topic)}
+                                  className={`group p-5 rounded-[24px] border transition-all hover:border-[#0077C0] cursor-pointer flex flex-col justify-between`}
+                                  style={{
+                                    background: dk ? "rgba(5,5,5,0.30)" : "rgba(255,255,255,0.60)",
+                                    borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)"
+                                  }}
+                                >
+                                  <div>
+                                    <h3 className="font-bold text-sm uppercase tracking-wide group-hover:text-[#0077C0] transition-colors">{topic.name}</h3>
+                                    <p className="text-[10px] opacity-75 mt-1.5">Topic session or share pipeline</p>
+                                  </div>
+                                  <div className="mt-4 pt-3 border-t flex items-center justify-between text-[10px]" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                    <span className="font-bold text-[#0077C0]">View Resources &rarr;</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* ─── Step 4: Show/Manage Resources inside selected Topic ─── */}
+                      {selectedAdminHub && selectedAdminCategory && selectedAdminTopic && (() => {
+                        const allResources = vitSessions.filter(r => !r.isDeleted);
+                        
+                        // Filter matching resources
+                        const filtered = allResources.filter(r => {
+                          const matchesHub = selectedAdminHub.id === "unassigned" 
+                            ? (!r.hubId || r.hubId === "unassigned")
+                            : (r.hubId === selectedAdminHub.id);
+                          
+                          const matchesCategory = r.category?.toLowerCase() === selectedAdminCategory.name.toLowerCase() || 
+                                                 r.subCategory?.toLowerCase() === selectedAdminCategory.name.toLowerCase();
+                          
+                          const matchesTopic = r.topic?.toLowerCase() === selectedAdminTopic.name.toLowerCase();
+
+                          const q = searchQuery.toLowerCase();
+                          const matchesQuery = !q || 
+                            r.title?.toLowerCase().includes(q) || 
+                            r.content?.toLowerCase().includes(q) || 
+                            (r.tags || []).some((t: string) => t.toLowerCase().includes(q));
+
+                          return matchesHub && matchesCategory && matchesTopic && matchesQuery;
                         });
 
                         if (filtered.length === 0) {
                           return (
                             <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                              {showBin
-                                ? <Trash2 size={32} className="mx-auto mb-3 opacity-30 text-red-400" />
-                                : <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
-                              }
-                              <p className="text-xs font-medium mt-2">
-                                {showBin ? "Trash is empty." : searchQuery ? "No resources match your search." : "No resources yet — add your first one."}
-                              </p>
+                              <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+                              <p className="text-xs font-medium">No resources found in this topic.</p>
                             </div>
                           );
                         }
 
                         return (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {filtered.map((r: any) => (
-                              <div key={r.id}
-                                className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col gap-3 transition-all hover:shadow-lg group"
-                                style={{
-                                  background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
-                                  borderColor: r.isDeleted ? "rgba(239,68,68,0.22)" : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
-                                  backdropFilter: "blur(40px)"
-                                }}
-                              >
-                                <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine} opacity-0 group-hover:opacity-100 transition-opacity`} />
-
-                                {/* Type + Language badges */}
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border"
-                                    style={{
-                                      background: r.type === "macro" ? "rgba(168,85,247,0.12)" : `${P.blue}15`,
-                                      color: r.type === "macro" ? "#A855F7" : P.blue,
-                                      borderColor: r.type === "macro" ? "rgba(168,85,247,0.25)" : `${P.blue}25`
-                                    }}>
-                                    {r.type || "snippet"}
-                                  </span>
-                                  {r.language && (
+                            {filtered.map((r: any) => {
+                              const isExpanded = expandedQId === r.id;
+                              return (
+                                <div
+                                  key={r.id}
+                                  onClick={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (target.closest("button") || target.closest("pre") || target.closest("a")) return;
+                                    setExpandedQId(isExpanded ? null : r.id);
+                                  }}
+                                  className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col gap-3 transition-all hover:shadow-lg group cursor-pointer"
+                                  style={{
+                                    background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)",
+                                    borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)",
+                                    backdropFilter: "blur(40px)"
+                                  }}
+                                >
+                                  {/* Type + Language badges */}
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border"
-                                      style={{ background: `${P.sky}12`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>
-                                      {r.language}
+                                      style={{
+                                        background: r.type === "macro" ? "rgba(168,85,247,0.12)" : `${P.blue}15`,
+                                        color: r.type === "macro" ? "#A855F7" : P.blue,
+                                        borderColor: r.type === "macro" ? "rgba(168,85,247,0.25)" : `${P.blue}25`
+                                      }}>
+                                      {r.type || "snippet"}
                                     </span>
-                                  )}
-                                  {r.isDeleted && (
-                                    <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-red-500/25 bg-red-500/10 text-red-400">
-                                      Deleted
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Title */}
-                                <h3 className="text-sm font-bold leading-tight">{r.title || "Untitled"}</h3>
-
-                                {/* Tags */}
-                                {r.tags && r.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {(r.tags as string[]).slice(0, 5).map((tag: string) => (
-                                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded border"
-                                        style={{ background: `${P.sky}10`, color: dk ? `${P.sky}90` : `${P.black}70`, borderColor: `${P.sky}20` }}>
-                                        {tag}
+                                    {r.language && (
+                                      <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border"
+                                        style={{ background: `${P.sky}12`, color: dk ? P.sky : P.black, borderColor: `${P.sky}25` }}>
+                                        {r.language}
                                       </span>
-                                    ))}
+                                    )}
+                                    <span className="ml-auto text-[10px] font-semibold text-[#0077C0]">
+                                      {isExpanded ? "Collapse ▲" : "Tap to expand ▼"}
+                                    </span>
                                   </div>
-                                )}
 
-                                {/* Stats */}
-                                <div className="flex items-center gap-4 text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
-                                  <span className="flex items-center gap-1"><Eye size={10} /> {r.views ?? 0} views</span>
-                                  <span className="flex items-center gap-1"><Download size={10} /> {r.copies ?? 0} copies</span>
-                                </div>
+                                  {/* Title */}
+                                  <h3 className="text-sm font-bold leading-tight">{r.title || "Untitled"}</h3>
 
-                                {/* Creator */}
-                                {r.creatorEmail && (
-                                  <div className="text-[9px] font-mono truncate" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
-                                    by {r.creatorEmail}
+                                  {/* Tags */}
+                                  {r.tags && r.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(r.tags as string[]).slice(0, 5).map((tag: string) => (
+                                        <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded border"
+                                          style={{ background: `${P.sky}10`, color: dk ? `${P.sky}90` : `${P.black}70`, borderColor: `${P.sky}20` }}>
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Stats */}
+                                  <div className="flex items-center gap-4 text-[10px] font-mono" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                                    <span className="flex items-center gap-1"><Eye size={10} /> {r.views ?? 0} views</span>
+                                    <span className="flex items-center gap-1"><Download size={10} /> {r.copies ?? 0} copies</span>
                                   </div>
-                                )}
 
-                                {/* Content preview */}
-                                <div className="rounded-xl overflow-hidden">
-                                  <pre className="p-3 text-[9px] font-mono overflow-x-auto max-h-[4.5rem] leading-relaxed" style={{ background: "#151b22", color: "#8ecfff" }}>
-                                    <code>{((r.content || "")).substring(0, 160)}{(r.content || "").length > 160 ? "\u2026" : ""}</code>
-                                  </pre>
-                                </div>
+                                  {/* Creator */}
+                                  {r.creatorEmail && (
+                                    <div className="text-[9px] font-mono truncate" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                      by {r.creatorEmail}
+                                    </div>
+                                  )}
 
-                                {/* Action buttons */}
-                                <div className="flex items-center gap-2 pt-1">
-                                  {r.isDeleted ? (
-                                    <>
-                                      <button
-                                        onClick={() => handleRestoreResource(r.id)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80"
-                                        style={{ borderColor: `${P.blue}30`, color: P.blue, background: `${P.blue}08` }}
-                                      >
-                                        <RotateCcw size={11} /> Restore
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteResource(r.id)}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5"
-                                      >
-                                        <Trash2 size={11} /> Forever
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          setEditingResourceId(r.id);
-                                          setQTitle(r.title || "");
-                                          setQCode(r.content || "");
-                                          setQLang(r.language || "cpp");
-                                          setNewQTags((r.tags || []).join(", "));
-                                          setNewLicenseEmail(r.creatorEmail || "");
-                                          setQType(r.type || "snippet");
-                                          setShowNewSessionModal(true);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80"
-                                        style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}
-                                      >
-                                        <Edit2 size={11} /> Edit
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteResource(r.id)}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5"
-                                      >
-                                        <Trash2 size={11} /> Delete
-                                      </button>
-                                    </>
+                                  {/* Expanded content section */}
+                                  {isExpanded && (
+                                    <div className="space-y-3 pt-2">
+                                      {/* Content preview */}
+                                      <div className="rounded-xl overflow-hidden">
+                                        <pre className="p-3 text-[9px] font-mono overflow-x-auto max-h-[12rem] leading-relaxed" style={{ background: "#151b22", color: "#8ecfff" }}>
+                                          <code>{r.content}</code>
+                                        </pre>
+                                      </div>
+
+                                      {/* Action buttons */}
+                                      <div className="flex items-center gap-2 pt-1">
+                                        <button
+                                          onClick={() => {
+                                            setEditingResourceId(r.id);
+                                            setQTitle(r.title || "");
+                                            setQCode(r.content || "");
+                                            setQLang(r.language || "cpp");
+                                            setNewQTags((r.tags || []).join(", "));
+                                            setNewLicenseEmail(r.creatorEmail || "");
+                                            setQType(r.type || "snippet");
+                                            setShowNewSessionModal(true);
+                                          }}
+                                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 cursor-pointer"
+                                          style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? P.sky : P.black }}
+                                        >
+                                          <Edit2 size={11} /> Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteResource(r.id)}
+                                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer"
+                                        >
+                                          <Trash2 size={11} /> Delete
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         );
                       })()}
