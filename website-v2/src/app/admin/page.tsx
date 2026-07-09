@@ -338,8 +338,32 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices" | "telemetry_charts" | "sessions_inspector" | "webhooks"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices" | "telemetry_charts" | "sessions_inspector" | "webhooks" | "clipboard_logs" | "firewall" | "feature_flags"
   >("dashboard");
+
+  // ─── Clipboard Logs telemetry state ───
+  const [clipboardLogs, setClipboardLogs] = useState<any[]>([
+    { id: "1", room: "ROOM_9A2", event: "Text Copy", size: "142 Bytes", client: "student1@vitap.ac.in", timestamp: "2026-07-09 22:50" },
+    { id: "2", room: "ROOM_4F1", event: "Image Sync", size: "2.4 MB", client: "student3@vitstudent.ac.in", timestamp: "2026-07-09 22:51" },
+    { id: "3", room: "ROOM_9A2", event: "Text Copy", size: "48 Bytes", client: "student1@vitap.ac.in", timestamp: "2026-07-09 22:53" }
+  ]);
+
+  // ─── Firewall IP Blocks state ───
+  const [blockedIps, setBlockedIps] = useState<any[]>([
+    { ip: "198.51.100.42", reason: "Repeated activation key auth failures", blockedAt: "2026-07-09 18:30", attempts: 14 },
+    { ip: "203.0.113.88", reason: "Rate-limit threshold breached on resource creation", blockedAt: "2026-07-09 21:12", attempts: 45 }
+  ]);
+  const [newBlockedIp, setNewBlockedIp] = useState("");
+  const [newBlockedReason, setNewBlockedReason] = useState("");
+
+  // ─── Global Feature Flags state ───
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({
+    maintenanceMode: false,
+    resourceCreation: true,
+    clipboardSync: true,
+    analyticsTracking: true,
+    couponsRedemption: true
+  });
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
   // ─── Subscriptions & Monetization ───
@@ -1843,6 +1867,19 @@ export default function GlidePassAdmin() {
         }, 5000);
         return () => clearInterval(interval);
       }
+      if (view === "clipboard_logs") {
+        fetchClipboardRooms(true);
+        const interval = setInterval(() => {
+          fetchClipboardRooms(true);
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "firewall" || view === "feature_flags") {
+        // No periodic API fetch needed for feature flags/firewall local mock lists
+        // but we keep a dummy fast poll interval structure just in case
+        const interval = setInterval(() => {}, 5000);
+        return () => clearInterval(interval);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, selectedFile, isAuth]);
@@ -2478,9 +2515,9 @@ export default function GlidePassAdmin() {
     if (key === "analytics" || key === "telemetry_charts") return !!perms.analytics;
     if (key === "users" || key === "providers" || key === "sessions_inspector") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
-    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices") return !!perms.content;
-    if (key === "system") return !!perms.system;
-    if (key === "security" || key === "legal_acceptances") return !!perms.security;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices" || key === "clipboard_logs") return !!perms.content;
+    if (key === "system" || key === "feature_flags") return !!perms.system;
+    if (key === "security" || key === "legal_acceptances" || key === "firewall") return !!perms.security;
     if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings" || key === "webhooks") return !!perms.settings;
     return true;
   };
@@ -2624,6 +2661,9 @@ export default function GlidePassAdmin() {
       { name: "Go to Plans Config & Keys", action: () => { setView("plans"); setCmdOpen(false); } },
       { name: "Generate Activation Key", action: () => { setView("keys"); setCmdOpen(false); } },
       { name: "Go to Version Manager", action: () => { setView("versioning"); setCmdOpen(false); } },
+      { name: "Go to Clipboard Logs", action: () => { setView("clipboard_logs"); setCmdOpen(false); } },
+      { name: "Go to Firewall Control", action: () => { setView("firewall"); setCmdOpen(false); } },
+      { name: "Go to Feature Flags", action: () => { setView("feature_flags"); setCmdOpen(false); } },
       { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
       { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
       { name: "Sign Out", action: () => { handleLogout(); setCmdOpen(false); } },
@@ -2892,8 +2932,8 @@ export default function GlidePassAdmin() {
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }, { key: "telemetry_charts", icon: Activity, name: "Real-time Metrics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }, { key: "sessions_inspector", icon: ShieldCheck, name: "Sessions Inspector" }] },
-                    { label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }, { key: "webhooks", icon: Bell, name: "Webhooks Dispatcher" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "clipboard_logs", icon: FileText, name: "Clipboard Logs" }, { key: "hubs", icon: Globe, name: "Community Hubs" }, { key: "sessions_inspector", icon: ShieldCheck, name: "Sessions Inspector" }] },
+                    { label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "firewall", icon: AlertTriangle, name: "Firewall Control" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }, { key: "webhooks", icon: Bell, name: "Webhooks Dispatcher" }, { key: "feature_flags", icon: Sliders, name: "Feature Flags" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -7079,6 +7119,191 @@ export default function GlidePassAdmin() {
                             </table>
                           </div>
                         </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ CLIPBOARD ROOMS TRAFFIC LOGS ═══ */}
+                  {view === "clipboard_logs" && (
+                    <motion.div key="clipboard_logs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Clipboard Traffic Logs</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Real-time transaction log of text and image packet transmissions in sync rooms
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Transaction ID", "Clipboard Room", "Event Type", "Payload Size", "Client User", "Timestamp"].map(h => (
+                                  <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {clipboardLogs.map(log => (
+                                <tr key={log.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 font-mono font-bold">TX_{log.id}</td>
+                                  <td className="p-4 font-mono font-bold text-sky-400">{log.room}</td>
+                                  <td className="p-4">
+                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${log.event.includes("Image") ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"}`}>
+                                      {log.event}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-mono font-semibold">{log.size}</td>
+                                  <td className="p-4 font-bold">{log.client}</td>
+                                  <td className="p-4 font-mono opacity-50">{log.timestamp}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ FIREWALL IP BLOCK MANAGER ═══ */}
+                  {view === "firewall" && (
+                    <motion.div key="firewall" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Firewall Control</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Globally block requests from specific IP addresses violating rate-limits or authentication parameters
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        {/* Form */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Block IP Address</h3>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Target IP Address</label>
+                              <input type="text" value={newBlockedIp} onChange={e => setNewBlockedIp(e.target.value)} placeholder="e.g. 192.168.4.15"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Violation Reason</label>
+                              <input type="text" value={newBlockedReason} onChange={e => setNewBlockedReason(e.target.value)} placeholder="Rate limit abuse"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (!newBlockedIp || !newBlockedReason) return showToast("error", "IP and Reason are required.");
+                                setBlockedIps(prev => [...prev, { ip: newBlockedIp, reason: newBlockedReason, blockedAt: new Date().toLocaleString(), attempts: 1 }]);
+                                setNewBlockedIp("");
+                                setNewBlockedReason("");
+                                showToast("success", `IP Address ${newBlockedIp} blocked successfully.`);
+                              }}
+                              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
+                            >
+                              Add Block
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List */}
+                        <div className="lg:col-span-2 rounded-[28px] border overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Blocked IP Addresses</h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  {["IP Address", "Reason", "Blocked At", "Blocked Attempts", "Action"].map(h => (
+                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {blockedIps.map(block => (
+                                  <tr key={block.ip} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-mono font-bold text-red-400 select-all">{block.ip}</td>
+                                    <td className="p-4 font-semibold">{block.reason}</td>
+                                    <td className="p-4 font-mono opacity-50">{block.blockedAt}</td>
+                                    <td className="p-4 font-mono text-center font-bold text-amber-500">{block.attempts}</td>
+                                    <td className="p-4">
+                                      <button
+                                        onClick={() => {
+                                          setBlockedIps(prev => prev.filter(b => b.ip !== block.ip));
+                                          showToast("success", `IP Address ${block.ip} unblocked.`);
+                                        }}
+                                        className="text-[10px] font-bold text-sky-400 hover:underline cursor-pointer"
+                                      >
+                                        Unblock
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ GLOBAL FEATURE FLAGS ═══ */}
+                  {view === "feature_flags" && (
+                    <motion.div key="feature_flags" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Feature Flags Console</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Toggle core app modules and trigger API configuration flags in real time
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[
+                          { key: "maintenanceMode", name: "Maintenance Mode", desc: "Block client write requests globally and display status banner.", icon: AlertTriangle },
+                          { key: "resourceCreation", name: "Allow Resource Creations", desc: "Allows providers and contributors to publish codes.", icon: BookOpen },
+                          { key: "clipboardSync", name: "Allow Clipboard Syncing", desc: "Enables clipboard room creation and synchronizations.", icon: Clipboard },
+                          { key: "analyticsTracking", name: "Analytics Telemetry", desc: "Record user dau/wau adoption signals dynamically.", icon: Activity },
+                          { key: "couponsRedemption", name: "Coupons & Discounts", desc: "Allows checking out premium tiers using codes.", icon: Tag }
+                        ].map(flag => {
+                          const active = featureFlags[flag.key];
+                          return (
+                            <div key={flag.key} className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
+                              style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                              <div>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <flag.icon size={16} className={active ? "text-[#0077C0]" : "text-white/40"} />
+                                  <h4 className="text-xs font-extrabold uppercase tracking-wide">{flag.name}</h4>
+                                </div>
+                                <p className="text-[10px] leading-relaxed opacity-60 mb-5" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{flag.desc}</p>
+                              </div>
+                              <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                <span className={`text-[10px] font-bold uppercase ${active ? "text-emerald-400" : "text-red-400"}`}>
+                                  {active ? "ON" : "OFF"}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setFeatureFlags(prev => ({ ...prev, [flag.key]: !prev[flag.key] }));
+                                    showToast("success", `${flag.name} toggled successfully.`);
+                                  }}
+                                  className={`px-3.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer ${
+                                    active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-red-500/10 text-red-400 border-red-500/30"
+                                  }`}
+                                >
+                                  Toggle Flag
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
