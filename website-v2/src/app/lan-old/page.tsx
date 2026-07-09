@@ -1,14 +1,14 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar, AlertTriangle, Laptop } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar, AlertTriangle } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import React, { createContext, useContext } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 
-const RippleGrid = dynamic(() => import("../components/RippleGrid"), { ssr: false });
+const RippleGrid = dynamic(() => import("../../components/RippleGrid"), { ssr: false });
 
 const copyToClipboard = (text: string) => {
   if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
@@ -297,12 +297,12 @@ const Hero = ({
             <h1
               className="text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
             >
-              {renderStaggeredHeadline("MOVE TEXT & CODE")}
+              {renderStaggeredHeadline("Your Phone")}
               <div className="h-2" />
-              {renderStaggeredHeadline("WITHOUT CLOUD")}
+              {renderStaggeredHeadline("as an Intelligent")}
               <div className="h-2" />
               <span className="text-[#0f172a]">
-                {renderStaggeredHeadline("FRICTION.")}
+                {renderStaggeredHeadline("Layer")}
               </span>
             </h1>
 
@@ -311,9 +311,9 @@ const Hero = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 1 }}
-              className="text-base md:text-lg text-gray-600 max-w-xl leading-relaxed tracking-tight font-medium"
+              className="text-base md:text-lg text-gray-600 max-w-xl leading-relaxed tracking-tight"
             >
-              LANpad is a local-first productivity bridge for moving text, code, and useful resources between your devices without relying on cloud friction. Secure, fast, and built for real productivity.
+              Instant local text transfer, human-like typing simulation, and real-time input orchestration. Built for power users who demand zero-lag productivity.
             </motion.p>
 
             {/* Buttons */}
@@ -323,30 +323,12 @@ const Hero = ({
               transition={{ delay: 0.4 }}
               className="flex flex-col sm:flex-row items-center gap-4 pt-2"
             >
-              <a href="#downloads" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-white clay-blue shadow-[0_4px_12px_rgba(70,143,234,0.25)] hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
-                Download LANpad
+              <a href="#setup" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-white clay-blue shadow-[0_4px_12px_rgba(70,143,234,0.25)] hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
+                Setup Guide
               </a>
-              <Link href="/resources" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-gray-700 clay-card hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
-                Explore Resources
-              </Link>
-            </motion.div>
-
-            {/* Trust Bar */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex flex-wrap items-center gap-6 pt-4 text-[10px] uppercase tracking-widest text-gray-500 font-bold font-mono"
-            >
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={14} className="text-emerald-500" /> Local-first
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap size={14} className="text-amber-500" /> No cloud lock-in
-              </div>
-              <div className="flex items-center gap-2">
-                <Smartphone size={14} className="text-blue-500" /> Fast cross-device sharing
-              </div>
+              <a href="#downloads" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-gray-700 clay-card hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
+                Download Assets
+              </a>
             </motion.div>
           </div>
 
@@ -564,8 +546,6 @@ const ThreeDConduit = () => {
     // --- 5. ANIMATION LOOP ---
     let clock = new THREE.Clock();
     let animationFrameId: number;
-    let lastCharsTyped = -1;
-    let lastCursorBlink = -1;
 
     const animateScene = () => {
       animationFrameId = requestAnimationFrame(animateScene);
@@ -587,104 +567,97 @@ const ThreeDConduit = () => {
       phoneGroup.rotation.y = 0.4 + Math.cos(elapsedTime * 1.0) * 0.05;
 
       // --- ANIMATED CANVAS TEXT DRAWING ---
+      const totalLetters = 15;
       const textToType = "SYNC_ACTIVE...";
       const charsTyped = Math.floor((elapsedTime * 6) % (textToType.length + 5));
-      const cursorBlink = Math.floor(elapsedTime * 3) % 2;
       const activeText = textToType.slice(0, Math.min(charsTyped, textToType.length));
 
-      const shouldUpdate = charsTyped !== lastCharsTyped || cursorBlink !== lastCursorBlink;
+      // Draw Phone screen UI & Text
+      if (phoneCtx) {
+        phoneCtx.fillStyle = "#0a0e17";
+        phoneCtx.fillRect(0, 0, 256, 512);
 
-      if (shouldUpdate) {
-        lastCharsTyped = charsTyped;
-        lastCursorBlink = cursorBlink;
+        // Header info
+        phoneCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        phoneCtx.font = "bold 14px monospace";
+        phoneCtx.fillText("9:41", 20, 35);
+        phoneCtx.fillText("100% 🔋", 180, 35);
 
-        // Draw Phone screen UI & Text
-        if (phoneCtx) {
-          phoneCtx.fillStyle = "#0a0e17";
-          phoneCtx.fillRect(0, 0, 256, 512);
+        // Connection Pill
+        phoneCtx.fillStyle = "rgba(70, 143, 234, 0.15)";
+        phoneCtx.strokeStyle = "rgba(70, 143, 234, 0.3)";
+        phoneCtx.lineWidth = 1.5;
+        phoneCtx.beginPath();
+        phoneCtx.roundRect(40, 60, 176, 32, 16);
+        phoneCtx.fill();
+        phoneCtx.stroke();
 
-          // Header info
-          phoneCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-          phoneCtx.font = "bold 14px monospace";
-          phoneCtx.fillText("9:41", 20, 35);
-          phoneCtx.fillText("100% 🔋", 180, 35);
+        phoneCtx.fillStyle = "#468FEA";
+        phoneCtx.font = "black 10px sans-serif";
+        phoneCtx.textAlign = "center";
+        phoneCtx.fillText("TUNNEL CONNECTED", 128, 80);
 
-          // Connection Pill
-          phoneCtx.fillStyle = "rgba(70, 143, 234, 0.15)";
-          phoneCtx.strokeStyle = "rgba(70, 143, 234, 0.3)";
-          phoneCtx.lineWidth = 1.5;
-          phoneCtx.beginPath();
-          phoneCtx.roundRect(40, 60, 176, 32, 16);
-          phoneCtx.fill();
-          phoneCtx.stroke();
+        // Text Box
+        phoneCtx.fillStyle = "#111827";
+        phoneCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        phoneCtx.beginPath();
+        phoneCtx.roundRect(20, 180, 216, 120, 16);
+        phoneCtx.fill();
+        phoneCtx.stroke();
 
-          phoneCtx.fillStyle = "#468FEA";
-          phoneCtx.font = "black 10px sans-serif";
-          phoneCtx.textAlign = "center";
-          phoneCtx.fillText("TUNNEL CONNECTED", 128, 80);
+        // Phone Input Value
+        phoneCtx.fillStyle = "#ffffff";
+        phoneCtx.font = "bold 15px monospace";
+        phoneCtx.textAlign = "left";
+        phoneCtx.fillText(activeText + (Math.floor(elapsedTime * 3) % 2 === 0 ? "_" : ""), 35, 245);
 
-          // Text Box
-          phoneCtx.fillStyle = "#111827";
-          phoneCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-          phoneCtx.beginPath();
-          phoneCtx.roundRect(20, 180, 216, 120, 16);
-          phoneCtx.fill();
-          phoneCtx.stroke();
+        phoneTexture.needsUpdate = true;
+      }
 
-          // Phone Input Value
-          phoneCtx.fillStyle = "#ffffff";
-          phoneCtx.font = "bold 15px monospace";
-          phoneCtx.textAlign = "left";
-          phoneCtx.fillText(activeText + (cursorBlink === 0 ? "_" : ""), 35, 245);
+      // Draw Laptop screen UI & Terminal Code
+      if (laptopCtx) {
+        laptopCtx.fillStyle = "#0a0e17";
+        laptopCtx.fillRect(0, 0, 512, 300);
 
-          phoneTexture.needsUpdate = true;
-        }
+        // Fake Title Bar
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        laptopCtx.fillRect(0, 0, 512, 35);
 
-        // Draw Laptop screen UI & Terminal Code
-        if (laptopCtx) {
-          laptopCtx.fillStyle = "#0a0e17";
-          laptopCtx.fillRect(0, 0, 512, 300);
+        // Red Yellow Green Window Buttons
+        laptopCtx.fillStyle = "#ff5f56";
+        laptopCtx.beginPath(); laptopCtx.arc(20, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        laptopCtx.fillStyle = "#ffbd2e";
+        laptopCtx.beginPath(); laptopCtx.arc(38, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        laptopCtx.fillStyle = "#27c93f";
+        laptopCtx.beginPath(); laptopCtx.arc(56, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
 
-          // Fake Title Bar
-          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.05)";
-          laptopCtx.fillRect(0, 0, 512, 35);
+        // Terminal path
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        laptopCtx.font = "11px monospace";
+        laptopCtx.textAlign = "center";
+        laptopCtx.fillText("lanpad — local_node", 256, 21);
 
-          // Red Yellow Green Window Buttons
-          laptopCtx.fillStyle = "#ff5f56";
-          laptopCtx.beginPath(); laptopCtx.arc(20, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
-          laptopCtx.fillStyle = "#ffbd2e";
-          laptopCtx.beginPath(); laptopCtx.arc(38, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
-          laptopCtx.fillStyle = "#27c93f";
-          laptopCtx.beginPath(); laptopCtx.arc(56, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        // Editor Code Output
+        laptopCtx.textAlign = "left";
+        laptopCtx.font = "14px monospace";
+        
+        // Line 1: setup bridge
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        laptopCtx.fillText("1  const bridge = new LANpadBridge();", 24, 75);
 
-          // Terminal path
-          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
-          laptopCtx.font = "11px monospace";
-          laptopCtx.textAlign = "center";
-          laptopCtx.fillText("lanpad — local_node", 256, 21);
+        // Line 2: compiling log
+        laptopCtx.fillStyle = "#468FEA";
+        laptopCtx.fillText("2  bridge.connect('LocalServer');", 24, 110);
 
-          // Editor Code Output
-          laptopCtx.textAlign = "left";
-          laptopCtx.font = "14px monospace";
-          
-          // Line 1: setup bridge
-          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-          laptopCtx.fillText("1  const bridge = new LANpadBridge();", 24, 75);
+        // Line 3: receiving keystrokes
+        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        laptopCtx.fillText("3  // Sync Stream input", 24, 145);
 
-          // Line 2: compiling log
-          laptopCtx.fillStyle = "#468FEA";
-          laptopCtx.fillText("2  bridge.connect('LocalServer');", 24, 110);
+        // Line 4: output matching typed phone value
+        laptopCtx.fillStyle = "#f59e0b";
+        laptopCtx.fillText("4  > " + activeText, 24, 180);
 
-          // Line 3: receiving keystrokes
-          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
-          laptopCtx.fillText("3  // Sync Stream input", 24, 145);
-
-          // Line 4: output matching typed phone value
-          laptopCtx.fillStyle = "#f59e0b";
-          laptopCtx.fillText("4  > " + activeText, 24, 180);
-
-          laptopTexture.needsUpdate = true;
-        }
+        laptopTexture.needsUpdate = true;
       }
 
       // Animate packet movements along Bezier Curve
@@ -759,44 +732,79 @@ const Features = () => {
   const features = [
     {
       title: "Instant Text Sync",
-      desc: "Send text from your phone to your computer instantly. No lag, works securely over your local network.",
+      desc: "Send text from your phone to your computer instantly. No lag, works over your local network.",
       icon: <RefreshCw size={22} className="text-[#468FEA]" />,
-      span: "md:col-span-1"
+      span: "md:col-span-2",
+      visual: (
+        <div className="absolute right-10 bottom-6 flex items-center gap-6">
+          <div className="hidden lg:flex flex-col items-end gap-1.5 mr-2">
+            <div className="text-[7px] font-mono text-[#468FEA]/60 tracking-[0.2em] uppercase">link_status</div>
+            <div className="flex gap-1">
+              {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-[#468FEA]/40" />)}
+              <div className="w-1 h-1 rounded-full bg-[#468FEA] animate-pulse" />
+            </div>
+          </div>
+          <div className="relative w-32 h-10 flex items-center">
+            <svg className="absolute inset-0 w-full h-full text-[#468FEA]/20" viewBox="0 0 100 20">
+              <motion.path
+                d="M 0 10 Q 25 20 50 10 T 100 10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                animate={{ d: ["M 0 10 Q 25 0 50 10 T 100 10", "M 0 10 Q 25 20 50 10 T 100 10", "M 0 10 Q 25 0 50 10 T 100 10"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </svg>
+            <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-[#468FEA]/40 to-transparent relative z-10">
+              <motion.div
+                animate={{ left: ["0%", "100%"] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                className="absolute -top-1 w-2 h-2 bg-[#468FEA] rounded-full blur-[1px]"
+              />
+            </div>
+          </div>
+          <div className="px-3 py-2 rounded-lg clay-card-inset flex items-center gap-2">
+            <Lock size={10} className="text-[#468FEA]" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-[#468FEA]/80">Secure</span>
+          </div>
+        </div>
+      )
     },
     {
       title: "Realistic Auto-Type",
-      desc: "Simulate keyboard input letter by letter automatically. Ideal for terminal shells or remote consoles with input restrictions.",
+      desc: "Type your text letter by letter automatically. Perfect for websites or windows that block copy-paste.",
       icon: <Keyboard size={22} className="text-[#F28500]" />,
-      span: "md:col-span-1"
+      span: "md:col-span-1",
+      visual: (
+        <div className="mt-auto pt-6 flex flex-wrap gap-1 opacity-40 group-hover:opacity-80 transition-opacity">
+          {["SHIFT", "CMD", "V", "↵"].map(key => (
+            <div key={key} className="px-1.5 py-1 rounded-sm border border-gray-300 text-[6px] font-mono text-gray-500 font-bold">{key}</div>
+          ))}
+        </div>
+      )
     },
     {
-      title: "Local-First Privacy",
+      title: "100% Private Cache",
       desc: "Your data is never saved online. All messages stay temporarily in memory and only travel over your Wi-Fi.",
       icon: <ShieldCheck size={22} className="text-[#468FEA]" />,
       span: "md:col-span-1"
     },
     {
-      title: "Temporary Clipboard Rooms",
-      desc: "Share snippets, notes, and commands with colleagues instantly in ephemeral, secure rooms without registering.",
+      title: "Phone Controller",
+      desc: "No app setup needed. Just scan the QR code to use your phone or tablet browser as a remote keyboard.",
       icon: <Smartphone size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     },
     {
-      title: "Resource Sharing Ecosystem",
-      desc: "Browse and discover public templates, reference links, and code snippets, or publish your own work.",
+      title: "Snippet Vault",
+      desc: "Share and access shared code snippets in real time with trusted team members. Get snippets directly on your screen.",
       icon: <FileCode size={22} className="text-[#468FEA]" />,
-      span: "md:col-span-1"
-    },
-    {
-      title: "Cross-Platform Bridge",
-      desc: "Run LANpad native backends on macOS or Windows and pair instantly with any iOS or Android phone browser.",
-      icon: <Laptop size={22} className="text-[#F28500]" />,
       span: "md:col-span-1"
     }
   ];
 
   return (
-    <section id="features" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans">
+    <section id="features" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
@@ -806,7 +814,7 @@ const Features = () => {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-300/40 to-transparent hidden md:block mb-3 ml-12" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {features.map((f, i) => (
             <motion.div
               key={i}
@@ -820,7 +828,7 @@ const Features = () => {
                 e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`);
                 e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`);
               }}
-              className="relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden"
+              className={`relative group p-5 md:p-6 clay-card border border-white/20 overflow-hidden ${f.span}`}
             >
               {/* Spotlight overlay inside card */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),_rgba(70,143,234,0.05)_0%,_transparent_60%)]" />
@@ -833,187 +841,10 @@ const Features = () => {
                 <p className="text-xs text-gray-500 leading-relaxed font-bold max-w-[280px]">
                   {f.desc}
                 </p>
+                {f.visual}
               </div>
             </motion.div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const UseCases = () => {
-  const cases = [
-    {
-      title: "Coding & Lab Work",
-      desc: "Instantly transfer terminal commands, repository URLs, and code snippets from your phone or study materials to your laptop IDE without lag.",
-      icon: <Terminal size={20} className="text-[#F28500]" />
-    },
-    {
-      title: "Revision & Study Groups",
-      desc: "Sync notes, lecture highlights, reference definitions, and search terms across devices during focused library sessions.",
-      icon: <BookOpen size={20} className="text-[#468FEA]" />
-    },
-    {
-      title: "Friction-Free Peer Sharing",
-      desc: "Generate temporary room URLs to paste snippets, templates, or links to team members during lab collaborations.",
-      icon: <Globe size={20} className="text-[#F28500]" />
-    },
-    {
-      title: "Creator Distribution",
-      desc: "Publish valuable workspace configurations, script files, and cheat sheets to community-led hubs for other developers to discover.",
-      icon: <FileCode size={20} className="text-[#468FEA]" />
-    }
-  ];
-
-  return (
-    <section id="usecases" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
-      <div className="max-w-6xl mx-auto w-full relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
-              Practical Scenarios
-            </span>
-            <h2 className="text-4xl md:text-5xl font-rubik font-black tracking-tighter mt-4 text-gray-900">BUILT FOR REAL WORKFLOWS.</h2>
-            <p className="text-gray-500 max-w-sm font-bold text-xs mt-2 leading-relaxed">Legitimate productivity use cases for students, developers, and power users.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {cases.map((c, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ y: -4, scale: 1.01 }}
-              className="p-6 clay-card border border-white/20 flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-lg clay-card-inset flex items-center justify-center mb-6">
-                  {c.icon}
-                </div>
-                <h3 className="text-lg font-black mb-2 font-rubik text-gray-900">{c.title}</h3>
-                <p className="text-xs text-gray-500 font-bold leading-relaxed">{c.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const ResourceEcosystem = () => {
-  return (
-    <section id="ecosystem" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
-      <div className="max-w-6xl mx-auto w-full relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="lg:col-span-5 space-y-6">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#468FEA] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100/50">
-              Knowledge Exchange
-            </span>
-            <h2 className="text-4xl md:text-5xl font-rubik font-black tracking-tighter leading-none text-gray-900">
-              DISCOVER & PUBLISH KNOWLEDGE.
-            </h2>
-            <p className="text-gray-500 font-bold text-sm leading-relaxed">
-              LANpad is more than an input utility. Our Resource Sharing Ecosystem acts as a central hub where creators publish snippets, configurations, reference guides, and templates.
-            </p>
-            <ul className="space-y-3 text-xs text-gray-500 font-bold">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Browse categorized hubs created by university clubs and developers
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Join as a contributor to collaborate on topic-based folders
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#468FEA]" />
-                Mirror useful codes directly into your local desktop application
-              </li>
-            </ul>
-            <div className="pt-2">
-              <Link href="/resources" className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest text-white clay-blue hover:scale-105 transition-all font-rubik">
-                Browse Public Hubs <ArrowRight size={12} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="p-6 clay-card border border-white/20 space-y-4">
-              <div className="text-[#468FEA] font-bold text-xs uppercase tracking-widest font-mono">// Creators Flow</div>
-              <h3 className="text-lg font-black font-rubik text-gray-800">Publish Resources</h3>
-              <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                Set up your public creator portfolio, manage category hubs, configure access levels, and track download/copy metrics.
-              </p>
-              <Link href="/publish" className="inline-flex items-center gap-1.5 text-xs text-[#468FEA] font-bold hover:underline">
-                Creator Dashboard <ChevronRight size={14} />
-              </Link>
-            </div>
-            
-            <div className="p-6 clay-card border border-white/20 space-y-4">
-              <div className="text-[#F28500] font-bold text-xs uppercase tracking-widest font-mono">// Contributors Flow</div>
-              <h3 className="text-lg font-black font-rubik text-gray-800">Join Topic Hubs</h3>
-              <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                Regular users can join hubs as contributors to submit reference links, cheat sheets, and useful coding templates.
-              </p>
-              <Link href="/contributors" className="inline-flex items-center gap-1.5 text-xs text-[#F28500] font-bold hover:underline">
-                Contributor Portal <ChevronRight size={14} />
-              </Link>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const ClipboardRooms = () => {
-  return (
-    <section id="rooms" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
-      <div className="max-w-6xl mx-auto w-full relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="lg:col-span-7 order-2 lg:order-1">
-            <div className="p-8 clay-card border border-white/20 space-y-6 relative overflow-hidden">
-              <div className="absolute right-4 top-4 px-3 py-1 rounded-full text-[9px] font-mono uppercase tracking-widest text-[#F28500] bg-orange-50 border border-orange-100">
-                Active Session
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black font-rubik text-gray-900 uppercase">Temp Clipboard Room</h3>
-                <p className="text-xs text-gray-500 font-bold leading-relaxed max-w-md">
-                  Create a room, share the unique URL, and immediately mirror text or snippets between paired browser tabs without sign-ups.
-                </p>
-              </div>
-              
-              <div className="p-4 clay-card-inset rounded-2xl font-mono text-xs text-gray-600 space-y-2">
-                <div>Room Link: <span className="text-[#468FEA] select-all">lanpad.app/clipboard?room=lp-704x</span></div>
-                <div className="text-[10px] text-gray-400 font-bold">// Ephemeral tunnel active - auto-expires in 6 hours</div>
-              </div>
-
-              <div className="flex gap-4">
-                <Link href="/clipboard" className="px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest text-white clay-orange hover:scale-105 transition-all font-rubik">
-                  Create Temp Room
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 space-y-6 order-1 lg:order-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
-              Frictionless Sharing
-            </span>
-            <h2 className="text-4xl md:text-5xl font-rubik font-black tracking-tighter leading-none text-gray-900">
-              TEMPORARY CLIPBOARD ROOMS.
-            </h2>
-            <p className="text-gray-500 font-bold text-sm leading-relaxed">
-              No account, no password, and zero install required. Create a temporary clipboard room directly in your browser to sync links, terminal commands, or text snippets between devices.
-            </p>
-            <p className="text-xs text-gray-400 font-bold leading-relaxed">
-              Ideal for short bursts of collaborative coding, testing across multiple test mobiles, or moving simple notes on a library computer.
-            </p>
-          </div>
-
         </div>
       </div>
     </section>
@@ -1024,20 +855,20 @@ const SetupGuide = () => {
   const deviceSteps = [
     {
       step: "01",
-      title: "Launch Desktop App",
-      desc: "Download and start the lightweight LANpad client on your host computer (Mac or Windows).",
+      title: "Open & Start",
+      desc: "Open the app and start the backend. A QR code or session link will display for your mobile.",
       icon: <Monitor size={24} />
     },
     {
       step: "02",
-      title: "Pair via Local QR",
-      desc: "Scan the QR code displayed on the desktop app using your mobile device's camera to pair locally.",
+      title: "Scan to Connect",
+      desc: "Scan the QR code or open the link on your mobile to connect your devices directly.",
       icon: <Smartphone size={24} />
     },
     {
       step: "03",
-      title: "Sync & Discover",
-      desc: "That's it! Send clipboard contents instantly, auto-type into target inputs, or explore shared resource Hubs.",
+      title: "Ready to Use",
+      desc: "That's it! Use all features as needed and experience the intelligent layer.",
       icon: <Zap size={24} />
     }
   ];
@@ -1149,12 +980,6 @@ export default function Home() {
       onMouseMove={handleGlobalMouseMove}
       className="min-h-screen bg-[#EDEAE0] text-gray-900 font-dmsans relative overflow-x-hidden antialiased"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col min-h-screen"
-      >
       {/* Dynamic Clay Style Injections */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap');
@@ -1342,7 +1167,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 space-y-12">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#F28500] bg-orange-50 px-3.5 py-1.5 rounded-full border border-orange-100/50">
-              The Pain Point
+              Latency Engine
             </span>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -1351,24 +1176,24 @@ export default function Home() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="font-rubik text-5xl lg:text-6xl font-black tracking-tighter leading-none"
             >
-              Frictionless cross-device productivity.
+              sub-50ms sync speed.
             </motion.h2>
             <p className="text-xl text-gray-500 leading-relaxed max-w-md font-medium">
-              Moving code, notes, and clipboard content between phones and computers shouldn't require slow cloud networks, bloated account setups, or third-party servers.
+              No slow cloud networks. LANpad sends your keys directly using your local Wi-Fi at maximum speed.
             </p>
             <div className="space-y-8">
               {[
                 {
-                  title: "Goodbye Fragmented Workflows",
-                  desc: "Stop emailing yourself snippets or messaging links just to move them to another screen."
+                  title: "Fast Local Connection",
+                  desc: "Sends text instantly using your local Wi-Fi router without using the internet."
                 },
                 {
-                  title: "Local-First Network Sync",
-                  desc: "Your data doesn't travel over the cloud. Everything stays securely on your local network subnet, avoiding third-party server exposure."
+                  title: "100% Private (No Cloud)",
+                  desc: "Your typing stays in your room. There are no server logs and no data tracking."
                 },
                 {
-                  title: "Direct Input Simulation",
-                  desc: "Inject text letter-by-letter as keypresses directly into target terminal prompts or shell environments."
+                  title: "Works Everywhere",
+                  desc: "Works like a real physical keyboard on Mac and Windows utilizing Native Input Mode."
                 }
               ].map((item, idx) => (
                 <motion.div
@@ -1393,36 +1218,34 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Interactive Isometric Stack representing the 3 Layers */}
+          {/* Interactive Isometric Stack */}
           <div className="lg:w-1/2 h-[320px] md:h-[500px] relative isometric-stack flex items-center justify-center group cursor-pointer scale-[0.65] sm:scale-75 md:scale-90 lg:scale-100 transition-transform duration-500">
-            {/* Top Slab: Resource Hubs */}
+            {/* Top Slab: Stalled Legacy Cloud */}
             <div
-              className="slab slab-top bg-[#EDEAE0] shadow-[10px_10px_20px_rgba(0,0,0,0.08)] border border-white/20"
+              className="slab slab-top bg-gray-300 shadow-[10px_10px_20px_rgba(0,0,0,0.08)] border border-white/20"
               style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(100px)" }}
             >
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Product Layer 1</span>
-              <span className="text-gray-800 text-2xl font-black font-rubik">RESOURCE SHARING</span>
-              <span className="text-gray-400 text-[8px] font-mono tracking-widest mt-1 font-bold">Public hubs & snippets</span>
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Cloud Input</span>
+              <span className="text-gray-700 text-3xl font-black font-rubik">STALLED</span>
             </div>
 
-            {/* Middle Slab: Temporary Clipboard Rooms */}
+            {/* Middle Slab: Arrow separator */}
             <div
               className="slab slab-mid clay-blue"
               style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(0px)" }}
             >
-              <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Product Layer 2</span>
-              <span className="text-white text-2xl font-black font-rubik">CLIPBOARD ROOMS</span>
-              <span className="text-white/60 text-[8px] font-mono tracking-widest mt-1 font-bold">No-account quick share</span>
+              <svg className="w-12 h-12 text-white animate-pulse" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+              </svg>
             </div>
 
-            {/* Bottom Slab: Desktop App Local Engine */}
+            {/* Bottom Slab: Speedup */}
             <div
               className="slab slab-bot clay-orange"
               style={{ transform: "rotateX(45deg) rotateZ(-35deg) translateZ(-90px)" }}
             >
-              <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Product Layer 3</span>
-              <span className="text-white text-2xl font-black font-rubik">LOCAL DESKTOP APP</span>
-              <span className="text-white/90 text-[8px] font-mono tracking-widest mt-1 font-bold">Sub-50ms keyboard sync</span>
+              <span className="text-white/80 text-[10px] font-black uppercase tracking-widest mb-1 font-rubik">Local Engine</span>
+              <span className="text-white text-3xl font-black font-rubik tracking-tighter">SUB-50ms SYNC LATENCY</span>
             </div>
           </div>
         </div>
@@ -1430,16 +1253,10 @@ export default function Home() {
 
       <Features />
 
-      <UseCases />
-
-      <ResourceEcosystem />
-
-      <ClipboardRooms />
-
 
 
       {/* Setup Guide */}
-      <section id="setup" className="py-16 md:py-24 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+      <section id="setup" className="min-h-screen flex items-center py-24 relative overflow-hidden font-dmsans border-b border-gray-200/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full">
           <SetupGuide />
         </div>
@@ -1545,6 +1362,21 @@ export default function Home() {
               ))}
             </div>
           </div>
+          <div className="max-w-5xl mx-auto px-6 w-full z-10 mt-8">
+            <div className="p-4 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md text-[10px] text-gray-700 leading-relaxed font-sans text-center">
+              <span className="font-bold text-[#F28500] flex items-center justify-center gap-1"><AlertTriangle size={12} className="text-[#F28500]" /> SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
+              These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
+              Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
+              <a 
+                href="https://github.com/Nithin1138/Glidepass_local/tree/main/website-v2/public" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline hover:text-gray-900 transition-colors font-bold"
+              >
+                github.com/Nithin1138/Glidepass_local
+              </a>.
+            </div>
+          </div>
 
           {/* Left Curtain Panel */}
           <motion.div
@@ -1575,22 +1407,6 @@ export default function Home() {
               <span className="text-[10px] font-black text-gray-400 -rotate-90 select-none">PULL</span>
             </div>
           </motion.div>
-        </div>
-
-        <div className="max-w-5xl mx-auto px-6 w-full mt-10">
-          <div className="p-5 rounded-2xl border border-white/40 clay-card shadow-inner text-[10px] text-gray-500 leading-relaxed font-sans text-center">
-            <span className="font-black text-[#F28500] flex items-center justify-center gap-1 mb-1.5"><AlertTriangle size={12} className="text-[#F28500]" /> SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
-            These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
-            Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
-            <a 
-              href="https://github.com/Nithin1138/Glidepass_local/tree/main/website-v2/public" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="underline text-[#468FEA] hover:text-blue-600 transition-colors font-black"
-            >
-              github.com/Nithin1138/Glidepass_local
-            </a>.
-          </div>
         </div>
       </section>
 
@@ -1750,7 +1566,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-      </motion.div>
 
     </div>
   );
