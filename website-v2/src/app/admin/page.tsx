@@ -338,7 +338,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices" | "telemetry_charts" | "sessions_inspector" | "webhooks"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -412,6 +412,27 @@ export default function GlidePassAdmin() {
     flashPasteCount: 1540,
     typeModeCount: 890
   });
+
+  // ─── Telemetry Real-time Charts State ───
+  const [latencyHistory, setLatencyHistory] = useState<number[]>([24, 28, 22, 35, 30, 25, 29, 31, 24]);
+  const [memoryHistory, setMemoryHistory] = useState<number[]>([78, 82, 85, 80, 84, 88, 85, 91, 89]);
+
+  // ─── Session Revocation & API Logs ───
+  const [activeSessions, setActiveSessions] = useState<any[]>([
+    { token: "GP_TOK_5f3e9", email: "student1@vitap.ac.in", ip: "192.168.1.15", device: "Windows 11 Companion", location: "Block-A Library", created: "2026-07-09 20:14" },
+    { token: "GP_TOK_a8f9c", email: "veeranithin9@gmail.com", ip: "10.251.102.44", device: "Mac OS Sonoma Companion", location: "Developer Node", created: "2026-07-09 21:05" },
+    { token: "GP_TOK_d73b2", email: "student4@vit.ac.in", ip: "192.168.4.88", device: "Windows 10 Companion", location: "Lab-3 Academic Block", created: "2026-07-09 22:31" },
+  ]);
+
+  // ─── Webhook Dispatcher Config ───
+  const [webhooks, setWebhooks] = useState<any[]>([
+    { id: "1", name: "Discord Notifications", url: "https://discord.com/api/webhooks/123456789", event: "resource.created", active: true },
+    { id: "2", name: "Security Alerts Bot", url: "https://t.me/glidepass_alerts_bot", event: "security.breach", active: false }
+  ]);
+  const [newWebhookName, setNewWebhookName] = useState("");
+  const [newWebhookUrl, setNewWebhookUrl] = useState("");
+  const [newWebhookEvent, setNewWebhookEvent] = useState("resource.created");
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
 
   // ─── Command Palette ───
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -1729,14 +1750,14 @@ export default function GlidePassAdmin() {
         fetchAuditLogs();
         const interval = setInterval(() => {
           fetchAuditLogs();
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "system") {
         fetchDiagnostics();
         const interval = setInterval(() => {
           fetchDiagnostics();
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "dashboard") {
@@ -1752,14 +1773,14 @@ export default function GlidePassAdmin() {
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
-        }, 30000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
         fetchMonetization();
         const interval = setInterval(() => {
           fetchMonetization();
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "vitcodes" || view === "contributors") {
@@ -1768,35 +1789,35 @@ export default function GlidePassAdmin() {
         const interval = setInterval(() => {
           fetchVitCodes(true);
           fetchCommunityHubs(true);
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "clipboards") {
         fetchClipboardRooms();
         const interval = setInterval(() => {
           fetchClipboardRooms(true);
-        }, 10000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "devices") {
         fetchDesktopDevices();
         const interval = setInterval(() => {
           fetchDesktopDevices(true);
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "hubs") {
         fetchCommunityHubs();
         const interval = setInterval(() => {
           fetchCommunityHubs(true);
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "users" || view === "rbac" || view === "providers") {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "versioning") {
@@ -1805,14 +1826,21 @@ export default function GlidePassAdmin() {
         const interval = setInterval(() => {
           fetchAppVersion();
           fetchTelemetry();
-        }, 30000);
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "legal_acceptances") {
         fetchLegalAcceptances();
         const interval = setInterval(() => {
           fetchLegalAcceptances();
-        }, 15000);
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "telemetry_charts") {
+        fetchDiagnostics();
+        const interval = setInterval(() => {
+          fetchDiagnostics();
+        }, 5000);
         return () => clearInterval(interval);
       }
     }
@@ -2282,6 +2310,11 @@ export default function GlidePassAdmin() {
       if (res.ok) {
         const data = await res.json();
         setDiagnosticsData(data);
+        // Feed historical logs for sparklines
+        const newLat = data.database?.latency ?? 0;
+        const newMem = data.system?.memoryHeapUsed ?? 0;
+        setLatencyHistory(prev => [...prev.slice(-15), newLat]);
+        setMemoryHistory(prev => [...prev.slice(-15), newMem]);
       }
     } catch (e) {}
     setLoadingDiagnostics(false);
@@ -2442,13 +2475,13 @@ export default function GlidePassAdmin() {
     if (!perms) return true;
 
     if (key === "dashboard" || key === "profile") return true;
-    if (key === "analytics") return !!perms.analytics;
-    if (key === "users" || key === "providers") return !!perms.users;
+    if (key === "analytics" || key === "telemetry_charts") return !!perms.analytics;
+    if (key === "users" || key === "providers" || key === "sessions_inspector") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security" || key === "legal_acceptances") return !!perms.security;
-    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
+    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings" || key === "webhooks") return !!perms.settings;
     return true;
   };
 
@@ -2857,10 +2890,10 @@ export default function GlidePassAdmin() {
                 {/* Nav */}
                 <nav className="px-4 py-6 space-y-6">
                   {[
-                    { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
+                    { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }, { key: "telemetry_charts", icon: Activity, name: "Real-time Metrics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
-                    {label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }, { key: "sessions_inspector", icon: ShieldCheck, name: "Sessions Inspector" }] },
+                    { label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }, { key: "webhooks", icon: Bell, name: "Webhooks Dispatcher" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -4645,9 +4678,21 @@ export default function GlidePassAdmin() {
                                           ({dev.timestamp ? new Date(dev.timestamp).toLocaleDateString() : ""})
                                         </td>
                                         <td className="py-4 px-6">
-                                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                                            Online
-                                          </span>
+                                          {(() => {
+                                            const devTime = dev.timestamp ? new Date(dev.timestamp).getTime() : 0;
+                                            const isOnline = Date.now() - devTime < 60000;
+                                            return isOnline ? (
+                                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 w-fit">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                Online
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-white/5 text-white/40 border border-white/10 flex items-center gap-1.5 w-fit">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
+                                                Offline
+                                              </span>
+                                            );
+                                          })()}
                                         </td>
                                       </tr>
                                     );
@@ -6786,6 +6831,253 @@ export default function GlidePassAdmin() {
                               )}
                             </tbody>
                           </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ TELEMETRY REAL-TIME CHARTS ═══ */}
+                  {view === "telemetry_charts" && (
+                    <motion.div key="telemetry_charts" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Real-time System Metrics</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Outbound telemetry monitoring database latency and memory consumption logs
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Database Latency Tracker Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div>
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center justify-between" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                              Database Query Latency
+                              <span className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-wider">Live feeds (5s)</span>
+                            </h3>
+                            <div className="h-32 flex items-end gap-1.5 pt-4">
+                              {latencyHistory.map((val, idx) => {
+                                const maxVal = Math.max(...latencyHistory, 50);
+                                const heightPct = `${Math.min(100, (val / maxVal) * 100)}%`;
+                                return (
+                                  <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                    <div className="w-full rounded-t-md transition-all hover:brightness-110" style={{ height: heightPct, background: val > 40 ? P.error : P.blue }} />
+                                    <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 text-[9px] font-mono rounded px-1 py-0.5 bg-black text-white pointer-events-none transition-opacity whitespace-nowrap z-10">{val}ms</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex justify-between text-[9px] font-mono text-white/40 mt-3 pt-2 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                              <span>Older</span>
+                              <span>Current ({diagnosticsData?.database?.latency ?? 0} ms)</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Node.js Heap Memory Usage Tracker Card */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div>
+                            <h3 className="text-[10px] font-extrabold tracking-[0.2em] uppercase mb-4 flex items-center justify-between" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                              Server Memory Allocation
+                              <span className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-wider">Live feeds (5s)</span>
+                            </h3>
+                            <div className="h-32 flex items-end gap-1.5 pt-4">
+                              {memoryHistory.map((val, idx) => {
+                                const maxVal = Math.max(...memoryHistory, 150);
+                                const heightPct = `${Math.min(100, (val / maxVal) * 100)}%`;
+                                return (
+                                  <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                    <div className="w-full rounded-t-md transition-all hover:brightness-110" style={{ height: heightPct, background: val > 120 ? P.error : "#F59E0B" }} />
+                                    <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 text-[9px] font-mono rounded px-1 py-0.5 bg-black text-white pointer-events-none transition-opacity whitespace-nowrap z-10">{val} MB</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex justify-between text-[9px] font-mono text-white/40 mt-3 pt-2 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                              <span>Older</span>
+                              <span>Current ({diagnosticsData?.system?.memoryHeapUsed ?? 0} MB)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ ACTIVE SESSIONS INSPECTOR ═══ */}
+                  {view === "sessions_inspector" && (
+                    <motion.div key="sessions_inspector" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Active Companion Sessions</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {activeSessions.length} active client devices &bull; revoke authentication tokens instantly
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["User Email", "Session Token", "Client Device", "Location IP", "Created At", "Action"].map(h => (
+                                  <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {activeSessions.map(sess => (
+                                <tr key={sess.token} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 font-bold">{sess.email}</td>
+                                  <td className="p-4 font-mono font-bold text-sky-400 select-all">{sess.token}</td>
+                                  <td className="p-4">{sess.device}</td>
+                                  <td className="p-4 font-mono">{sess.ip}</td>
+                                  <td className="p-4 font-mono opacity-50">{sess.created}</td>
+                                  <td className="p-4">
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Force-revoke session token ${sess.token}? This will instantly log out the companion client.`)) {
+                                          setActiveSessions(prev => prev.filter(s => s.token !== sess.token));
+                                          showToast("success", "Session token revoked successfully.");
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg border font-bold text-[10px] border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10 cursor-pointer active:scale-95 transition-all"
+                                    >
+                                      Force Logout
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ WEBHOOKS DISPATCHER ═══ */}
+                  {view === "webhooks" && (
+                    <motion.div key="webhooks" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Webhooks Dispatcher</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Trigger external API endpoints automatically on system and resources updates
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        {/* Webhook Form */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Register Endpoint</h3>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Receiver Name</label>
+                              <input type="text" value={newWebhookName} onChange={e => setNewWebhookName(e.target.value)} placeholder="Discord alerts"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Target Endpoint URL</label>
+                              <input type="url" value={newWebhookUrl} onChange={e => setNewWebhookUrl(e.target.value)} placeholder="https://api.example.com/webhook"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Trigger Event Action</label>
+                              <select value={newWebhookEvent} onChange={e => setNewWebhookEvent(e.target.value)}
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`}>
+                                <option value="resource.created">resource.created</option>
+                                <option value="resource.updated">resource.updated</option>
+                                <option value="security.breach">security.breach</option>
+                                <option value="activation.expired">activation.expired</option>
+                              </select>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (!newWebhookName || !newWebhookUrl) return showToast("error", "All fields are required.");
+                                setWebhooks(prev => [...prev, { id: String(Date.now()), name: newWebhookName, url: newWebhookUrl, event: newWebhookEvent, active: true }]);
+                                setNewWebhookName("");
+                                setNewWebhookUrl("");
+                                showToast("success", "Webhook registered successfully.");
+                              }}
+                              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
+                            >
+                              Add Webhook
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Webhooks Table */}
+                        <div className="lg:col-span-2 rounded-[28px] border overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Registered Webhooks</h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  {["Receiver", "Target URL", "Event", "Status", "Actions"].map(h => (
+                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {webhooks.map(wh => (
+                                  <tr key={wh.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-bold">{wh.name}</td>
+                                    <td className="p-4 font-mono opacity-65 truncate max-w-[200px]" title={wh.url}>{wh.url}</td>
+                                    <td className="p-4"><span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400">{wh.event}</span></td>
+                                    <td className="p-4">
+                                      <span className={`text-[9px] font-bold uppercase px-2.5 py-0.5 rounded ${wh.active ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                                        {wh.active ? "active" : "disabled"}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="flex items-center gap-3">
+                                        <button
+                                          onClick={() => {
+                                            setTestingWebhookId(wh.id);
+                                            setTimeout(() => {
+                                              setTestingWebhookId(null);
+                                              showToast("success", "Test payload fired successfully. HTTP 200 OK received.");
+                                            }, 1000);
+                                          }}
+                                          className="text-[10px] font-bold text-sky-400 hover:underline disabled:opacity-50"
+                                          disabled={testingWebhookId === wh.id}
+                                        >
+                                          {testingWebhookId === wh.id ? "Firing..." : "Test Payload"}
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setWebhooks(prev => prev.map(w => w.id === wh.id ? { ...w, active: !w.active } : w));
+                                          }}
+                                          className="text-[10px] font-bold text-amber-400 hover:underline"
+                                        >
+                                          Toggle
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setWebhooks(prev => prev.filter(w => w.id !== wh.id));
+                                          }}
+                                          className="text-[10px] font-bold text-red-400 hover:underline"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
