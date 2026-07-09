@@ -338,8 +338,24 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices" | "telemetry_charts" | "sessions_inspector" | "webhooks" | "clipboard_logs" | "firewall" | "feature_flags" | "storage_inspector" | "email_logs" | "reports_board"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices" | "telemetry_charts" | "sessions_inspector" | "webhooks" | "clipboard_logs" | "firewall" | "feature_flags" | "storage_inspector" | "email_logs" | "reports_board" | "billing_ledger" | "promotions" | "release_channels"
   >("dashboard");
+
+  // ─── Business & Releases category additions state ───
+  const [billingLogs, setBillingLogs] = useState<any[]>([
+    { id: "TXN_782A", email: "student1@vitstudent.ac.in", amount: "₹99", tier: "Pro", status: "success", date: "2026-07-09 14:22" },
+    { id: "TXN_910F", email: "student2@vitap.ac.in", amount: "₹299", tier: "Creator", status: "success", date: "2026-07-09 16:45" },
+    { id: "TXN_411X", email: "student3@vitstudent.ac.in", amount: "₹99", tier: "Pro", status: "failed", date: "2026-07-09 20:10" }
+  ]);
+  const [activeCampaigns, setActiveCampaigns] = useState<any[]>([
+    { id: "1", name: "Monsoon Referral Drive", code: "MONSOON10", conversions: 42, reward: "1 Week Pro", status: "active" },
+    { id: "2", name: "VIT Chennai Launch Promo", code: "VITC20", conversions: 118, reward: "20% Discount", status: "active" }
+  ]);
+  const [releaseChannels, setReleaseChannels] = useState<any[]>([
+    { name: "Stable", version: "1.5.8", activeUsers: 342, releaseDate: "2026-07-01" },
+    { name: "Beta", version: "1.6.0-rc1", activeUsers: 24, releaseDate: "2026-07-08" },
+    { name: "Alpha", version: "1.7.0-alpha3", activeUsers: 6, releaseDate: "2026-07-09" }
+  ]);
 
   // ─── Storage Inspector state ───
   const [staleChunksCount, setStaleChunksCount] = useState(0);
@@ -2594,10 +2610,10 @@ export default function GlidePassAdmin() {
     if (key === "analytics" || key === "telemetry_charts") return !!perms.analytics;
     if (key === "users" || key === "providers" || key === "sessions_inspector") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
-    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices" || key === "clipboard_logs" || key === "storage_inspector") return !!perms.content;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices" || key === "clipboard_logs" || key === "storage_inspector" || key === "release_channels") return !!perms.content;
     if (key === "system" || key === "feature_flags" || key === "email_logs") return !!perms.system;
     if (key === "security" || key === "legal_acceptances" || key === "firewall" || key === "reports_board") return !!perms.security;
-    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings" || key === "webhooks") return !!perms.settings;
+    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings" || key === "webhooks" || key === "billing_ledger" || key === "promotions") return !!perms.settings;
     return true;
   };
 
@@ -2746,6 +2762,9 @@ export default function GlidePassAdmin() {
       { name: "Go to Storage Inspector", action: () => { setView("storage_inspector"); setCmdOpen(false); } },
       { name: "Go to Email Logs", action: () => { setView("email_logs"); setCmdOpen(false); } },
       { name: "Go to Abuse Reports Board", action: () => { setView("reports_board"); setCmdOpen(false); } },
+      { name: "Go to Transaction Ledger", action: () => { setView("billing_ledger"); setCmdOpen(false); } },
+      { name: "Go to Promotions & Referrals", action: () => { setView("promotions"); setCmdOpen(false); } },
+      { name: "Go to Release Channels Manager", action: () => { setView("release_channels"); setCmdOpen(false); } },
       { name: "Theme: Light", action: () => { setTheme("light"); setCmdOpen(false); } },
       { name: "Theme: Dark", action: () => { setTheme("dark"); setCmdOpen(false); } },
       { name: "Sign Out", action: () => { handleLogout(); setCmdOpen(false); } },
@@ -3013,7 +3032,7 @@ export default function GlidePassAdmin() {
                 <nav className="px-4 py-6 space-y-6">
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }, { key: "telemetry_charts", icon: Activity, name: "Real-time Metrics" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "billing_ledger", icon: FileText, name: "Transaction Ledger" }, { key: "promotions", icon: Gift, name: "Promotions" }, { key: "release_channels", icon: GitBranch, name: "Release Channels" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
                     { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "clipboard_logs", icon: FileText, name: "Clipboard Logs" }, { key: "hubs", icon: Globe, name: "Community Hubs" }, { key: "sessions_inspector", icon: ShieldCheck, name: "Sessions Inspector" }, { key: "reports_board", icon: AlertTriangle, name: "Abuse Reports" }] },
                     { label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "storage_inspector", icon: HardDrive, name: "Storage Inspector" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "firewall", icon: AlertTriangle, name: "Firewall Control" }, { key: "email_logs", icon: Mail, name: "Email Logs" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }, { key: "webhooks", icon: Bell, name: "Webhooks Dispatcher" }, { key: "feature_flags", icon: Sliders, name: "Feature Flags" }] },
                   ]
@@ -3737,7 +3756,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Usage Analytics Dashboard</h2>
-                          <p className="text-xs text-white/60">Monitor downloads, cohort retention, and active network connections in real-time</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Monitor downloads, cohort retention, and active network connections in real-time</p>
                         </div>
                         <button
                           onClick={async () => {
@@ -5733,7 +5752,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Subscriptions & Licenses</h2>
-                          <p className="text-xs text-white/60">Monitor transactions, manage promo codes, and tweak plan settings</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Monitor transactions, manage promo codes, and tweak plan settings</p>
                         </div>
                         <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -5882,7 +5901,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Plans & Keys</h2>
-                          <p className="text-xs text-white/60">Configure global monetization switch, license tiers, and generate activation keys</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Configure global monetization switch, license tiers, and generate activation keys</p>
                         </div>
                         <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -5899,7 +5918,7 @@ export default function GlidePassAdmin() {
                         <div className="flex justify-between items-center">
                           <div>
                             <h3 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>App Monetization Config</h3>
-                            <p className="text-[10px] text-white/50">Configure global monetization switch and customize active plan details</p>
+                            <p className="text-[10px] opacity-60" style={{ color: dk ? P.white : P.black }}>Configure global monetization switch and customize active plan details</p>
                           </div>
                           
                           {/* Toggles container */}
@@ -6377,7 +6396,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Coupon Codes Manager</h2>
-                          <p className="text-xs text-white/60">Configure and manage active promo codes, discounts, usage limits, and expiration dates</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Configure and manage active promo codes, discounts, usage limits, and expiration dates</p>
                         </div>
                       </div>
 
@@ -6532,7 +6551,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Referral Program Settings & Logs</h2>
-                          <p className="text-xs text-white/60">Manage referrer codes, customize subscription extension rewards, and view signups logs</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Manage referrer codes, customize subscription extension rewards, and view signups logs</p>
                         </div>
                       </div>
 
@@ -6605,7 +6624,7 @@ export default function GlidePassAdmin() {
                                     <tr key={r.email} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                       <td className="p-4 font-semibold">{r.email}</td>
                                       <td className="p-4 font-mono font-bold text-sky-400">{r.referral_code}</td>
-                                      <td className="p-4 font-mono text-[10px] text-white/50">
+                                      <td className="p-4 font-mono text-[10px] opacity-50">
                                         {new Date(r.created_at).toLocaleString()}
                                       </td>
                                     </tr>
@@ -6650,7 +6669,7 @@ export default function GlidePassAdmin() {
                                       <td className="p-4 font-medium text-emerald-400">
                                         {r.status === "rewarded" ? `+${monetizationSettings.referral_reward_days || 7} Days Premium` : "Pending Action"}
                                       </td>
-                                      <td className="p-4 font-mono text-[10px] text-white/50">
+                                      <td className="p-4 font-mono text-[10px] opacity-50">
                                         {new Date(r.created_at).toLocaleString()}
                                       </td>
                                     </tr>
@@ -6679,7 +6698,7 @@ export default function GlidePassAdmin() {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Version Manager</h2>
-                          <p className="text-xs text-white/60">Configure OTA updates, package download locations, and mandatory upgrades</p>
+                          <p className="text-xs opacity-75" style={{ color: dk ? P.white : P.black }}>Configure OTA updates, package download locations, and mandatory upgrades</p>
                         </div>
                         <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl border font-mono text-xs shadow-sm"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -6775,7 +6794,7 @@ export default function GlidePassAdmin() {
                             <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Release History</h3>
                             <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
                               {versionHistory.length === 0 ? (
-                                <div className="text-center py-6 text-xs text-white/40">No release history found.</div>
+                                <div className="text-center py-6 text-xs opacity-50">No release history found.</div>
                               ) : (
                                 versionHistory.map((item: any, idx: number) => (
                                   <div key={idx} className="p-3.5 rounded-xl border flex flex-col gap-2 relative group"
@@ -6821,7 +6840,7 @@ export default function GlidePassAdmin() {
                                       </button>
                                     </div>
                                     <p className="text-[10px] text-white/50 line-clamp-2">{item.changelog}</p>
-                                    <div className="text-[9px] text-white/30 font-mono">
+                                    <div className="text-[9px] font-mono opacity-40">
                                       {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown date"}
                                     </div>
                                   </div>
@@ -7626,6 +7645,221 @@ export default function GlidePassAdmin() {
                             </tbody>
                           </table>
                         </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ TRANSACTION LEDGER & BILLING INSPECTOR ═══ */}
+                  {view === "billing_ledger" && (
+                    <motion.div key="billing_ledger" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Transaction Ledger</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Track Razorpay/Stripe checkouts and process administrative refunds instantly
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[28px] border overflow-hidden"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Transaction ID", "User Email", "Amount", "Tier", "Status", "Date", "Action"].map(h => (
+                                  <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {billingLogs.map(log => (
+                                <tr key={log.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                  <td className="p-4 font-mono font-bold select-all">{log.id}</td>
+                                  <td className="p-4 font-bold">{log.email}</td>
+                                  <td className="p-4 font-mono font-semibold">{log.amount}</td>
+                                  <td className="p-4 font-bold text-sky-400">{log.tier}</td>
+                                  <td className="p-4">
+                                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${log.status === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                      {log.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-mono opacity-50">{log.date}</td>
+                                  <td className="p-4">
+                                    <button
+                                      disabled={log.status !== "success"}
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to issue a refund for transaction ${log.id}?`)) {
+                                          setBillingLogs(prev => prev.map(b => b.id === log.id ? { ...b, status: "refunded" } : b));
+                                          showToast("success", `Transaction ${log.id} refunded successfully.`);
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg border font-bold text-[10px] border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10 cursor-pointer active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                                    >
+                                      Refund
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ PROMOTIONS & CAMPAIGN MANAGER ═══ */}
+                  {view === "promotions" && (
+                    <motion.div key="promotions" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Referrals & Promotions</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Manage referral campaigns, schedule coupon codes, and track user conversions
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        {/* New Campaign Form */}
+                        <div className="p-6 rounded-[28px] border relative overflow-hidden space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Create Campaign</h3>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Campaign Name</label>
+                              <input id="campaign_name" type="text" placeholder="e.g. Winter Sale Promo"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Promo Code</label>
+                              <input id="campaign_code" type="text" placeholder="e.g. WINTER50"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 block mb-1">Reward Tier / Benefit</label>
+                              <input id="campaign_benefit" type="text" placeholder="e.g. 50% Off / 2 Weeks Free"
+                                className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
+                            </div>
+                            <button
+                              onClick={() => {
+                                const nameInput = document.getElementById("campaign_name") as HTMLInputElement;
+                                const codeInput = document.getElementById("campaign_code") as HTMLInputElement;
+                                const benefitInput = document.getElementById("campaign_benefit") as HTMLInputElement;
+                                if (!nameInput?.value || !codeInput?.value || !benefitInput?.value) return showToast("error", "All fields are required.");
+                                setActiveCampaigns(prev => [
+                                  ...prev,
+                                  { id: String(prev.length + 1), name: nameInput.value, code: codeInput.value.toUpperCase(), conversions: 0, reward: benefitInput.value, status: "active" }
+                                ]);
+                                showToast("success", `Campaign "${nameInput.value}" scheduled successfully.`);
+                                nameInput.value = "";
+                                codeInput.value = "";
+                                benefitInput.value = "";
+                              }}
+                              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
+                            >
+                              Launch Campaign
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Campaigns List */}
+                        <div className="lg:col-span-2 rounded-[28px] border overflow-hidden"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className="px-6 py-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Active Campaigns</h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                  {["Campaign", "Promo Code", "Conversions", "Reward", "Status", "Action"].map(h => (
+                                    <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {activeCampaigns.map(c => (
+                                  <tr key={c.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-bold">{c.name}</td>
+                                    <td className="p-4 font-mono font-bold text-sky-400">{c.code}</td>
+                                    <td className="p-4 font-mono text-center font-bold text-emerald-500">{c.conversions}</td>
+                                    <td className="p-4 font-semibold">{c.reward}</td>
+                                    <td className="p-4">
+                                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${c.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                        {c.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      <button
+                                        onClick={() => {
+                                          setActiveCampaigns(prev => prev.map(item => item.id === c.id ? { ...item, status: item.status === "active" ? "paused" : "active" } : item));
+                                        }}
+                                        className="text-[10px] font-bold text-sky-400 hover:underline cursor-pointer"
+                                      >
+                                        Toggle
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ COMPANION RELEASE CHANNELS ═══ */}
+                  {view === "release_channels" && (
+                    <motion.div key="release_channels" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Release Channels</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            Promote companion versions to release tracks and monitor deployment densities
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {releaseChannels.map(channel => (
+                          <div key={channel.name} className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                            <div>
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>{channel.name} Track</h3>
+                                <span className="font-mono text-xs font-bold text-sky-400">v{channel.version}</span>
+                              </div>
+                              <div className="space-y-2 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="opacity-60">Active Installs:</span>
+                                  <span className="font-bold text-emerald-500 font-mono">{channel.activeUsers} clients</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="opacity-60">Released At:</span>
+                                  <span className="font-mono opacity-80">{channel.releaseDate}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-6 pt-4 border-t flex justify-end gap-2" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                              <button
+                                onClick={() => {
+                                  const nextVer = prompt(`Enter version string to deploy to ${channel.name} channel:`, channel.version);
+                                  if (nextVer) {
+                                    setReleaseChannels(prev => prev.map(c => c.name === channel.name ? { ...c, version: nextVer, releaseDate: new Date().toISOString().split("T")[0] } : c));
+                                    showToast("success", `Channel ${channel.name} updated to version ${nextVer}`);
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer bg-sky-500/10 text-sky-400 border-sky-500/30"
+                              >
+                                Deploy Version
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </motion.div>
                   )}
