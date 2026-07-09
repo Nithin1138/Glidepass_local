@@ -1769,13 +1769,6 @@ export default function GlidePassAdmin() {
         }, 30000);
         return () => clearInterval(interval);
       }
-      if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
-        fetchMonetization();
-        const interval = setInterval(() => {
-          fetchMonetization();
-        }, 15000);
-        return () => clearInterval(interval);
-      }
       if (view === "vitcodes" || view === "contributors") {
         fetchVitCodes();
         fetchCommunityHubs(true);
@@ -1799,7 +1792,7 @@ export default function GlidePassAdmin() {
         }, 15000);
         return () => clearInterval(interval);
       }
-      if (view === "users" || view === "rbac" || view === "providers") {
+      if (view === "users" || view === "rbac") {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
@@ -2450,12 +2443,12 @@ export default function GlidePassAdmin() {
 
     if (key === "dashboard" || key === "profile") return true;
     if (key === "analytics") return !!perms.analytics;
-    if (key === "users" || key === "providers") return !!perms.users;
+    if (key === "users") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
     if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security" || key === "legal_acceptances") return !!perms.security;
-    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
+    if (key === "settings") return !!perms.settings;
     return true;
   };
 
@@ -2865,9 +2858,8 @@ export default function GlidePassAdmin() {
                 <nav className="px-4 py-6 space-y-6">
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
-                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
-                    { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
+                    { label: "Operations", items: [{ key: "versioning", icon: GitBranch, name: "Version Manager" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -3337,178 +3329,6 @@ export default function GlidePassAdmin() {
                                   </td>
                                 </tr>
                               ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* ═══ Providers ═══ */}
-                  {view === "providers" && (
-                    <motion.div key="providers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Providers & Creators Directory</h2>
-                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage content creators, code contributors, their accounts, and growth metrics</p>
-                        </div>
-                      </div>
-
-                      {/* Analytics Dashboard Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Consent metrics */}
-                        <div className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between min-h-[140px]"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Newsletter Consent</p>
-                              <h3 className="text-3xl font-black mt-2 font-[family-name:var(--font-outfit)]" style={{ color: dk ? P.white : P.black }}>
-                                {providerStats.totalConsent}
-                              </h3>
-                            </div>
-                            <div className="p-2.5 rounded-xl border" style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: P.blue }}>
-                              <Mail size={20} />
-                            </div>
-                          </div>
-                          <div className="mt-4 flex items-center gap-2">
-                            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ background: `${P.blue}15`, color: P.blue }}>
-                              {providerStats.consentPercentage}%
-                            </span>
-                            <span className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>of total users opted in for updates</span>
-                          </div>
-                        </div>
-
-                        {/* Referral Growth Channels */}
-                        <div className="p-5 rounded-[24px] border relative overflow-hidden md:col-span-2 space-y-4"
-                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
-                          <div>
-                            <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Acquisition Channels (Referrals)</p>
-                            <p className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>Where do our users find us?</p>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {providerStats.referralData.slice(0, 4).map((ref, idx) => (
-                              <div key={idx} className="space-y-1.5">
-                                <div className="flex justify-between text-xs font-bold">
-                                  <span style={{ color: dk ? P.white : P.black }}>{ref.source}</span>
-                                  <span className="font-mono" style={{ color: P.blue }}>{ref.count} ({ref.percentage}%)</span>
-                                </div>
-                                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
-                                  <div className="h-full rounded-full" style={{ width: `${ref.percentage}%`, background: P.blue }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Filters */}
-                      <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
-                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <div className="relative w-full md:w-80">
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
-                          <input type="text" value={providerSearch} onChange={e => setProviderSearch(e.target.value)} placeholder="Search name or email..."
-                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Provider:</span>
-                            <select value={providerRoleFilter} onChange={e => setProviderRoleFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
-                              <option value="all">All Providers</option>
-                              <option value="creator">Creators</option>
-                              <option value="contributor">Contributors</option>
-                            </select>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Status:</span>
-                            <select value={providerStatusFilter} onChange={e => setProviderStatusFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
-                              <option value="all">All Statuses</option>
-                              <option value="active">Active</option>
-                              <option value="suspended">Suspended</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Providers Directory Table */}
-                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse" style={{ minWidth: "750px" }}>
-                            <thead>
-                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                {["Name", "Email", "Role Type", "Joined Date", "Consent", "Status", "Actions"].map(h => (
-                                  <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Name" ? "pl-6" : ""}`}
-                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {users
-                                .filter(u => {
-                                  const searchMatch = u.name.toLowerCase().includes(providerSearch.toLowerCase()) || u.email.toLowerCase().includes(providerSearch.toLowerCase());
-                                  
-                                  const rLower = u.role.toLowerCase();
-                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
-                                  const isContributor = rLower.includes("contributor");
-                                  
-                                  const roleMatch = providerRoleFilter === "all"
-                                    ? (isCreator || isContributor)
-                                    : providerRoleFilter === "creator"
-                                      ? isCreator
-                                      : isContributor;
-                                      
-                                  const statusMatch = providerStatusFilter === "all" || u.status === providerStatusFilter;
-                                  
-                                  return searchMatch && roleMatch && statusMatch;
-                                })
-                                .map(u => {
-                                  const rLower = u.role.toLowerCase();
-                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
-                                  const displayRole = isCreator ? "Creator" : "Contributor";
-                                  
-                                  return (
-                                    <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                      <td className="p-4 pl-6 font-bold">{u.name}</td>
-                                      <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
-                                      <td className="p-4">
-                                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" 
-                                          style={{ 
-                                            background: displayRole === "Creator" ? `${P.blue}15` : "transparent", 
-                                            color: displayRole === "Creator" ? P.blue : dk ? `${P.sky}80` : `${P.black}80`, 
-                                            borderColor: displayRole === "Creator" ? `${P.blue}25` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)"
-                                          }}>
-                                          {displayRole} ({u.role})
-                                        </span>
-                                      </td>
-                                      <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.joinedDate}</td>
-                                      <td className="p-4">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.consentEmails ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
-                                          {u.consentEmails ? "Opt-in" : "Opt-out"}
-                                        </span>
-                                      </td>
-                                      <td className="p-4">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.status === "suspended" ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}>
-                                          {u.status}
-                                        </span>
-                                      </td>
-                                      <td className="p-4 pr-6 text-right flex justify-end gap-2">
-                                        <button onClick={() => setSelectedProviderDetails(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                          style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? P.white : P.black }}>
-                                          Details
-                                        </button>
-                                        <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                          style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
-                                          {u.status === "suspended" ? "Unsuspend" : "Suspend"}
-                                        </button>
-                                        <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
-                                          style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
-                                          Delete
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
                             </tbody>
                           </table>
                         </div>
