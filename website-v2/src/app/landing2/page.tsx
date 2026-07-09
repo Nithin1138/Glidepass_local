@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { Zap, Play, Check, Terminal, Download, Globe, Star, ArrowRight, ShieldCheck, QrCode, Smartphone, Laptop, FileCode, RefreshCw } from "lucide-react";
+import { Zap, Play, Check, Terminal, Download, Globe, Star, ArrowRight, ShieldCheck, QrCode, Smartphone, Laptop, FileCode, RefreshCw, Wifi } from "lucide-react";
 import Link from "next/link";
 import * as THREE from "three";
 import { QRCodeCanvas } from "qrcode.react";
@@ -935,7 +935,10 @@ export default function Landing2() {
                 {/* Phone Status Info */}
                 <div className="flex justify-between items-center text-[8px] font-black text-gray-800 px-3 pt-0.5 z-10">
                   <span>9:41</span>
-                  <span className="flex items-center gap-0.5">📶 ⚡</span>
+                  <span className="flex items-center gap-1">
+                    <Wifi size={8} className="text-gray-800" />
+                    <Zap size={8} className="text-gray-800 fill-current" />
+                  </span>
                 </div>
 
                 {/* iPhone Screen Content */}

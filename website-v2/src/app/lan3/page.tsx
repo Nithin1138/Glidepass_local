@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion";
-import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar } from "lucide-react";
+import { Zap, ShieldCheck, Keyboard, RefreshCw, ChevronRight, Monitor, Smartphone, Globe, ArrowRight, Download, BookOpen, Lock, Star, X, Sun, Moon, Menu, FileCode, Check, QrCode, Terminal, Mail, Key, User, Calendar, AlertTriangle } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -342,13 +342,13 @@ const Hero = ({
               className="flex flex-wrap items-center gap-6 pt-4 text-[10px] uppercase tracking-widest text-gray-500 font-bold font-mono"
             >
               <div className="flex items-center gap-2">
-                <span className="text-emerald-500">🛡️</span> Local-first
+                <ShieldCheck size={14} className="text-emerald-500" /> Local-first
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-amber-500">⚡</span> No cloud lock-in
+                <Zap size={14} className="text-amber-500" /> No cloud lock-in
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-blue-500">📱</span> Fast cross-device sharing
+                <Smartphone size={14} className="text-blue-500" /> Fast cross-device sharing
               </div>
             </motion.div>
           </div>
@@ -1517,7 +1517,7 @@ export default function Home() {
           </div>
           <div className="max-w-5xl mx-auto px-6 w-full z-10 mt-8">
             <div className="p-4 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md text-[10px] text-gray-700 leading-relaxed font-sans text-center">
-              <span className="font-bold text-[#F28500]">⚠️ SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
+              <span className="font-bold text-[#F28500] flex items-center justify-center gap-1"><AlertTriangle size={12} className="text-[#F28500]" /> SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
               These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
               Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
               <a 
