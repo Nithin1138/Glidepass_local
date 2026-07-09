@@ -1072,6 +1072,7 @@ export default function GlidePassAdmin() {
   };
 
   const handleDeleteClipboardRoom = async (code: string) => {
+    setClipboardRooms(prev => prev.filter(r => r.code !== code));
     try {
       const res = await fetch(`/api/admin/clipboard?code=${encodeURIComponent(code)}`, {
         method: "DELETE"
@@ -1086,6 +1087,7 @@ export default function GlidePassAdmin() {
       }
     } catch (err: any) {
       showToast("error", err.message);
+      fetchClipboardRooms(true);
     }
   };
 
@@ -1106,6 +1108,7 @@ export default function GlidePassAdmin() {
   };
 
   const handleDeleteHub = async (id: string) => {
+    setCommunityHubs(prev => prev.map(h => h.id === id ? { ...h, isDeleted: true } : h));
     try {
       const res = await fetch(`/api/admin/hubs?id=${encodeURIComponent(id)}`, {
         method: "DELETE"
@@ -1120,10 +1123,12 @@ export default function GlidePassAdmin() {
       }
     } catch (err: any) {
       showToast("error", err.message);
+      fetchCommunityHubs(true);
     }
   };
 
   const handleRestoreHub = async (id: string) => {
+    setCommunityHubs(prev => prev.map(h => h.id === id ? { ...h, isDeleted: false } : h));
     try {
       const res = await fetch("/api/admin/hubs", {
         method: "POST",
@@ -1140,6 +1145,7 @@ export default function GlidePassAdmin() {
       }
     } catch (err: any) {
       showToast("error", err.message);
+      fetchCommunityHubs(true);
     }
   };
 
@@ -1747,7 +1753,7 @@ export default function GlidePassAdmin() {
           fetchTelemetry();
           fetchDiagnostics();
           fetchAuditLogs();
-        }, 3000);
+        }, 30000);
         return () => clearInterval(interval);
       }
       if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
@@ -1791,7 +1797,7 @@ export default function GlidePassAdmin() {
         const interval = setInterval(() => {
           fetchAppVersion();
           fetchTelemetry();
-        }, 3000);
+        }, 30000);
         return () => clearInterval(interval);
       }
       if (view === "legal_acceptances") {
