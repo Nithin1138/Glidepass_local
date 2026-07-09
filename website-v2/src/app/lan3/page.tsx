@@ -870,7 +870,7 @@ const UseCases = () => {
   ];
 
   return (
-    <section id="usecases" className="py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="usecases" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
           <div>
@@ -906,7 +906,7 @@ const UseCases = () => {
 
 const ResourceEcosystem = () => {
   return (
-    <section id="ecosystem" className="py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="ecosystem" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -973,7 +973,7 @@ const ResourceEcosystem = () => {
 
 const ClipboardRooms = () => {
   return (
-    <section id="rooms" className="py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="rooms" className="min-h-screen flex items-center py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
