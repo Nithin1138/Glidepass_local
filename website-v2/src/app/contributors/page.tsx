@@ -869,8 +869,8 @@ function ContributorsDashboard() {
         <motion.div animate={{ x: [0, 50, 0], y: [0, 30, 0] }} transition={{ duration: 20, repeat: Infinity }} className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full mix-blend-screen" />
         <motion.div animate={{ x: [0, -50, 0], y: [0, -30, 0] }} transition={{ duration: 15, repeat: Infinity }} className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full mix-blend-screen" />
         <MagicRings
-          color="#0077c0"
-          colorTwo="#c7eeff"
+          color={dk ? "#0077c0" : "#60a5fa"}
+          colorTwo={dk ? "#c7eeff" : "#93c5fd"}
           ringCount={8}
           speed={0.8}
           attenuation={12}
@@ -878,7 +878,7 @@ function ContributorsDashboard() {
           baseRadius={0.25}
           radiusStep={0.08}
           scaleRate={0.08}
-          opacity={0.35}
+          opacity={dk ? 0.35 : 0.18}
           blur={0}
           noiseAmount={0.05}
           followMouse={true}

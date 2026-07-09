@@ -617,8 +617,8 @@ export default function ProviderOnboardingPage() {
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#0077C0]/10 rounded-full blur-[140px]" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#F28500]/10 rounded-full blur-[140px]" />
             <MagicRings
-              color="#0077c0"
-              colorTwo="#c7eeff"
+              color="#60a5fa"
+              colorTwo="#93c5fd"
               ringCount={8}
               speed={0.8}
               attenuation={12}
@@ -626,7 +626,7 @@ export default function ProviderOnboardingPage() {
               baseRadius={0.25}
               radiusStep={0.08}
               scaleRate={0.08}
-              opacity={0.35}
+              opacity={0.18}
               blur={0}
               noiseAmount={0.05}
               followMouse={true}
