@@ -338,7 +338,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -815,6 +815,11 @@ export default function GlidePassAdmin() {
   const [loadingClipboards, setLoadingClipboards] = useState(false);
   const [clipboardSearch, setClipboardSearch] = useState("");
 
+  // ─── Community Hubs ───
+  const [communityHubs, setCommunityHubs] = useState<any[]>([]);
+  const [loadingHubs, setLoadingHubs] = useState(false);
+  const [hubsSearch, setHubsSearch] = useState("");
+
   // ─── Delete Session (Two-Step) ───
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetSession, setDeleteTargetSession] = useState<VitCode | null>(null);
@@ -1078,6 +1083,60 @@ export default function GlidePassAdmin() {
         fetchClipboardRooms(true);
       } else {
         throw new Error(data.error || "Failed to delete room");
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    }
+  };
+
+  const fetchCommunityHubs = async (quiet = false) => {
+    if (!quiet) setLoadingHubs(true);
+    try {
+      const res = await fetch("/api/admin/hubs", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch community hubs");
+      const data = await res.json();
+      if (data.success && data.hubs) {
+        setCommunityHubs(data.hubs);
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    } finally {
+      if (!quiet) setLoadingHubs(false);
+    }
+  };
+
+  const handleDeleteHub = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/hubs?id=${encodeURIComponent(id)}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to delete hub");
+      const data = await res.json();
+      if (data.success) {
+        showToast("success", "Community Hub deleted successfully.");
+        fetchCommunityHubs(true);
+      } else {
+        throw new Error(data.error || "Failed to delete hub");
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    }
+  };
+
+  const handleRestoreHub = async (id: string) => {
+    try {
+      const res = await fetch("/api/admin/hubs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action: "restore" })
+      });
+      if (!res.ok) throw new Error("Failed to restore hub");
+      const data = await res.json();
+      if (data.success) {
+        showToast("success", "Community Hub restored successfully.");
+        fetchCommunityHubs(true);
+      } else {
+        throw new Error(data.error || "Failed to restore hub");
       }
     } catch (err: any) {
       showToast("error", err.message);
@@ -1710,6 +1769,13 @@ export default function GlidePassAdmin() {
         const interval = setInterval(() => {
           fetchClipboardRooms(true);
         }, 10000);
+        return () => clearInterval(interval);
+      }
+      if (view === "hubs") {
+        fetchCommunityHubs();
+        const interval = setInterval(() => {
+          fetchCommunityHubs(true);
+        }, 15000);
         return () => clearInterval(interval);
       }
       if (view === "users" || view === "rbac" || view === "providers") {
@@ -2365,7 +2431,7 @@ export default function GlidePassAdmin() {
     if (key === "analytics") return !!perms.analytics;
     if (key === "users" || key === "providers") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
-    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards") return !!perms.content;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security" || key === "legal_acceptances") return !!perms.security;
     if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
@@ -2502,6 +2568,7 @@ export default function GlidePassAdmin() {
       { name: "Go to Resources Manager", action: () => { setView("vitcodes"); setCmdOpen(false); } },
       { name: "Go to Contributors", action: () => { setView("contributors"); setCmdOpen(false); } },
       { name: "Go to Clipboard Rooms", action: () => { setView("clipboards"); setCmdOpen(false); } },
+      { name: "Go to Community Hubs", action: () => { setView("hubs"); setCmdOpen(false); } },
       { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
       { name: "Go to Diagnostics", action: () => { setView("system"); setCmdOpen(false); } },
       { name: "Go to Audit Trail", action: () => { setView("security"); setCmdOpen(false); } },
@@ -2778,7 +2845,7 @@ export default function GlidePassAdmin() {
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
@@ -4211,6 +4278,130 @@ export default function GlidePassAdmin() {
                                         >
                                           <Trash2 size={11} /> Expire
                                         </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </motion.div>
+                  )}
+                  {/* ═══ COMMUNITY HUBS ═══ */}
+                  {view === "hubs" && (
+                    <motion.div key="hubs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      
+                      {/* ─── Header ─── */}
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Community Hubs</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {communityHubs.filter(h => !h.isDeleted).length} active hubs &bull; {communityHubs.filter(h => h.isDeleted).length} deleted
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                            <input
+                              type="text"
+                              value={hubsSearch}
+                              onChange={e => setHubsSearch(e.target.value)}
+                              placeholder="Search hubs..."
+                              className={`text-xs rounded-xl pl-8 pr-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 w-48 ${inputBg}`}
+                            />
+                          </div>
+                          <button
+                            onClick={() => fetchCommunityHubs()}
+                            className={`p-2.5 rounded-xl border transition-all ${
+                              dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70 hover:text-white' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70 hover:text-black'
+                            }`}
+                            title="Refresh data"
+                          >
+                            <RefreshCw size={14} className={loadingHubs ? "animate-spin" : ""} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ─── Table ─── */}
+                      {loadingHubs && communityHubs.length === 0 ? (
+                        <div className="flex items-center justify-center py-20">
+                          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                        </div>
+                      ) : (() => {
+                        const filtered = communityHubs.filter(h => {
+                          const q = hubsSearch.toLowerCase();
+                          return !q || h.title.toLowerCase().includes(q) || h.creatorEmail.toLowerCase().includes(q) || (h.description || "").toLowerCase().includes(q);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                              <Globe size={32} className="mx-auto mb-3 opacity-30" />
+                              <p className="text-xs font-medium">
+                                {hubsSearch ? "No matching community hubs found." : "No community hubs created yet."}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className={`border rounded-2xl overflow-hidden`} style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(255,255,255,0.5)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b bg-black/[0.02]" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Hub Name</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Creator</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Visibility</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Created At</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Status</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {filtered.map((hub) => (
+                                    <tr key={hub.id} className="hover:bg-black/[0.01] transition-colors border-b last:border-0" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                      <td className="py-4 px-6">
+                                        <div className="font-bold text-sm text-[#0077C0]">{hub.title}</div>
+                                        {hub.description && <div className="text-[10px] opacity-75 mt-0.5 max-w-xs truncate">{hub.description}</div>}
+                                      </td>
+                                      <td className="py-4 px-6 font-mono text-[10px] opacity-75">{hub.creatorEmail}</td>
+                                      <td className="py-4 px-6 font-semibold uppercase tracking-wider text-[10px]">
+                                        <span className="px-2 py-0.5 rounded border" style={{
+                                          background: hub.visibility === "private" ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
+                                          borderColor: hub.visibility === "private" ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)",
+                                          color: hub.visibility === "private" ? "#ef4444" : "#10b981"
+                                        }}>
+                                          {hub.visibility}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 px-6 opacity-75">{new Date(hub.createdAt).toLocaleDateString()}</td>
+                                      <td className="py-4 px-6">
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{
+                                          background: hub.isDeleted ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+                                          color: hub.isDeleted ? "#EF4444" : "#10B981"
+                                        }}>
+                                          {hub.isDeleted ? "Deleted" : "Active"}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 px-6">
+                                        {hub.isDeleted ? (
+                                          <button
+                                            onClick={() => handleRestoreHub(hub.id)}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all hover:opacity-80 border-emerald-500/30 text-emerald-400 bg-emerald-500/5 cursor-pointer"
+                                          >
+                                            <RotateCcw size={11} /> Restore
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleDeleteHub(hub.id)}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer"
+                                          >
+                                            <Trash2 size={11} /> Delete
+                                          </button>
+                                        )}
                                       </td>
                                     </tr>
                                   ))}

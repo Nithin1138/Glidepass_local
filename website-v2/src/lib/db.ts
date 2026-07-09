@@ -2512,6 +2512,21 @@ export async function deleteHub(id: string): Promise<void> {
   }
 }
 
+export async function restoreHub(id: string): Promise<void> {
+  invalidateCache();
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE hubs SET is_deleted = false WHERE id = $1", [id]);
+  } else {
+    const list = await readHubs(true);
+    const found = list.find(h => h.id === id);
+    if (found) {
+      found.isDeleted = false;
+      await writeHubs(list);
+    }
+  }
+}
+
 const getHubsJsonPath = () => {
   const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
   const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
