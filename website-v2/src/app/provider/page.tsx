@@ -616,8 +616,24 @@ export default function ProviderOnboardingPage() {
           <>
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#0077C0]/10 rounded-full blur-[140px]" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#F28500]/10 rounded-full blur-[140px]" />
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-black/[0.03]`} />
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full border border-black/[0.02]`} />
+            <MagicRings
+              color="#0077c0"
+              colorTwo="#c7eeff"
+              ringCount={8}
+              speed={0.8}
+              attenuation={12}
+              lineThickness={1.5}
+              baseRadius={0.25}
+              radiusStep={0.08}
+              scaleRate={0.08}
+              opacity={0.35}
+              blur={0}
+              noiseAmount={0.05}
+              followMouse={true}
+              mouseInfluence={0.15}
+              hoverScale={1.1}
+              parallax={0.03}
+            />
           </>
         )}
       </div>
