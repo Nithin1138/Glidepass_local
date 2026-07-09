@@ -156,7 +156,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0077C0] to-[#009BF5] flex items-center justify-center text-white font-bold text-sm shrink-0">
             {name.charAt(0).toUpperCase()}
           </div>
-          <div className={`min-w-0 flex-1 transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
+          <div className={`min-w-0 flex-1 sidebar-text-transition overflow-hidden ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
             <p className={`text-sm font-bold truncate whitespace-nowrap ${dk ? 'text-white' : 'text-[#111827]'}`}>{name}</p>
             <p className={`text-[10px] truncate whitespace-nowrap ${dk ? 'text-white/35' : 'text-[#9CA3AF]'}`}>{email}</p>
           </div>
@@ -186,7 +186,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[3px] rounded-t-full bg-[#0077C0]" />
               )}
               <item.icon size={18} className="shrink-0" />
-              <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
+              <span className={`whitespace-nowrap sidebar-text-transition overflow-hidden ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
                 {item.label}
               </span>
             </Link>
@@ -197,7 +197,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Bottom */}
       <div className={`${isExpanded ? 'p-4' : 'p-2'} space-y-2 border-t ${dk ? 'border-white/[0.04]' : 'border-black/[0.04]'} transition-all duration-300`}>
         {/* Discovery link — only when expanded */}
-        <div className={`transition-all duration-200 overflow-hidden ${isExpanded ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`sidebar-text-transition overflow-hidden ${isExpanded ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0'}`}>
           <Link href="/resources"
             className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all ${dk
               ? 'text-white/30 hover:text-white/50 hover:bg-white/[0.02]'
@@ -222,7 +222,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
           title={dk ? "Switch to Light" : "Switch to Dark"}
         >
           {dk ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
-          <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
+          <span className={`whitespace-nowrap sidebar-text-transition overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
             {dk ? "Light Mode" : "Dark Mode"}
           </span>
         </button>
@@ -236,7 +236,7 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
           title="Logout"
         >
           <LogOut size={16} className="shrink-0" />
-          <span className={`whitespace-nowrap transition-all duration-200 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
+          <span className={`whitespace-nowrap sidebar-text-transition overflow-hidden ${isExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0'}`}>
             Logout
           </span>
         </button>
@@ -250,11 +250,20 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
       <div className={`min-h-screen flex ${theme} font-sans antialiased`}
         style={{ background: dk ? '#050505' : 'linear-gradient(135deg, #FAFAF9 0%, #EDEAE0 50%, #E8E4D9 100%)' }}
       >
+        <style>{`
+          .sidebar-transition {
+            transition: width 0.38s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, border-color 0.3s ease !important;
+          }
+          .sidebar-text-transition {
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+        `}</style>
+
         {/* Desktop sidebar — auto collapse on mouse leave, expand on hover */}
         <aside
           onMouseEnter={() => setExpanded(true)}
           onMouseLeave={() => setExpanded(false)}
-          className={`hidden lg:flex flex-col shrink-0 border-r sticky top-0 h-screen overflow-hidden transition-all duration-300 ease-in-out ${
+          className={`hidden lg:flex flex-col shrink-0 border-r sticky top-0 h-screen overflow-hidden sidebar-transition ${
             expanded ? 'w-[260px]' : 'w-[68px]'
           } ${dk
             ? 'border-white/[0.04] bg-[#08080f]/90 backdrop-blur-xl'
