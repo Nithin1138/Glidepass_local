@@ -2900,7 +2900,7 @@ export default function GlidePassAdmin() {
                             live: diagnosticsData?.database?.status?.includes("Connected"),
                             color: diagnosticsData?.database?.status?.includes("Connected") ? "#10B981" : P.error
                           },
-                          { title: "Total Questions", val: String(diagnosticsData?.database?.questionsCount ?? totalQ), label: "VIT exam items cached", live: false, color: P.blue },
+                          { title: "Total Resources", val: String(diagnosticsData?.database?.questionsCount ?? totalQ), label: "Active shared resources", live: false, color: P.blue },
                           { 
                             title: "Avg Latency", 
                             val: diagnosticsData?.database?.latency !== undefined ? `${diagnosticsData.database.latency}ms` : "--", 
@@ -2910,7 +2910,7 @@ export default function GlidePassAdmin() {
                                    diagnosticsData.database.latency < 50 ? "#10B981" : 
                                    diagnosticsData.database.latency < 200 ? "#F59E0B" : P.error
                           },
-                          { title: "Active Sessions", val: String(diagnosticsData?.database?.sessionsCount ?? vitSessions.length), label: "Active study folders", live: false, color: P.blue },
+                          { title: "Resource Hubs", val: String(diagnosticsData?.database?.sessionsCount ?? vitSessions.length), label: "Active community folders", live: false, color: P.blue },
                         ].map((c, i) => (
                           <div key={i} className="p-6 rounded-[24px] border relative overflow-hidden transition-all"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
