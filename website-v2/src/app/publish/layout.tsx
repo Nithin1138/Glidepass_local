@@ -107,18 +107,22 @@ function PublishLayoutContent({ children }: { children: React.ReactNode }) {
 
   /* ── Nav items ─────────────────────────────────── */
   const nav = [
-    { href: "/publish",           label: "Dashboard",    icon: LayoutDashboard, exact: true },
-    { href: "/publish?view=analytics", label: "Analytics",     icon: BarChart3,      exact: false },
-    { href: "/publish/new",       label: "New Resource",  icon: PenSquare,      exact: true },
-    { href: "/publish/hubs",      label: "My Hubs",       icon: Layers,         exact: false },
+    { href: "/publish",                     label: "Dashboard",      icon: LayoutDashboard, exact: true },
+    { href: "/publish?view=analytics",      label: "Analytics",      icon: BarChart3,       exact: false },
+    { href: "/publish/new",                 label: "New Resource",   icon: PenSquare,       exact: true },
+    { href: "/publish/hubs",                label: "My Hubs",        icon: Layers,          exact: false },
+    { href: "/publish?view=submissions",    label: "My Submissions", icon: ShieldCheck,     exact: false },
   ];
 
   function isActive(item: typeof nav[0]) {
     if (item.href === "/publish?view=analytics") {
       return pathname === "/publish" && currentView === "analytics";
     }
+    if (item.href === "/publish?view=submissions") {
+      return pathname === "/publish" && currentView === "submissions";
+    }
     if (item.href === "/publish") {
-      return pathname === "/publish" && currentView !== "analytics";
+      return pathname === "/publish" && currentView !== "analytics" && currentView !== "submissions";
     }
     if (item.exact) return pathname === item.href;
     return pathname.startsWith(item.href);

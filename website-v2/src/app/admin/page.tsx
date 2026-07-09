@@ -801,6 +801,7 @@ export default function GlidePassAdmin() {
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
+  const [resourceHistoryId, setResourceHistoryId] = useState<string | null>(null); // edit history panel in vitcodes
 
   // ─── Admin Resource Flow ───
   const [selectedAdminHub, setSelectedAdminHub] = useState<any | null>(null);
@@ -841,9 +842,6 @@ export default function GlidePassAdmin() {
   const [deleteTargetType, setDeleteTargetType] = useState<string | null>(null);
   const [deleteTypeConfirmText, setDeleteTypeConfirmText] = useState("");
 
-  // Batch Year Mappings Modal
-  const [showBatchMappingsModal, setShowBatchMappingsModal] = useState(false);
-  const [tempBatchMappings, setTempBatchMappings] = useState<Record<string, string>>({});
 
   // New session form
   const [newDate, setNewDate] = useState(() => {
@@ -892,16 +890,6 @@ export default function GlidePassAdmin() {
   const [examYears, setExamYears] = useState<Record<string, string>>({});
   const [selectedRuleType, setSelectedRuleType] = useState("Script");
 
-  const [batchMappings, setBatchMappings] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    fetch("/api/admin/batch-mappings")
-      .then(r => r.json())
-      .then(data => {
-        if (data) setBatchMappings(data);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     fetch("/api/vitcodes/rules")
@@ -950,29 +938,7 @@ export default function GlidePassAdmin() {
     } catch (e) {}
   };
 
-  const handleOpenBatchMappingsModal = () => {
-    setTempBatchMappings({ ...batchMappings });
-    setShowBatchMappingsModal(true);
-  };
 
-  const handleSaveBatchMappings = async () => {
-    setBatchMappings(tempBatchMappings);
-    try {
-      const res = await fetch("/api/admin/batch-mappings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tempBatchMappings)
-      });
-      if (res.ok) {
-        showToast("success", "Batch year mappings saved successfully");
-        setShowBatchMappingsModal(false);
-      } else {
-        throw new Error("Failed to save");
-      }
-    } catch (e) {
-      showToast("error", "Failed to save batch mappings");
-    }
-  };
 
   useEffect(() => {
     if (examTypes.length > 0 && !examTypes.includes(selectedRuleType)) {
@@ -1026,22 +992,7 @@ export default function GlidePassAdmin() {
     }
   }, [isAuth, view]);
 
-  const toggleContributorStatus = async (email: string, currentStatus: string) => {
-    const newStatus = currentStatus === "active" ? "blocked" : "active";
-    setContributors(prev => prev.map(c => c.email === email ? { ...c, status: newStatus } : c));
-    try {
-      const res = await fetch("/api/admin/contributors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, status: newStatus })
-      });
-      if (!res.ok) throw new Error("Failed to update");
-    } catch (e) {
-      showToast("error", "Failed to update status");
-      // revert
-      setContributors(prev => prev.map(c => c.email === email ? { ...c, status: currentStatus } : c));
-    }
-  };
+
 
   const fetchVitCodes = async (quiet = false) => {
     if (!quiet) setLoadingVit(true);
@@ -2629,7 +2580,7 @@ export default function GlidePassAdmin() {
       { name: "Go to Roles & Policies", action: () => { setView("rbac"); setCmdOpen(false); } },
       { name: "Go to Analytics", action: () => { setView("analytics"); setCmdOpen(false); } },
       { name: "Go to Resources Manager", action: () => { setView("vitcodes"); setCmdOpen(false); } },
-      { name: "Go to Contributors", action: () => { setView("contributors"); setCmdOpen(false); } },
+      { name: "Go to Edit Logs", action: () => { setView("contributors"); setCmdOpen(false); } },
       { name: "Go to Clipboard Rooms", action: () => { setView("clipboards"); setCmdOpen(false); } },
       { name: "Go to Community Hubs", action: () => { setView("hubs"); setCmdOpen(false); } },
       { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
@@ -2908,7 +2859,7 @@ export default function GlidePassAdmin() {
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: GitBranch, name: "Edit Logs" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
                     {label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
@@ -4423,12 +4374,69 @@ export default function GlidePassAdmin() {
                                           <Edit2 size={11} /> Edit
                                         </button>
                                         <button
+                                          onClick={() => setResourceHistoryId(resourceHistoryId === r.id ? null : r.id)}
+                                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 cursor-pointer"
+                                          style={{
+                                            borderColor: resourceHistoryId === r.id ? `${P.blue}40` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)",
+                                            background: resourceHistoryId === r.id ? `${P.blue}12` : "transparent",
+                                            color: resourceHistoryId === r.id ? P.blue : dk ? P.sky : P.black
+                                          }}
+                                        >
+                                          <GitBranch size={11} /> {(r.edits?.length || 0)} Edits
+                                        </button>
+                                        <button
                                           onClick={() => handleDeleteResource(r.id)}
                                           className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:opacity-80 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer"
                                         >
                                           <Trash2 size={11} /> Delete
                                         </button>
                                       </div>
+
+                                      {/* Edit History Panel */}
+                                      {resourceHistoryId === r.id && (
+                                        <div className="mt-2 rounded-xl border overflow-hidden" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", background: dk ? "rgba(5,5,5,0.3)" : "rgba(248,250,252,0.8)" }}>
+                                          <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)", background: dk ? "rgba(0,119,192,0.08)" : "rgba(0,119,192,0.04)" }}>
+                                            <GitBranch size={11} style={{ color: P.blue }} />
+                                            <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: P.blue }}>Edit History</span>
+                                            <span className="ml-auto text-[9px] font-mono opacity-60">{(r.edits?.length || 0)} revisions</span>
+                                          </div>
+                                          {!r.edits || r.edits.length === 0 ? (
+                                            <div className="px-4 py-5 text-center text-[10px] opacity-50">No edit history recorded for this resource.</div>
+                                          ) : (
+                                            <div className={`divide-y ${dk ? "divide-white/[0.05]" : "divide-black/[0.04]"}`}>
+                                              {(r.edits as any[]).map((edit: any, idx: number) => {
+                                                const editDate = edit.timestamp ? new Date(edit.timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Unknown time";
+                                                return (
+                                                  <div key={idx} className="px-4 py-3 flex flex-col gap-1.5">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                      <div className="flex flex-col gap-0.5 min-w-0">
+                                                        <span className="text-[10px] font-bold truncate" style={{ color: dk ? P.sky : P.black }}>{edit.editorEmail}</span>
+                                                        {edit.reason && <span className="text-[9px] opacity-60 italic truncate">&ldquo;{edit.reason}&rdquo;</span>}
+                                                      </div>
+                                                      <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="text-[9px] font-mono opacity-50">{editDate}</span>
+                                                        {edit.previousCode && (
+                                                          <button
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (confirm(`Revert "${r.title}" to the version from ${edit.editorEmail} on ${editDate}?`)) {
+                                                                handleRevertEdit(r.id, edit.previousCode, edit.editorEmail);
+                                                              }
+                                                            }}
+                                                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold border transition-all hover:bg-amber-500/15 border-amber-500/30 text-amber-400 cursor-pointer"
+                                                          >
+                                                            <RefreshCw size={9} /> Revert
+                                                          </button>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -4776,22 +4784,16 @@ export default function GlidePassAdmin() {
                       })()}
                     </motion.div>
                   )}
-                  {/* ═══ CONTRIBUTORS ═══ */}
+                  {/* ═══ EDIT LOGS ═══ */}
                   {view === "contributors" && (
                     <motion.div key="contributors" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                         <div>
-                          <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Contributor Management</h2>
-                          <p className="text-xs text-white/60">Monitor code submissions and control access</p>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Edit Logs</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {contributors.length} contributors tracked &bull; code submissions &amp; revision history
+                          </p>
                         </div>
-                        <button
-                          onClick={handleOpenBatchMappingsModal}
-                          className="px-4 py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all hover:opacity-90 flex items-center gap-2"
-                          style={{ background: P.blue }}
-                        >
-                          <Settings size={14} />
-                          Default Year Batch Mappings
-                        </button>
                       </div>
 
                       {loadingContributors ? (
@@ -4884,13 +4886,10 @@ export default function GlidePassAdmin() {
                                   </div>
 
                                   <div className="flex items-center gap-6 w-full md:w-auto">
-                                    <div className="text-left md:text-right flex-1 md:flex-none">
+                                    <div className="text-left md:text-right">
                                       <p className="text-xs font-bold" style={{ color: P.blue }}>{c.points} Points</p>
                                       <p className="text-[9px] font-mono uppercase" style={{ color: dk ? `${P.sky}60` : `${P.black}60` }}>{c.codesCount} Codes • {c.editsCount} Edits</p>
                                     </div>
-                                    <button onClick={(e) => { e.stopPropagation(); toggleContributorStatus(c.email, c.status); }} className="px-4 py-2 rounded-lg text-xs font-bold transition-all border" style={{ background: c.status === "active" ? `${P.error}15` : `${P.blue}15`, color: c.status === "active" ? P.error : P.blue, borderColor: c.status === "active" ? `${P.error}30` : `${P.blue}30` }}>
-                                      {c.status === "active" ? "Block Access" : "Activate Access"}
-                                    </button>
                                   </div>
                                 </div>
                               ))}
@@ -4899,7 +4898,7 @@ export default function GlidePassAdmin() {
                         </div>
                       ) : (
                         <div className="space-y-6">
-                          <button onClick={() => setSelectedContributor(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors relative z-50 cursor-pointer" style={{ color: P.blue }}><ChevronLeft size={14} /> Back to Contributors</button>
+                          <button onClick={() => setSelectedContributor(null)} className="flex items-center gap-2 text-xs font-bold hover:opacity-70 transition-colors relative z-50 cursor-pointer" style={{ color: P.blue }}><ChevronLeft size={14} /> Back to Edit Logs</button>
                           
                           {(() => {
                             const c = contributors.find(x => x.email === selectedContributor);
@@ -7302,72 +7301,6 @@ export default function GlidePassAdmin() {
               )}
             </AnimatePresence>
 
-            {/* ═══ BATCH YEAR MAPPINGS MODAL ═══ */}
-            <AnimatePresence>
-              {showBatchMappingsModal && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBatchMappingsModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.92 }}
-                    className="relative w-[95%] sm:max-w-2xl p-1 rounded-[24px] border bg-black shadow-2xl z-10"
-                    style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)" }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <div className="p-5 sm:p-6 rounded-[20px] space-y-5" style={{ background: dk ? "rgba(5,5,5,0.98)" : "rgba(255,255,255,0.98)" }}>
-                      <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                        <div>
-                          <h3 className="text-sm font-black uppercase tracking-wide" style={{ color: P.blue }}>Default Year Batch Mappings</h3>
-                          <p className="text-[10px] text-white/50">Set the default year classification based on register number prefixes (22 to 32)</p>
-                        </div>
-                        <button onClick={() => setShowBatchMappingsModal(false)} className="p-1 rounded-lg hover:opacity-70" style={{ color: dk ? P.sky : P.black }}>
-                          <X size={14} />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-1">
-                        {["22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"].map(batch => (
-                          <div key={batch} className="flex flex-col gap-1.5 p-3 rounded-xl border"
-                            style={{ background: dk ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.01)", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">ID Prefix {batch}</span>
-                            <select
-                              value={tempBatchMappings[batch] || "1st Year"}
-                              onChange={e => setTempBatchMappings(prev => ({ ...prev, [batch]: e.target.value }))}
-                              className={`text-xs rounded-lg px-2.5 py-1.5 border focus:outline-none ${inputBg}`}
-                              style={{ color: dk ? P.sky : P.black }}
-                            >
-                              <option value="1st Year">1st Year</option>
-                              <option value="2nd Year">2nd Year</option>
-                              <option value="3rd Year">3rd Year</option>
-                              <option value="4th Year">4th Year</option>
-                              <option value="5th Year">5th Year</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
-                        <button
-                          onClick={() => setShowBatchMappingsModal(false)}
-                          className="px-4 py-2 rounded-xl text-xs font-bold border"
-                          style={{ borderColor: dk ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)", color: dk ? "white" : "black" }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveBatchMappings}
-                          className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg active:scale-[0.98] transition-all"
-                          style={{ background: P.blue }}
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>
 
           </motion.div>
         )}

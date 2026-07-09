@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   PenSquare, Layers, Compass, ArrowRight, Users, FileCode, FolderOpen,
-  Eye, Copy, Send, RefreshCw
+  Eye, Copy, Send, RefreshCw, GitBranch, ChevronDown, ChevronUp, RotateCcw
 } from "lucide-react";
 import { useCreator } from "./context";
 
@@ -37,6 +37,12 @@ function DashboardContent() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [analyticsError, setAnalyticsError] = useState("");
 
+  // Submissions states
+  const [myResources, setMyResources] = useState<any[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [expandedSubmissionId, setExpandedSubmissionId] = useState<string | null>(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
   const fetchAnalytics = async (quiet = false) => {
     if (!email) return;
     if (!quiet) setLoadingAnalytics(true);
@@ -62,6 +68,14 @@ function DashboardContent() {
       fetchAnalytics();
       const interval = setInterval(() => fetchAnalytics(true), 5000);
       return () => clearInterval(interval);
+    }
+    if (currentView === "submissions" && email) {
+      setLoadingSubmissions(true);
+      fetch(`/api/resources?creatorEmail=${encodeURIComponent(email)}`)
+        .then(r => r.json())
+        .then(d => { if (d.success) setMyResources(d.resources || []); })
+        .catch(() => {})
+        .finally(() => setLoadingSubmissions(false));
     }
   }, [currentView, email]);
 
@@ -237,7 +251,172 @@ function DashboardContent() {
     );
   }
 
-  /* ── 2. Dashboard View ── */
+  /* ── 2. Submissions View ── */
+  if (currentView === "submissions") {
+    return (
+      <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-6">
+        {/* Header */}
+        <div className={`flex items-center justify-between border-b ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'} pb-5`}>
+          <div>
+            <h1 className={`text-3xl font-black font-outfit tracking-tight ${dk ? 'text-white' : 'text-[#111827]'}`}>My Submissions</h1>
+            <p className={`text-xs mt-1 ${dk ? 'text-white/40' : 'text-[#6B7280]'}`}>
+              {myResources.length} resources published &bull; tap any card to see edit history &amp; revisions
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setLoadingSubmissions(true);
+              fetch(`/api/resources?creatorEmail=${encodeURIComponent(email)}`)
+                .then(r => r.json())
+                .then(d => { if (d.success) setMyResources(d.resources || []); })
+                .catch(() => {})
+                .finally(() => setLoadingSubmissions(false));
+            }}
+            className={`p-2.5 rounded-xl border transition-all ${
+              dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70'
+            }`}
+            title="Refresh"
+          >
+            <RefreshCw size={16} className={loadingSubmissions ? "animate-spin" : ""} />
+          </button>
+        </div>
+
+        {loadingSubmissions ? (
+          <div className="flex justify-center py-20">
+            <div className="w-7 h-7 rounded-full border-2 border-t-[#0077C0] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+          </div>
+        ) : myResources.length === 0 ? (
+          <div className={`py-20 text-center rounded-3xl border border-dashed ${dk ? 'border-white/[0.08] text-white/30' : 'border-black/[0.08] text-black/30'}`}>
+            <GitBranch size={32} className="mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">No resources published yet.</p>
+            <p className="text-xs mt-1 opacity-60">Create your first resource to see it here.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {myResources.map((r: any) => {
+              const isExpanded = expandedSubmissionId === r.id;
+              const historyOpen = expandedHistoryId === r.id;
+              const edits: any[] = r.edits || [];
+              return (
+                <div
+                  key={r.id}
+                  className={`rounded-2xl border overflow-hidden transition-all ${cardClass}`}
+                >
+                  {/* Card header */}
+                  <div
+                    className="p-5 flex items-start gap-4 cursor-pointer"
+                    onClick={() => setExpandedSubmissionId(isExpanded ? null : r.id)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border ${
+                          r.type === 'macro' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-[#0077C0]/10 text-[#0077C0] border-[#0077C0]/20'
+                        }`}>{r.type || 'snippet'}</span>
+                        {r.language && (
+                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border ${
+                            dk ? 'bg-white/5 text-white/60 border-white/10' : 'bg-black/5 text-black/60 border-black/10'
+                          }`}>{r.language}</span>
+                        )}
+                        {edits.length > 0 && (
+                          <span className="text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            {edits.length} {edits.length === 1 ? 'edit' : 'edits'}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className={`text-sm font-bold ${dk ? 'text-white' : 'text-[#111827]'}`}>{r.title || 'Untitled'}</h3>
+                      <div className="flex items-center gap-4 mt-2 text-[10px] font-mono" style={{ color: dk ? 'rgba(199,238,255,0.4)' : 'rgba(5,5,5,0.4)' }}>
+                        <span className="flex items-center gap-1"><Eye size={9} /> {r.views ?? 0}</span>
+                        <span className="flex items-center gap-1"><Copy size={9} /> {r.copies ?? 0}</span>
+                        {r.topic && <span className="opacity-60">{r.topic}</span>}
+                      </div>
+                    </div>
+                    <div className={`text-[11px] opacity-50 shrink-0 pt-0.5 ${dk ? 'text-white' : 'text-black'}`}>
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                  </div>
+
+                  {/* Expanded content */}
+                  {isExpanded && (
+                    <div className={`border-t ${dk ? 'border-white/[0.05]' : 'border-black/[0.05]'}`}>
+                      {/* Code preview */}
+                      <div className="rounded-none overflow-hidden">
+                        <pre className="p-4 text-[9px] font-mono overflow-x-auto max-h-[10rem] leading-relaxed" style={{ background: '#151b22', color: '#8ecfff' }}>
+                          <code>{r.content}</code>
+                        </pre>
+                      </div>
+
+                      {/* Edit History toggle */}
+                      <div className={`px-5 py-3 flex items-center justify-between ${dk ? 'bg-white/[0.01]' : 'bg-black/[0.01]'}`}>
+                        <button
+                          onClick={() => setExpandedHistoryId(historyOpen ? null : r.id)}
+                          className={`flex items-center gap-2 text-xs font-bold transition-all ${
+                            historyOpen ? 'text-[#0077C0]' : dk ? 'text-white/50 hover:text-white/80' : 'text-black/50 hover:text-black/80'
+                          }`}
+                        >
+                          <GitBranch size={12} />
+                          {edits.length === 0 ? 'No edit history' : `${edits.length} revision${edits.length > 1 ? 's' : ''}`}
+                          {edits.length > 0 && (historyOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />)}
+                        </button>
+                        <Link
+                          href={`/publish/new?edit=${r.id}`}
+                          className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                          style={{ borderColor: dk ? 'rgba(199,238,255,0.1)' : 'rgba(5,5,5,0.08)', color: dk ? 'rgba(199,238,255,0.7)' : 'rgba(5,5,5,0.7)' }}
+                        >
+                          <PenSquare size={10} /> Edit Resource
+                        </Link>
+                      </div>
+
+                      {/* Edit history panel */}
+                      {historyOpen && edits.length > 0 && (
+                        <div className={`divide-y ${dk ? 'divide-white/[0.04]' : 'divide-black/[0.04]'} border-t ${dk ? 'border-white/[0.04]' : 'border-black/[0.04]'}`}>
+                          {edits.map((edit: any, idx: number) => {
+                            const editDate = edit.timestamp
+                              ? new Date(edit.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                              : 'Unknown time';
+                            return (
+                              <div key={idx} className="px-5 py-3 flex items-center gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-[10px] font-bold truncate ${dk ? 'text-white/80' : 'text-black/80'}`}>{edit.editorEmail}</p>
+                                  {edit.reason && (
+                                    <p className={`text-[9px] italic opacity-55 truncate ${dk ? 'text-white' : 'text-black'}`}>&ldquo;{edit.reason}&rdquo;</p>
+                                  )}
+                                </div>
+                                <span className={`text-[9px] font-mono shrink-0 opacity-50 ${dk ? 'text-white' : 'text-black'}`}>{editDate}</span>
+                                {edit.previousCode && (
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm(`Revert "${r.title}" to the snapshot from ${editDate}?`)) return;
+                                      try {
+                                        await fetch(`/api/resources/${r.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ content: edit.previousCode, revertedBy: email })
+                                        });
+                                        setMyResources(prev => prev.map(x => x.id === r.id ? { ...x, content: edit.previousCode } : x));
+                                      } catch { /* noop */ }
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold border shrink-0 border-amber-500/30 text-amber-400 bg-amber-500/5 hover:bg-amber-500/15 transition-all cursor-pointer"
+                                  >
+                                    <RotateCcw size={9} /> Revert
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── 3. Dashboard View ── */
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-8">
       {/* Welcome */}
