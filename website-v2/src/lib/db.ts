@@ -2790,6 +2790,36 @@ export async function updateRoomExpiration(code: string, expiresAt: string): Pro
   }
 }
 
+export async function getAllClipboardRooms(): Promise<ClipboardRoom[]> {
+  await cleanupExpiredClipboardRooms();
+  if (pool) {
+    await initDb();
+    const res = await pool.query(
+      `SELECT code, created_at as "createdAt", expires_at as "expiresAt", 
+              duration_mins as "durationMins", allow_all_members_to_add as "allowAllMembersToAdd", 
+              host_session_id as "hostSessionId" 
+       FROM vit_clipboard_rooms ORDER BY expires_at DESC`
+    );
+    return res.rows;
+  } else {
+    const data = await readClipboardFile();
+    return data.rooms.filter(r => new Date(r.expiresAt).getTime() > Date.now());
+  }
+}
+
+export async function deleteClipboardRoom(code: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("DELETE FROM vit_clipboard_items WHERE room_code = $1", [code.toUpperCase()]);
+    await pool.query("DELETE FROM vit_clipboard_rooms WHERE code = $1", [code.toUpperCase()]);
+  } else {
+    const data = await readClipboardFile();
+    data.rooms = data.rooms.filter(r => r.code.toUpperCase() !== code.toUpperCase());
+    data.items = data.items.filter(i => i.roomCode.toUpperCase() !== code.toUpperCase());
+    await writeClipboardFile(data);
+  }
+}
+
 // ── File chunk storage helpers ───────────────────────────────────────────────
 
 export async function saveFileChunk(

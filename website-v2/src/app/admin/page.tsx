@@ -6,7 +6,7 @@ import {
   ArrowLeft, Save, RotateCcw, AlertCircle, CheckCircle, FileCode, MonitorSmartphone, Settings, Plus, Trash2,
   Calendar, Clock, Edit2, Check, X, ChevronRight, ChevronLeft, Terminal, Layout, Globe, Activity,
   ExternalLink, Sparkles, Filter, Code, Info, Users, BarChart3, Database, Lock,
-  Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail,
+  Unlock, User, ShieldCheck, Key, Eye, EyeOff, Search, Bell, Moon, Sun, Monitor, Menu, LogOut, CheckSquare, Mail, Clipboard,
   AlertTriangle, RefreshCw, Download, HardDrive, Cpu, Shield, BookOpen, UserCheck, CreditCard, GitBranch, Sliders, Gift, Tag, FileText
 } from "lucide-react";
 import Link from "next/link";
@@ -338,7 +338,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -810,6 +810,11 @@ export default function GlidePassAdmin() {
   const [permanentDeleteConfirmText, setPermanentDeleteConfirmText] = useState("");
   const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
 
+  // ─── Clipboard Rooms ───
+  const [clipboardRooms, setClipboardRooms] = useState<any[]>([]);
+  const [loadingClipboards, setLoadingClipboards] = useState(false);
+  const [clipboardSearch, setClipboardSearch] = useState("");
+
   // ─── Delete Session (Two-Step) ───
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetSession, setDeleteTargetSession] = useState<VitCode | null>(null);
@@ -1042,6 +1047,40 @@ export default function GlidePassAdmin() {
       showToast("error", err.message);
     } finally {
       if (!quiet) setLoadingVit(false);
+    }
+  };
+
+  const fetchClipboardRooms = async (quiet = false) => {
+    if (!quiet) setLoadingClipboards(true);
+    try {
+      const res = await fetch("/api/admin/clipboard", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch clipboard rooms");
+      const data = await res.json();
+      if (data.success && data.rooms) {
+        setClipboardRooms(data.rooms);
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    } finally {
+      if (!quiet) setLoadingClipboards(false);
+    }
+  };
+
+  const handleDeleteClipboardRoom = async (code: string) => {
+    try {
+      const res = await fetch(`/api/admin/clipboard?code=${encodeURIComponent(code)}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to expire clipboard room");
+      const data = await res.json();
+      if (data.success) {
+        showToast("success", `Room ${code} expired and cleared.`);
+        fetchClipboardRooms(true);
+      } else {
+        throw new Error(data.error || "Failed to delete room");
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
     }
   };
 
@@ -1664,6 +1703,13 @@ export default function GlidePassAdmin() {
         const interval = setInterval(() => {
           fetchVitCodes(true);
         }, 15000);
+        return () => clearInterval(interval);
+      }
+      if (view === "clipboards") {
+        fetchClipboardRooms();
+        const interval = setInterval(() => {
+          fetchClipboardRooms(true);
+        }, 10000);
         return () => clearInterval(interval);
       }
       if (view === "users" || view === "rbac" || view === "providers") {
@@ -2319,7 +2365,7 @@ export default function GlidePassAdmin() {
     if (key === "analytics") return !!perms.analytics;
     if (key === "users" || key === "providers") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
-    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning") return !!perms.content;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security" || key === "legal_acceptances") return !!perms.security;
     if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
@@ -2455,6 +2501,7 @@ export default function GlidePassAdmin() {
       { name: "Go to Analytics", action: () => { setView("analytics"); setCmdOpen(false); } },
       { name: "Go to Resources Manager", action: () => { setView("vitcodes"); setCmdOpen(false); } },
       { name: "Go to Contributors", action: () => { setView("contributors"); setCmdOpen(false); } },
+      { name: "Go to Clipboard Rooms", action: () => { setView("clipboards"); setCmdOpen(false); } },
       { name: "Go to OTA Templates", action: () => { setView("ota"); setCmdOpen(false); } },
       { name: "Go to Diagnostics", action: () => { setView("system"); setCmdOpen(false); } },
       { name: "Go to Audit Trail", action: () => { setView("security"); setCmdOpen(false); } },
@@ -2731,7 +2778,7 @@ export default function GlidePassAdmin() {
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
                     { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }] },
                     { label: "Operations", items: [{ key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
@@ -4080,7 +4127,101 @@ export default function GlidePassAdmin() {
                       })()}
                     </motion.div>
                   )}
+                  {/* ═══ CLIPBOARD ROOMS ═══ */}
+                  {view === "clipboards" && (
+                    <motion.div key="clipboards" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      
+                      {/* ─── Header ─── */}
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Clipboard Rooms</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {clipboardRooms.length} active ephemeral tunnels
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                            <input
+                              type="text"
+                              value={clipboardSearch}
+                              onChange={e => setClipboardSearch(e.target.value)}
+                              placeholder="Search rooms..."
+                              className={`text-xs rounded-xl pl-8 pr-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 w-48 ${inputBg}`}
+                            />
+                          </div>
+                          <button
+                            onClick={() => fetchClipboardRooms()}
+                            className={`p-2.5 rounded-xl border transition-all ${
+                              dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70 hover:text-white' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70 hover:text-black'
+                            }`}
+                            title="Refresh data"
+                          >
+                            <RefreshCw size={14} className={loadingClipboards ? "animate-spin" : ""} />
+                          </button>
+                        </div>
+                      </div>
 
+                      {/* ─── Table ─── */}
+                      {loadingClipboards && clipboardRooms.length === 0 ? (
+                        <div className="flex items-center justify-center py-20">
+                          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                        </div>
+                      ) : (() => {
+                        const filtered = clipboardRooms.filter(r => {
+                          const q = clipboardSearch.toLowerCase();
+                          return !q || r.code.toLowerCase().includes(q) || r.hostSessionId.toLowerCase().includes(q);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                              <Clipboard size={32} className="mx-auto mb-3 opacity-30" />
+                              <p className="text-xs font-medium">
+                                {clipboardSearch ? "No matching active clipboard rooms." : "No active clipboard rooms right now."}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className={`border rounded-2xl overflow-hidden`} style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(255,255,255,0.5)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b bg-black/[0.02]" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Room Code</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Host ID</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Duration</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Expires At</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {filtered.map((room) => (
+                                    <tr key={room.code} className="hover:bg-black/[0.01] transition-colors border-b last:border-0" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                      <td className="py-4 px-6 font-bold text-sm text-[#0077C0] select-all">{room.code}</td>
+                                      <td className="py-4 px-6 font-mono text-[10px] opacity-75">{room.hostSessionId}</td>
+                                      <td className="py-4 px-6 font-semibold">{room.durationMins} mins</td>
+                                      <td className="py-4 px-6 opacity-75">{new Date(room.expiresAt).toLocaleTimeString()} ({new Date(room.expiresAt).toLocaleDateString()})</td>
+                                      <td className="py-4 px-6">
+                                        <button
+                                          onClick={() => handleDeleteClipboardRoom(room.code)}
+                                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all hover:bg-red-500/10 border-red-500/30 text-red-400 bg-red-500/5 cursor-pointer"
+                                        >
+                                          <Trash2 size={11} /> Expire
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </motion.div>
+                  )}
                   {/* ═══ CONTRIBUTORS ═══ */}
                   {view === "contributors" && (
                     <motion.div key="contributors" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
