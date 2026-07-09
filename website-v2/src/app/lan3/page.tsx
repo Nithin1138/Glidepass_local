@@ -329,9 +329,6 @@ const Hero = ({
               <Link href="/resources" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-gray-700 clay-card hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
                 Explore Resources
               </Link>
-              <Link href="/clipboard" className="group relative px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-gray-700 clay-card hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center font-rubik">
-                Try Clipboard
-              </Link>
             </motion.div>
 
             {/* Trust Bar */}
