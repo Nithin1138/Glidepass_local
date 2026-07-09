@@ -2895,3 +2895,53 @@ export async function cleanupStaleChunks(): Promise<void> {
     );
   }
 }
+
+export async function getClipboardStorageInfo(): Promise<{ totalChunks: number; staleCount: number; totalSize: string }> {
+  if (pool) {
+    await initDb();
+    const chunksRes = await pool.query("SELECT COUNT(*) as count FROM vit_clipboard_file_chunks");
+    const staleRes = await pool.query("SELECT COUNT(*) as count FROM vit_clipboard_file_chunks WHERE created_at < NOW() - INTERVAL '2 hours'");
+    const sizeRes = await pool.query("SELECT COALESCE(SUM(file_size), 0) as size FROM vit_clipboard_file_chunks");
+    const totalSize = (parseInt(sizeRes.rows[0].size, 10) / (1024 * 1024)).toFixed(2) + " MB";
+    return {
+      totalChunks: parseInt(chunksRes.rows[0].count, 10),
+      staleCount: parseInt(staleRes.rows[0].count, 10),
+      totalSize
+    };
+  }
+  return { totalChunks: 0, staleCount: 0, totalSize: "0.00 MB" };
+}
+
+export async function refundSubscription(txnId: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE vit_subscriptions SET status = 'refunded' WHERE id = $1", [txnId]);
+  }
+}
+
+export async function getChannelVersions(): Promise<any[]> {
+  if (pool) {
+    await initDb();
+    const res = await pool.query("SELECT value FROM vit_settings WHERE key = 'release_channels'");
+    if (res.rows.length > 0) {
+      try {
+        return JSON.parse(res.rows[0].value);
+      } catch (e) {}
+    }
+  }
+  return [
+    { name: "Stable", version: "1.5.8", activeUsers: 342, releaseDate: "2026-07-01" },
+    { name: "Beta", version: "1.6.0-rc1", activeUsers: 24, releaseDate: "2026-07-08" },
+    { name: "Alpha", version: "1.7.0-alpha3", activeUsers: 6, releaseDate: "2026-07-09" }
+  ];
+}
+
+export async function saveChannelVersion(channels: any[]): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query(
+      "INSERT INTO vit_settings (key, value) VALUES ('release_channels', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [JSON.stringify(channels)]
+    );
+  }
+}

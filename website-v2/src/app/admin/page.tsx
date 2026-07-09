@@ -342,30 +342,16 @@ export default function GlidePassAdmin() {
   >("dashboard");
 
   // ─── Business & Releases category additions state ───
-  const [billingLogs, setBillingLogs] = useState<any[]>([
-    { id: "TXN_782A", email: "student1@vitstudent.ac.in", amount: "₹99", tier: "Pro", status: "success", date: "2026-07-09 14:22" },
-    { id: "TXN_910F", email: "student2@vitap.ac.in", amount: "₹299", tier: "Creator", status: "success", date: "2026-07-09 16:45" },
-    { id: "TXN_411X", email: "student3@vitstudent.ac.in", amount: "₹99", tier: "Pro", status: "failed", date: "2026-07-09 20:10" }
-  ]);
-  const [activeCampaigns, setActiveCampaigns] = useState<any[]>([
-    { id: "1", name: "Monsoon Referral Drive", code: "MONSOON10", conversions: 42, reward: "1 Week Pro", status: "active" },
-    { id: "2", name: "VIT Chennai Launch Promo", code: "VITC20", conversions: 118, reward: "20% Discount", status: "active" }
-  ]);
-  const [releaseChannels, setReleaseChannels] = useState<any[]>([
-    { name: "Stable", version: "1.5.8", activeUsers: 342, releaseDate: "2026-07-01" },
-    { name: "Beta", version: "1.6.0-rc1", activeUsers: 24, releaseDate: "2026-07-08" },
-    { name: "Alpha", version: "1.7.0-alpha3", activeUsers: 6, releaseDate: "2026-07-09" }
-  ]);
+  const [billingLogs, setBillingLogs] = useState<any[]>([]);
+  const [activeCampaigns, setActiveCampaigns] = useState<any[]>([]);
+  const [releaseChannels, setReleaseChannels] = useState<any[]>([]);
 
   // ─── Storage Inspector state ───
   const [staleChunksCount, setStaleChunksCount] = useState(0);
   const [storageUsage, setStorageUsage] = useState({ totalChunks: 0, totalSize: "0 Bytes" });
 
   // ─── Email Dispatch Logs state ───
-  const [emailLogs, setEmailLogs] = useState<any[]>([
-    { id: "1", recipient: "student1@vitap.ac.in", type: "Welcome Invite", status: "delivered", sentAt: "2026-07-09 22:15" },
-    { id: "2", recipient: "referrer.test@vitap.ac.in", type: "Referral Claim", status: "delivered", sentAt: "2026-07-09 22:42" }
-  ]);
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
   const [smtpStatus, setSmtpStatus] = useState("Connected");
 
   // ─── Abuse Reports Board state ───
@@ -1157,16 +1143,52 @@ export default function GlidePassAdmin() {
 
   const fetchStorageInfo = async () => {
     try {
-      // Fetch diagnostics metrics which has database / storage sizes
-      const res = await fetch("/api/admin/diagnostics");
+      const res = await fetch("/api/admin/storage");
       if (res.ok) {
         const data = await res.json();
-        // Set simulated or dynamic chunks values
-        setStaleChunksCount(Math.floor(Math.random() * 5));
-        setStorageUsage({
-          totalChunks: Math.floor(Math.random() * 120 + 20),
-          totalSize: data.database?.size || "4.8 MB"
-        });
+        if (data.success) {
+          setStaleChunksCount(data.staleCount);
+          setStorageUsage({
+            totalChunks: data.totalChunks,
+            totalSize: data.totalSize
+          });
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchBillingLogs = async () => {
+    try {
+      const res = await fetch("/api/admin/billing");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.subscriptions) {
+          setBillingLogs(data.subscriptions);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch("/api/admin/promotions");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.campaigns) {
+          setActiveCampaigns(data.campaigns);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchReleaseChannels = async () => {
+    try {
+      const res = await fetch("/api/admin/channels");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.channels) {
+          setReleaseChannels(data.channels);
+        }
       }
     } catch (e) {}
   };
@@ -1968,6 +1990,27 @@ export default function GlidePassAdmin() {
         fetchAbuseReports();
         const interval = setInterval(() => {
           fetchAbuseReports();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "billing_ledger") {
+        fetchBillingLogs();
+        const interval = setInterval(() => {
+          fetchBillingLogs();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "promotions") {
+        fetchCampaigns();
+        const interval = setInterval(() => {
+          fetchCampaigns();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "release_channels") {
+        fetchReleaseChannels();
+        const interval = setInterval(() => {
+          fetchReleaseChannels();
         }, 5000);
         return () => clearInterval(interval);
       }
@@ -7621,13 +7664,13 @@ export default function GlidePassAdmin() {
                                       </span>
                                     </td>
                                     <td className="p-4">
-                                      <button
+                                    <button
                                         onClick={async () => {
                                           try {
                                             const res = await fetch("/api/reports", {
-                                              method: "POST",
+                                              method: "PUT",
                                               headers: { "Content-Type": "application/json" },
-                                              body: JSON.stringify({ action: "resolve", id: report.id })
+                                              body: JSON.stringify({ id: report.id, status: "resolved" })
                                             });
                                             if (res.ok) {
                                               showToast("success", "Abuse case resolved.");
@@ -7688,10 +7731,19 @@ export default function GlidePassAdmin() {
                                   <td className="p-4">
                                     <button
                                       disabled={log.status !== "success"}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         if (confirm(`Are you sure you want to issue a refund for transaction ${log.id}?`)) {
-                                          setBillingLogs(prev => prev.map(b => b.id === log.id ? { ...b, status: "refunded" } : b));
-                                          showToast("success", `Transaction ${log.id} refunded successfully.`);
+                                          try {
+                                            const res = await fetch("/api/admin/billing", {
+                                              method: "POST",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ id: log.id })
+                                            });
+                                            if (res.ok) {
+                                              showToast("success", `Transaction ${log.id} refunded successfully.`);
+                                              fetchBillingLogs();
+                                            }
+                                          } catch (e) {}
                                         }
                                       }}
                                       className="px-3 py-1.5 rounded-lg border font-bold text-[10px] border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10 cursor-pointer active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
@@ -7743,19 +7795,30 @@ export default function GlidePassAdmin() {
                                 className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
                             </div>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const nameInput = document.getElementById("campaign_name") as HTMLInputElement;
                                 const codeInput = document.getElementById("campaign_code") as HTMLInputElement;
                                 const benefitInput = document.getElementById("campaign_benefit") as HTMLInputElement;
                                 if (!nameInput?.value || !codeInput?.value || !benefitInput?.value) return showToast("error", "All fields are required.");
-                                setActiveCampaigns(prev => [
-                                  ...prev,
-                                  { id: String(prev.length + 1), name: nameInput.value, code: codeInput.value.toUpperCase(), conversions: 0, reward: benefitInput.value, status: "active" }
-                                ]);
-                                showToast("success", `Campaign "${nameInput.value}" scheduled successfully.`);
-                                nameInput.value = "";
-                                codeInput.value = "";
-                                benefitInput.value = "";
+                                try {
+                                  const res = await fetch("/api/admin/promotions", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      action: "create",
+                                      code: codeInput.value.toUpperCase(),
+                                      discount: benefitInput.value,
+                                      max_uses: 100
+                                    })
+                                  });
+                                  if (res.ok) {
+                                    showToast("success", `Promo code ${codeInput.value.toUpperCase()} created successfully.`);
+                                    fetchCampaigns();
+                                    nameInput.value = "";
+                                    codeInput.value = "";
+                                    benefitInput.value = "";
+                                  }
+                                } catch (e) {}
                               }}
                               className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
                             >
@@ -7793,8 +7856,18 @@ export default function GlidePassAdmin() {
                                     </td>
                                     <td className="p-4">
                                       <button
-                                        onClick={() => {
-                                          setActiveCampaigns(prev => prev.map(item => item.id === c.id ? { ...item, status: item.status === "active" ? "paused" : "active" } : item));
+                                        onClick={async () => {
+                                          try {
+                                            const res = await fetch("/api/admin/promotions", {
+                                              method: "POST",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ action: "toggle", code: c.code })
+                                            });
+                                            if (res.ok) {
+                                              showToast("success", `Promo code ${c.code} status toggled.`);
+                                              fetchCampaigns();
+                                            }
+                                          } catch (e) {}
                                         }}
                                         className="text-[10px] font-bold text-sky-400 hover:underline cursor-pointer"
                                       >
@@ -7846,11 +7919,20 @@ export default function GlidePassAdmin() {
                             </div>
                             <div className="mt-6 pt-4 border-t flex justify-end gap-2" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   const nextVer = prompt(`Enter version string to deploy to ${channel.name} channel:`, channel.version);
                                   if (nextVer) {
-                                    setReleaseChannels(prev => prev.map(c => c.name === channel.name ? { ...c, version: nextVer, releaseDate: new Date().toISOString().split("T")[0] } : c));
-                                    showToast("success", `Channel ${channel.name} updated to version ${nextVer}`);
+                                    try {
+                                      const res = await fetch("/api/admin/channels", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ name: channel.name, version: nextVer })
+                                      });
+                                      if (res.ok) {
+                                        showToast("success", `Channel ${channel.name} updated to version ${nextVer}`);
+                                        fetchReleaseChannels();
+                                      }
+                                    } catch (e) {}
                                   }
                                 }}
                                 className="px-3.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer bg-sky-500/10 text-sky-400 border-sky-500/30"
