@@ -1,4 +1,4 @@
-# LANpad (GlidePass)
+# 🚀 LANpad (GlidePass)
 
 LANpad, also known as GlidePass, is a local-first desktop app that turns your phone into a powerful input and resource-sharing companion for your Mac or Windows machine. It is designed for fast, private, and low-friction transfer of text, snippets, and shared resources between devices on the same local network.
 
@@ -8,7 +8,7 @@ The product now combines two core experiences:
 
 ---
 
-## What LANpad does
+## ✨ What LANpad does
 
 LANpad helps you:
 - send text from your phone to your computer instantly
@@ -19,7 +19,7 @@ LANpad helps you:
 
 ---
 
-## Core features
+## 🔥 Core features
 
 ### 1. Local desktop app
 - runs locally on macOS or Windows
@@ -46,7 +46,7 @@ LANpad helps you:
 
 ---
 
-## Architecture overview
+## 🧱 Architecture overview
 
 The project is made of three main parts:
 
@@ -67,7 +67,7 @@ The project is made of three main parts:
 
 ---
 
-## Getting started
+## 🚀 Getting started
 
 ### Run the desktop app locally
 
@@ -97,7 +97,7 @@ Then open:
 
 ---
 
-## Development setup
+## 🧑‍💻 Development setup
 
 ### Prerequisites
 - Python 3.8+
@@ -123,7 +123,7 @@ npm run dev
 
 ---
 
-## Build and packaging
+## 🏗 Build and packaging
 
 ### Windows build
 ```cmd
@@ -139,7 +139,7 @@ This produces packaged desktop builds for distribution.
 
 ---
 
-## Current status
+## 📦 Current status
 
 LANpad is now positioned as a local-first productivity tool with:
 - desktop app support for Mac and Windows
@@ -154,7 +154,7 @@ It is best described as a hybrid of:
 
 ---
 
-## Project focus
+## 🤝 Project focus
 
 The current direction of the project is to make LANpad feel like:
 - fast and simple for everyday text transfer
@@ -163,6 +163,6 @@ The current direction of the project is to make LANpad feel like:
 
 ---
 
-## Notes
+## 📌 Notes
 
 The core app remains local-first, while the website experience adds discovery, publishing, and resource management capabilities that extend the product beyond simple input transfer.

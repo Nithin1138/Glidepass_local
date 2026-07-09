@@ -567,6 +567,8 @@ const ThreeDConduit = () => {
     // --- 5. ANIMATION LOOP ---
     let clock = new THREE.Clock();
     let animationFrameId: number;
+    let lastCharsTyped = -1;
+    let lastCursorBlink = -1;
 
     const animateScene = () => {
       animationFrameId = requestAnimationFrame(animateScene);
@@ -588,97 +590,104 @@ const ThreeDConduit = () => {
       phoneGroup.rotation.y = 0.4 + Math.cos(elapsedTime * 1.0) * 0.05;
 
       // --- ANIMATED CANVAS TEXT DRAWING ---
-      const totalLetters = 15;
       const textToType = "SYNC_ACTIVE...";
       const charsTyped = Math.floor((elapsedTime * 6) % (textToType.length + 5));
+      const cursorBlink = Math.floor(elapsedTime * 3) % 2;
       const activeText = textToType.slice(0, Math.min(charsTyped, textToType.length));
 
-      // Draw Phone screen UI & Text
-      if (phoneCtx) {
-        phoneCtx.fillStyle = "#0a0e17";
-        phoneCtx.fillRect(0, 0, 256, 512);
+      const shouldUpdate = charsTyped !== lastCharsTyped || cursorBlink !== lastCursorBlink;
 
-        // Header info
-        phoneCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        phoneCtx.font = "bold 14px monospace";
-        phoneCtx.fillText("9:41", 20, 35);
-        phoneCtx.fillText("100% 🔋", 180, 35);
+      if (shouldUpdate) {
+        lastCharsTyped = charsTyped;
+        lastCursorBlink = cursorBlink;
 
-        // Connection Pill
-        phoneCtx.fillStyle = "rgba(70, 143, 234, 0.15)";
-        phoneCtx.strokeStyle = "rgba(70, 143, 234, 0.3)";
-        phoneCtx.lineWidth = 1.5;
-        phoneCtx.beginPath();
-        phoneCtx.roundRect(40, 60, 176, 32, 16);
-        phoneCtx.fill();
-        phoneCtx.stroke();
+        // Draw Phone screen UI & Text
+        if (phoneCtx) {
+          phoneCtx.fillStyle = "#0a0e17";
+          phoneCtx.fillRect(0, 0, 256, 512);
 
-        phoneCtx.fillStyle = "#468FEA";
-        phoneCtx.font = "black 10px sans-serif";
-        phoneCtx.textAlign = "center";
-        phoneCtx.fillText("TUNNEL CONNECTED", 128, 80);
+          // Header info
+          phoneCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+          phoneCtx.font = "bold 14px monospace";
+          phoneCtx.fillText("9:41", 20, 35);
+          phoneCtx.fillText("100% 🔋", 180, 35);
 
-        // Text Box
-        phoneCtx.fillStyle = "#111827";
-        phoneCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-        phoneCtx.beginPath();
-        phoneCtx.roundRect(20, 180, 216, 120, 16);
-        phoneCtx.fill();
-        phoneCtx.stroke();
+          // Connection Pill
+          phoneCtx.fillStyle = "rgba(70, 143, 234, 0.15)";
+          phoneCtx.strokeStyle = "rgba(70, 143, 234, 0.3)";
+          phoneCtx.lineWidth = 1.5;
+          phoneCtx.beginPath();
+          phoneCtx.roundRect(40, 60, 176, 32, 16);
+          phoneCtx.fill();
+          phoneCtx.stroke();
 
-        // Phone Input Value
-        phoneCtx.fillStyle = "#ffffff";
-        phoneCtx.font = "bold 15px monospace";
-        phoneCtx.textAlign = "left";
-        phoneCtx.fillText(activeText + (Math.floor(elapsedTime * 3) % 2 === 0 ? "_" : ""), 35, 245);
+          phoneCtx.fillStyle = "#468FEA";
+          phoneCtx.font = "black 10px sans-serif";
+          phoneCtx.textAlign = "center";
+          phoneCtx.fillText("TUNNEL CONNECTED", 128, 80);
 
-        phoneTexture.needsUpdate = true;
-      }
+          // Text Box
+          phoneCtx.fillStyle = "#111827";
+          phoneCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+          phoneCtx.beginPath();
+          phoneCtx.roundRect(20, 180, 216, 120, 16);
+          phoneCtx.fill();
+          phoneCtx.stroke();
 
-      // Draw Laptop screen UI & Terminal Code
-      if (laptopCtx) {
-        laptopCtx.fillStyle = "#0a0e17";
-        laptopCtx.fillRect(0, 0, 512, 300);
+          // Phone Input Value
+          phoneCtx.fillStyle = "#ffffff";
+          phoneCtx.font = "bold 15px monospace";
+          phoneCtx.textAlign = "left";
+          phoneCtx.fillText(activeText + (cursorBlink === 0 ? "_" : ""), 35, 245);
 
-        // Fake Title Bar
-        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.05)";
-        laptopCtx.fillRect(0, 0, 512, 35);
+          phoneTexture.needsUpdate = true;
+        }
 
-        // Red Yellow Green Window Buttons
-        laptopCtx.fillStyle = "#ff5f56";
-        laptopCtx.beginPath(); laptopCtx.arc(20, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
-        laptopCtx.fillStyle = "#ffbd2e";
-        laptopCtx.beginPath(); laptopCtx.arc(38, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
-        laptopCtx.fillStyle = "#27c93f";
-        laptopCtx.beginPath(); laptopCtx.arc(56, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+        // Draw Laptop screen UI & Terminal Code
+        if (laptopCtx) {
+          laptopCtx.fillStyle = "#0a0e17";
+          laptopCtx.fillRect(0, 0, 512, 300);
 
-        // Terminal path
-        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        laptopCtx.font = "11px monospace";
-        laptopCtx.textAlign = "center";
-        laptopCtx.fillText("lanpad — local_node", 256, 21);
+          // Fake Title Bar
+          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.05)";
+          laptopCtx.fillRect(0, 0, 512, 35);
 
-        // Editor Code Output
-        laptopCtx.textAlign = "left";
-        laptopCtx.font = "14px monospace";
-        
-        // Line 1: setup bridge
-        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        laptopCtx.fillText("1  const bridge = new LANpadBridge();", 24, 75);
+          // Red Yellow Green Window Buttons
+          laptopCtx.fillStyle = "#ff5f56";
+          laptopCtx.beginPath(); laptopCtx.arc(20, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+          laptopCtx.fillStyle = "#ffbd2e";
+          laptopCtx.beginPath(); laptopCtx.arc(38, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
+          laptopCtx.fillStyle = "#27c93f";
+          laptopCtx.beginPath(); laptopCtx.arc(56, 17, 6, 0, Math.PI * 2); laptopCtx.fill();
 
-        // Line 2: compiling log
-        laptopCtx.fillStyle = "#468FEA";
-        laptopCtx.fillText("2  bridge.connect('LocalServer');", 24, 110);
+          // Terminal path
+          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+          laptopCtx.font = "11px monospace";
+          laptopCtx.textAlign = "center";
+          laptopCtx.fillText("lanpad — local_node", 256, 21);
 
-        // Line 3: receiving keystrokes
-        laptopCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        laptopCtx.fillText("3  // Sync Stream input", 24, 145);
+          // Editor Code Output
+          laptopCtx.textAlign = "left";
+          laptopCtx.font = "14px monospace";
+          
+          // Line 1: setup bridge
+          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+          laptopCtx.fillText("1  const bridge = new LANpadBridge();", 24, 75);
 
-        // Line 4: output matching typed phone value
-        laptopCtx.fillStyle = "#f59e0b";
-        laptopCtx.fillText("4  > " + activeText, 24, 180);
+          // Line 2: compiling log
+          laptopCtx.fillStyle = "#468FEA";
+          laptopCtx.fillText("2  bridge.connect('LocalServer');", 24, 110);
 
-        laptopTexture.needsUpdate = true;
+          // Line 3: receiving keystrokes
+          laptopCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
+          laptopCtx.fillText("3  // Sync Stream input", 24, 145);
+
+          // Line 4: output matching typed phone value
+          laptopCtx.fillStyle = "#f59e0b";
+          laptopCtx.fillText("4  > " + activeText, 24, 180);
+
+          laptopTexture.needsUpdate = true;
+        }
       }
 
       // Animate packet movements along Bezier Curve
@@ -1125,6 +1134,12 @@ export default function Home() {
       onMouseMove={handleGlobalMouseMove}
       className="min-h-screen bg-[#EDEAE0] text-gray-900 font-dmsans relative overflow-x-hidden antialiased"
     >
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col min-h-screen"
+      >
       {/* Dynamic Clay Style Injections */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap');
@@ -1719,6 +1734,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      </motion.div>
 
     </div>
   );
