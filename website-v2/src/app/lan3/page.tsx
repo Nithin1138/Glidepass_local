@@ -796,7 +796,7 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-12 md:py-16 px-6 md:px-12 relative overflow-hidden font-dmsans">
+    <section id="features" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
@@ -867,7 +867,7 @@ const UseCases = () => {
   ];
 
   return (
-    <section id="usecases" className="py-12 md:py-16 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="usecases" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
           <div>
@@ -903,7 +903,7 @@ const UseCases = () => {
 
 const ResourceEcosystem = () => {
   return (
-    <section id="ecosystem" className="py-12 md:py-16 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="ecosystem" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -970,7 +970,7 @@ const ResourceEcosystem = () => {
 
 const ClipboardRooms = () => {
   return (
-    <section id="rooms" className="py-12 md:py-16 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+    <section id="rooms" className="py-16 md:py-24 px-6 md:px-12 relative overflow-hidden font-dmsans border-b border-gray-200/40">
       <div className="max-w-6xl mx-auto w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -1439,7 +1439,7 @@ export default function Home() {
 
 
       {/* Setup Guide */}
-      <section id="setup" className="py-12 md:py-16 relative overflow-hidden font-dmsans border-b border-gray-200/40">
+      <section id="setup" className="py-16 md:py-24 relative overflow-hidden font-dmsans border-b border-gray-200/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full">
           <SetupGuide />
         </div>
@@ -1545,21 +1545,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div className="max-w-5xl mx-auto px-6 w-full z-10 mt-8">
-            <div className="p-4 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md text-[10px] text-gray-700 leading-relaxed font-sans text-center">
-              <span className="font-bold text-[#F28500] flex items-center justify-center gap-1"><AlertTriangle size={12} className="text-[#F28500]" /> SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
-              These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
-              Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
-              <a 
-                href="https://github.com/Nithin1138/Glidepass_local/tree/main/website-v2/public" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="underline hover:text-gray-900 transition-colors font-bold"
-              >
-                github.com/Nithin1138/Glidepass_local
-              </a>.
-            </div>
-          </div>
 
           {/* Left Curtain Panel */}
           <motion.div
@@ -1590,6 +1575,22 @@ export default function Home() {
               <span className="text-[10px] font-black text-gray-400 -rotate-90 select-none">PULL</span>
             </div>
           </motion.div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 w-full mt-10">
+          <div className="p-5 rounded-2xl border border-white/40 clay-card shadow-inner text-[10px] text-gray-500 leading-relaxed font-sans text-center">
+            <span className="font-black text-[#F28500] flex items-center justify-center gap-1 mb-1.5"><AlertTriangle size={12} className="text-[#F28500]" /> SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
+            These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
+            Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
+            <a 
+              href="https://github.com/Nithin1138/Glidepass_local/tree/main/website-v2/public" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="underline text-[#468FEA] hover:text-blue-600 transition-colors font-black"
+            >
+              github.com/Nithin1138/Glidepass_local
+            </a>.
+          </div>
         </div>
       </section>
 
