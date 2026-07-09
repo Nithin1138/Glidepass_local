@@ -295,7 +295,7 @@ const Hero = ({
 
 
             <h1
-              className="text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
+              className="text-4xl sm:text-5xl md:text-7xl lg:text-[76px] font-rubik font-black tracking-tighter leading-[0.85] text-[#0f172a] uppercase"
             >
               {renderStaggeredHeadline("MOVE TEXT & CODE")}
               <div className="h-2" />

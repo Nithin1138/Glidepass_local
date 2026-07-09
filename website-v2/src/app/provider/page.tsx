@@ -775,7 +775,7 @@ export default function ProviderOnboardingPage() {
                     </span>
                   </div>
                 ) : (
-                  <div className="clay-box p-8 md:p-10 space-y-6">
+                  <div className="clay-box p-6 sm:p-8 md:p-10 space-y-6">
                     {/* Mobile Header (Visible only on mobile) */}
                     <div className="block md:hidden text-center space-y-2 mb-2">
                       <h1 className={`text-3xl font-black uppercase tracking-tight leading-none ${
