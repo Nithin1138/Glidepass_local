@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const getCustomFilePath = (file: string) => {
   const isServerless = process.env.VERCEL || process.env.NODE_ENV === "production";
-  const baseDir = isServerless ? "/tmp" : path.join(process.cwd(), "data");
+  const baseDir = isServerless ? "/tmp" : path.join(/*turbopackIgnore: true*/ process.cwd(), "data");
   return path.join(baseDir, "ota", file);
 };
 
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
     // 3. Fall back to default template
     let defaultFilePath;
     if (file === "downloads/version.json") {
-      defaultFilePath = path.join(process.cwd(), "public", "downloads", "version.json");
+      defaultFilePath = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "downloads", "version.json");
     } else {
-      defaultFilePath = path.join(process.cwd(), "public", "templates", file);
+      defaultFilePath = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "templates", file);
     }
     
     if (fs.existsSync(defaultFilePath)) {
