@@ -2786,20 +2786,21 @@ export async function getActiveUsersCount(roomCode: string): Promise<number> {
   }
 }
 
-export async function updateRoomExpiration(code: string, expiresAt: string): Promise<void> {
+export async function updateRoomExpiration(code: string, expiresAt: string, newDuration: number): Promise<void> {
   if (pool) {
     await initDb();
     await pool.query(
       `UPDATE vit_clipboard_rooms 
-       SET expires_at = $1 
-       WHERE code = $2`,
-      [expiresAt, code.toUpperCase()]
+       SET expires_at = $1, duration_mins = $2
+       WHERE code = $3`,
+      [expiresAt, newDuration, code.toUpperCase()]
     );
   } else {
     const data = await readClipboardFile();
     const idx = data.rooms.findIndex(r => r.code.toUpperCase() === code.toUpperCase());
     if (idx !== -1) {
       data.rooms[idx].expiresAt = expiresAt;
+      data.rooms[idx].durationMins = newDuration;
       await writeClipboardFile(data);
     }
   }

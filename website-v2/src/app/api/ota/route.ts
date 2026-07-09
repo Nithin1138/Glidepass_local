@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     } else {
       defaultFilePath = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "templates", file);
     }
-    
+
     if (fs.existsSync(defaultFilePath)) {
       const content = fs.readFileSync(defaultFilePath, "utf8");
       return new NextResponse(content, {
@@ -88,20 +88,20 @@ export async function POST(request: NextRequest) {
     if (file === "downloads/version.json") {
       try {
         const parsed = JSON.parse(content);
-        
+
         // Load history from DB first, fall back to file history
         let historyList: any[] = [];
         const dbHistory = await getOtaFile("downloads/versions_history.json");
         if (dbHistory !== null) {
           try {
             historyList = JSON.parse(dbHistory);
-          } catch (e) {}
+          } catch (e) { }
         } else {
           const historyPath = getCustomFilePath("downloads/versions_history.json");
           if (fs.existsSync(historyPath)) {
             try {
               historyList = JSON.parse(fs.readFileSync(historyPath, "utf8"));
-            } catch (e) {}
+            } catch (e) { }
           }
         }
 
@@ -115,9 +115,9 @@ export async function POST(request: NextRequest) {
         };
         // Prepend and filter duplicates
         historyList = [newEntry, ...historyList.filter((item: any) => item.version !== newEntry.version)];
-        
+
         const historyJson = JSON.stringify(historyList, null, 2);
-        
+
         // Save history to DB and file cache
         await setOtaFile("downloads/versions_history.json", historyJson);
         const historyPath = getCustomFilePath("downloads/versions_history.json");

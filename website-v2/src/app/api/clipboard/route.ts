@@ -180,8 +180,9 @@ export async function POST(req: NextRequest) {
       const additionalMs = minutes * 60 * 1000;
       const currentExpiresAt = new Date(room.expiresAt).getTime();
       const newExpiresAt = new Date(currentExpiresAt + additionalMs).toISOString();
+      const newDuration = (room.durationMins || 0) + minutes;
 
-      await updateRoomExpiration(roomCode.toUpperCase(), newExpiresAt);
+      await updateRoomExpiration(roomCode.toUpperCase(), newExpiresAt, newDuration);
 
       return NextResponse.json({ success: true, expiresAt: newExpiresAt });
     }
