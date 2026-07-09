@@ -338,7 +338,7 @@ export default function GlidePassAdmin() {
   }, []);
 
   const [view, setView] = useState<
-    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs"
+    "dashboard" | "users" | "rbac" | "analytics" | "vitcodes" | "ota" | "system" | "security" | "settings" | "profile" | "contributors" | "subscriptions" | "plans" | "keys" | "versioning" | "coupons" | "referrals" | "legal_acceptances" | "providers" | "clipboards" | "hubs" | "devices"
   >("dashboard");
   const [workspace, setWorkspace] = useState<"production" | "staging">("production");
 
@@ -820,6 +820,11 @@ export default function GlidePassAdmin() {
   const [loadingClipboards, setLoadingClipboards] = useState(false);
   const [clipboardSearch, setClipboardSearch] = useState("");
 
+  // ─── Desktop Paired Devices ───
+  const [desktopDevices, setDesktopDevices] = useState<any[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [devicesSearch, setDevicesSearch] = useState("");
+
   // ─── Community Hubs ───
   const [communityHubs, setCommunityHubs] = useState<any[]>([]);
   const [loadingHubs, setLoadingHubs] = useState(false);
@@ -1057,6 +1062,36 @@ export default function GlidePassAdmin() {
       showToast("error", err.message);
     } finally {
       if (!quiet) setLoadingVit(false);
+    }
+  };
+
+  const fetchDesktopDevices = async (quiet = false) => {
+    if (!quiet) setLoadingDevices(true);
+    try {
+      const res = await fetch("/api/admin/heartbeats", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch pairings");
+      const data = await res.json();
+      if (data.success && data.heartbeats) {
+        setDesktopDevices(data.heartbeats);
+      }
+    } catch (err: any) {
+      showToast("error", err.message);
+    } finally {
+      if (!quiet) setLoadingDevices(false);
+    }
+  };
+
+  const handleClearPairings = async () => {
+    const confirmClear = window.confirm("Are you sure you want to clear all desktop pairing heartbeat history?");
+    if (!confirmClear) return;
+    setDesktopDevices([]);
+    try {
+      const res = await fetch("/api/admin/heartbeats", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to clear pairing history");
+      showToast("success", "Pairing history cleared.");
+      fetchDesktopDevices(true);
+    } catch (err: any) {
+      showToast("error", err.message);
     }
   };
 
@@ -1769,6 +1804,13 @@ export default function GlidePassAdmin() {
         }, 30000);
         return () => clearInterval(interval);
       }
+      if (view === "subscriptions" || view === "plans" || view === "coupons" || view === "referrals") {
+        fetchMonetization();
+        const interval = setInterval(() => {
+          fetchMonetization();
+        }, 15000);
+        return () => clearInterval(interval);
+      }
       if (view === "vitcodes" || view === "contributors") {
         fetchVitCodes();
         fetchCommunityHubs(true);
@@ -1785,6 +1827,13 @@ export default function GlidePassAdmin() {
         }, 10000);
         return () => clearInterval(interval);
       }
+      if (view === "devices") {
+        fetchDesktopDevices();
+        const interval = setInterval(() => {
+          fetchDesktopDevices(true);
+        }, 15000);
+        return () => clearInterval(interval);
+      }
       if (view === "hubs") {
         fetchCommunityHubs();
         const interval = setInterval(() => {
@@ -1792,7 +1841,7 @@ export default function GlidePassAdmin() {
         }, 15000);
         return () => clearInterval(interval);
       }
-      if (view === "users" || view === "rbac") {
+      if (view === "users" || view === "rbac" || view === "providers") {
         fetchUsersRbac();
         const interval = setInterval(() => {
           fetchUsersRbac();
@@ -2443,12 +2492,12 @@ export default function GlidePassAdmin() {
 
     if (key === "dashboard" || key === "profile") return true;
     if (key === "analytics") return !!perms.analytics;
-    if (key === "users") return !!perms.users;
+    if (key === "users" || key === "providers") return !!perms.users;
     if (key === "rbac") return !!perms.rbac;
-    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs") return !!perms.content;
+    if (key === "vitcodes" || key === "contributors" || key === "ota" || key === "versioning" || key === "clipboards" || key === "hubs" || key === "devices") return !!perms.content;
     if (key === "system") return !!perms.system;
     if (key === "security" || key === "legal_acceptances") return !!perms.security;
-    if (key === "settings") return !!perms.settings;
+    if (key === "subscriptions" || key === "plans" || key === "coupons" || key === "referrals" || key === "settings") return !!perms.settings;
     return true;
   };
 
@@ -2858,8 +2907,9 @@ export default function GlidePassAdmin() {
                 <nav className="px-4 py-6 space-y-6">
                   {[
                     { label: "Overview", items: [{ key: "dashboard", icon: Layout, name: "Dashboard" }, { key: "analytics", icon: BarChart3, name: "Analytics" }] },
-                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
-                    { label: "Operations", items: [{ key: "versioning", icon: GitBranch, name: "Version Manager" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
+                    { label: "Business & Releases", items: [{ key: "subscriptions", icon: CreditCard, name: "Monetization" }, { key: "plans", icon: Sliders, name: "Plans" }, { key: "keys", icon: Key, name: "Keys" }, { key: "coupons", icon: Tag, name: "Coupons" }, { key: "referrals", icon: Gift, name: "Referrals" }, { key: "versioning", icon: GitBranch, name: "Version Manager" }] },
+                    { label: "Management", items: [{ key: "users", icon: Users, name: "Users" }, { key: "providers", icon: UserCheck, name: "Providers" }, { key: "rbac", icon: ShieldCheck, name: "Roles & Policies" }, { key: "vitcodes", icon: BookOpen, name: "Resources" }, { key: "contributors", icon: UserCheck, name: "Contributors" }, { key: "clipboards", icon: Clipboard, name: "Clipboard Rooms" }, { key: "hubs", icon: Globe, name: "Community Hubs" }] },
+                    {label: "Operations", items: [{ key: "devices", icon: MonitorSmartphone, name: "Desktop Pairings" }, { key: "ota", icon: MonitorSmartphone, name: "OTA Templates" }, { key: "system", icon: Cpu, name: "Diagnostics" }, { key: "security", icon: Shield, name: "Audit Trail" }, { key: "legal_acceptances", icon: FileText, name: "Legal Acceptances" }] },
                   ]
                   .map(group => ({
                     ...group,
@@ -3329,6 +3379,178 @@ export default function GlidePassAdmin() {
                                   </td>
                                 </tr>
                               ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ═══ Providers ═══ */}
+                  {view === "providers" && (
+                    <motion.div key="providers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Providers & Creators Directory</h2>
+                          <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>Manage content creators, code contributors, their accounts, and growth metrics</p>
+                        </div>
+                      </div>
+
+                      {/* Analytics Dashboard Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Consent metrics */}
+                        <div className="p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Newsletter Consent</p>
+                              <h3 className="text-3xl font-black mt-2 font-[family-name:var(--font-outfit)]" style={{ color: dk ? P.white : P.black }}>
+                                {providerStats.totalConsent}
+                              </h3>
+                            </div>
+                            <div className="p-2.5 rounded-xl border" style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: P.blue }}>
+                              <Mail size={20} />
+                            </div>
+                          </div>
+                          <div className="mt-4 flex items-center gap-2">
+                            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ background: `${P.blue}15`, color: P.blue }}>
+                              {providerStats.consentPercentage}%
+                            </span>
+                            <span className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>of total users opted in for updates</span>
+                          </div>
+                        </div>
+
+                        {/* Referral Growth Channels */}
+                        <div className="p-5 rounded-[24px] border relative overflow-hidden md:col-span-2 space-y-4"
+                          style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                          <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
+                          <div>
+                            <p className="text-[10px] uppercase font-extrabold tracking-widest" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Acquisition Channels (Referrals)</p>
+                            <p className="text-[11px]" style={{ color: dk ? `${P.sky}60` : `${P.black}55` }}>Where do our users find us?</p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {providerStats.referralData.slice(0, 4).map((ref, idx) => (
+                              <div key={idx} className="space-y-1.5">
+                                <div className="flex justify-between text-xs font-bold">
+                                  <span style={{ color: dk ? P.white : P.black }}>{ref.source}</span>
+                                  <span className="font-mono" style={{ color: P.blue }}>{ref.count} ({ref.percentage}%)</span>
+                                </div>
+                                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                  <div className="h-full rounded-full" style={{ width: `${ref.percentage}%`, background: P.blue }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filters */}
+                      <div className="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
+                        style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="relative w-full md:w-80">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                          <input type="text" value={providerSearch} onChange={e => setProviderSearch(e.target.value)} placeholder="Search name or email..."
+                            className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 ${inputBg}`} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Provider:</span>
+                            <select value={providerRoleFilter} onChange={e => setProviderRoleFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                              <option value="all">All Providers</option>
+                              <option value="creator">Creators</option>
+                              <option value="contributor">Contributors</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>Status:</span>
+                            <select value={providerStatusFilter} onChange={e => setProviderStatusFilter(e.target.value as any)} className={`text-xs rounded-xl px-3 py-2 border focus:outline-none ${inputBg}`}>
+                              <option value="all">All Statuses</option>
+                              <option value="active">Active</option>
+                              <option value="suspended">Suspended</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Providers Directory Table */}
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse" style={{ minWidth: "750px" }}>
+                            <thead>
+                              <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
+                                {["Name", "Email", "Role Type", "Joined Date", "Consent", "Status", "Actions"].map(h => (
+                                  <th key={h} className={`p-4 text-[10px] uppercase font-extrabold tracking-widest ${h === "Actions" ? "text-right pr-6" : h === "Name" ? "pl-6" : ""}`}
+                                    style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users
+                                .filter(u => {
+                                  const searchMatch = u.name.toLowerCase().includes(providerSearch.toLowerCase()) || u.email.toLowerCase().includes(providerSearch.toLowerCase());
+                                  
+                                  const rLower = u.role.toLowerCase();
+                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
+                                  const isContributor = rLower.includes("contributor");
+                                  
+                                  const roleMatch = providerRoleFilter === "all"
+                                    ? (isCreator || isContributor)
+                                    : providerRoleFilter === "creator"
+                                      ? isCreator
+                                      : isContributor;
+                                      
+                                  const statusMatch = providerStatusFilter === "all" || u.status === providerStatusFilter;
+                                  
+                                  return searchMatch && roleMatch && statusMatch;
+                                })
+                                .map(u => {
+                                  const rLower = u.role.toLowerCase();
+                                  const isCreator = rLower.includes("creator") || rLower.includes("developer") || rLower.includes("admin");
+                                  const displayRole = isCreator ? "Creator" : "Contributor";
+                                  
+                                  return (
+                                    <tr key={u.id} className="text-xs hover:opacity-90 transition-colors" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                      <td className="p-4 pl-6 font-bold">{u.name}</td>
+                                      <td className="p-4" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>{u.email}</td>
+                                      <td className="p-4">
+                                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-mono border" 
+                                          style={{ 
+                                            background: displayRole === "Creator" ? `${P.blue}15` : "transparent", 
+                                            color: displayRole === "Creator" ? P.blue : dk ? `${P.sky}80` : `${P.black}80`, 
+                                            borderColor: displayRole === "Creator" ? `${P.blue}25` : dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)"
+                                          }}>
+                                          {displayRole} ({u.role})
+                                        </span>
+                                      </td>
+                                      <td className="p-4 font-mono text-[10px]" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }}>{u.joinedDate}</td>
+                                      <td className="p-4">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.consentEmails ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                                          {u.consentEmails ? "Opt-in" : "Opt-out"}
+                                        </span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.status === "suspended" ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}>
+                                          {u.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 pr-6 text-right flex justify-end gap-2">
+                                        <button onClick={() => setSelectedProviderDetails(u)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: dk ? P.white : P.black }}>
+                                          Details
+                                        </button>
+                                        <button onClick={() => toggleBan(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: u.status === "suspended" ? `${P.error}15` : "transparent", borderColor: u.status === "suspended" ? `${P.error}25` : dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", color: u.status === "suspended" ? P.error : dk ? `${P.sky}80` : `${P.black}60` }}>
+                                          {u.status === "suspended" ? "Unsuspend" : "Suspend"}
+                                        </button>
+                                        <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border"
+                                          style={{ background: `${P.error}15`, borderColor: `${P.error}25`, color: P.error }}>
+                                          Delete
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                             </tbody>
                           </table>
                         </div>
@@ -4304,6 +4526,124 @@ export default function GlidePassAdmin() {
                                       </td>
                                     </tr>
                                   ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </motion.div>
+                  )}
+                  {/* ─── DESKTOP PAIRINGS ─── */}
+                  {view === "devices" && (
+                    <motion.div key="devices" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                      
+                      {/* ─── Header ─── */}
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
+                        <div>
+                          <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Desktop Pairings</h2>
+                          <p className="text-xs opacity-75 mt-1" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
+                            {desktopDevices.length} companion clients registered &bull; checking in via heartbeat signals
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: dk ? `${P.sky}60` : `${P.black}40` }} />
+                            <input
+                              type="text"
+                              value={devicesSearch}
+                              onChange={e => setDevicesSearch(e.target.value)}
+                              placeholder="Search devices..."
+                              className={`text-xs rounded-xl pl-8 pr-3.5 py-2.5 border focus:outline-none focus:ring-1 focus:ring-[#0077C0]/30 w-48 ${inputBg}`}
+                            />
+                          </div>
+                          <button
+                            onClick={() => fetchDesktopDevices()}
+                            className={`p-2.5 rounded-xl border transition-all ${
+                              dk ? 'border-white/[0.08] hover:border-[#0077C0] bg-white/[0.01] text-white/70 hover:text-white' : 'border-black/[0.08] hover:border-[#0077C0] bg-white shadow-sm text-black/70 hover:text-black'
+                            }`}
+                            title="Refresh data"
+                          >
+                            <RefreshCw size={14} className={loadingDevices ? "animate-spin" : ""} />
+                          </button>
+                          <button
+                            onClick={handleClearPairings}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-xs bg-red-500/5 hover:bg-red-500/10 border-red-500/30 text-red-400 cursor-pointer active:scale-[0.98] transition-all"
+                          >
+                            <Trash2 size={13} /> Clear Pairing Logs
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ─── Table ─── */}
+                      {loadingDevices && desktopDevices.length === 0 ? (
+                        <div className="flex items-center justify-center py-20">
+                          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: P.blue, borderTopColor: "transparent" }} />
+                        </div>
+                      ) : (() => {
+                        const filtered = desktopDevices.filter(d => {
+                          const q = devicesSearch.toLowerCase();
+                          return !q || d.uuid.toLowerCase().includes(q) || (d.platform || "").toLowerCase().includes(q) || (d.appVersion || "").toLowerCase().includes(q);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="py-20 text-center rounded-[28px] border border-dashed" style={{ borderColor: dk ? "rgba(199,238,255,0.1)" : "rgba(5,5,5,0.08)", color: dk ? `${P.sky}60` : `${P.black}40` }}>
+                              <MonitorSmartphone size={32} className="mx-auto mb-3 opacity-30" />
+                              <p className="text-xs font-medium">
+                                {devicesSearch ? "No matching registered desktop clients." : "No registered pairings logged yet."}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className={`border rounded-2xl overflow-hidden`} style={{ background: dk ? "rgba(5,5,5,0.2)" : "rgba(255,255,255,0.5)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b bg-black/[0.02]" style={{ borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Device OS</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Client UUID</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">App Version</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Last Heartbeat Signal</th>
+                                    <th className="py-4 px-6 font-bold uppercase tracking-wider">Pairing Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {filtered.map((dev) => {
+                                    const os = (dev.platform || "").toLowerCase();
+                                    const isMac = os.includes("mac") || os.includes("darwin") || os.includes("apple");
+                                    const isWindows = os.includes("win");
+                                    
+                                    return (
+                                      <tr key={dev.id || dev.uuid} className="hover:bg-black/[0.01] transition-colors border-b last:border-0" style={{ borderColor: dk ? "rgba(199,238,255,0.05)" : "rgba(5,5,5,0.04)" }}>
+                                        <td className="py-4 px-6 font-bold flex items-center gap-2">
+                                          <span className="p-1.5 rounded-lg border flex items-center justify-center" style={{ background: dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.02)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                                            {isMac ? (
+                                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.58 2.95-1.39z"/></svg>
+                                            ) : isWindows ? (
+                                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.102zM10.95 1.95L24 0v11.55H10.95V1.95zM10.95 12.45H24v11.55l-13.05-1.95v-9.6z"/></svg>
+                                            ) : (
+                                              <Terminal size={14} />
+                                            )}
+                                          </span>
+                                          <span className="capitalize">{dev.platform || "Unknown Client"}</span>
+                                        </td>
+                                        <td className="py-4 px-6 font-mono text-[10px] select-all font-semibold opacity-75">{dev.uuid}</td>
+                                        <td className="py-4 px-6 font-semibold">{dev.appVersion || "v1.0.0"}</td>
+                                        <td className="py-4 px-6 opacity-75">
+                                          {dev.timestamp ? new Date(dev.timestamp).toLocaleTimeString() : "N/A"}{' '}
+                                          ({dev.timestamp ? new Date(dev.timestamp).toLocaleDateString() : ""})
+                                        </td>
+                                        <td className="py-4 px-6">
+                                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                                            Online
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>

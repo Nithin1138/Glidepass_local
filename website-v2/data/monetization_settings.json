@@ -14,11 +14,11 @@
       "allow_typing": 0,
       "allow_typing_mode": 0,
       "allow_inject": 0,
-      "allow_raw": 1,
+      "allow_raw": 0,
       "allow_select_copy": 0,
       "allow_fetch": 0,
       "allow_refill": 0,
-      "allow_resource_access": 1,
+      "allow_resource_access": 0,
       "allow_resource_analytics": 0,
       "allow_tunnel": 0
     },
@@ -39,8 +39,8 @@
       "allow_fetch": 1,
       "allow_refill": 1,
       "allow_resource_access": 1,
-      "allow_resource_analytics": 0,
-      "allow_tunnel": 1
+      "allow_resource_analytics": 2,
+      "allow_tunnel": 0
     },
     {
       "tier": "Creator",
