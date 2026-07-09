@@ -7524,11 +7524,17 @@ export default function GlidePassAdmin() {
                             <div className="text-3xl font-black font-outfit text-red-400">{staleChunksCount} Chunks</div>
                           </div>
                           <button
-                            onClick={async () => {
+                           onClick={async () => {
                               try {
-                                showToast("success", "Orphaned and stale chunks purged successfully.");
-                                setStaleChunksCount(0);
-                                fetchStorageInfo();
+                                const res = await fetch("/api/admin/storage", { method: "POST" });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    setStaleChunksCount(data.staleCount);
+                                    setStorageUsage({ totalChunks: data.totalChunks, totalSize: data.totalSize });
+                                  }
+                                  showToast("success", "Orphaned and stale chunks purged successfully.");
+                                }
                               } catch (e) {}
                             }}
                             className="mt-4 py-2 px-4 rounded-xl text-[10px] font-bold text-white bg-red-600 hover:bg-red-500 transition-colors shadow-md shadow-red-600/10 cursor-pointer active:scale-95 text-center"
@@ -7704,33 +7710,37 @@ export default function GlidePassAdmin() {
                         </div>
                       </div>
 
-                      <div className="rounded-[28px] border overflow-hidden"
+                       <div className="rounded-[28px] border overflow-hidden"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr style={{ background: dk ? "rgba(5,5,5,0.4)" : "rgba(250,250,250,0.6)", borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)"}` }}>
-                                {["Transaction ID", "User Email", "Amount", "Tier", "Status", "Date", "Action"].map(h => (
+                                {["Transaction ID", "User Email", "Amount", "Plan", "Status", "Date", "Action"].map(h => (
                                   <th key={h} className="p-4 text-[9px] uppercase font-bold tracking-wider" style={{ color: dk ? `${P.sky}70` : `${P.black}50` }}>{h}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
-                              {billingLogs.map(log => (
+                              {billingLogs.length === 0 ? (
+                                <tr>
+                                  <td colSpan={7} className="p-8 text-center text-xs opacity-50">No subscription transactions found. Data loads from vit_subscriptions.</td>
+                                </tr>
+                              ) : billingLogs.map(log => (
                                 <tr key={log.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                   <td className="p-4 font-mono font-bold select-all">{log.id}</td>
                                   <td className="p-4 font-bold">{log.email}</td>
                                   <td className="p-4 font-mono font-semibold">{log.amount}</td>
-                                  <td className="p-4 font-bold text-sky-400">{log.tier}</td>
+                                  <td className="p-4 font-bold text-sky-400">{log.plan || log.tier}</td>
                                   <td className="p-4">
-                                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${log.status === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${log.status === "success" || log.status === "active" ? "bg-emerald-500/10 text-emerald-400" : log.status === "refunded" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"}`}>
                                       {log.status}
                                     </span>
                                   </td>
                                   <td className="p-4 font-mono opacity-50">{log.date}</td>
                                   <td className="p-4">
                                     <button
-                                      disabled={log.status !== "success"}
+                                      disabled={log.status !== "success" && log.status !== "active"}
                                       onClick={async () => {
                                         if (confirm(`Are you sure you want to issue a refund for transaction ${log.id}?`)) {
                                           try {
@@ -7843,12 +7853,16 @@ export default function GlidePassAdmin() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {activeCampaigns.map(c => (
-                                  <tr key={c.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
-                                    <td className="p-4 font-bold">{c.name}</td>
+                                {activeCampaigns.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={6} className="p-8 text-center text-xs opacity-50">No active campaigns. Use the form to create one — it will be saved to vit_coupons.</td>
+                                  </tr>
+                                ) : activeCampaigns.map(c => (
+                                  <tr key={c.id || c.code} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
+                                    <td className="p-4 font-bold">{c.name || c.code}</td>
                                     <td className="p-4 font-mono font-bold text-sky-400">{c.code}</td>
-                                    <td className="p-4 font-mono text-center font-bold text-emerald-500">{c.conversions}</td>
-                                    <td className="p-4 font-semibold">{c.reward}</td>
+                                    <td className="p-4 font-mono text-center font-bold text-emerald-500">{c.conversions ?? c.usage ?? 0}</td>
+                                    <td className="p-4 font-semibold">{c.reward || c.discount}</td>
                                     <td className="p-4">
                                       <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${c.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                                         {c.status}
@@ -7897,7 +7911,12 @@ export default function GlidePassAdmin() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {releaseChannels.map(channel => (
+                        {releaseChannels.length === 0 ? (
+                          <div className="md:col-span-3 p-8 rounded-[28px] border text-center text-xs opacity-50"
+                            style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
+                            No release channels configured. Loading from vit_settings...
+                          </div>
+                        ) : releaseChannels.map(channel => (
                           <div key={channel.name} className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
                             style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)" }}>
                             <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
