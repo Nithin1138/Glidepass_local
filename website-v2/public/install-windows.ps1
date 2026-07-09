@@ -3,6 +3,14 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "🚀 Installing LANpad for Windows..." -ForegroundColor Green
 Write-Host ""
+Write-Host "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:" -ForegroundColor Yellow
+Write-Host "This installer executes a remote script to download and install LANpad." -ForegroundColor Yellow
+Write-Host "While this script is provided by the LANpad project for convenience," -ForegroundColor Yellow
+Write-Host "running scripts directly from the internet is a potential security risk." -ForegroundColor Yellow
+Write-Host "You should always review the source code of this script at:" -ForegroundColor Yellow
+Write-Host "https://github.com/Nithin1138/Glidepass_local/blob/main/website-v2/public/install-windows.ps1" -ForegroundColor Yellow
+Write-Host "before executing it." -ForegroundColor Yellow
+Write-Host ""
 Write-Host "⚠️  LEGAL DISCLAIMER:" -ForegroundColor Yellow
 Write-Host "LANpad is provided AS IS without warranty of any kind." -ForegroundColor Yellow
 Write-Host "The developers, contributors, and founders assume NO liability or responsibility" -ForegroundColor Yellow

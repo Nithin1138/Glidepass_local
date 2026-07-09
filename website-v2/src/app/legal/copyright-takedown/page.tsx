@@ -81,9 +81,9 @@ export default function CopyrightTakedownPage() {
           <div className="h-[1px] bg-[rgba(199,238,255,0.08)]" />
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">2. RESPONSE TIMELINE</h2>
+            <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">2. RESPONSE TIMELINE & SAFE HARBOR</h2>
             <p>
-              We take intellectual property claims seriously. Upon receiving a valid, fully completed takedown notice, we will act to remove or disable access to the infringing material within <strong>36 hours</strong>.
+              We take intellectual property claims seriously. LANpad acts as a passive intermediate service provider under DMCA Safe Harbor guidelines and local intermediate liability rules. Upon receiving a valid, fully completed takedown notice, we will act expeditiously to remove or disable access to the infringing material within <strong>24 hours</strong>.
             </p>
           </section>
 
@@ -101,7 +101,7 @@ export default function CopyrightTakedownPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">4. REPEAT INFRINGER POLICY</h2>
             <p>
-              We will terminate or suspend accounts, publishing privileges, or license keys of users who repeatedly publish unauthorized copyrighted material.
+              We enforce a strict **zero-tolerance repeat infringer policy**. We will immediately and permanently terminate or suspend accounts, publishing privileges, or license keys of users who publish unauthorized copyrighted material, without any eligibility for refund.
             </p>
           </section>
         </motion.div>

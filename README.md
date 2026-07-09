@@ -1,103 +1,168 @@
 # 🚀 LANpad (GlidePass)
 
-LANpad (also known as GlidePass) is a powerful, zero-configuration cross-device productivity tool that bridges the gap between your mobile device and your computer. It allows you to use your phone as a remote clipboard, a code repository viewer, and a "virtual keyboard" for your computer. 
+LANpad, also known as GlidePass, is a local-first desktop app that turns your phone into a powerful input and resource-sharing companion for your Mac or Windows machine. It is designed for fast, private, and low-friction transfer of text, snippets, and shared resources between devices on the same local network.
 
-Built specifically to help developers and system administrators manage code snippets and work efficiently under strict local network conditions.
-
----
-
-## ✨ Key Features
-
-*   ⌨️ **Smart Type Mode (Restricted Field Helper)**: Simulate real-time physical keyboard typing at varying speeds to safely inject text/code into platforms that disable standard clipboards or paste shortcuts (e.g., restricted VDI environments, secure command-line interfaces, terminal lockouts).
-*   📲 **Zero-Config Mobile Portal**: Scan a dynamically generated local QR code to sync your phone and laptop instantly over the local Wi-Fi (even through AP isolation firewalls).
-*   📚 **Integrated Snippet Vault**: Built-in repository viewer on the mobile dashboard allowing users to search, view, and paste contributed codes for active sessions instantly.
-*   📊 **Real-time Synchronization**: Transfer clipboard contents bidirectionally between your phone and laptop in under 50ms.
-*   🔒 **Secure & Local-First**: Operates primarily over your local network. Connections are direct, fast, and keep your data private.
+The product now combines two core experiences:
+- a local desktop app for instant input and clipboard-style workflows
+- a web-based resource ecosystem for discovering, publishing, and sending useful snippets and links into the app
 
 ---
 
-## 🛠️ Architecture Overview
+## ✨ What LANpad does
 
-The system consists of three main components:
-1.  **Desktop Client (Tkinter GUI & Uvicorn Backend)**: Runs locally on the user's laptop to simulate keystroke injection and serve the local connection portals.
-2.  **Next.js Web App (`website-v2`)**: The central landing page, admin manager dashboard, contributor portal, and host for versioning/templates.
-3.  **Dynamic Mobile templates (`templates/vitcodes.html`)**: Interactive mobile portal templates pushed to clients to render tables, code snippets, and sync controllers.
-
----
-
-## 🚀 Getting Started (Users)
-
-### 1. Launch the Desktop App
-*   **macOS**: Open the `LANpad.app` bundle or build the DMG.
-*   **Windows**: Run the compiled `LANpad.exe`.
-
-### 2. Connect Your Mobile Device
-*   On startup, the desktop app will show a dashboard containing a **QR Code**.
-*   Scan the QR code with your phone (both devices must be on the same local network/Wi-Fi).
-*   Select your workspace/collection, search for code snippets, or use the input box to send custom text.
+LANpad helps you:
+- send text from your phone to your computer instantly
+- use your phone as a remote keyboard or clipboard
+- enter text into console prompts or remote terminal environments where standard clipboard copy/paste is unsupported
+- browse and share reusable resources such as code snippets, notes, links, and templates
+- keep the core experience local and private without relying on cloud transfer for everyday use
 
 ---
 
-## 🧑‍💻 Development Setup (Engineers)
+## 🔥 Core features
+
+### 1. Local desktop app
+- runs locally on macOS or Windows
+- opens a lightweight local server on port 8000
+- pairs with your phone through a QR code and local network connection
+- supports multiple input modes for different workflows
+
+### 2. Input modes
+- Flash / Paste: fast clipboard-style transfer
+- Type: typing simulation for terminal environments or consoles with input restrictions
+- Inject: code-friendly injection with cleanup for formatting issues
+- Live Sync: real-time text streaming for longer inputs
+
+### 3. Resource sharing
+- browse community resources from the web experience
+- publish resources such as code snippets, links, notes, and templates
+- send a selected resource directly into the local app for instant use on your desktop
+- support for resource discovery, hubs, categories, and analytics in the website experience
+
+### 4. Privacy-first design
+- the main app is built around local network usage
+- data is handled locally and does not depend on cloud transfer for the core desktop workflow
+- secure session handling and local-only access are central to the experience
+
+---
+
+## 🧱 Architecture overview
+
+The project is made of three main parts:
+
+1. Desktop app
+   - Python-based local app with FastAPI/Uvicorn backend
+   - desktop UI entry points through the main launcher and app bootstrap
+   - keyboard and clipboard injection logic for input delivery
+
+2. Mobile/web interface
+   - web UI served by the local app for mobile pairing and interaction
+   - QR-based connection flow for quick setup
+   - resource browsing and sharing entry points
+
+3. Website resource platform
+   - Next.js web app under the website-v2 folder
+   - supports landing pages, resource discovery, publishing, hubs, and analytics
+   - connects with the desktop app so shared resources can be sent directly into LANpad
+
+---
+
+## 🚀 Getting started
+
+### Run the desktop app locally
+
+#### macOS / Linux
+```bash
+python3 main.py --gui
+```
+
+#### Menubar / background mode
+```bash
+python3 main.py
+```
+
+The app will start a local server and display a QR-based connection page for your phone or browser.
+
+### Run the website locally
+
+```bash
+cd website-v2
+npm install
+npm run dev
+```
+
+Then open:
+- http://localhost:3000 for the website
+- http://localhost:8000 for the local app interface
+
+---
+
+## 🧑‍💻 Development setup
 
 ### Prerequisites
-*   Python 3.8+ (macOS users need the `certifi` package for secure updater checks).
-*   Node.js v18+ & npm (for editing the web interface).
+- Python 3.8+
+- Node.js 18+
+- npm
 
-### Running the Python Desktop Client Locally
-1.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  Launch the app:
-    *   **GUI / Dashboard Mode**:
-        ```bash
-        python3 main.py --gui
-        ```
-    *   **Menubar Mode** (runs in background with an status bar icon):
-        ```bash
-        python3 main.py
-        ```
+### Install Python dependencies
+```bash
+pip install -r requirements.txt
+```
 
-### Running the Next.js Web App
-1.  Navigate to the web directory:
-    ```bash
-    cd website-v2
-    ```
-2.  Install packages:
-    ```bash
-    npm install
-    ```
-3.  Run the local development server:
-    ```bash
-    npm run dev
-    ```
+### Run the desktop app
+```bash
+python3 main.py --gui
+```
+
+### Run the web app
+```bash
+cd website-v2
+npm install
+npm run dev
+```
 
 ---
 
-## 🏗️ Production Builds
+## 🏗 Build and packaging
 
-### Building the Windows Executable (`.exe`)
-Run the helper batch script from a Windows terminal:
+### Windows build
 ```cmd
 build_win.bat
 ```
-This packages the app into a single standalone binary inside `dist/LANpad.exe` using PyInstaller. Detailed instructions can be found in the [Windows Build Guide](file:///Users/nithin/Projects/GlidePass/WINDOWS_BUILD.md).
 
-### Building the macOS Application (`.app` / `.dmg`)
-Run the builder script:
+### macOS build
 ```bash
 ./build_mac.sh
 ```
-This generates a portable Disk Image (`LANpad_Installer.dmg`) in your root directory.
+
+This produces packaged desktop builds for distribution.
 
 ---
 
-## 🤝 Contributing & Admin Controls
+## 📦 Current status
 
-Administrators can manage active workspaces, telemetry, and contributor details at the `/admin` portal of the web application. 
+LANpad is now positioned as a local-first productivity tool with:
+- desktop app support for Mac and Windows
+- QR-based local pairing
+- clipboard and typing-based input workflows
+- a resource-sharing system that connects the website and the local desktop app
 
-Top contributors are rewarded with premium features and free passes for helping maintain the repository code libraries. If you want to contribute, log in to the web interface and click **Contributors**.
+It is best described as a hybrid of:
+- a local mobile-to-desktop transfer tool
+- a snippet/resource sharing platform
+- a private productivity bridge for developers, students, and power users
 
 ---
-*Created with ❤️ for seamless productivity.*
+
+## 🤝 Project focus
+
+The current direction of the project is to make LANpad feel like:
+- fast and simple for everyday text transfer
+- useful for developers working with code and terminal workflows
+- practical for sharing helpful resources without forcing users into a cloud-first experience
+
+---
+
+## 📌 Notes
+
+The core app remains local-first, while the website experience adds discovery, publishing, and resource management capabilities that extend the product beyond simple input transfer.

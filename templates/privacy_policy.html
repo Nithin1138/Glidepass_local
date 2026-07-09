@@ -248,12 +248,25 @@
                             <td>30 days (auto-expired)</td>
                         </tr>
                         <tr>
+                            <td><strong>Hardware UUID (HWID)</strong></td>
+                            <td>Validate license validations and compute heartbeats to track Daily Active Users (DAU)</td>
+                            <td>Indefinitely on license files, 30 days on telemetry records</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Platform & App Version</strong></td>
+                            <td>Adapt system shortcuts, log heartbeats, and check update compatibility</td>
+                            <td>Session-only (app checks), 30 days (telemetry records)</td>
+                        </tr>
+                        <tr>
                             <td><strong>Session token</strong></td>
                             <td>Authenticate pairing connection</td>
                             <td>Session-only</td>
                         </tr>
                     </tbody>
                 </table>
+
+                <h3>2.2A Telemetry Consent & Opt-Out</h3>
+                <p>We only transmit heartbeat and event telemetry after you accept the Terms of Service and Privacy Policy. All telemetry is content-agnostic and anonymous. You can opt out of telemetry at any time by setting the environment variable <code>LANPAD_TELEMETRY_DISABLE=1</code> or by changing <code>"telemetry_opt_in": false</code> in your local configuration file (<code>~/.lanpad/config.json</code>).</p>
 
                 <h3>2.3 Data We Do NOT Collect</h3>
                 <ul>

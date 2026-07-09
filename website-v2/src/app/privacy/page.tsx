@@ -144,9 +144,14 @@ export default function PrivacyPage() {
                     <td className="py-3 px-4">30 days (auto-expired)</td>
                   </tr>
                   <tr>
-                    <td className="py-3 px-4 font-semibold text-white">Platform details</td>
-                    <td className="py-3 px-4">Adapt system shortcuts to macOS or Windows</td>
-                    <td className="py-3 px-4">Session-only</td>
+                    <td className="py-3 px-4 font-semibold text-white">Hardware UUID (HWID)</td>
+                    <td className="py-3 px-4">Validate license validations and compute heartbeats to track Daily Active Users (DAU)</td>
+                    <td className="py-3 px-4">Indefinitely on license files, 30 days on telemetry records</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-semibold text-white">Platform & App Version</td>
+                    <td className="py-3 px-4">Adapt system shortcuts, log heartbeats, and check update compatibility</td>
+                    <td className="py-3 px-4">Session-only (app checks), 30 days (telemetry records)</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-semibold text-white">Session pairing token</td>
@@ -157,12 +162,21 @@ export default function PrivacyPage() {
               </table>
             </div>
 
+            <div className="p-5 rounded-2xl border border-blue-500/10 bg-blue-500/5 space-y-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[#C7EEFF] flex items-center gap-2">
+                <Database size={16} /> Telemetry Consent & Opt-Out
+              </h3>
+              <p className="text-xs text-[#A0AEC0]">
+                We only transmit heartbeat and event telemetry after you accept the Terms of Service and Privacy Policy. All telemetry is content-agnostic and anonymous. You can opt out of telemetry at any time by setting the environment variable <code>LANPAD_TELEMETRY_DISABLE=1</code> or by changing <code>"telemetry_opt_in": false</code> in your local configuration file (<code>~/.lanpad/config.json</code>).
+              </p>
+            </div>
+
             <div className="p-5 rounded-2xl border border-red-500/10 bg-red-500/5 space-y-2">
               <h3 className="text-sm font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
                 <Eye size={16} /> Data We Do NOT Collect
               </h3>
               <p className="text-xs text-[#A0AEC0]">
-                We do not collect or monitor your name, GPS location, web search histories, persistent keystroke inputs, or telemetry configurations. All transfers happen locally.
+                We do not collect or monitor your name, GPS location, web search histories, persistent keystroke inputs, or clipboard text. All sync transfers happen strictly within your local network.
               </p>
             </div>
           </section>

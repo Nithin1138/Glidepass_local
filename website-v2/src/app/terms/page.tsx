@@ -141,7 +141,7 @@ export default function TermsPage() {
             <ul className="list-disc pl-5 space-y-2 text-[#A0AEC0]">
               <li>You may only upload content you own or have explicit rights to distribute.</li>
               <li>You grant LANpad a non-exclusive license to store, format, and serve your uploaded content to users you've shared it with or to the public discovery platform.</li>
-              <li>We reserve the right to remove content reported under our Copyright Takedown Policy or Content Policy within 36 hours of a valid notice or discovery.</li>
+              <li>We reserve the right to remove content reported under our Copyright Takedown Policy or Content Policy within 24 hours of a valid notice or discovery.</li>
             </ul>
           </section>
 

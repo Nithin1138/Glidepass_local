@@ -1759,6 +1759,19 @@ export default function Landing2() {
             </button>
           </motion.div>
         </div>
+        <div className="mt-8 p-4 rounded-2xl border border-gray-200/50 bg-gray-50/50 text-[10px] text-gray-500 leading-relaxed font-sans text-center max-w-5xl mx-auto">
+          <span className="font-bold text-[#F28500]">⚠️ SECURITY DISCLOSURE & TRUST NOTICE:</span> Running terminal scripts directly from the internet is a potential security risk. 
+          These commands fetch and execute convenience setup scripts that automate dependency checks and installer downloading. 
+          Always review script contents before executing them. You can inspect the source code of these scripts directly in our public repository at{" "}
+          <a 
+            href="https://github.com/Nithin1138/Glidepass_local/tree/main/website-v2/public" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="underline hover:text-gray-900 transition-colors font-bold"
+          >
+            github.com/Nithin1138/Glidepass_local
+          </a>.
+        </div>
       </section>
       {/* ─── SECTION 3.75: FAQ ─── */}
       <section className="py-32 px-12 max-w-4xl mx-auto border-t border-gray-200/40">

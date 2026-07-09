@@ -1812,6 +1812,21 @@ class LANpadLauncher:
 
         def send_consent_telemetry():
             try:
+                import os
+                if os.environ.get("LANPAD_TELEMETRY_DISABLE") == "1":
+                    return
+                # Check user settings
+                try:
+                    cfg_path = os.path.expanduser("~/.lanpad/config.json")
+                    if os.path.exists(cfg_path):
+                        import json
+                        with open(cfg_path, "r", encoding="utf-8") as f:
+                            cfg = json.load(f)
+                        if cfg.get("telemetry_opt_in") is False:
+                            return
+                except Exception:
+                    pass
+
                 import urllib.request
                 import json
                 import sys

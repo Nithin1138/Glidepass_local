@@ -74,7 +74,7 @@ export default function ContentPolicyPage() {
             <p>You must not upload, share, or publish any resource that contains:</p>
             <ul className="list-disc pl-5 space-y-2 text-[#A0AEC0]">
               <li><strong>Malware & Exploits:</strong> Viruses, spyware, Trojans, logic bombs, ransomware, or scripts designed to exploit or gain unauthorized access to target terminals or networks.</li>
-              <li><strong>Copyright Infringement:</strong> Source code, proprietary assets, textbook materials, or private intellectual property uploaded without explicit authorization.</li>
+              <li><strong>Copyright Infringement:</strong> Source code, proprietary assets, textbook materials, or private intellectual property uploaded without explicit authorization. Any code, configurations, or snippets copied or extracted from proprietary enterprise repositories, commercial software products, or university assessment keys without the owner's written consent is strictly prohibited.</li>
               <li><strong>Abuse & Harassment:</strong> Content that threatens, defames, bullies, or promotes discrimination against individuals or groups.</li>
               <li><strong>Spam & Phishing:</strong> Unrelated advertising, repetitive listings, obfuscated redirect links, or form pages designed to harvest credentials.</li>
               <li><strong>Adult/Sensitive Content:</strong> Content that is sexually explicit, graphic, violent, or otherwise inappropriate for educational and professional software environments.</li>
@@ -86,7 +86,7 @@ export default function ContentPolicyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-[#C7EEFF] tracking-tight font-outfit">3. ENFORCEMENT & REMOVALS</h2>
             <p>
-              Reports submitted by users are processed daily. If any content is found to violate this Content Policy, we reserve the right to remove it immediately without notice and suspend or terminate the creator's upload privileges or license keys.
+              Reports submitted by users are processed daily. We run automated scans to detect public leaks of private or proprietary code. We enforce a strict **zero-tolerance** policy for deliberate intellectual property theft and unauthorized leaks. If any content is found to violate this Content Policy, we reserve the right to remove it immediately without notice and suspend or terminate the creator's upload privileges or license keys permanently.
             </p>
           </section>
 

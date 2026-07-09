@@ -537,6 +537,19 @@ async def lifespan(app: FastAPI):
                     except Exception:
                         pass
                 if is_accepted:
+                    if os.environ.get("LANPAD_TELEMETRY_DISABLE") == "1":
+                        is_accepted = False
+                    else:
+                        try:
+                            cfg_path = _config_path()
+                            if os.path.exists(cfg_path):
+                                with open(cfg_path, "r", encoding="utf-8") as f:
+                                    cfg = json.load(f)
+                                if cfg.get("telemetry_opt_in") is False:
+                                    is_accepted = False
+                        except Exception:
+                            pass
+                if is_accepted:
                     hwid = get_hardware_id()
                     platform_str = "macOS" if IS_MAC else "Windows"
                     version = VERSION
@@ -660,6 +673,18 @@ def log_telemetry_event_async(event):
     """Logs a telemetry event to the production Vercel database in a background thread."""
     def run():
         try:
+            if os.environ.get("LANPAD_TELEMETRY_DISABLE") == "1":
+                return
+            try:
+                cfg_path = _config_path()
+                if os.path.exists(cfg_path):
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    if cfg.get("telemetry_opt_in") is False:
+                        return
+            except Exception:
+                pass
+
             from platform_utils import get_hardware_id
             hwid = get_hardware_id()
             payload = json.dumps({
