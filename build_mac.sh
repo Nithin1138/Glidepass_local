@@ -43,6 +43,7 @@ else
     exit 1
 fi
 
-# 5. Optional: Open the folder
-open .
+if [ -z "$CI" ]; then
+    open .
+fi
 

@@ -93,3 +93,56 @@ jobs:
             ghcr.io/${{ github.repository }}/glidepass-web:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-client-apps:
+    name: Build Client Apps (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller Pillow requests httpx fastapi uvicorn pyautogui pyperclip pystray qrcode pynput
+
+      - name: Build macOS Client & DMG
+        if: matrix.os == 'macos-latest'
+        env:
+          CI: "true"
+        run: |
+          chmod +x build_mac.sh make_dmg.sh
+          ./build_mac.sh
+          ./make_dmg.sh
+
+      - name: Build Windows Client Executable
+        if: matrix.os == 'windows-latest'
+        env:
+          CI: "true"
+        run: |
+          ./build_win.bat
+
+      - name: Upload macOS DMG Artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: LANpad-macOS-DMG
+          path: LANpad_Installer.dmg
+          if-no-files-found: error
+
+      - name: Upload Windows EXE Artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: LANpad-Windows-EXE
+          path: dist/LANpad.exe
+          if-no-files-found: error

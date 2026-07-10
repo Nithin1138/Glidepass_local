@@ -27,7 +27,7 @@ if %errorlevel% neq 0 (
     echo   ERROR: Python is not installed or not in PATH.
     echo   Please install Python 3.9+ from https://www.python.org/downloads/
     echo   IMPORTANT: Check "Add Python to PATH" during installation.
-    pause
+    if "%CI%"=="" pause
     exit /b 1
 )
 python --version
@@ -50,7 +50,7 @@ python -m pip install ^
     pynput
 if %errorlevel% neq 0 (
     echo   ERROR: pip install failed.  Check your network / proxy.
-    pause
+    if "%CI%"=="" pause
     exit /b 1
 )
 echo.
@@ -89,7 +89,7 @@ pyinstaller --clean --noconfirm LANpad_win.spec
 if %errorlevel% neq 0 (
     echo.
     echo   BUILD FAILED.  Scroll up for the PyInstaller error message.
-    pause
+    if "%CI%"=="" pause
     exit /b 1
 )
 echo.
@@ -127,4 +127,4 @@ if exist dist\LANpad.exe (
     echo.
 )
 
-pause
+if "%CI%"=="" pause
