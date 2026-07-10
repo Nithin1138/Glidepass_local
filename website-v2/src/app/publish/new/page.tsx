@@ -27,6 +27,34 @@ export default function NewResourcePage() {
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const editVal = params.get("edit");
+      if (editVal) {
+        setEditId(editVal);
+        (async () => {
+          try {
+            const res = await fetch(`/api/resources/${editVal}`);
+            const data = await res.json();
+            if (res.ok && data.success && data.resource) {
+              const r = data.resource;
+              setTitle(r.title || "");
+              setType(r.type || "code");
+              setLanguage(r.language || "");
+              setTagsInput((r.tags || []).join(", "));
+              setDescription(r.description || "");
+              setSelectedHubId(r.hubId || "");
+              setCategory(r.category || "");
+              setContent(r.content || "");
+            }
+          } catch (e) {}
+        })();
+      }
+    }
+  }, []);
 
   /* ── Hub data for selector ─────────────────────── */
   const [hubs, setHubs] = useState<any[]>([]);
@@ -102,8 +130,11 @@ export default function NewResourcePage() {
     const tags = tagsInput.split(",").map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
 
     try {
-      const res = await fetch("/api/resources", {
-        method: "POST",
+      const isEdit = !!editId;
+      const url = isEdit ? `/api/resources/${editId}` : "/api/resources";
+      const method = isEdit ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title, type,
@@ -118,9 +149,11 @@ export default function NewResourcePage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setPublishSuccess(true);
-        setTitle(""); setContent(""); setTagsInput(""); setLanguage(""); setDescription(""); setCategory("");
+        if (!isEdit) {
+          setTitle(""); setContent(""); setTagsInput(""); setLanguage(""); setDescription(""); setCategory("");
+        }
       } else {
-        setError(data.error || "Failed to publish resource.");
+        setError(data.error || `Failed to ${isEdit ? "update" : "publish"} resource.`);
       }
     } catch (err: any) { setError(err.message || "An unexpected error occurred."); }
     finally { setPublishing(false); }
@@ -172,10 +205,10 @@ export default function NewResourcePage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className={`text-2xl lg:text-3xl font-black font-outfit tracking-tight ${dk ? 'text-white' : 'text-[#111827]'}`}>
-          Create New Resource
+          {editId ? "Edit Resource" : "Create New Resource"}
         </h1>
         <p className={`text-sm mt-1 ${dk ? 'text-white/40' : 'text-[#6B7280]'}`}>
-          Publish code snippets, links, or text to your community hub.
+          {editId ? "Modify your resource details and update it in the catalog." : "Publish code snippets, links, or text to your community hub."}
         </p>
       </motion.div>
 
