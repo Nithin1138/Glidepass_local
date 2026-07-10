@@ -133,7 +133,7 @@ jobs:
 
       - name: Upload macOS DMG Artifact
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: LANpad-macOS-DMG
           path: LANpad_Installer.dmg
@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload Windows EXE Artifact
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: LANpad-Windows-EXE
           path: dist/LANpad.exe
