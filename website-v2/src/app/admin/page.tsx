@@ -2941,6 +2941,13 @@ export default function GlidePassAdmin() {
   const accentBtn = `bg-[#0077C0] hover:bg-[#005f99] text-white shadow-lg shadow-[#0077C0]/30 border-t border-white/20`;
   const gradientLine = "bg-gradient-to-r from-[#0077C0] via-[#C7EEFF] to-transparent";
 
+  const pageTransition = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+    transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] as any }
+  };
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // RENDER
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3315,16 +3322,13 @@ export default function GlidePassAdmin() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={view}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.2 }}
+                    {...pageTransition}
                     className="w-full"
                   >
 
                   {/* ═══ DASHBOARD ═══ */}
                   {view === "dashboard" && (
-                    <motion.div key="dash" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="dash" {...pageTransition} className="space-y-8">
                       {/* Header with Ticking Clock */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -3523,7 +3527,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ USERS ═══ */}
                   {view === "users" && (
-                    <motion.div key="users" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="users" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">User Directory</h2>
@@ -3659,7 +3663,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ Providers ═══ */}
                   {view === "providers" && (
-                    <motion.div key="providers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="providers" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Providers & Creators Directory</h2>
@@ -3831,7 +3835,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ RBAC ═══ */}
                   {view === "rbac" && (
-                    <motion.div key="rbac" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="rbac" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Roles & Policy Matrix</h2>
@@ -3898,7 +3902,7 @@ export default function GlidePassAdmin() {
                   )}
 
                   {view === "analytics" && (
-                    <motion.div key="analytics" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="analytics" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                         <div>
                           <h2 className="text-xl font-black font-outfit uppercase tracking-wide">Usage Analytics Dashboard</h2>
@@ -4316,7 +4320,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ RESOURCES MANAGER ═══ */}
                   {view === "vitcodes" && (
-                    <motion.div key="resources" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="resources" {...pageTransition} className="space-y-6">
                       
                       {/* ─── Navigation Breadcrumb Header ─── */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
@@ -4769,7 +4773,7 @@ export default function GlidePassAdmin() {
                   )}
                   {/* ═══ CLIPBOARD ROOMS ═══ */}
                   {view === "clipboards" && (
-                    <motion.div key="clipboards" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="clipboards" {...pageTransition} className="space-y-6">
                       
                       {/* ─── Header ─── */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
@@ -4864,7 +4868,7 @@ export default function GlidePassAdmin() {
                   )}
                   {/* ─── DESKTOP PAIRINGS ─── */}
                   {view === "devices" && (
-                    <motion.div key="devices" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="devices" {...pageTransition} className="space-y-6">
                       
                       {/* ─── Header ─── */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
@@ -4994,7 +4998,7 @@ export default function GlidePassAdmin() {
                   )}
                   {/* ═══ COMMUNITY HUBS ═══ */}
                   {view === "hubs" && (
-                    <motion.div key="hubs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="hubs" {...pageTransition} className="space-y-6">
                       
                       {/* ─── Header ─── */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
@@ -5118,7 +5122,7 @@ export default function GlidePassAdmin() {
                   )}
                   {/* ═══ EDIT LOGS ═══ */}
                   {view === "contributors" && (
-                    <motion.div key="contributors" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="contributors" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                         <div>
                           <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Edit Logs</h2>
@@ -5470,9 +5474,9 @@ export default function GlidePassAdmin() {
                                                           {otherEdits.map((h: any, hIdx: number) => {
                                                             const hDate = new Date(h.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                                                             return (
-                                                              <div key={hIdx} className="text-[9px] p-2 rounded bg-white/5 border flex justify-between items-center gap-2" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                                                              <div key={hIdx} className={`text-[9px] p-2 rounded border flex justify-between items-center gap-2`} style={{ backgroundColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                                                 <div className="flex flex-col">
-                                                                  <span className="font-semibold text-white">{h.editorEmail}</span>
+                                                                  <span className={`font-semibold ${dk ? "text-white" : "text-black"}`}>{h.editorEmail}</span>
                                                                   <span className="opacity-60">{h.reason}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-right shrink-0">
@@ -5518,7 +5522,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ OTA TEMPLATES ═══ */}
                   {view === "ota" && (
-                    <motion.div key="ota" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    <motion.div key="ota" {...pageTransition} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                       <div className="lg:col-span-3 space-y-6">
                         <div className="rounded-[28px] border p-6 relative overflow-hidden space-y-4"
                           style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -5598,7 +5602,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ DIAGNOSTICS ═══ */}
                   {view === "system" && (
-                    <motion.div key="sys" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <motion.div key="sys" {...pageTransition} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* CARD 1: Real-time System Clock */}
                       <div className="p-6 rounded-[28px] border relative overflow-hidden flex flex-col justify-between"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
@@ -5734,7 +5738,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ SECURITY AUDIT ═══ */}
                   {view === "security" && (
-                    <motion.div key="sec" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="sec" {...pageTransition} className="space-y-6">
                       <div>
                         <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Audit History</h2>
                         <p className="text-xs" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>System login events and security metrics</p>
@@ -5777,7 +5781,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ SETTINGS ═══ */}
                   {view === "settings" && (
-                    <motion.div key="set" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <motion.div key="set" {...pageTransition} className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {[
                         { title: "General Preferences", items: [
                           { label: "Verbose Debug Logs", checked: true },
@@ -5819,7 +5823,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ PROFILE & PASSWORD ═══ */}
                   {view === "profile" && (
-                    <motion.div key="prof" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <motion.div key="prof" {...pageTransition} className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <form onSubmit={handleUpdateProfile} className="p-6 rounded-[28px] border relative overflow-hidden space-y-6"
                         style={{ background: dk ? "rgba(5,5,5,0.50)" : "rgba(255,255,255,0.70)", borderColor: dk ? "rgba(199,238,255,0.08)" : "rgba(5,5,5,0.06)", backdropFilter: "blur(40px)" }}>
                         <div className={`absolute top-0 left-0 right-0 h-[1.5px] ${gradientLine}`} />
@@ -5893,7 +5897,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ SUBSCRIPTIONS & LICENSING (MONETIZATION) ═══ */}
                   {view === "subscriptions" && (
-                    <motion.div key="subs" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="subs" {...pageTransition} className="space-y-8">
                       {/* Header with Ticking Clock */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -5996,7 +6000,7 @@ export default function GlidePassAdmin() {
                                   ))}
                                   {subscriptions.length === 0 && (
                                     <tr>
-                                      <td colSpan={7} className="text-center py-6 text-xs text-mono" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                      <td colSpan={7} className={`text-center py-6 text-xs text-mono ${dk ? "text-white/40" : "text-black/40"}`}>
                                         No subscription transactions recorded.
                                       </td>
                                     </tr>
@@ -6042,7 +6046,7 @@ export default function GlidePassAdmin() {
                   )}
 
                   {view === "plans" && (
-                    <motion.div key="plans" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="plans" {...pageTransition} className="space-y-8">
                       {/* Header with Ticking Clock */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -6320,7 +6324,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ GENERATE ACTIVATION KEY ═══ */}
                   {view === "keys" && (
-                    <motion.div key="keys" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="keys" {...pageTransition} className="space-y-8">
 
                       {/* Header */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -6459,7 +6463,7 @@ export default function GlidePassAdmin() {
                             <tbody>
                               {licenses.length === 0 ? (
                                 <tr>
-                                  <td colSpan={7} className="text-center py-12 text-xs" style={{ color: dk ? `${P.sky}50` : `${P.black}40` }}>
+                                  <td colSpan={7} className={`text-center py-12 text-xs ${dk ? "text-sky-500" : "text-black/40"}`}>
                                     <Key size={28} className="mx-auto mb-3 opacity-20" />
                                     No activation keys issued yet
                                   </td>
@@ -6486,14 +6490,14 @@ export default function GlidePassAdmin() {
                                         {lic.tier}
                                       </span>
                                     </td>
-                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: lic.hwid ? P.white : `${P.white}35` }}>
+                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: lic.hwid ? (dk ? P.white : P.black) : `${dk ? P.white : P.black}35` }}>
                                       {lic.hwid ? (
                                         <span className="truncate max-w-[120px] block">{lic.hwid}</span>
                                       ) : (
                                         <span className="italic">Unbound</span>
                                       )}
                                     </td>
-                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: isExpired ? "#EF4444" : P.white }}>
+                                    <td className="px-5 py-4 font-mono text-[10px]" style={{ color: isExpired ? "#EF4444" : (dk ? P.white : P.black) }}>
                                       {new Date(lic.expires_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-5 py-4">
@@ -6537,7 +6541,7 @@ export default function GlidePassAdmin() {
                   )}
 
                   {view === "coupons" && (
-                    <motion.div key="coupons" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="coupons" {...pageTransition} className="space-y-8">
                       {/* Header */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -6654,7 +6658,7 @@ export default function GlidePassAdmin() {
                                     <td className="p-4 font-mono font-bold" style={{ color: P.sky }}>{c.code}</td>
                                     <td className="p-4 font-semibold text-emerald-500">{c.discount}</td>
                                     <td className="p-4">
-                                      <span className="font-mono">{c.usage || 0}</span> / <span className="font-mono text-white/40">{c.max_uses || 100}</span>
+                                      <span className="font-mono">{c.usage || 0}</span> / <span className={`font-mono ${dk ? "text-white/40" : "text-black/40"}`}>{c.max_uses || 100}</span>
                                     </td>
                                     <td className="p-4 font-mono text-[10px]">
                                       {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : "Never"}
@@ -6678,7 +6682,7 @@ export default function GlidePassAdmin() {
                                 ))}
                                 {promoCodes.length === 0 && (
                                   <tr>
-                                    <td colSpan={6} className="text-center py-6 text-xs text-mono text-white/40">
+                                    <td colSpan={6} className={`text-center py-6 text-xs text-mono ${dk ? "text-white/40" : "text-black/40"}`}>
                                       No promo codes found.
                                     </td>
                                   </tr>
@@ -6692,7 +6696,7 @@ export default function GlidePassAdmin() {
                   )}
 
                   {view === "referrals" && (
-                    <motion.div key="referrals" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="referrals" {...pageTransition} className="space-y-8">
                       {/* Header */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -6777,7 +6781,7 @@ export default function GlidePassAdmin() {
                                   ))}
                                   {referralCodesList.length === 0 && (
                                     <tr>
-                                      <td colSpan={3} className="text-center py-6 text-xs text-mono text-white/40">
+                                      <td colSpan={3} className={`text-center py-6 text-xs text-mono ${dk ? "text-white/40" : "text-black/40"}`}>
                                         No referrer codes registered.
                                       </td>
                                     </tr>
@@ -6822,7 +6826,7 @@ export default function GlidePassAdmin() {
                                   ))}
                                   {referralsList.length === 0 && (
                                     <tr>
-                                      <td colSpan={5} className="text-center py-6 text-xs text-mono text-white/40">
+                                      <td colSpan={5} className={`text-center py-6 text-xs text-mono ${dk ? "text-white/40" : "text-black/40"}`}>
                                         No referral events logged yet.
                                       </td>
                                     </tr>
@@ -6837,9 +6841,8 @@ export default function GlidePassAdmin() {
                   )}
 
                   {/* ═══ VERSION MANAGER ═══ */}
-                  {/* ═══ VERSION MANAGER ═══ */}
                   {view === "versioning" && (
-                    <motion.div key="vers" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-8">
+                    <motion.div key="vers" {...pageTransition} className="space-y-8">
                       {/* Header with Ticking Clock */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -6947,7 +6950,7 @@ export default function GlidePassAdmin() {
                                     style={{ background: dk ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                                     <div className="flex justify-between items-start">
                                       <div>
-                                        <span className="font-mono text-xs font-bold text-white">v{item.version}</span>
+                                        <span className={`font-mono text-xs font-bold ${dk ? "text-white" : "text-black"}`}>v{item.version}</span>
                                         {item.force_update && (
                                           <span className="ml-2 text-[9px] font-extrabold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 uppercase tracking-wide">Force</span>
                                         )}
@@ -6985,7 +6988,7 @@ export default function GlidePassAdmin() {
                                         Revert
                                       </button>
                                     </div>
-                                    <p className="text-[10px] text-white/50 line-clamp-2">{item.changelog}</p>
+                                    <p className={`text-[10px] line-clamp-2 ${dk ? "text-white/50" : "text-black/60"}`}>{item.changelog}</p>
                                     <div className="text-[9px] font-mono opacity-40">
                                       {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown date"}
                                     </div>
@@ -7020,7 +7023,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ LEGAL ACCEPTANCES ═══ */}
                   {view === "legal_acceptances" && (
-                    <motion.div key="legal" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="legal" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <h2 className="text-xl font-black font-[family-name:var(--font-outfit)] tracking-wide uppercase">Legal Acceptances</h2>
@@ -7100,12 +7103,8 @@ export default function GlidePassAdmin() {
                                           {platform}
                                         </span>
                                       </td>
-                                      <td className="p-4 pl-6 font-mono" style={{ color: dk ? `${P.sky}80` : `${P.black}60` }}>
-                                        v{version}
-                                      </td>
-                                      <td className="p-4 pl-6 font-mono text-[10px] tracking-tight whitespace-nowrap pr-6 select-all font-semibold" style={{ color: dk ? P.white : P.black }}>
-                                        {item.hwid}
-                                      </td>
+                                      <td className="p-4 pl-6 font-mono font-bold text-sky-400">{version}</td>
+                                      <td className="p-4 pl-6 font-mono opacity-50 select-all">{item.hwid}</td>
                                     </tr>
                                   );
                                 })}
@@ -7125,7 +7124,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ TELEMETRY REAL-TIME CHARTS ═══ */}
                   {view === "telemetry_charts" && (
-                    <motion.div key="telemetry_charts" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="telemetry_charts" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                         <div>
                           <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Real-time System Metrics</h2>
@@ -7157,7 +7156,7 @@ export default function GlidePassAdmin() {
                                 );
                               })}
                             </div>
-                            <div className="flex justify-between text-[9px] font-mono text-white/40 mt-3 pt-2 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                            <div className={`flex justify-between text-[9px] font-mono mt-3 pt-2 border-t ${dk ? "text-white/40" : "text-black/40"}`} style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                               <span>Older</span>
                               <span>Current ({diagnosticsData?.database?.latency ?? 0} ms)</span>
                             </div>
@@ -7185,7 +7184,7 @@ export default function GlidePassAdmin() {
                                 );
                               })}
                             </div>
-                            <div className="flex justify-between text-[9px] font-mono text-white/40 mt-3 pt-2 border-t" style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                            <div className={`flex justify-between text-[9px] font-mono mt-3 pt-2 border-t ${dk ? "text-white/40" : "text-black/40"}`} style={{ borderColor: dk ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                               <span>Older</span>
                               <span>Current ({diagnosticsData?.system?.memoryHeapUsed ?? 0} MB)</span>
                             </div>
@@ -7197,7 +7196,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ ACTIVE SESSIONS INSPECTOR ═══ */}
                   {view === "sessions_inspector" && (
-                    <motion.div key="sessions_inspector" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="sessions_inspector" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                         <div>
                           <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Active Companion Sessions</h2>
@@ -7265,7 +7264,7 @@ export default function GlidePassAdmin() {
 
                   {/* ═══ WEBHOOKS DISPATCHER ═══ */}
                   {view === "webhooks" && (
-                    <motion.div key="webhooks" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    <motion.div key="webhooks" {...pageTransition} className="space-y-6">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-1 pb-4 border-b" style={{ borderColor: dk ? "rgba(199,238,255,0.06)" : "rgba(5,5,5,0.04)" }}>
                         <div>
                           <h2 className="text-2xl font-black font-outfit tracking-wide uppercase" style={{ color: dk ? P.white : P.black }}>Webhooks Dispatcher</h2>

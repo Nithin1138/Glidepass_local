@@ -1,5 +1,5 @@
 {
-  "monetization_enabled": false,
+  "monetization_enabled": true,
   "free_enabled": false,
   "plans": [
     {
@@ -39,7 +39,7 @@
       "allow_fetch": 1,
       "allow_refill": 1,
       "allow_resource_access": 1,
-      "allow_resource_analytics": 2,
+      "allow_resource_analytics": 0,
       "allow_tunnel": 0
     },
     {
