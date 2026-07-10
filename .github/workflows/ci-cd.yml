@@ -98,6 +98,7 @@ jobs:
     name: Build Client Apps (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
 

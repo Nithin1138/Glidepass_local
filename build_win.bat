@@ -109,8 +109,8 @@ if exist dist\LANpad.exe (
     echo.
     echo   Optional but recommended:
     echo     - Run   python register_bridge.py   to wire up the
-    echo       Chrome extension (writes com.lanpad.launcher.json
-    echo       to %%APPDATA%% and the Chrome registry hive).
+    echo       Chrome extension writes com.lanpad.launcher.json
+    echo       to %%APPDATA%% and the Chrome registry hive.
     echo     - Run   python create_starter_app_windows.py   again
     echo       if you move the app to a new folder.
     echo.
