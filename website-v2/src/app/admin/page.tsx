@@ -366,10 +366,7 @@ export default function GlidePassAdmin() {
   ]);
 
   // ─── Firewall IP Blocks state ───
-  const [blockedIps, setBlockedIps] = useState<any[]>([
-    { ip: "198.51.100.42", reason: "Repeated activation key auth failures", blockedAt: "2026-07-09 18:30", attempts: 14 },
-    { ip: "203.0.113.88", reason: "Rate-limit threshold breached on resource creation", blockedAt: "2026-07-09 21:12", attempts: 45 }
-  ]);
+  const [blockedIps, setBlockedIps] = useState<any[]>([]);
   const [newBlockedIp, setNewBlockedIp] = useState("");
   const [newBlockedReason, setNewBlockedReason] = useState("");
 
@@ -472,10 +469,7 @@ export default function GlidePassAdmin() {
   ]);
 
   // ─── Webhook Dispatcher Config ───
-  const [webhooks, setWebhooks] = useState<any[]>([
-    { id: "1", name: "Discord Notifications", url: "https://discord.com/api/webhooks/123456789", event: "resource.created", active: true },
-    { id: "2", name: "Security Alerts Bot", url: "https://t.me/glidepass_alerts_bot", event: "security.breach", active: false }
-  ]);
+  const [webhooks, setWebhooks] = useState<any[]>([]);
   const [newWebhookName, setNewWebhookName] = useState("");
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [newWebhookEvent, setNewWebhookEvent] = useState("resource.created");
@@ -1199,6 +1193,42 @@ export default function GlidePassAdmin() {
     } catch (e) {}
   };
 
+  const fetchBlockedIps = async () => {
+    try {
+      const res = await fetch("/api/admin/firewall");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.blocked) {
+          setBlockedIps(data.blocked);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchWebhooks = async () => {
+    try {
+      const res = await fetch("/api/admin/webhooks");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.webhooks) {
+          setWebhooks(data.webhooks);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchEmailLogs = async () => {
+    try {
+      const res = await fetch("/api/admin/email-logs");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.logs) {
+          setEmailLogs(data.logs);
+        }
+      }
+    } catch (e) {}
+  };
+
   const fetchFeatureFlags = async () => {
     try {
       const res = await fetch("/api/admin/feature-flags");
@@ -1241,10 +1271,14 @@ export default function GlidePassAdmin() {
   const handleTestEmail = async (recipient: string) => {
     try {
       showToast("success", `Test invite dispatch initiated to ${recipient}`);
-      setEmailLogs(prev => [
-        { id: String(prev.length + 1), recipient, type: "Test Dispatch", status: "delivered", sentAt: new Date().toLocaleTimeString() },
-        ...prev
-      ]);
+      const res = await fetch("/api/admin/email-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipient, type: "Test Dispatch", status: "delivered" })
+      });
+      if (res.ok) {
+        fetchEmailLogs();
+      }
     } catch (e) {}
   };
 
@@ -2059,8 +2093,25 @@ export default function GlidePassAdmin() {
         }, 5000);
         return () => clearInterval(interval);
       }
-      if (view === "email_logs" || view === "firewall") {
-        const interval = setInterval(() => {}, 5000);
+      if (view === "email_logs") {
+        fetchEmailLogs();
+        const interval = setInterval(() => {
+          fetchEmailLogs();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "firewall") {
+        fetchBlockedIps();
+        const interval = setInterval(() => {
+          fetchBlockedIps();
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+      if (view === "webhooks") {
+        fetchWebhooks();
+        const interval = setInterval(() => {
+          fetchWebhooks();
+        }, 5000);
         return () => clearInterval(interval);
       }
       if (view === "feature_flags") {
@@ -7252,12 +7303,25 @@ export default function GlidePassAdmin() {
                               </select>
                             </div>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 if (!newWebhookName || !newWebhookUrl) return showToast("error", "All fields are required.");
-                                setWebhooks(prev => [...prev, { id: String(Date.now()), name: newWebhookName, url: newWebhookUrl, event: newWebhookEvent, active: true }]);
-                                setNewWebhookName("");
-                                setNewWebhookUrl("");
-                                showToast("success", "Webhook registered successfully.");
+                                try {
+                                  const res = await fetch("/api/admin/webhooks", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ name: newWebhookName, url: newWebhookUrl, event: newWebhookEvent })
+                                  });
+                                  if (res.ok) {
+                                    fetchWebhooks();
+                                    setNewWebhookName("");
+                                    setNewWebhookUrl("");
+                                    showToast("success", "Webhook registered successfully.");
+                                  } else {
+                                    showToast("error", "Failed to register webhook.");
+                                  }
+                                } catch (e) {
+                                  showToast("error", "Failed to register webhook.");
+                                }
                               }}
                               className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
                             >
@@ -7282,7 +7346,11 @@ export default function GlidePassAdmin() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {webhooks.map(wh => (
+                                {webhooks.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={5} className="p-8 text-center text-xs opacity-50">No webhooks registered. Use the form to register one.</td>
+                                  </tr>
+                                ) : webhooks.map(wh => (
                                   <tr key={wh.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                     <td className="p-4 font-bold">{wh.name}</td>
                                     <td className="p-4 font-mono opacity-65 truncate max-w-[200px]" title={wh.url}>{wh.url}</td>
@@ -7308,16 +7376,36 @@ export default function GlidePassAdmin() {
                                           {testingWebhookId === wh.id ? "Firing..." : "Test Payload"}
                                         </button>
                                         <button
-                                          onClick={() => {
-                                            setWebhooks(prev => prev.map(w => w.id === wh.id ? { ...w, active: !w.active } : w));
+                                          onClick={async () => {
+                                            try {
+                                              const res = await fetch("/api/admin/webhooks", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ id: wh.id, action: "toggle" })
+                                              });
+                                              if (res.ok) {
+                                                fetchWebhooks();
+                                                showToast("success", "Webhook toggled.");
+                                              }
+                                            } catch (e) {}
                                           }}
                                           className="text-[10px] font-bold text-amber-400 hover:underline"
                                         >
                                           Toggle
                                         </button>
                                         <button
-                                          onClick={() => {
-                                            setWebhooks(prev => prev.filter(w => w.id !== wh.id));
+                                          onClick={async () => {
+                                            if (confirm("Are you sure you want to delete this webhook?")) {
+                                              try {
+                                                const res = await fetch(`/api/admin/webhooks?id=${wh.id}`, {
+                                                  method: "DELETE"
+                                                });
+                                                if (res.ok) {
+                                                  fetchWebhooks();
+                                                  showToast("success", "Webhook deleted.");
+                                                }
+                                              } catch (e) {}
+                                            }
                                           }}
                                           className="text-[10px] font-bold text-red-400 hover:underline"
                                         >
@@ -7433,12 +7521,25 @@ export default function GlidePassAdmin() {
                                 className={`w-full text-xs rounded-xl px-4 py-3 border focus:outline-none focus:ring-1 focus:ring-sky-400 ${inputBg}`} />
                             </div>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 if (!newBlockedIp || !newBlockedReason) return showToast("error", "IP and Reason are required.");
-                                setBlockedIps(prev => [...prev, { ip: newBlockedIp, reason: newBlockedReason, blockedAt: new Date().toLocaleString(), attempts: 1 }]);
-                                setNewBlockedIp("");
-                                setNewBlockedReason("");
-                                showToast("success", `IP Address ${newBlockedIp} blocked successfully.`);
+                                try {
+                                  const res = await fetch("/api/admin/firewall", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ ip: newBlockedIp, reason: newBlockedReason })
+                                  });
+                                  if (res.ok) {
+                                    fetchBlockedIps();
+                                    setNewBlockedIp("");
+                                    setNewBlockedReason("");
+                                    showToast("success", `IP Address ${newBlockedIp} blocked successfully.`);
+                                  } else {
+                                    showToast("error", "Failed to block IP.");
+                                  }
+                                } catch (e) {
+                                  showToast("error", "Failed to block IP.");
+                                }
                               }}
                               className="w-full py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-md shadow-sky-600/10 cursor-pointer active:scale-95"
                             >
@@ -7463,7 +7564,11 @@ export default function GlidePassAdmin() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {blockedIps.map(block => (
+                                {blockedIps.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={5} className="p-8 text-center text-xs opacity-50">No blocked IP addresses. Firewall is clean.</td>
+                                  </tr>
+                                ) : blockedIps.map(block => (
                                   <tr key={block.ip} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                     <td className="p-4 font-mono font-bold text-red-400 select-all">{block.ip}</td>
                                     <td className="p-4 font-semibold">{block.reason}</td>
@@ -7471,9 +7576,16 @@ export default function GlidePassAdmin() {
                                     <td className="p-4 font-mono text-center font-bold text-amber-500">{block.attempts}</td>
                                     <td className="p-4">
                                       <button
-                                        onClick={() => {
-                                          setBlockedIps(prev => prev.filter(b => b.ip !== block.ip));
-                                          showToast("success", `IP Address ${block.ip} unblocked.`);
+                                        onClick={async () => {
+                                          try {
+                                            const res = await fetch(`/api/admin/firewall?ip=${encodeURIComponent(block.ip)}`, {
+                                              method: "DELETE"
+                                            });
+                                            if (res.ok) {
+                                              fetchBlockedIps();
+                                              showToast("success", `IP Address ${block.ip} unblocked.`);
+                                            }
+                                          } catch (e) {}
                                         }}
                                         className="text-[10px] font-bold text-sky-400 hover:underline cursor-pointer"
                                       >
@@ -7777,7 +7889,11 @@ export default function GlidePassAdmin() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {emailLogs.map(log => (
+                                {emailLogs.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={4} className="p-8 text-center text-xs opacity-50">No outbound email dispatches logged.</td>
+                                  </tr>
+                                ) : emailLogs.map(log => (
                                   <tr key={log.id} className="text-xs" style={{ borderBottom: `1px solid ${dk ? "rgba(199,238,255,0.04)" : "rgba(5,5,5,0.03)"}` }}>
                                     <td className="p-4 font-bold">{log.recipient}</td>
                                     <td className="p-4 font-semibold">{log.type}</td>
