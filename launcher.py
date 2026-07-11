@@ -2289,16 +2289,17 @@ class LANpadLauncher:
             
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             host_ent = tk.Entry(main_container, textvariable=remote_url, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
-            host_ent.pack(fill="x", ipady=6, pady=(0, 15))
+            host_ent.pack(fill="x", ipady=8, pady=(0, 15))
             if not remote_url.get():
                 remote_url.set("")
                 
             tk.Label(main_container, text="SESSION TOKEN (SID)", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_ent = tk.Entry(main_container, textvariable=session_token, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
-            token_ent.pack(fill="x", ipady=6, pady=(0, 20))
+            token_ent.pack(fill="x", ipady=8, pady=(0, 20))
             
-            btn_connect = tk.Button(main_container, text="CONNECT", font=(FU, 10, "bold"), bg="#0077C0", fg=self.WHITE, activebackground="#005A90", activeforeground=self.WHITE, relief="flat", bd=0, command=connect_to_hub)
-            btn_connect.pack(fill="x", ipady=8)
+            btn_connect = tk.Label(main_container, text="CONNECT", font=(FU, 10, "bold"), bg="#0077C0", fg=self.WHITE, pady=10, relief="flat", cursor="hand2")
+            btn_connect.pack(fill="x", pady=(0, 5))
+            btn_connect.bind("<Button-1>", lambda e: connect_to_hub())
             
             # Where to get these info card
             info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=12, pady=12, highlightthickness=1, highlightbackground=self.BORDER)
