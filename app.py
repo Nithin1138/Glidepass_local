@@ -398,7 +398,19 @@ except Exception as e:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Fetch latest templates in the background on startup
+    # Copy local templates synchronously on startup to guarantee the latest templates (with switcher banner) are served
+    os.makedirs(OTA_DIR, exist_ok=True)
+    for tmpl in ["index.html", "center.html", "vitcodes.html", "files.html"]:
+        local_path = resource_path(os.path.join("templates", tmpl))
+        if os.path.exists(local_path):
+            try:
+                import shutil
+                shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
+                print(f"[Lifespan] Synchronously copied local template: {tmpl}")
+            except Exception as e:
+                print(f"[Lifespan] Failed to copy local template {tmpl}: {e}")
+                
+    # Fetch latest remote templates in the background on startup
     threading.Thread(target=fetch_ota_templates, daemon=True).start()
     yield
 

@@ -5,6 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LANpad Files Center</title>
+    <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.width = '100%';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '12px';
+        errDiv.style.fontSize = '12px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.wordBreak = 'break-all';
+        errDiv.innerHTML = '<strong>JS Error:</strong> ' + message + ' at ' + source + ':' + lineno;
+        document.body.appendChild(errDiv);
+        return false;
+    };
+    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
