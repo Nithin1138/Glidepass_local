@@ -390,9 +390,9 @@
                 </div>
 
                 <!-- Progress Bar Card -->
-                <div id="upload-progress-container" style="display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px;">
+                                <div id="upload-progress-container" style="display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <span style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase;">Uploading File</span>
+                        <span id="upload-filename-lbl" style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">Uploading...</span>
                         <span id="upload-speed-lbl" style="font-size: 0.7rem; color: var(--accent-color); font-weight: 800; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace; letter-spacing: 0.02em;">00:00 / 00:00 | 0.00 MB/s</span>
                     </div>
                     <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
@@ -544,6 +544,19 @@
 
         async function handleFilesSelected(files) {
             if (files.length === 0) return;
+
+            // Show filename in progress label before uploading starts
+            const filenameLbl = document.getElementById('upload-filename-lbl');
+            if (filenameLbl) {
+                if (files.length === 1) {
+                    let name = files[0].name;
+                    if (name.length > 28) name = name.slice(0, 14) + '...' + name.slice(-10);
+                    filenameLbl.textContent = name;
+                } else {
+                    filenameLbl.textContent = `${files.length} files`;
+                }
+            }
+
             for (let i = 0; i < files.length; i++) {
                 await uploadSingleFile(files[i]);
             }
@@ -1378,6 +1391,14 @@
                     ws.send('ping');
                 }
             }, 10000);
+            ws.onmessage = (evt) => {
+                try {
+                    const msg = JSON.parse(evt.data);
+                    if (msg.event === 'files_changed') {
+                        fetchFilesList();
+                    }
+                } catch(e) {}
+            };
             ws.onclose = () => {
                 clearInterval(pingInterval);
                 setTimeout(connectWebSocket, 3000);
@@ -1386,6 +1407,10 @@
                 ws.close();
             };
         }
+        // Polling fallback: refresh file list every 5s (catches changes missed by WS)
+        setInterval(() => {
+            fetchFilesList();
+        }, 5000);
         // Show tunnel speed warning if not connected via local IP/localhost
         const hostname = window.location.hostname;
         if (hostname.includes('trycloudflare.com')) {

@@ -121,6 +121,21 @@ _http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
 active_connections = []
 active_devices = {}
 
+async def broadcast_files_changed():
+    """Notify all connected WebSocket clients that the file list has changed."""
+    dead = []
+    for ws in list(active_connections):
+        try:
+            import json as _json
+            await ws.send_text(_json.dumps({"event": "files_changed"}))
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        try:
+            active_connections.remove(ws)
+        except ValueError:
+            pass
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
 from contextlib import asynccontextmanager
@@ -1932,6 +1947,8 @@ async def upload_file_raw(request: Request, filename: str, mode: str = "parallel
         duration = time.time() - start_time
         save_file_duration(safe_filename, duration)
         _active_upload["active"] = False
+        import asyncio
+        asyncio.ensure_future(broadcast_files_changed())
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
         _active_upload["active"] = False
@@ -2353,12 +2370,16 @@ async def delete_file(filename: str, sid: str = None):
             size = os.path.getsize(inbox_path)
             os.remove(inbox_path)
             save_deleted_file(safe_filename, size)
+            import asyncio
+            asyncio.ensure_future(broadcast_files_changed())
             return {"status": "success"}
         # If it's already accepted in the main shared folder, skip deleting it from disk
         # but return success so the mobile web view hides it locally
         if os.path.exists(file_path):
             size = os.path.getsize(file_path)
             save_deleted_file(safe_filename, size)
+            import asyncio
+            asyncio.ensure_future(broadcast_files_changed())
             return {"status": "success"}
         return {"status": "error", "message": "File not found"}
     except Exception as e:
