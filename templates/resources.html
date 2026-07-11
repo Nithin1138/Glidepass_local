@@ -2283,7 +2283,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: res.title, content: res.content, type: res.type, language: res.language })
                 });
-            window.location.href = '/center?code=' + encodeURIComponent(res.content) + '&title=' + encodeURIComponent(res.title) + '&language=' + encodeURIComponent(res.language || '');
+                window.location.href = '/center?code=' + encodeURIComponent(res.content) + '&title=' + encodeURIComponent(res.title) + '&language=' + encodeURIComponent(res.language || '');
+            } catch (err) {
+                console.error(err);
+            }
         });
 
         // Report Actions
