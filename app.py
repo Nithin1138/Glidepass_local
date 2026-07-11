@@ -519,7 +519,19 @@ async def get_api_vitcodes():
 
 
 def _cached_file_response(filename: str):
-    response = FileResponse(get_template_path(filename))
+    from fastapi.responses import HTMLResponse
+    path = get_template_path(filename)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # Inject the active LAN IP of the computer
+        lan_ip = get_local_ip()
+        content = content.replace("{{LAN_IP}}", lan_ip)
+        response = HTMLResponse(content=content)
+    except Exception:
+        # Fallback to standard FileResponse on errors
+        response = FileResponse(path)
+        
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
