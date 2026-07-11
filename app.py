@@ -1638,6 +1638,14 @@ async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
     )
 
 
+@app.get("/api/benchmark/token")
+async def get_benchmark_token(request: Request):
+    if request.client.host in ("127.0.0.1", "localhost", "::1"):
+        return {"session_token": SESSION_TOKEN}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=403, content={"error": "Access denied"})
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
