@@ -433,21 +433,17 @@
             sessionStorage.setItem('sid', sid);
         }
 
-        // --- Smart LAN Direct WiFi Detection ---
+        // --- Smart LAN Direct WiFi Switcher ---
         const lanIp = "{{LAN_IP}}";
         const currentHost = window.location.hostname;
         if (lanIp && currentHost !== lanIp && currentHost !== '127.0.0.1' && currentHost !== 'localhost') {
-            const img = new Image();
-            img.onload = function() {
-                const banner = document.getElementById('lan-banner');
-                if (banner) {
-                    banner.style.display = 'flex';
-                    banner.addEventListener('click', () => {
-                        window.location.href = `http://${lanIp}:8000/files?sid=${encodeURIComponent(sid)}`;
-                    });
-                }
-            };
-            img.src = `http://${lanIp}:8000/logo.png?t=${Date.now()}`;
+            const banner = document.getElementById('lan-banner');
+            if (banner) {
+                banner.style.display = 'flex';
+                banner.addEventListener('click', () => {
+                    window.location.href = `http://${lanIp}:8000/files?sid=${encodeURIComponent(sid)}`;
+                });
+            }
         }
 
         const backBtn = document.getElementById('back-btn');
