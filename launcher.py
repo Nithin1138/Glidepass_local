@@ -2033,6 +2033,16 @@ class LANpadLauncher:
                 os.makedirs(shared_path, exist_ok=True)
             
             try:
+                import json
+                meta_path = os.path.join(shared_path, ".metadata.json")
+                durations = {}
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, "r") as fmeta:
+                            durations = json.load(fmeta)
+                    except Exception:
+                        pass
+
                 files = sorted(os.listdir(shared_path))
                 files = [f for f in files if not f.startswith('.')]
                 
@@ -2059,6 +2069,14 @@ class LANpadLauncher:
                             size_str = f"{size_bytes / (1024 * 1024):.1f} MB"
                         else:
                             size_str = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+                        
+                        # Add transfer duration next to size if available
+                        duration = durations.get(f)
+                        if duration is not None:
+                            if duration < 60:
+                                size_str += f" (took {int(duration)}s)"
+                            else:
+                                size_str += f" (took {int(duration//60)}m {int(duration%60)}s)"
                         
                         disp_name = f
                         if len(disp_name) > 30:

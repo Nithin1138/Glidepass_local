@@ -1188,6 +1188,25 @@ if not os.path.exists(SHARED_DIR):
     os.makedirs(SHARED_DIR, exist_ok=True)
 
 
+def save_file_duration(filename: str, duration: float):
+    """Saves file transfer duration to .metadata.json inside the LANpad shared directory."""
+    try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        data = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        data[filename] = round(duration, 1)
+        with open(meta_path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+
 @app.get("/api/files/list")
 async def list_files(sid: str = None):
     if sid != SESSION_TOKEN:
@@ -1197,6 +1216,16 @@ async def list_files(sid: str = None):
     if not allowed:
         return {"status": "error", "message": err}
     try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        durations = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    durations = json.load(f)
+            except Exception:
+                pass
+
         files = []
         if os.path.exists(SHARED_DIR):
             for name in os.listdir(SHARED_DIR):
@@ -1206,7 +1235,8 @@ async def list_files(sid: str = None):
                     files.append({
                         "name": name,
                         "size": stat.st_size,
-                        "modified": stat.st_mtime
+                        "modified": stat.st_mtime,
+                        "duration": durations.get(name)
                     })
         files.sort(key=lambda x: x["modified"], reverse=True)
         return {"status": "success", "files": files}
@@ -1241,9 +1271,6 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
 
 # Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
 # Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
-_upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
-
-
 @app.post("/api/files/upload_raw")
 async def upload_file_raw(request: Request, filename: str, sid: str = None):
     if sid != SESSION_TOKEN:
@@ -1253,6 +1280,9 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
     if not allowed:
         return {"status": "error", "message": err}
     try:
+        import time
+        start_time = time.time()
+        
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         
@@ -1269,9 +1299,16 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
         finally:
             await loop.run_in_executor(None, fd.close)
                 
+        duration = time.time() - start_time
+        save_file_duration(safe_filename, duration)
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+# Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
+# Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
+_upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
 
 
 @app.post("/api/files/preallocate")
@@ -1284,6 +1321,7 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
     if not allowed:
         return {"status": "error", "message": err}
     try:
+        import time
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         with open(dest_path, "wb") as f:
@@ -1294,6 +1332,7 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
             "fd": os.open(dest_path, os.O_WRONLY),
             "size": size,
             "written": 0,
+            "start_time": time.time(),
             "lock": threading.Lock(),
         }
         return {"status": "success"}
@@ -1310,6 +1349,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     try:
+        import time
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
 
@@ -1333,6 +1373,8 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
                     os.close(fd)
                 except OSError:
                     pass
+                duration = time.time() - cache["start_time"]
+                save_file_duration(safe_filename, duration)
                 _upload_fd_cache.pop(dest_path, None)
         else:
             # Fallback: fd not in cache (preallocate was not called) — check permission then write

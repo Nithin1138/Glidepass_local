@@ -939,7 +939,7 @@
                                 <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>
                                 ${isDownloaded ? '<i data-lucide="check-circle-2" size="14" style="color: #00C853; flex-shrink: 0;"></i>' : ''}
                             </div>
-                            <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}${file.duration ? ` (took ${formatTime(Math.round(file.duration))})` : ''}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <a href="/api/files/download/${nameEscaped}?sid=${encodeURIComponent(sid)}" download="${file.name}" onclick="window.markFileDownloaded('${file.name.replace(/'/g, "\\'")}')" style="background: ${isDownloaded ? 'rgba(0, 200, 83, 0.2)' : 'var(--accent-color)'}; color: ${isDownloaded ? '#00C853' : '#000'}; border: ${isDownloaded ? '1px solid rgba(0, 200, 83, 0.4)' : 'none'}; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
