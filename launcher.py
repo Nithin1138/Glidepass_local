@@ -2110,10 +2110,13 @@ class LANpadLauncher:
                             disp_name = disp_name[:18] + "..." + disp_name[-9:]
                         
                         is_opened = f in opened_files
+                        is_received_completed = (duration is not None) and (not is_inbox_file)
+                        show_tick = is_opened or is_received_completed
+
                         if is_inbox_file:
                             border_color = "#0077C0" # Inbox items get a highlighted blue border
                         else:
-                            border_color = "#00C853" if is_opened else "#1A1A1F"
+                            border_color = "#00C853" if show_tick else "#1A1A1F"
                         
                         card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
                         card.pack(fill="x", pady=(0, 8))
@@ -2154,7 +2157,7 @@ class LANpadLauncher:
                         if not is_inbox_file:
                             name_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
-                        if is_opened and not is_inbox_file:
+                        if show_tick and not is_inbox_file:
                             check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=self.BG2)
                             check_lbl.pack(side="left", padx=(4, 0))
                         
@@ -2172,10 +2175,10 @@ class LANpadLauncher:
                             accept_btn.pack(side="left", padx=4)
                             accept_btn.bind("<Button-1>", lambda e, fn=f: make_accept_handler(fn)())
                         else:
-                            # Open button — green if already opened, blue if not
-                            btn_bg = "#1B4332" if is_opened else "#0077C0"
-                            btn_fg = "#00C853" if is_opened else "#FFFFFF"
-                            btn_text = "✓" if is_opened else "↓"
+                            # Open button — green if already opened/completed, blue if not
+                            btn_bg = "#1B4332" if show_tick else "#0077C0"
+                            btn_fg = "#00C853" if show_tick else "#FFFFFF"
+                            btn_text = "✓" if show_tick else "↓"
                             open_btn = tk.Label(btn_col, text=btn_text, font=(self.FU, 11, "bold"), bg=btn_bg, fg=btn_fg, padx=12, pady=4, relief="flat", cursor="hand2")
                             open_btn.pack(side="left", padx=4)
                             open_btn.bind("<Button-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
