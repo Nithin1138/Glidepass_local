@@ -345,6 +345,9 @@
                             <i data-lucide="folder-up" size="14"></i>
                             <span style="font-weight: 900; letter-spacing: 0.05em;">LANPAD FILE TRANSFER <span class="status-dot"></span></span>
                         </div>
+                        <button id="deleted-view-btn" style="background: rgba(255,77,77,0.12); border: 1px solid rgba(255,77,77,0.25); color: #ff6b6b; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; letter-spacing: 0.04em;">
+                            <i data-lucide="trash-2" size="12"></i> DELETED
+                        </button>
                     </div>
                     <div class="controls-row">
                         <button class="header-btn" id="speedtest-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
@@ -428,10 +431,10 @@
                     </div>
                 </div>
 
-                <!-- Shared Files list -->
+                <!-- Shared Files list - session only -->
                 <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">Shared Files on Laptop</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">This Session</span>
                         <button id="refresh-files-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700;">
                             <i data-lucide="refresh-cw" size="12"></i> Refresh
                         </button>
@@ -441,6 +444,22 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ DELETED FILES SUB-VIEW ═══════════════════ -->
+    <div id="deleted-view" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 500; flex-direction: column; padding: 20px; max-width: 450px; margin: 0 auto; overflow-y: auto;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <button id="deleted-back-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 8px;">
+                <i data-lucide="arrow-left" size="16"></i>
+            </button>
+            <div>
+                <div style="font-size: 0.65rem; font-weight: 800; color: #ff6b6b; letter-spacing: 0.07em; text-transform: uppercase;">SESSION LOG</div>
+                <div style="font-size: 1rem; font-weight: 700; color: #fff;">Deleted Files</div>
+            </div>
+        </div>
+        <div id="deleted-files-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files deleted this session.</div>
         </div>
     </div>
 
@@ -627,6 +646,7 @@
                     if (xhr.status >= 200 && xhr.status < 300) {
                         progressBar.style.width = '100%';
                         percentLbl.textContent = '100%';
+                        addSessionFile(file.name);
                         showToast(`✓ Uploaded ${file.name}`);
                         resolve();
                     } else {
@@ -737,6 +757,7 @@
                             clearInterval(progressInterval);
                             updateProgress(file.size);
                             progressContainer.style.display = 'none';
+                            addSessionFile(file.name);
                             showToast(`✓ Uploaded ${file.name}`);
                             fetchFilesList();
                             resolve();
@@ -858,6 +879,7 @@
                     if (nextChunkIdx >= totalChunks) {
                         if (activeUploads === 0) {
                             progressContainer.style.display = 'none';
+                            addSessionFile(file.name);
                             showToast(`✓ Uploaded ${file.name}`);
                             fetchFilesList();
                             resolve();
@@ -954,13 +976,35 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        // ─── Session file tracking ─────────────────────────────────────────────────
+        // Track which file names were uploaded in this browser session
+        function getSessionFiles() {
+            return new Set(JSON.parse(sessionStorage.getItem('sessionSharedFiles') || '[]'));
+        }
+        function addSessionFile(name) {
+            const arr = JSON.parse(sessionStorage.getItem('sessionSharedFiles') || '[]');
+            if (!arr.includes(name)) { arr.push(name); }
+            sessionStorage.setItem('sessionSharedFiles', JSON.stringify(arr));
+        }
+        // Deleted files (per-session, stored in sessionStorage)
+        function getSessionDeleted() {
+            return JSON.parse(sessionStorage.getItem('sessionDeletedFiles') || '[]');
+        }
+        function addSessionDeleted(info) { // info = {name, size, deletedAt}
+            const arr = getSessionDeleted();
+            if (!arr.find(f => f.name === info.name)) { arr.push(info); }
+            sessionStorage.setItem('sessionDeletedFiles', JSON.stringify(arr));
+        }
+
         function renderFiles(files) {
-            // Filter out files that the mobile user has clicked "Delete" on
-            const deletedSet = new Set(JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]'));
-            const activeFiles = files.filter(f => !deletedSet.has(f.name));
+            const sessionSet = getSessionFiles();
+            const deletedSet = new Set(getSessionDeleted().map(f => f.name));
+
+            // Only show files that were shared this session and not deleted
+            const activeFiles = files.filter(f => sessionSet.has(f.name) && !deletedSet.has(f.name));
 
             if (activeFiles.length === 0) {
-                filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared yet. Select a file above to start!</div>`;
+                filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared this session. Upload a file above to start!</div>`;
                 return;
             }
 
@@ -986,7 +1030,7 @@
                             <a href="/api/files/download/${nameEscaped}?sid=${encodeURIComponent(sid)}" download="${file.name}" onclick="window.markFileDownloaded('${file.name.replace(/'/g, "\\'")}')" style="background: ${isDownloaded ? 'rgba(0, 200, 83, 0.2)' : 'var(--accent-color)'}; color: ${isDownloaded ? '#00C853' : '#000'}; border: ${isDownloaded ? '1px solid rgba(0, 200, 83, 0.4)' : 'none'}; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
                                 <i data-lucide="${isDownloaded ? 'check' : 'download'}" size="14" style="pointer-events: none;"></i>
                             </a>
-                            <button onclick="window.deleteSharedFile('${nameEscaped}')" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <button onclick="window.deleteSharedFile('${nameEscaped}', ${file.size})" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i data-lucide="trash-2" size="14"></i>
                             </button>
                         </div>
@@ -1008,30 +1052,73 @@
             setTimeout(() => fetchFilesList(), 300);
         };
 
-        window.deleteSharedFile = async function(filenameEscaped) {
-            if (confirm("Are you sure you want to delete this file?")) {
+        window.deleteSharedFile = async function(filenameEscaped, fileSize) {
+            if (confirm("Remove this file from the session view?")) {
                 const decName = decodeURIComponent(filenameEscaped);
                 try {
-                    // Record it locally to hide it immediately from mobile view
-                    const deleted = JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]');
-                    if (!deleted.includes(decName)) {
-                        deleted.push(decName);
-                        localStorage.setItem('deletedMobileFiles', JSON.stringify(deleted));
-                    }
+                    // Record deletion in session storage for Deleted view
+                    addSessionDeleted({ name: decName, size: fileSize || 0, deletedAt: Date.now() });
                     
+                    // Also persist in localStorage for cross-reload tracking
+                    const ldel = JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]');
+                    if (!ldel.includes(decName)) { ldel.push(decName); localStorage.setItem('deletedMobileFiles', JSON.stringify(ldel)); }
+
                     const res = await fetch(`/api/files/delete/${filenameEscaped}?sid=${encodeURIComponent(sid)}`, { method: 'DELETE' });
                     const data = await res.json();
                     if (data.status === 'success') {
-                        showToast('File removed successfully');
+                        showToast('File removed from session');
                         fetchFilesList();
                     } else {
-                        showToast(data.message || 'Failed to delete file', 'error');
+                        showToast(data.message || 'Failed to remove file', 'error');
                     }
                 } catch (e) {
-                    showToast('Failed to delete file', 'error');
+                    showToast('Failed to remove file', 'error');
                 }
             }
         };
+
+        // ─── Deleted view ──────────────────────────────────────────────────────────
+        const deletedViewEl = document.getElementById('deleted-view');
+        const deletedViewBtn = document.getElementById('deleted-view-btn');
+        const deletedBackBtn = document.getElementById('deleted-back-btn');
+        const deletedFilesList = document.getElementById('deleted-files-list');
+
+        function renderDeletedView() {
+            const entries = getSessionDeleted();
+            if (entries.length === 0) {
+                deletedFilesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files deleted this session.</div>`;
+            } else {
+                deletedFilesList.innerHTML = entries.slice().reverse().map(f => {
+                    const dt = new Date(f.deletedAt);
+                    const timeStr = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,77,77,0.05); border: 1px solid rgba(255,77,77,0.15); border-radius: 12px; padding: 12px 16px;">
+                            <div style="display: flex; flex-direction: column; gap: 3px; max-width: 75%; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <i data-lucide="file-x" size="13" style="color: #ff6b6b; flex-shrink: 0;"></i>
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${f.name}">${f.name}</span>
+                                </div>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(f.size)} &nbsp;·&nbsp; Removed at ${timeStr}</span>
+                            </div>
+                            <i data-lucide="trash-2" size="14" style="color: rgba(255,77,77,0.4); flex-shrink: 0;"></i>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        }
+
+        if (deletedViewBtn) {
+            deletedViewBtn.addEventListener('click', () => {
+                renderDeletedView();
+                deletedViewEl.style.display = 'flex';
+            });
+        }
+        if (deletedBackBtn) {
+            deletedBackBtn.addEventListener('click', () => {
+                deletedViewEl.style.display = 'none';
+            });
+        }
 
         refreshFilesBtn.addEventListener('click', fetchFilesList);
 
