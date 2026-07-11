@@ -1128,8 +1128,12 @@
             const sessionSet = getSessionFiles();
             const deletedSet = new Set(getSessionDeleted().map(f => f.name));
 
-            // Only show files that were shared this session and not deleted
-            const activeFiles = files.filter(f => sessionSet.has(f.name) && !deletedSet.has(f.name));
+            // Only show files that were shared this session, or are in the inbox folder, and not deleted
+            const activeFiles = files.filter(f => {
+                const isSessionShared = sessionSet.has(f.name);
+                const isInboxWaiting = f.inbox === true;
+                return (isSessionShared || isInboxWaiting) && !deletedSet.has(f.name);
+            });
 
             if (activeFiles.length === 0) {
                 filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared this session. Upload a file above to start!</div>`;
