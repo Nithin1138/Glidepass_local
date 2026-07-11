@@ -320,17 +320,20 @@ class LANpadLauncher:
         self.splash_view = tk.Frame(root, bg=self.BG)
         self.legal_view  = tk.Frame(root, bg=self.BG)
         self.files_view  = tk.Frame(root, bg=self.BG)
+        self.remote_view = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.splash_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.legal_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.files_view.place(x=0, y=0, relwidth=1, relheight=1)
+        self.remote_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
         self._build_lock()
         self._build_splash()
         self._build_legal()
         self._build_files()
+        self._build_remote()
 
         self._tick_dot()
         self.check_process_status()
@@ -1407,6 +1410,8 @@ class LANpadLauncher:
             self.files_view.tkraise()
             if hasattr(self, "_refresh_files_list"):
                 self._refresh_files_list()
+        elif name == "remote":
+            self.remote_view.tkraise()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
@@ -1589,7 +1594,7 @@ class LANpadLauncher:
         # Connect Hub Action Button (styled to fit theme)
         connect_hub_btn = tk.Label(hdr, text="Connect Hub", font=(self.FU, 8, "bold"), bg=self.BG2, fg="#0077C0", padx=12, pady=5, cursor="hand2")
         connect_hub_btn.pack(side="right", padx=(0, 4))
-        connect_hub_btn.bind("<Button-1>", lambda e: self.show_remote_hub_connection())
+        connect_hub_btn.bind("<Button-1>", lambda e: self.show_view("remote"))
 
         # ── Dropzone Card & Drag-and-Drop Setup ──────────────────────────────
         shared_path = os.path.expanduser("~/Downloads/LANpad")
@@ -2235,39 +2240,58 @@ class LANpadLauncher:
         # Save reference for external updates
         self._refresh_files_list = refresh_files
 
-    def show_remote_hub_connection(self):
-        remote_win = tk.Toplevel(self.root)
-        remote_win.title("Remote Hub Connection")
-        remote_win.geometry("450x600")
-        remote_win.configure(bg=self.BG)
-        remote_win.transient(self.root)
+    def _build_remote(self):
+        v = self.remote_view
+        W = 400
+        _mac = sys.platform == "darwin"
+        yo = 0 if _mac else 12  # Y-offset for Windows spacing
+        
+        # Flat background
+        bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
+        bg_cv.place(x=0, y=0)
+        
+        # ── Titlebar (Native Layout) ─────────────────────────────────────────
+        tb = tk.Frame(v, bg=self.BG, height=60)
+        tb.place(x=0, y=0, relwidth=1)
+        self._pill_button(tb, "← Back", self.WHITE, self.BG2,
+                          cmd=lambda: self.show_view("files"), side="right")
+                          
+        # ── Header ───────────────────────────────────────────────────────────
+        hdr = tk.Frame(v, bg=self.BG)
+        hdr.place(x=18, y=58 + yo, width=W - 36)
+        
+        # Link icon tile (custom vector link drawing)
+        ic = tk.Canvas(hdr, width=32, height=32, bg=self.BG, highlightthickness=0)
+        ic.pack(side="left")
+        rounded_rect(ic, 0, 0, 32, 32, r=8, fill=self.BG2, outline="")
+        ic.create_line(10, 22, 22, 10, fill="#0077C0", width=2)
+        ic.create_oval(7, 18, 15, 26, outline="#0077C0", width=2)
+        ic.create_oval(17, 6, 25, 14, outline="#0077C0", width=2)
+        
+        # Title
+        tk.Label(hdr, text="Connect to Remote Hub", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
         
         FU = self.FU
         FD = self.FD
         
-        # Header title
-        hdr = tk.Frame(remote_win, bg=self.BG, height=60)
-        hdr.pack(fill="x", padx=20, pady=15)
-        tk.Label(hdr, text="Connect to Remote Hub", font=(FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left")
-        
         remote_url = tk.StringVar()
         session_token = tk.StringVar()
         
-        main_container = tk.Frame(remote_win, bg=self.BG)
-        main_container.pack(fill="both", expand=True, padx=20)
+        main_container = tk.Frame(v, bg=self.BG)
+        main_container.place(x=18, y=105 + yo, width=W - 36, height=620)
         
         def show_connection_screen():
             for widget in main_container.winfo_children():
                 widget.destroy()
                 
-            lbl_desc = tk.Label(main_container, text="Enter the IP address or URL and Session Token of the other laptop's LANpad app.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=410, justify="left")
+            lbl_desc = tk.Label(main_container, text="Enter the IP address or URL and Session Token of the other laptop's LANpad app.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
             lbl_desc.pack(anchor="w", pady=(0, 20))
             
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             host_ent = tk.Entry(main_container, textvariable=remote_url, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
             host_ent.pack(fill="x", ipady=6, pady=(0, 15))
             if not remote_url.get():
-                remote_url.set("127.0.0.1:8000")
+                remote_url.set("")
                 
             tk.Label(main_container, text="SESSION TOKEN (SID)", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_ent = tk.Entry(main_container, textvariable=session_token, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
@@ -2276,11 +2300,23 @@ class LANpadLauncher:
             btn_connect = tk.Button(main_container, text="CONNECT", font=(FU, 10, "bold"), bg="#0077C0", fg=self.WHITE, activebackground="#005A90", activeforeground=self.WHITE, relief="flat", bd=0, command=connect_to_hub)
             btn_connect.pack(fill="x", ipady=8)
             
+            # Where to get these info card
+            info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=12, pady=12, highlightthickness=1, highlightbackground=self.BORDER)
+            info_card.pack(fill="x", pady=(25, 0))
+            
+            tk.Label(info_card, text="💡 Where to find these on Laptop B:", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", anchor="w").pack(fill="x", pady=(0, 8))
+            
+            p1 = "1. REMOTE IP / HOST URL:\nOn Laptop B's LANpad app, look at the top section under 'Local Access' (e.g. 10.237.234.162:8000)."
+            p2 = "2. SESSION TOKEN:\nOn Laptop B's LANpad app, copy the alphanumeric key shown in the 'Session Token' label."
+            
+            tk.Label(info_card, text=p1, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x", pady=(0, 8))
+            tk.Label(info_card, text=p2, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x")
+            
         def connect_to_hub():
             url_str = remote_url.get().strip()
             sid_str = session_token.get().strip()
             if not url_str or not sid_str:
-                messagebox.showerror("Error", "Please enter both IP/URL and Session Token", parent=remote_win)
+                messagebox.showerror("Error", "Please enter both IP/URL and Session Token")
                 return
                 
             if not url_str.startswith("http://") and not url_str.startswith("https://"):
@@ -2296,9 +2332,9 @@ class LANpadLauncher:
                     if data.get("status") == "success":
                         show_files_screen(url_str, sid_str, data.get("files", []))
                     else:
-                        messagebox.showerror("Error", f"Failed: {data.get('message', 'Unknown error')}", parent=remote_win)
+                        messagebox.showerror("Error", f"Failed: {data.get('message', 'Unknown error')}")
             except Exception as e:
-                messagebox.showerror("Connection Failed", f"Could not connect to remote hub:\n{e}", parent=remote_win)
+                messagebox.showerror("Connection Failed", f"Could not connect to remote hub:\n{e}")
 
         def show_files_screen(url_str, sid_str, initial_files):
             for widget in main_container.winfo_children():
@@ -2307,7 +2343,10 @@ class LANpadLauncher:
             sub_hdr = tk.Frame(main_container, bg=self.BG)
             sub_hdr.pack(fill="x", pady=(0, 10))
             
-            lbl_connected = tk.Label(sub_hdr, text=f"Connected: {url_str.replace('http://','').replace('https://','')}", font=(FU, 9, "bold"), bg=self.BG, fg="#00C853")
+            disp_host = url_str.replace('http://','').replace('https://','')
+            if len(disp_host) > 28:
+                disp_host = disp_host[:16] + "..." + disp_host[-9:]
+            lbl_connected = tk.Label(sub_hdr, text=f"Connected: {disp_host}", font=(FU, 9, "bold"), bg=self.BG, fg="#00C853")
             lbl_connected.pack(side="left")
             
             btn_disc = tk.Label(sub_hdr, text="Disconnect", font=(FU, 9, "bold"), bg=self.BG, fg="#FF4D4D", cursor="hand2")
@@ -2316,7 +2355,7 @@ class LANpadLauncher:
             
             def upload_files():
                 from tkinter import filedialog
-                file_paths = filedialog.askopenfilenames(title="Select Files to Send to Remote Hub", parent=remote_win)
+                file_paths = filedialog.askopenfilenames(title="Select Files to Send to Remote Hub")
                 if not file_paths:
                     return
                     
@@ -2348,11 +2387,11 @@ class LANpadLauncher:
                                         pass
                                     offset += len(chunk_data)
                                     
-                            remote_win.after(0, lambda fn=filename: messagebox.showinfo("Success", f"Successfully uploaded {fn} to remote hub!", parent=remote_win))
+                            v.after(0, lambda fn=filename: messagebox.showinfo("Success", f"Successfully uploaded {fn} to remote hub!"))
                         except Exception as ex:
-                            remote_win.after(0, lambda fn=filename, err=ex: messagebox.showerror("Upload Failed", f"Failed to upload {fn}:\n{err}", parent=remote_win))
+                            v.after(0, lambda fn=filename, err=ex: messagebox.showerror("Upload Failed", f"Failed to upload {fn}:\n{err}"))
                     
-                    remote_win.after(100, refresh_list)
+                    v.after(100, refresh_list)
                     
                 threading.Thread(target=worker, daemon=True).start()
                 
@@ -2371,7 +2410,7 @@ class LANpadLauncher:
             
             scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
             scrollable_frame.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
-            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=390)
+            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=360)
             
             def refresh_list():
                 try:
@@ -2432,9 +2471,9 @@ class LANpadLauncher:
                                     with urllib.request.urlopen(req) as resp:
                                         with open(dest_path, "wb") as local_file:
                                             shutil_copy(resp, local_file)
-                                    remote_win.after(0, lambda fn=filename: messagebox.showinfo("Downloaded", f"Finished downloading:\n{fn}\nSaved to LANpad Downloads folder.", parent=remote_win))
+                                    v.after(0, lambda fn=filename: messagebox.showinfo("Downloaded", f"Finished downloading:\n{fn}\nSaved to LANpad Downloads folder."))
                                 except Exception as err:
-                                    remote_win.after(0, lambda fn=filename, ex=err: messagebox.showerror("Download Failed", f"Could not download {fn}:\n{ex}", parent=remote_win))
+                                    v.after(0, lambda fn=filename, ex=err: messagebox.showerror("Download Failed", f"Could not download {fn}:\n{ex}"))
                             threading.Thread(target=download_worker, daemon=True).start()
                         return handler
                         
