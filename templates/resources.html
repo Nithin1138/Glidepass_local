@@ -1468,9 +1468,9 @@
                     document.body.removeChild(textArea);
                     if (successful) resolve();
                     else reject(new Error('Fallback copy failed'));
-                } catch (err) {
+                } catch (e) {
                     document.body.removeChild(textArea);
-                    reject(err);
+                    reject(e);
                 }
             });
         }
@@ -1481,10 +1481,10 @@
 
         function _loadSet(key) {
             try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
-            catch { return new Set(); }
+            catch (e) { return new Set(); }
         }
         function _saveSet(key, set) {
-            try { localStorage.setItem(key, JSON.stringify([...set])); } catch { }
+            try { localStorage.setItem(key, JSON.stringify([...set])); } catch (e) { }
         }
 
         let pinnedHubs = _loadSet(PINNED_HUBS_KEY);
