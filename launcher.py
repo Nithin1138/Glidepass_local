@@ -1658,9 +1658,9 @@ class LANpadLauncher:
 
         def draw_refresh_icon():
             refresh_cv.delete("all")
-            # Larger, cleaner circular arrow
-            refresh_cv.create_arc(2, 2, 14, 14, start=55, extent=265, style="arc", outline="#0077C0", width=2)
-            refresh_cv.create_polygon(9, 1, 15, 2, 11, 7, fill="#0077C0", outline="")
+            # Scaled down circular arrow (fits 3x3 to 13x13 bounding box)
+            refresh_cv.create_arc(3, 3, 13, 13, start=60, extent=260, style="arc", outline="#0077C0", width=2)
+            refresh_cv.create_polygon(8, 1, 13, 2.5, 9.5, 6, fill="#0077C0", outline="")
 
         draw_refresh_icon()
 
@@ -1679,13 +1679,13 @@ class LANpadLauncher:
         def draw_toggle_icon(deleted_mode):
             toggle_cv.delete("all")
             if deleted_mode:
-                # Vector Folder Icon
-                toggle_cv.create_polygon(2, 3, 7, 3, 9, 5, 14, 5, 14, 13, 2, 13, fill="#0077C0", outline="")
+                # Scaled down Vector Folder Icon
+                toggle_cv.create_polygon(3, 4, 7, 4, 8.5, 5.5, 13, 5.5, 13, 12, 3, 12, fill="#0077C0", outline="")
             else:
-                # Vector Trash Can Icon
-                toggle_cv.create_rectangle(6, 1, 10, 3, fill="#FF4D4D", outline="")
-                toggle_cv.create_rectangle(2, 3, 14, 5, fill="#FF4D4D", outline="")
-                toggle_cv.create_polygon(4, 5, 12, 5, 11, 15, 5, 15, fill="#FF4D4D", outline="")
+                # Scaled down Vector Trash Can Icon
+                toggle_cv.create_rectangle(7, 2, 9, 4, fill="#FF4D4D", outline="")
+                toggle_cv.create_rectangle(3.5, 4, 12.5, 5.5, fill="#FF4D4D", outline="")
+                toggle_cv.create_polygon(5, 5.5, 11, 5.5, 10, 14, 6, 14, fill="#FF4D4D", outline="")
 
         draw_toggle_icon(False)
 
