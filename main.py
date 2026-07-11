@@ -89,6 +89,37 @@ class ServerManager:
         if self.thread and self.thread.is_alive():
             return
         
+        # Ensure port 8000 is free before starting uvicorn
+        try:
+            import urllib.request
+            # 1. Attempt clean shutdown of previous LANpad instances
+            req = urllib.request.Request("http://127.0.0.1:8000/shutdown", method="GET")
+            with urllib.request.urlopen(req, timeout=1) as resp:
+                pass
+            import time
+            time.sleep(1.0) # Wait for clean shutdown completion
+        except Exception:
+            pass
+
+        # 2. Force kill any remaining process holding port 8000
+        try:
+            import subprocess
+            if sys.platform == 'win32':
+                out = subprocess.check_output("netstat -ano | findstr :8000", shell=True).decode()
+                for line in out.splitlines():
+                    if "LISTENING" in line:
+                        pid = line.strip().split()[-1]
+                        subprocess.run(f"taskkill /F /PID {pid}", shell=True)
+            else:
+                out = subprocess.check_output("lsof -t -i :8000", shell=True).decode()
+                for pid in out.splitlines():
+                    if pid.strip():
+                        subprocess.run(f"kill -9 {pid}", shell=True)
+            import time
+            time.sleep(0.5)
+        except Exception:
+            pass
+
         from app import app as fastapi_app
         import uvicorn
         import socket as _socket

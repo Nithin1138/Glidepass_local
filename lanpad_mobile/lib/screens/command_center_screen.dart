@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/connection_service.dart';
 import '../models/history_model.dart';
 import '../widgets/aurora_background.dart';
-import '../widgets/glassmorphic_card.dart';
+import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../config/theme.dart';
 
@@ -45,6 +47,15 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     _typingStatusTimer?.cancel();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _triggerHaptic() {
+    final haptic = AppTheme.hapticLevelNotifier.value;
+    if (haptic == 'light') {
+      HapticFeedback.lightImpact();
+    } else if (haptic == 'medium') {
+      HapticFeedback.mediumImpact();
+    }
   }
 
   // Poll typing status from server
@@ -97,23 +108,23 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF0D0D10),
+          backgroundColor: AppTheme.bgColor,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: AppTheme.borderColor),
+            side: BorderSide(color: AppTheme.borderColor),
           ),
-          title: const Column(
+          title: Column(
             children: [
-              Icon(LucideIcons.checkCircle, color: AppTheme.accentColor, size: 40),
-              SizedBox(height: 12),
+              Icon(LucideIcons.circle_check, color: AppTheme.accentColor, size: 40),
+              const SizedBox(height: 12),
               Text(
                 'Injection Completed!',
-                style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textMain),
               ),
             ],
           ),
-          content: const Text(
+          content: Text(
             'Your text has been typed onto the laptop. Select what you would like to do next:',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
@@ -123,6 +134,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           actions: [
             AnimatedButton(
               onTap: () {
+                _triggerHaptic();
                 Navigator.of(context).pop();
                 _refillCode();
               },
@@ -130,23 +142,27 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 color: AppTheme.accentColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('REFILL PREVIOUS CODE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text('REFILL PREVIOUS CODE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
             AnimatedButton(
               onTap: () {
+                _triggerHaptic();
                 Navigator.of(context).pop();
                 _clearText();
               },
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
+                color: AppTheme.cardBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.borderColor),
               ),
-              child: const Text('CLEAR AREA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text('CLEAR AREA', style: TextStyle(color: AppTheme.textMain, fontWeight: FontWeight.bold)),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Dismiss', style: TextStyle(color: AppTheme.textMuted)),
+              onPressed: () {
+                _triggerHaptic();
+                Navigator.of(context).pop();
+              },
+              child: Text('Dismiss', style: TextStyle(color: AppTheme.textMuted)),
             ),
           ],
         );
@@ -155,6 +171,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Future<void> _sendToLaptop() async {
+    _triggerHaptic();
     final text = _textController.text.trim();
     if (text.isEmpty) {
       _showToast('Cannot send empty content', isError: true);
@@ -174,6 +191,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     if (result['status'] == 'success') {
       _showToast('Dispatched successfully');
+      
+      // Save stats preference
+      final prefs = await SharedPreferences.getInstance();
+      final current = prefs.getInt('paste_count') ?? 0;
+      await prefs.setInt('paste_count', current + 1);
+
       if (_mode == 'type') {
         _startCountdown(estimatedSeconds);
       } else {
@@ -187,6 +210,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Future<void> _fetchFromLaptop() async {
+    _triggerHaptic();
     final result = await _apiService.fetchClipboard();
     if (result['status'] == 'success' && result['text'] != null) {
       setState(() {
@@ -199,6 +223,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Future<void> _triggerCopy() async {
+    _triggerHaptic();
     final result = await _apiService.sendCopyCommand();
     if (result['status'] == 'success') {
       _showToast('Copy command triggered');
@@ -229,6 +254,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Future<void> _stopPasting() async {
+    _triggerHaptic();
     await _apiService.stopPasting();
     setState(() {
       _isTyping = false;
@@ -239,7 +265,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   void _showHistoryDrawer() async {
-    _showToast('Loading history...');
+    _triggerHaptic();
     final items = await _apiService.fetchHistory();
     setState(() {
       _history = items;
@@ -249,8 +275,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B0B0B),
-      barrierColor: Colors.black85,
+      backgroundColor: AppTheme.bgColor,
+      barrierColor: Colors.black54,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -264,23 +290,23 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(LucideIcons.history, color: AppTheme.accentColor, size: 20),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Saved History',
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: Colors.white,
+                            color: AppTheme.textMain,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: AppTheme.textMuted),
+                      icon: Icon(Icons.close, color: AppTheme.textMuted),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -288,7 +314,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 const SizedBox(height: 16),
                 Expanded(
                   child: _history.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No history items found.',
                             style: TextStyle(color: AppTheme.textMuted),
@@ -302,6 +328,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                               padding: const EdgeInsets.only(bottom: 12.0),
                               child: GestureDetector(
                                 onTap: () {
+                                  _triggerHaptic();
                                   _textController.text = item.content;
                                   Navigator.of(context).pop();
                                   _showToast('Snippet loaded from history');
@@ -309,7 +336,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.02),
+                                    color: AppTheme.cardBg,
                                     border: Border.all(color: AppTheme.borderColor),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -321,15 +348,15 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                         children: [
                                           Text(
                                             item.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                              color: AppTheme.textMain,
                                             ),
                                           ),
                                           Text(
                                             '${item.timestamp} (${item.mode})',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 10,
                                               color: AppTheme.textMuted,
                                             ),
@@ -341,7 +368,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                         item.content,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
                                           fontFamily: 'monospace',
                                           color: AppTheme.textMuted,
@@ -367,7 +394,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: isError ? AppTheme.redStatus : AppTheme.accentColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
@@ -378,48 +405,44 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   @override
   Widget build(BuildContext context) {
     final expectedMinutes = (_textController.text.split(RegExp(r'\s+')).length / _wpm).toStringAsFixed(1);
+    final isDark = AppTheme.isDark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           const AuroraBackground(),
+          
           SafeArea(
-            child: Column(
-              children: [
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 110),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 // Top Header Row
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white70),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                          const Text(
-                            'COMMAND CENTER',
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: AppTheme.accentColor,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'CONTROL PANEL',
+                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                          fontFamily: 'Outfit',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: AppTheme.accentColor,
+                        ),
                       ),
                       Row(
                         children: [
-                          // History Button
                           IconButton(
-                            icon: const Icon(LucideIcons.history, color: AppTheme.accentColor, size: 18),
+                            icon: Icon(LucideIcons.history, color: AppTheme.accentColor, size: 20),
                             onPressed: _showHistoryDrawer,
                           ),
-                          // Refill Button
                           IconButton(
-                            icon: const Icon(LucideIcons.rotateCcw, color: AppTheme.accentColor, size: 18),
+                            icon: Icon(LucideIcons.rotate_ccw, color: AppTheme.accentColor, size: 20),
                             onPressed: _refillCode,
                           ),
                         ],
@@ -428,7 +451,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   ),
                 ),
                 
-                // Live Sync & Disconnect buttons row
+                // Live Sync Settings Row
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                   child: Row(
@@ -436,11 +459,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
+                            _triggerHaptic();
                             setState(() {
                               _liveSync = !_liveSync;
                             });
                           },
-                          child: GlassmorphicCard(
+                          child: LiquidGlassCard(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             borderRadius: 14,
                             borderColor: _liveSync ? AppTheme.accentColor : null,
@@ -448,7 +472,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  LucideIcons.refreshCw,
+                                  LucideIcons.refresh_cw,
                                   size: 16,
                                   color: _liveSync ? AppTheme.accentColor : AppTheme.textMuted,
                                 ),
@@ -458,7 +482,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: _liveSync ? Colors.white : AppTheme.textMuted,
+                                    color: _liveSync ? AppTheme.textMain : AppTheme.textMuted,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ],
@@ -469,26 +494,22 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () async {
-                            await ConnectionService().disconnect();
-                            if (mounted) {
-                              Navigator.of(context).pushNamedAndRemoveUntil('/connect', (route) => false);
-                            }
-                          },
-                          child: const GlassmorphicCard(
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                          onTap: _triggerCopy,
+                          child: LiquidGlassCard(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             borderRadius: 14,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(LucideIcons.link2Off, size: 16, color: AppTheme.redStatus),
-                                SizedBox(width: 8),
+                                Icon(LucideIcons.copy, size: 16, color: AppTheme.accentColor),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'DISCONNECT',
+                                  'PULL COPY',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: AppTheme.redStatus,
+                                    color: AppTheme.textMain,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ],
@@ -501,31 +522,31 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Input Area / Frosted text wrapper
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                // Input Text Area
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SizedBox(
+                    height: 180,
                     child: Stack(
                       children: [
-                        // Input Field
                         Positioned.fill(
-                          child: GlassmorphicCard(
+                          child: LiquidGlassCard(
                             padding: const EdgeInsets.all(16),
                             borderRadius: 20,
+                            isFlat: false,
                             child: TextField(
                               controller: _textController,
                               maxLines: null,
                               expands: true,
                               keyboardType: TextInputType.multiline,
-                              style: const TextStyle(color: AppTheme.textMain, fontSize: 16, height: 1.5),
-                              decoration: const InputDecoration(
-                                hintText: 'Type or paste content here...',
-                                hintStyle: TextStyle(color: Colors.white24),
+                              style: TextStyle(color: AppTheme.textMain, fontSize: 16, height: 1.5),
+                              decoration: InputDecoration(
+                                hintText: 'Type snippet or instructions...',
+                                hintStyle: TextStyle(color: AppTheme.textMuted.withOpacity(0.4)),
                                 border: InputBorder.none,
                               ),
                               onChanged: (text) {
                                 if (_liveSync && text.isNotEmpty) {
-                                  // Debounced or direct sync
                                   _apiService.sendPaste(
                                     text: text,
                                     mode: 'flash',
@@ -537,7 +558,6 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                             ),
                           ),
                         ),
-                        // Countdown/Typing Overlay
                         if (_isTyping)
                           Positioned.fill(
                             child: Container(
@@ -554,11 +574,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: AppTheme.accentColor, width: 2),
+                                      border: Border.all(color: AppTheme.accentColor, width: 2.5),
                                     ),
                                     child: Text(
                                       '${_typingSecondsRemaining}s',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.accentColor,
@@ -566,10 +586,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  const Text(
-                                    'Typing...',
+                                  Text(
+                                    'TYPING Snip...',
                                     style: TextStyle(
-                                      color: AppTheme.textMuted,
+                                      color: AppTheme.textMain,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 1,
@@ -594,13 +614,13 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   ),
                 ),
                 
-                // Status Sync message
+                // Live status sync line
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
                       Icon(
-                        _liveSync ? LucideIcons.checkCircle : LucideIcons.pauseCircle,
+                        _liveSync ? LucideIcons.circle_check : LucideIcons.circle_pause,
                         size: 14,
                         color: _liveSync ? const Color(0xFF00F59B) : AppTheme.textMuted,
                       ),
@@ -609,81 +629,27 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         _liveSync
                             ? 'Live Sync ON: Pressing keys is synchronized.'
                             : 'Live Sync OFF: Dispatch manually with button below.',
-                        style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                        style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                       ),
                     ],
                   ),
                 ),
                 
-                // Mode Grid Selector
+                // Mode Selectors
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [
-                      // Flash Mode
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _mode = 'flash'),
-                          child: GlassmorphicCard(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                            borderRadius: 14,
-                            borderColor: _mode == 'flash' ? AppTheme.accentColor : null,
-                            child: Column(
-                              children: [
-                                Icon(LucideIcons.zap, size: 16, color: _mode == 'flash' ? AppTheme.accentColor : Colors.white70),
-                                const SizedBox(height: 4),
-                                const Text('Flash', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                const Text('Instant paste', style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildModeCard('flash', LucideIcons.zap, 'Flash', 'Instant paste'),
                       const SizedBox(width: 8),
-                      // Inline/Inject Mode
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _mode = 'inject'),
-                          child: GlassmorphicCard(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                            borderRadius: 14,
-                            borderColor: _mode == 'inject' ? AppTheme.accentColor : null,
-                            child: Column(
-                              children: [
-                                Icon(LucideIcons.alignLeft, size: 16, color: _mode == 'inject' ? AppTheme.accentColor : Colors.white70),
-                                const SizedBox(height: 4),
-                                const Text('Inline', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                const Text('One line flash', style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildModeCard('inject', LucideIcons.text_align_start, 'Inline', 'One line flash'),
                       const SizedBox(width: 8),
-                      // Typing Mode
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _mode = 'type'),
-                          child: GlassmorphicCard(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                            borderRadius: 14,
-                            borderColor: _mode == 'type' ? AppTheme.accentColor : null,
-                            child: Column(
-                              children: [
-                                Icon(LucideIcons.keyboard, size: 16, color: _mode == 'type' ? AppTheme.accentColor : Colors.white70),
-                                const SizedBox(height: 4),
-                                const Text('Typing', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                const Text('Human sim', style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildModeCard('type', LucideIcons.keyboard, 'Typing', 'Human sim'),
                     ],
                   ),
                 ),
                 
-                // Typing Speed WPM options
+                // Typing Speed Controls
                 if (_mode == 'type')
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -693,19 +659,22 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Coding Mode (Handle IDE auto-brackets)', style: TextStyle(fontSize: 11, color: Colors.white70)),
+                            Text('Coding Mode (Handle IDE auto-brackets)', style: TextStyle(fontSize: 11, color: AppTheme.textMain)),
                             Switch(
                               value: _isCoding,
                               activeColor: AppTheme.accentColor,
-                              onChanged: (val) => setState(() => _isCoding = val),
+                              onChanged: (val) {
+                                _triggerHaptic();
+                                setState(() => _isCoding = val);
+                              },
                             ),
                           ],
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('TYPING SPEED', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
-                            Text('$_wpm WPM', style: const TextStyle(fontSize: 12, color: AppTheme.accentColor, fontWeight: FontWeight.bold)),
+                            Text('TYPING SPEED', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
+                            Text('$_wpm WPM', style: TextStyle(fontSize: 12, color: AppTheme.accentColor, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         Slider(
@@ -713,26 +682,29 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                           max: 120,
                           divisions: 18,
                           value: _wpm.toDouble(),
-                          onChanged: (val) => setState(() => _wpm = val.round()),
+                          onChanged: (val) {
+                            setState(() => _wpm = val.round());
+                          },
+                          onChangeEnd: (_) => _triggerHaptic(),
                         ),
                         Center(
                           child: Text(
                             'Expected Time: ${expectedMinutes}m',
-                            style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                            style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                           ),
                         ),
                       ],
                     ),
                   ),
                 
-                // Send To Laptop Button
+                // Send To Laptop Dispatch Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: AnimatedButton(
                     onTap: _sendToLaptop,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.accentColor, Color(0xFF009BF5)],
+                      gradient: LinearGradient(
+                        colors: [AppTheme.accentColor, AppTheme.accentColor.withOpacity(0.75)],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -754,86 +726,43 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                     ),
                   ),
                 ),
-                
-                // Bottom options: Fetch, Select Copy, Halt, Clear
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 20.0),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 3.5,
-                    children: [
-                      GestureDetector(
-                        onTap: _fetchFromLaptop,
-                        child: const GlassmorphicCard(
-                          padding: EdgeInsets.zero,
-                          borderRadius: 12,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.download, size: 14, color: Colors.white70),
-                              SizedBox(width: 6),
-                              Text('Fetch', style: TextStyle(fontSize: 12, color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _triggerCopy,
-                        child: const GlassmorphicCard(
-                          padding: EdgeInsets.zero,
-                          borderRadius: 12,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.copy, size: 14, color: Colors.white70),
-                              SizedBox(width: 6),
-                              Text('Select Copy', style: TextStyle(fontSize: 12, color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _stopPasting,
-                        child: GlassmorphicCard(
-                          padding: EdgeInsets.zero,
-                          borderRadius: 12,
-                          borderColor: AppTheme.redStatus.withOpacity(0.4),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.square, size: 14, color: AppTheme.redStatus),
-                              SizedBox(width: 6),
-                              Text('Stop Pasting', style: TextStyle(fontSize: 12, color: AppTheme.redStatus)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _clearText,
-                        child: const GlassmorphicCard(
-                          padding: EdgeInsets.zero,
-                          borderRadius: 12,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.trash2, size: 14, color: Colors.white70),
-                              SizedBox(width: 6),
-                              Text('Clear Area', style: TextStyle(fontSize: 12, color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModeCard(String modeValue, IconData icon, String title, String subtitle) {
+    final isSelected = _mode == modeValue;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _triggerHaptic();
+          setState(() => _mode = modeValue);
+        },
+        child: LiquidGlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          borderRadius: 14,
+          borderColor: isSelected ? AppTheme.accentColor : null,
+          child: Column(
+            children: [
+              Icon(icon, size: 16, color: isSelected ? AppTheme.accentColor : AppTheme.textMuted),
+              const SizedBox(height: 4),
+              Text(
+                title, 
+                style: TextStyle(
+                  fontSize: 12, 
+                  fontWeight: FontWeight.bold, 
+                  color: isSelected ? AppTheme.accentColor : AppTheme.textMain,
+                ),
+              ),
+              Text(subtitle, style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
+            ],
+          ),
+        ),
       ),
     );
   }

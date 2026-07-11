@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +11,7 @@ import '../services/connection_service.dart';
 import '../services/websocket_service.dart';
 import '../models/file_model.dart';
 import '../widgets/nebula_background.dart';
-import '../widgets/glassmorphic_card.dart';
+import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../config/theme.dart';
 
@@ -27,29 +29,45 @@ class _FilesScreenState extends State<FilesScreen> {
 
   List<SharedFile> _files = [];
   bool _isLoading = false;
-  
-  // Upload status variables
   bool _isUploading = false;
-  String _uploadProgressName = '';
   double _uploadProgress = 0.0;
+  String _uploadProgressName = '';
   String _uploadSpeed = '';
   String _uploadEta = '';
-
-  String _transferMode = 'parallel'; // 'parallel' or 'inbox'
-  Set<String> _downloadedFileNames = {};
+  
+  String _transferMode = 'parallel'; // 'parallel', 'inbox'
+  final Set<String> _downloadedFileNames = {};
 
   @override
   void initState() {
     super.initState();
-    _loadDownloadedFiles();
     _loadFiles();
+    _loadDownloadedPrefs();
     _initWebSocket();
   }
 
-  @override
-  void dispose() {
-    _webSocketService.disconnect();
-    super.dispose();
+  void _triggerHaptic() {
+    final haptic = AppTheme.hapticLevelNotifier.value;
+    if (haptic == 'light') {
+      HapticFeedback.lightImpact();
+    } else if (haptic == 'medium') {
+      HapticFeedback.mediumImpact();
+    }
+  }
+
+  Future<void> _loadDownloadedPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('downloaded_files') ?? [];
+    setState(() {
+      _downloadedFileNames.addAll(list);
+    });
+  }
+
+  Future<void> _markFileDownloaded(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    _downloadedFileNames.add(name);
+    await prefs.setStringList('downloaded_files', _downloadedFileNames.toList());
+    setState(() {});
   }
 
   void _initWebSocket() {
@@ -66,19 +84,10 @@ class _FilesScreenState extends State<FilesScreen> {
     }
   }
 
-  Future<void> _loadDownloadedFiles() async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('downloaded_files') ?? [];
-    setState(() {
-      _downloadedFileNames = list.toSet();
-    });
-  }
-
-  Future<void> _markFileDownloaded(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    _downloadedFileNames.add(name);
-    await prefs.setStringList('downloaded_files', _downloadedFileNames.toList());
-    setState(() {});
+  @override
+  void dispose() {
+    _webSocketService.disconnect();
+    super.dispose();
   }
 
   Future<void> _loadFiles() async {
@@ -92,6 +101,7 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _pickAndUploadFile() async {
+    _triggerHaptic();
     final result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.single.path != null) {
       final path = result.files.single.path!;
@@ -137,6 +147,11 @@ class _FilesScreenState extends State<FilesScreen> {
         if (response.statusCode == 200) {
           _showToast('Upload completed successfully!');
           _loadFiles();
+          
+          // Increment files stats
+          final prefs = await SharedPreferences.getInstance();
+          final current = prefs.getInt('files_count') ?? 0;
+          await prefs.setInt('files_count', current + 1);
         } else {
           _showToast('Upload failed: Status ${response.statusCode}', isError: true);
         }
@@ -150,42 +165,45 @@ class _FilesScreenState extends State<FilesScreen> {
           _uploadSpeed = '';
           _uploadEta = '';
         });
+        _triggerHaptic();
       }
     }
   }
 
   Future<void> _downloadFile(SharedFile file) async {
+    _triggerHaptic();
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
     final nameEncoded = Uri.encodeComponent(file.name);
     final url = Uri.parse('$baseUrl/api/files/download/$nameEncoded?sid=$sid');
     
-    if (await canLaunchUrl(url)) {
+    try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
       await _markFileDownloaded(file.name);
       _showToast('Starting file download...');
-    } else {
+    } catch (e) {
       _showToast('Could not open download link', isError: true);
     }
   }
 
   Future<void> _deleteFile(SharedFile file) async {
+    _triggerHaptic();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF0D0D10),
+          backgroundColor: AppTheme.bgColor,
           surfaceTintColor: Colors.transparent,
-          title: const Text('Delete File', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
-          content: Text('Are you sure you want to remove "${file.name}" from the session?'),
+          title: Text('Delete File', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: AppTheme.textMain)),
+          content: Text('Are you sure you want to remove "${file.name}" from the session?', style: TextStyle(color: AppTheme.textMain)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+              child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete', style: TextStyle(color: AppTheme.redStatus)),
+              child: const Text('Delete', style: TextStyle(color: AppTheme.redStatus, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -195,7 +213,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (confirm == true) {
       final success = await _apiService.deleteFile(file.name);
       if (success) {
-        _showToast('File removed successfully');
+        _showToast('File removed');
         _loadFiles();
       } else {
         _showToast('Failed to delete file', isError: true);
@@ -207,7 +225,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: isError ? AppTheme.redStatus : AppTheme.accentColor,
         behavior: SnackBarBehavior.floating,
       ),
@@ -229,6 +247,7 @@ class _FilesScreenState extends State<FilesScreen> {
       body: Stack(
         children: [
           const NebulaBackground(),
+          
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -239,26 +258,18 @@ class _FilesScreenState extends State<FilesScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white70),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                          const Text(
-                            'FILE TRANSFER',
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: AppTheme.accentColor,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'FILE TRANSFER',
+                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                          fontFamily: 'Outfit',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: AppTheme.accentColor,
+                        ),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.refreshCw, color: AppTheme.accentColor, size: 18),
+                        icon: Icon(LucideIcons.refresh_cw, color: AppTheme.accentColor, size: 20),
                         onPressed: _loadFiles,
                       ),
                     ],
@@ -267,302 +278,273 @@ class _FilesScreenState extends State<FilesScreen> {
                 
                 // Slow connection warning banner
                 if (!isLocal)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(LucideIcons.alertTriangle, size: 14, color: AppTheme.accentColor),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Connection is slow. Switch to LAN (50+MB/s)',
-                            style: TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.bold),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                    child: LiquidGlassCard(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      borderRadius: 12,
+                      isFlat: true,
+                      liquidColor: AppTheme.redStatus.withOpacity(0.08),
+                      borderColor: AppTheme.redStatus.withOpacity(0.25),
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.triangle_alert, size: 14, color: AppTheme.redStatus),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connection is slow. Switch to LAN (50+MB/s)',
+                              style: TextStyle(fontSize: 10, color: AppTheme.redStatus, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 
-                // Mode Switch Row
+                // Transfer Mode Swapping Buttons
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _transferMode = 'parallel'),
-                          child: GlassmorphicCard(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            borderRadius: 12,
-                            borderColor: _transferMode == 'parallel' ? AppTheme.accentColor : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(LucideIcons.zap, size: 14, color: _transferMode == 'parallel' ? AppTheme.accentColor : AppTheme.textMuted),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Parallel Mode',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: _transferMode == 'parallel' ? Colors.white : AppTheme.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildTransferModeButton('parallel', LucideIcons.zap, 'Parallel Mode'),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _transferMode = 'inbox'),
-                          child: GlassmorphicCard(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            borderRadius: 12,
-                            borderColor: _transferMode == 'inbox' ? AppTheme.accentColor : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(LucideIcons.inbox, size: 14, color: _transferMode == 'inbox' ? AppTheme.accentColor : AppTheme.textMuted),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Inbox Mode',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: _transferMode == 'inbox' ? Colors.white : AppTheme.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildTransferModeButton('inbox', LucideIcons.inbox, 'Inbox Mode'),
                     ],
                   ),
                 ),
                 
-                // Dropzone card / file upload area
+                // Upload Zone / Progress Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: GestureDetector(
-                    onTap: _pickAndUploadFile,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppTheme.borderColor,
-                          style: BorderStyle.solid,
-                        ),
-                      ),
-                      child: const Column(
-                        children: [
-                          Icon(LucideIcons.uploadCloud, size: 36, color: AppTheme.accentColor),
-                          SizedBox(height: 12),
-                          Text(
-                            'CHOOSE FILES TO SHARE',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Supports large files (5-10 GB+)',
-                            style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Upload Progress Indicator
-                if (_isUploading)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: GlassmorphicCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: LiquidGlassCard(
+                    isFlat: false,
+                    child: _isUploading
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  _uploadProgressName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              Text(
+                                'SHARING FILE...',
+                                style: TextStyle(fontFamily: 'Outfit', fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentColor),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _uploadProgressName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                              ),
+                              const SizedBox(height: 12),
+                              // Linear progress indicator
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: LinearProgressIndicator(
+                                  value: _uploadProgress,
+                                  minHeight: 6,
+                                  backgroundColor: Colors.white.withOpacity(0.1),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
                                 ),
                               ),
-                              Text(
-                                '${(_uploadProgress * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 12),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _uploadSpeed,
+                                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                  ),
+                                  Text(
+                                    _uploadEta,
+                                    style: TextStyle(fontSize: 10, color: AppTheme.accentColor, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ),
                             ],
+                          )
+                        : GestureDetector(
+                            onTap: _pickAndUploadFile,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.01),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppTheme.borderColor,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(LucideIcons.cloud_upload, size: 36, color: AppTheme.accentColor),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'CHOOSE FILES TO SHARE',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMain, letterSpacing: 0.5),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Supports large files (5-10 GB+)',
+                                    style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          LinearProgressIndicator(
-                            value: _uploadProgress,
-                            backgroundColor: Colors.white12,
-                            color: AppTheme.accentColor,
-                            minHeight: 4,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_uploadSpeed, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-                              Text(_uploadEta, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                
-                // File List Header Label
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Text(
-                    'DISCOVERED SHARED FILES (${_files.length})',
-                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textMuted, letterSpacing: 0.5),
                   ),
                 ),
                 
-                // Files List view
+                // Shared Files List
                 Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppTheme.accentColor))
-                      : _files.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No files shared this session.\nUpload a file above to start!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: _files.length,
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              itemBuilder: (context, index) {
-                                final file = _files[index];
-                                final isDownloaded = _downloadedFileNames.contains(file.name);
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12.0),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.02),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isDownloaded
-                                            ? const Color(0xFF00C853).withOpacity(0.4)
-                                            : AppTheme.borderColor,
-                                      ),
-                                      boxShadow: isDownloaded
-                                          ? [
-                                              BoxShadow(
-                                                color: const Color(0xFF00C853).withOpacity(0.05),
-                                                blurRadius: 8,
-                                              )
-                                            ]
-                                          : null,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: _isLoading
+                        ? Center(
+                            child: CircularProgressIndicator(color: AppTheme.accentColor),
+                          )
+                        : _files.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(LucideIcons.inbox, size: 40, color: AppTheme.textMuted),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No shared files in this session',
+                                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        // File Icon Info
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      file.name,
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.white,
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.only(bottom: 100), // padding to clear bottom navigation bar
+                                itemCount: _files.length,
+                                itemBuilder: (context, index) {
+                                  final file = _files[index];
+                                  final isDownloaded = _downloadedFileNames.contains(file.name);
+                                  
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12.0),
+                                    child: LiquidGlassCard(
+                                      isFlat: false,
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      child: Row(
+                                        children: [
+                                          Icon(LucideIcons.folder_up, color: AppTheme.accentColor, size: 24),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        file.name,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: AppTheme.textMain,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  if (isDownloaded) ...[
-                                                    const SizedBox(width: 6),
-                                                    const Icon(LucideIcons.checkCircle2, color: Color(0xFF00C853), size: 14),
+                                                    if (isDownloaded) ...[
+                                                      const SizedBox(width: 6),
+                                                      const Icon(LucideIcons.circle_check, color: Color(0xFF00C853), size: 14),
+                                                    ],
                                                   ],
-                                                ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  _formatBytes(file.size),
+                                                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          
+                                          // Download & Trash actions
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () => _downloadFile(file),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: isDownloaded ? const Color(0x2600C853) : AppTheme.accentColor,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(
+                                                    isDownloaded ? LucideIcons.check : LucideIcons.download,
+                                                    size: 14,
+                                                    color: isDownloaded ? const Color(0xFF00C853) : Colors.white,
+                                                  ),
+                                                ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                _formatBytes(file.size),
-                                                style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                              const SizedBox(width: 8),
+                                              GestureDetector(
+                                                onTap: () => _deleteFile(file),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.redStatus.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: AppTheme.redStatus.withOpacity(0.2)),
+                                                  ),
+                                                  child: const Icon(
+                                                    LucideIcons.trash_2,
+                                                    size: 14,
+                                                    color: AppTheme.redStatus,
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        // Actions Row: Download & Trash
-                                        Row(
-                                          children: [
-                                            // Download
-                                            GestureDetector(
-                                              onTap: () => _downloadFile(file),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: isDownloaded ? const Color(0x2600C853) : AppTheme.accentColor,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Icon(
-                                                  isDownloaded ? LucideIcons.check : LucideIcons.download,
-                                                  size: 14,
-                                                  color: isDownloaded ? const Color(0xFF00C853) : Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            // Delete
-                                            GestureDetector(
-                                              onTap: () => _deleteFile(file),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: AppTheme.redStatus.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: Border.all(color: AppTheme.redStatus.withOpacity(0.2)),
-                                                ),
-                                                child: const Icon(
-                                                  LucideIcons.trash2,
-                                                  size: 14,
-                                                  color: AppTheme.redStatus,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
+                                  );
+                                },
+                              ),
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTransferModeButton(String modeValue, IconData icon, String label) {
+    final isSelected = _transferMode == modeValue;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _triggerHaptic();
+          setState(() => _transferMode = modeValue);
+        },
+        child: LiquidGlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          borderRadius: 12,
+          borderColor: isSelected ? AppTheme.accentColor : null,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: isSelected ? AppTheme.accentColor : AppTheme.textMuted),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? AppTheme.textMain : AppTheme.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -15,6 +15,7 @@ class ConnectionService extends ChangeNotifier {
   bool _isConnecting = false;
   String? _tunnelUrl;
   String? _lanIp;
+  List<Map<String, String>> _devices = [];
 
   String? get serverUrl => _serverUrl;
   String? get sessionId => _sessionId;
@@ -22,6 +23,7 @@ class ConnectionService extends ChangeNotifier {
   bool get isConnecting => _isConnecting;
   String? get tunnelUrl => _tunnelUrl;
   String? get lanIp => _lanIp;
+  List<Map<String, String>> get devices => _devices;
 
   bool get isLocalConnection {
     if (_serverUrl == null) return false;
@@ -39,6 +41,16 @@ class ConnectionService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _serverUrl = prefs.getString(AppConstants.keyServerUrl);
     _sessionId = prefs.getString(AppConstants.keySessionId);
+    
+    final String? devicesJson = prefs.getString('devices_list');
+    if (devicesJson != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(devicesJson);
+        _devices = decoded.map((item) => Map<String, String>.from(item)).toList();
+      } catch (e) {
+        debugPrint('Failed to load devices list: $e');
+      }
+    }
     
     if (_serverUrl != null && _sessionId != null) {
       // Try to auto-connect / verify
@@ -77,6 +89,29 @@ class ConnectionService extends ChangeNotifier {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(AppConstants.keyServerUrl, targetUrl);
           await prefs.setString(AppConstants.keySessionId, sid);
+          
+          // Automatically register device in the list
+          String name = 'Device ${_devices.length + 1}';
+          final parsedUri = Uri.tryParse(targetUrl);
+          if (parsedUri != null) {
+            name = parsedUri.host;
+            if (name == '127.0.0.1' || name == 'localhost') {
+              name = 'Local Laptop';
+            } else if (name.startsWith('192.168.')) {
+              name = 'Laptop (${name.split('.').last})';
+            }
+          }
+          final existingIndex = _devices.indexWhere((d) => d['url'] == targetUrl);
+          if (existingIndex != -1) {
+            _devices[existingIndex]['sid'] = sid;
+          } else {
+            _devices.add({
+              'url': targetUrl,
+              'sid': sid,
+              'name': name,
+            });
+          }
+          await prefs.setString('devices_list', jsonEncode(_devices));
           
           _isConnecting = false;
           notifyListeners();
@@ -151,5 +186,33 @@ class ConnectionService extends ChangeNotifier {
       return await connect(targetUrl, _sessionId!);
     }
     return false;
+  }
+
+  Future<bool> selectDevice(int index) async {
+    if (index < 0 || index >= _devices.length) return false;
+    final device = _devices[index];
+    final url = device['url']!;
+    final sid = device['sid']!;
+    return await connect(url, sid);
+  }
+
+  Future<void> removeDevice(int index) async {
+    if (index < 0 || index >= _devices.length) return;
+    final device = _devices[index];
+    final isActive = _serverUrl == device['url'];
+    
+    _devices.removeAt(index);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('devices_list', jsonEncode(_devices));
+    
+    if (isActive) {
+      if (_devices.isNotEmpty) {
+        await selectDevice(0);
+      } else {
+        await disconnect();
+      }
+    } else {
+      notifyListeners();
+    }
   }
 }

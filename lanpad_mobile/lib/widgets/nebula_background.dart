@@ -23,7 +23,7 @@ class _NebulaBackgroundState extends State<NebulaBackground>
       duration: const Duration(seconds: 40),
     )..repeat();
 
-    // Generate random stars
+    // Generate random stars for dark mode
     for (int i = 0; i < 60; i++) {
       _stars.add(
         Star(
@@ -48,11 +48,14 @@ class _NebulaBackgroundState extends State<NebulaBackground>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
+        final isDark = AppTheme.isDark;
+
         return Stack(
           children: [
-            // Base black
-            Container(color: Colors.black),
-            // Nebula 1 (Glowing Blue)
+            // Base Background Color
+            Container(color: AppTheme.bgColor),
+            
+            // Nebula 1 (Glowing Theme Accent)
             Positioned(
               top: -150 + sin(_controller.value * 2 * pi) * 50,
               left: -150 + cos(_controller.value * 2 * pi) * 50,
@@ -63,14 +66,15 @@ class _NebulaBackgroundState extends State<NebulaBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.accentColor.withOpacity(0.18),
+                      AppTheme.accentColor.withOpacity(isDark ? 0.18 : 0.12),
                       Colors.transparent,
                     ],
                   ),
                 ),
               ),
             ),
-            // Nebula 2 (Glowing Indigo)
+            
+            // Nebula 2 (Glowing Indigo/Sky)
             Positioned(
               bottom: -100 + cos(_controller.value * 2 * pi + 1) * 60,
               right: -100 + sin(_controller.value * 2 * pi + 1) * 60,
@@ -81,21 +85,25 @@ class _NebulaBackgroundState extends State<NebulaBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0x26C7EEFF), // rgba(199, 238, 255, 0.15)
+                      (isDark 
+                          ? const Color(0x26C7EEFF) 
+                          : AppTheme.accentColor.withOpacity(0.08)),
                       Colors.transparent,
                     ],
                   ),
                 ),
               ),
             ),
-            // Stars Particle Field
-            CustomPaint(
-              painter: StarsPainter(
-                stars: _stars,
-                progress: _controller.value,
+            
+            // Stars Particle Field (Only drawn in Dark mode)
+            if (isDark)
+              CustomPaint(
+                painter: StarsPainter(
+                  stars: _stars,
+                  progress: _controller.value,
+                ),
+                size: Size.infinite,
               ),
-              size: Size.infinite,
-            ),
           ],
         );
       },
@@ -130,7 +138,6 @@ class StarsPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
     
     for (var star in stars) {
-      // Calculate drifting positions
       double currentY = star.y - (progress * star.speed);
       if (currentY < 0) {
         currentY += 1.0;

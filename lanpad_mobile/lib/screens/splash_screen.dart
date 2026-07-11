@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/nebula_background.dart';
+import '../widgets/app_logo.dart';
 import '../services/connection_service.dart';
 import '../config/theme.dart';
+import 'main_navigation_screen.dart';
+import 'connect_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,21 +19,27 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
+  
+  // Staggered letters fade animation controllers
+  final List<double> _letterOpacityStops = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+  final String _logoText = "LANPAD";
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     );
+    
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
-    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+    
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
@@ -37,22 +47,67 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-
+    _animateLetters();
     _navigateToNext();
   }
 
+  void _animateLetters() async {
+    for (int i = 0; i < _logoText.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        setState(() {
+          _letterOpacityStops[i] = 1.0;
+        });
+      }
+    }
+  }
+
   Future<void> _navigateToNext() async {
+    // 1. Load preferences early before displaying dashboard
+    final prefs = await SharedPreferences.getInstance();
+    final hexColor = prefs.getInt('accent_color');
+    if (hexColor != null) {
+      AppTheme.accentColorNotifier.value = Color(hexColor);
+    }
+    final themeModeVal = prefs.getInt('theme_mode');
+    if (themeModeVal != null) {
+      AppTheme.themeModeNotifier.value = themeModeVal == 1 ? ThemeMode.dark : ThemeMode.light;
+    }
+    final hapticVal = prefs.getString('haptic_level');
+    if (hapticVal != null) {
+      AppTheme.hapticLevelNotifier.value = hapticVal;
+    }
+
     final connectionService = ConnectionService();
     await connectionService.init();
 
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 2200));
     
     if (mounted) {
-      if (connectionService.isConnected) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        Navigator.of(context).pushReplacementNamed('/connect');
-      }
+      // Choose target screen
+      final Widget targetScreen = connectionService.isConnected 
+          ? const MainNavigationScreen() 
+          : const ConnectScreen();
+
+      // Custom Zoom reveal transition
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final scaleCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic);
+            final fadeCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+            
+            return FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(fadeCurve),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 1.15, end: 1.0).animate(scaleCurve),
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
+      );
     }
   }
 
@@ -68,6 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         children: [
           const NebulaBackground(),
+          
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -79,48 +135,35 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Glass Logo Container
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.5),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                        // App Logo Widget
+                        const AppLogo(size: 90, animate: true),
+                        const SizedBox(height: 24),
+                        
+                        // Staggered letters row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(_logoText.length, (index) {
+                            return AnimatedOpacity(
+                              duration: const Duration(milliseconds: 400),
+                              opacity: _letterOpacityStops[index],
+                              child: Text(
+                                _logoText[index],
+                                style: const TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 6.0,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.white24,
+                                      blurRadius: 15,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.bolt,
-                              size: 40,
-                              color: AppTheme.accentColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'LANPAD',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 6.0,
-                            color: AppTheme.textMain,
-                            shadows: [
-                              Shadow(
-                                color: Colors.white24,
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
+                            );
+                          }),
                         ),
                       ],
                     ),

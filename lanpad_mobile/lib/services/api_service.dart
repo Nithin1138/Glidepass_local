@@ -259,10 +259,22 @@ class ApiService {
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
     final encodedFilename = Uri.encodeComponent(filename);
+    final fileLength = await file.length();
+
+    // 1. Call preallocate endpoint to set file size and open file descriptor on server
+    final preallocateUrl = '$baseUrl/api/files/preallocate?filename=$encodedFilename&size=$fileLength&mode=$mode&sid=$sid';
+    try {
+      final preResp = await http.post(Uri.parse(preallocateUrl));
+      if (preResp.statusCode != 200) {
+        throw Exception('Preallocation failed: Status ${preResp.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Preallocation request failed: $e');
+    }
+
     final url = '$baseUrl/api/files/upload_direct?filename=$encodedFilename&offset=0&mode=$mode&sid=$sid';
 
     final request = http.StreamedRequest('POST', Uri.parse(url));
-    final fileLength = await file.length();
     request.headers['Content-Type'] = 'application/octet-stream';
     request.headers['Content-Length'] = fileLength.toString();
 

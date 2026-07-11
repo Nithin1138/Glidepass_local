@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../services/connection_service.dart';
 import '../config/theme.dart';
-import 'glassmorphic_card.dart';
+import 'liquid_glass_card.dart';
 
 class ConnectionPill extends StatelessWidget {
   const ConnectionPill({super.key});
@@ -26,9 +26,10 @@ class ConnectionPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Status Pill
-            GlassmorphicCard(
+            LiquidGlassCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
               borderRadius: 20,
+              isFlat: true,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -58,7 +59,7 @@ class ConnectionPill extends StatelessWidget {
                   ),
                   Text(
                     connectionText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       color: AppTheme.textMain,
                       fontWeight: FontWeight.bold,
@@ -87,11 +88,12 @@ class ConnectionPill extends StatelessWidget {
                     );
                   }
                 },
-                child: GlassmorphicCard(
+                child: LiquidGlassCard(
                   padding: const EdgeInsets.all(8),
                   borderRadius: 12,
-                  child: const Icon(
-                    LucideIcons.refreshCw,
+                  isFlat: true,
+                  child: Icon(
+                    LucideIcons.refresh_cw,
                     size: 16,
                     color: AppTheme.textMain,
                   ),

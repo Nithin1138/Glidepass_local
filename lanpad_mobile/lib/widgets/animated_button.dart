@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../config/theme.dart';
 
 class AnimatedButton extends StatefulWidget {
   final Widget child;
@@ -45,8 +47,18 @@ class _AnimatedButtonState extends State<AnimatedButton>
     super.dispose();
   }
 
+  void _triggerHaptic() {
+    final haptic = AppTheme.hapticLevelNotifier.value;
+    if (haptic == 'light') {
+      HapticFeedback.lightImpact();
+    } else if (haptic == 'medium') {
+      HapticFeedback.mediumImpact();
+    }
+  }
+
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
+    _triggerHaptic();
   }
 
   void _onTapUp(TapUpDetails details) {

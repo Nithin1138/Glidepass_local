@@ -1818,6 +1818,28 @@ def save_deleted_file(filename: str, size: int):
         pass
 
 
+def remove_deleted_file(filename: str):
+    """Removes a file from the deleted_files list in .metadata.json when it is re-uploaded/re-created."""
+    try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        if os.path.exists(meta_path):
+            data = {}
+            try:
+                with open(meta_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+            
+            if "deleted_files" in data and isinstance(data["deleted_files"], list):
+                # Filter out the file from deleted_files
+                data["deleted_files"] = [x for x in data["deleted_files"] if isinstance(x, dict) and x.get("name") != filename]
+                with open(meta_path, "w") as f:
+                    json.dump(data, f)
+    except Exception:
+        pass
+
+
 def save_file_duration(filename: str, duration: float):
     """Saves file transfer duration to .metadata.json inside the LANpad shared directory."""
     try:
@@ -1859,23 +1881,27 @@ async def list_files(sid: str = None):
                 pass
 
         files = []
-        deleted_files = set()
+        deleted_files = {}
         if isinstance(durations.get("deleted_files"), list):
             for entry in durations["deleted_files"]:
                 if isinstance(entry, dict) and "name" in entry:
-                    deleted_files.add(entry["name"])
+                    deleted_files[entry["name"]] = entry.get("deleted_at", 0.0)
 
         # 1. Main Shared Directory Files
         if os.path.exists(SHARED_DIR):
             for name in os.listdir(SHARED_DIR):
                 full_path = os.path.join(SHARED_DIR, name)
                 if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
-                    if name in deleted_files:
-                        continue
                     stat = os.stat(full_path)
-                    # Only show files created/modified in this session
-                    if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
-                        continue
+                    if name in deleted_files:
+                        if stat.st_mtime * 1000 > deleted_files[name]:
+                            remove_deleted_file(name)
+                        else:
+                            continue
+                    # Only show files created/modified in this session (always show APKs)
+                    if not name.endswith(".apk"):
+                        if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
+                            continue
                     files.append({
                         "name": name,
                         "size": stat.st_size,
@@ -1888,12 +1914,16 @@ async def list_files(sid: str = None):
             for name in os.listdir(INBOX_DIR):
                 full_path = os.path.join(INBOX_DIR, name)
                 if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
-                    if name in deleted_files:
-                        continue
                     stat = os.stat(full_path)
-                    # Only show files created/modified in this session
-                    if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
-                        continue
+                    if name in deleted_files:
+                        if stat.st_mtime * 1000 > deleted_files[name]:
+                            remove_deleted_file(name)
+                        else:
+                            continue
+                    # Only show files created/modified in this session (always show APKs)
+                    if not name.endswith(".apk"):
+                        if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
+                            continue
                     files.append({
                         "name": name,
                         "size": stat.st_size,
@@ -2096,7 +2126,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
             allowed, err = check_feature_usage("allow_file_share", "File Sharing")
             if not allowed:
                 return {"status": "error", "message": err}
-            fd = os.open(part_path, os.O_WRONLY)
+            fd = os.open(part_path, os.O_WRONLY | os.O_CREAT)
             try:
                 body = await request.body()
                 await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))

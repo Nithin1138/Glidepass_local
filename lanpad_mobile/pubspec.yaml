@@ -38,13 +38,12 @@ dependencies:
   web_socket_channel: ^3.0.3
   shared_preferences: ^2.5.5
   mobile_scanner: ^7.2.0
-  file_picker: ^11.0.2
+  file_picker: ^10.3.10
   path_provider: ^2.1.6
   url_launcher: ^6.3.2
   permission_handler: ^12.0.3
   google_fonts: ^8.1.0
-  lucide_icons: ^0.257.0
-
+  flutter_lucide: ^1.11.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -66,6 +65,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/logo.png
+    - assets/logo_dark_theme.png
+    - assets/logo_final_square.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

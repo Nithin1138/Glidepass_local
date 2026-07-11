@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/connection_service.dart';
 import '../widgets/nebula_background.dart';
-import '../widgets/glassmorphic_card.dart';
+import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
+import '../widgets/app_logo.dart';
 import '../config/theme.dart';
+import 'main_navigation_screen.dart';
 
 class ConnectScreen extends StatefulWidget {
-  const ConnectScreen({super.key});
+  final bool isAddingDevice;
+  const ConnectScreen({super.key, this.isAddingDevice = false});
 
   @override
   State<ConnectScreen> createState() => _ConnectScreenState();
@@ -20,8 +25,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
   final _sidController = TextEditingController();
   bool _isScanning = false;
   bool _isLoading = false;
+  int _connectionTab = 0; // 0 for Scan QR, 1 for Manual Entry
 
   Future<void> _startQRScan() async {
+    _triggerHaptic();
     final status = await Permission.camera.request();
     if (status.isGranted) {
       setState(() {
@@ -30,13 +37,25 @@ class _ConnectScreenState extends State<ConnectScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Camera permission required to scan pairing QR code'),
+          SnackBar(
+            content: const Text(
+              'Camera permission required to scan pairing QR code',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             backgroundColor: AppTheme.redStatus,
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+    }
+  }
+
+  void _triggerHaptic() {
+    final haptic = AppTheme.hapticLevelNotifier.value;
+    if (haptic == 'light') {
+      HapticFeedback.lightImpact();
+    } else if (haptic == 'medium') {
+      HapticFeedback.mediumImpact();
     }
   }
 
@@ -84,7 +103,29 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
     if (success) {
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        if (widget.isAddingDevice) {
+          Navigator.of(context).pop(true);
+          return;
+        }
+        // Custom Zoom reveal transition to Home Shell
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const MainNavigationScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              final scaleCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic);
+              final fadeCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+              
+              return FadeTransition(
+                opacity: Tween<double>(begin: 0.0, end: 1.0).animate(fadeCurve),
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 1.15, end: 1.0).animate(scaleCurve),
+                  child: child,
+                ),
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
       }
     } else {
       _showToast('Failed to connect. Check URL/Network.', isError: true);
@@ -95,7 +136,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: isError ? AppTheme.redStatus : AppTheme.accentColor,
         behavior: SnackBarBehavior.floating,
       ),
@@ -111,6 +152,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark;
+    
     if (_isScanning) {
       return Scaffold(
         body: Stack(
@@ -164,6 +207,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
       body: Stack(
         children: [
           const NebulaBackground(),
+          
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
@@ -172,28 +216,19 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
-                    // Logo Stack
+                    const SizedBox(height: 30),
+                    
+                    // Logo Header
                     Center(
                       child: Column(
                         children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: AppTheme.cardBg,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.borderColor),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.bolt, size: 30, color: AppTheme.accentColor),
-                            ),
-                          ),
+                          const AppLogo(size: 80, animate: true),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'LANPAD',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontFamily: 'Outfit',
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 4.0,
                               color: AppTheme.textMain,
@@ -202,143 +237,241 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    const Text(
-                      'Connect to Laptop',
+                    const SizedBox(height: 28),
+                    
+                    Text(
+                      'Pair with Laptop',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Outfit',
-                        fontSize: 26,
+                        fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppTheme.textMain,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Scan the QR code displayed on the LANpad desktop app, or enter pairing details manually.',
+                    const SizedBox(height: 6),
+                    Text(
+                      'Scan the pairing QR code or enter credentials.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.textMuted,
-                        height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    // QR Scan Trigger Button
-                    AnimatedButton(
-                      onTap: _startQRScan,
+                    const SizedBox(height: 28),
+
+                    // Tab bar selector
+                    Container(
+                      height: 46,
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.accentColor, Color(0xFF009BF5)],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.qr_code_scanner, color: Colors.white),
-                          SizedBox(width: 10),
-                          Text(
-                            'SCAN PAIRING QR CODE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Row(
-                      children: [
-                        Expanded(child: Divider(color: AppTheme.borderColor)),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
-                          child: Text('OR MANUAL ENTRY'),
-                        ),
-                        Expanded(child: Divider(color: AppTheme.borderColor)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Manual entry fields
-                    GlassmorphicCard(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          TextFormField(
-                            controller: _urlController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: InputDecoration(
-                              labelText: 'Laptop Address / URL',
-                              labelStyle: const TextStyle(color: AppTheme.textMuted),
-                              hintText: 'e.g. 192.168.0.106:8000',
-                              hintStyle: const TextStyle(color: Colors.white24),
-                              prefixIcon: const Icon(Icons.laptop, color: AppTheme.textMuted),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppTheme.borderColor),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppTheme.borderColor),
-                              ),
-                            ),
-                            validator: (val) => val == null || val.isEmpty ? 'URL required' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _sidController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: InputDecoration(
-                              labelText: 'Session Token (sid)',
-                              labelStyle: const TextStyle(color: AppTheme.textMuted),
-                              prefixIcon: const Icon(Icons.key, color: AppTheme.textMuted),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppTheme.borderColor),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppTheme.borderColor),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Connect manual button
-                    AnimatedButton(
-                      onTap: _isLoading
-                          ? () {}
-                          : () {
-                              if (_formKey.currentState!.validate()) {
-                                _submitConnection(_urlController.text, _sidController.text);
-                              }
-                            },
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.06),
+                        color: AppTheme.cardBg,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: AppTheme.borderColor),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text(
-                              'CONNECT MANUALLY',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                _triggerHaptic();
+                                setState(() => _connectionTab = 0);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _connectionTab == 0
+                                      ? AppTheme.accentColor
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'SCAN QR CODE',
+                                    style: TextStyle(
+                                      color: _connectionTab == 0 ? Colors.white : AppTheme.textMuted,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                _triggerHaptic();
+                                setState(() => _connectionTab = 1);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _connectionTab == 1
+                                      ? AppTheme.accentColor
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'MANUAL ENTRY',
+                                    style: TextStyle(
+                                      color: _connectionTab == 1 ? Colors.white : AppTheme.textMuted,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 28),
+
+                    if (_connectionTab == 0) ...[
+                      // Scan QR Code layout
+                      LiquidGlassCard(
+                        isFlat: false,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 12),
+                            Icon(LucideIcons.scan_line, size: 48, color: AppTheme.accentColor),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Quick Pair Scanner',
+                              style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textMain),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Open LANpad on your computer, click the pairing QR code, and align it inside the mobile camera view.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4),
+                            ),
+                            const SizedBox(height: 24),
+                            AnimatedButton(
+                              onTap: _startQRScan,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [AppTheme.accentColor, AppTheme.accentColor.withOpacity(0.8)],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentColor.withOpacity(0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(LucideIcons.camera, color: Colors.white, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'OPEN CAMERA SCANNER',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // Manual entry layout
+                      LiquidGlassCard(
+                        isFlat: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: _urlController,
+                              style: TextStyle(color: AppTheme.textMain, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Laptop Address / URL',
+                                labelStyle: TextStyle(color: AppTheme.textMuted),
+                                hintText: 'e.g. 192.168.0.106:8000',
+                                hintStyle: TextStyle(color: AppTheme.textMuted.withOpacity(0.4)),
+                                prefixIcon: Icon(LucideIcons.laptop, color: AppTheme.accentColor, size: 20),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.borderColor),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.accentColor, width: 1.5),
+                                ),
+                              ),
+                              validator: (val) => val == null || val.isEmpty ? 'URL required' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _sidController,
+                              style: TextStyle(color: AppTheme.textMain, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Session Token (sid)',
+                                labelStyle: TextStyle(color: AppTheme.textMuted),
+                                prefixIcon: Icon(LucideIcons.key, color: AppTheme.accentColor, size: 20),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.borderColor),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: AppTheme.accentColor, width: 1.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AnimatedButton(
+                        onTap: _isLoading
+                            ? () {}
+                            : () {
+                                _triggerHaptic();
+                                if (_formKey.currentState!.validate()) {
+                                  _submitConnection(_urlController.text, _sidController.text);
+                                }
+                              },
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.borderColor),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(
+                                'CONNECT MANUALLY',
+                                style: TextStyle(
+                                  color: AppTheme.textMain,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                      ),
+                    ],
                   ],
                 ),
               ),
