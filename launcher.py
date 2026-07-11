@@ -2059,6 +2059,8 @@ class LANpadLauncher:
                     except Exception:
                         pass
 
+                # Always define inbox_path so it's available in all branches
+                inbox_path = os.path.join(shared_path, ".inbox")
                 files_list = []
                 if show_deleted_mode[0]:
                     # Render deleted files from this session only
@@ -2071,7 +2073,6 @@ class LANpadLauncher:
                             if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(shared_path, f)):
                                 files_list.append((f, False, os.path.getsize(os.path.join(shared_path, f)), None))
                     # Inbox folder files
-                    inbox_path = os.path.join(shared_path, ".inbox")
                     if os.path.exists(inbox_path):
                         for f in sorted(os.listdir(inbox_path)):
                             if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(inbox_path, f)):
@@ -2130,12 +2131,15 @@ class LANpadLauncher:
 
                         if show_deleted_mode[0]:
                             border_color = "#3B1C1C"
+                            card_bg = "#0D0500"
                         elif is_inbox_file:
-                            border_color = "#0077C0" # Inbox items get a highlighted blue border
+                            border_color = "#0077C0"
+                            card_bg = self.BG2
                         else:
                             border_color = "#00C853" if show_tick else "#1A1A1F"
+                            card_bg = self.BG2
                         
-                        card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
+                        card = tk.Frame(scrollable_frame, bg=card_bg, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
                         card.pack(fill="x", pady=(0, 8))
                         
                         # Double click card to open (only if it's already in main shared folder and not deleted mode)
@@ -2162,32 +2166,32 @@ class LANpadLauncher:
                         if not is_inbox_file and not show_deleted_mode[0]:
                             card.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
-                        text_col = tk.Frame(card, bg=self.BG2)
+                        text_col = tk.Frame(card, bg=card_bg)
                         text_col.pack(side="left", fill="both", expand=True)
                         
                         # Name row with optional check icon
-                        name_frame = tk.Frame(text_col, bg=self.BG2)
+                        name_frame = tk.Frame(text_col, bg=card_bg)
                         name_frame.pack(fill="x")
                         
-                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE if not show_deleted_mode[0] else self.DIM, bg=self.BG2, anchor="w")
+                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE if not show_deleted_mode[0] else self.DIM, bg=card_bg, anchor="w")
                         name_lbl.pack(side="left")
                         if not is_inbox_file and not show_deleted_mode[0]:
                             name_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         if show_tick and not is_inbox_file and not show_deleted_mode[0]:
-                            check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=self.BG2)
+                            check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=card_bg)
                             check_lbl.pack(side="left", padx=(4, 0))
                         
-                        size_lbl = tk.Label(text_col, text=size_str, font=(self.FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
+                        size_lbl = tk.Label(text_col, text=size_str, font=(self.FU, 8), fg=self.DIM, bg=card_bg, anchor="w")
                         size_lbl.pack(fill="x")
                         if not is_inbox_file and not show_deleted_mode[0]:
                             size_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
-                        btn_col = tk.Frame(card, bg=self.BG2)
+                        btn_col = tk.Frame(card, bg=card_bg)
                         btn_col.pack(side="right", fill="y")
                         
                         if show_deleted_mode[0]:
-                            lbl = tk.Label(btn_col, text="Removed", font=(self.FU, 8, "bold"), fg="#FF4D4D", bg=self.BG2, padx=10, pady=4)
+                            lbl = tk.Label(btn_col, text="Removed", font=(self.FU, 8, "bold"), fg="#FF4D4D", bg=card_bg, padx=10, pady=4)
                             lbl.pack(side="left")
                         else:
                             if is_inbox_file:
