@@ -668,19 +668,47 @@ class LANpadLauncher:
         self._ip_cv.config(cursor="hand2")
         self._draw_ip(False)
 
+        # ── Session Token Label ──────────────────────────────────────────────
+        self._sid_lbl = tk.Label(v, text="Session Token: Off", font=(self.FU, 8, "bold"), bg=self.BG, fg=self.DIM, cursor="hand2")
+        self._sid_lbl.place(x=0, y=536 + yo * 2.2, relwidth=1, anchor="nw")
+        
+        def update_sid_display():
+            try:
+                from app import SESSION_TOKEN
+            except ImportError:
+                SESSION_TOKEN = None
+            if self._server_on and SESSION_TOKEN:
+                self._sid_lbl.config(text=f"Session Token: {SESSION_TOKEN}  (Click to Copy)", fg="#0077C0")
+            else:
+                self._sid_lbl.config(text="Session Token: Off", fg=self.DIM)
+                
+        def copy_sid_to_clipboard(e=None):
+            try:
+                from app import SESSION_TOKEN
+            except ImportError:
+                SESSION_TOKEN = None
+            if SESSION_TOKEN and self._server_on:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(SESSION_TOKEN)
+                self._sid_lbl.config(text="Token Copied to Clipboard!", fg="#00C853")
+                self.root.after(1200, update_sid_display)
+                
+        self._sid_lbl.bind("<Button-1>", copy_sid_to_clipboard)
+        self._update_sid_display = update_sid_display
+
         # ── Info row (Port / Protocol / State) ───────────────────────────────
         cw = (W - 48 - 12) // 3
-        info_y = 542 + yo * 2.5
+        info_y = 554 + yo * 2.5
         info_specs = [("Port", "8000"), ("Protocol", "HTTP"), ("State", "Off")]
         self._info_cards = {}
         for i, (lbl, default) in enumerate(info_specs):
-            cv = tk.Canvas(v, width=cw, height=70, bg=self.BG, highlightthickness=0)
+            cv = tk.Canvas(v, width=cw, height=64, bg=self.BG, highlightthickness=0)
             cv.place(x=24 + i * (cw + 6), y=info_y)
-            rounded_rect(cv, 0, 0, cw, 70, r=12, fill=self.BG2, outline=self.BORDER)
-            cv.create_text(cw // 2, 20, text=lbl.upper(),
-                           font=(self.FU, 9, "bold"), fill=self.DIM)
-            tid = cv.create_text(cw // 2, 48, text=default,
-                                 font=(self.FM, 16, "bold"), fill=self.DIM)
+            rounded_rect(cv, 0, 0, cw, 64, r=12, fill=self.BG2, outline=self.BORDER)
+            cv.create_text(cw // 2, 18, text=lbl.upper(),
+                           font=(self.FU, 8, "bold"), fill=self.DIM)
+            tid = cv.create_text(cw // 2, 44, text=default,
+                                 font=(self.FM, 14, "bold"), fill=self.DIM)
             self._info_cards[lbl] = (cv, tid)
 
         # ── Action button ────────────────────────────────────────────────────
@@ -783,6 +811,8 @@ class LANpadLauncher:
         self.root.after(1000, self._poll_tunnel)
 
     def _update_display(self):
+        if hasattr(self, "_update_sid_display"):
+            self._update_sid_display()
         if not self._server_on:
             self._ip_text = "http://0.0.0.0:8000"
             self._draw_ip(False)
