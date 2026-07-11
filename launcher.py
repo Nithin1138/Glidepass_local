@@ -2207,6 +2207,7 @@ class LANpadLauncher:
                             # Delete button
                             def make_delete_handler(fname, is_inb):
                                 def handler(e=None):
+                                    import time
                                     if messagebox.askyesno("Delete File", f"Are you sure you want to delete {fname}?"):
                                         try:
                                             p = os.path.join(shared_path, ".inbox" if is_inb else "", fname)
@@ -2223,7 +2224,6 @@ class LANpadLauncher:
                                                 
                                                 # Log in .metadata.json
                                                 try:
-                                                    import time
                                                     m_path = os.path.join(shared_path, ".metadata.json")
                                                     m_data = {}
                                                     if os.path.exists(m_path):
