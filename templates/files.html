@@ -454,7 +454,7 @@
         // --- Smart LAN Direct WiFi Switcher ---
         const lanIp = "{{LAN_IP}}";
         const currentHost = window.location.hostname;
-        if (lanIp && currentHost !== lanIp && currentHost !== '127.0.0.1' && currentHost !== 'localhost') {
+        if (lanIp && currentHost !== lanIp) {
             const banner = document.getElementById('lan-banner');
             if (banner) {
                 banner.style.display = 'flex';
