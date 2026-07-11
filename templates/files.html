@@ -733,16 +733,15 @@
         // offsets via os.pwrite(). No temp files or merge step needed.
         async function uploadViaHttpChunks(file, totalMB) {
             // Scale chunk sizes up for larger files to sustain high-speed streaming.
-            // Under HTTP/1.1, mobile browsers limit concurrency to 6 connections per host.
-            // Larger chunks keep these 6 pipelines fully saturated without connection setup overhead.
+            // Under HTTP/1.1, modern mobile browsers support up to 8 concurrent connections.
+            // Capping chunk size at 16MB prevents GC thrashing on mobile browsers while maximizing throughput.
             let chunkSize = 4 * 1024 * 1024; // 4MB default for small files
             if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;   // 8MB for files > 50MB
-            if (file.size > 200 * 1024 * 1024) chunkSize = 16 * 1024 * 1024; // 16MB for files > 200MB
-            if (file.size > 500 * 1024 * 1024) chunkSize = 32 * 1024 * 1024; // 32MB for files > 500MB
+            if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024; // 16MB max chunk size
             if (file.size < chunkSize) chunkSize = file.size || 1;
 
             const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
-            const CONCURRENCY = 6; // Match browser connection pool limit exactly to avoid queuing latency
+            const CONCURRENCY = 8; // Maximize parallel streams to saturate 5GHz bandwidth without overloading browser queue
 
             try {
                 const preRes = await fetch(
