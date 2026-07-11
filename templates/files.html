@@ -1028,22 +1028,17 @@
                                 isFirstChunkMeasured = true;
                                 const duration = (Date.now() - chunkStartTime) / 1000;
                                 const speedMbps = (sliceSize * 8) / (duration * 1000 * 1000);
-                                if (speedMbps < 2) {
-                                    // Extremely slow connection
-                                    chunkSize = 256 * 1024; // 256 KB
-                                    concurrency = 1;
-                                } else if (speedMbps < 8) {
+                                if (speedMbps < 8) {
                                     // Slow Wifi Router (0.5 - 5 Mbps / MBs)
-                                    chunkSize = 512 * 1024; // 512 KB
-                                    concurrency = 2; // Concurrency of 2 to keep pipeline active without bufferbloat
-                                } else if (speedMbps < 25) {
-                                    // Medium WiFi
-                                    chunkSize = 1024 * 1024; // 1 MB
-                                    concurrency = 3;
+                                    chunkSize = 1024 * 1024; // 1 MB chunks to prevent timeouts
+                                    concurrency = 1; // Single stream to prevent congestion
+                                } else if (speedMbps < 30) {
+                                    // Medium WiFi (6 - 30 Mbps, e.g. 2-4 MB/s router link)
+                                    chunkSize = 4 * 1024 * 1024; // 4 MB chunks to reduce HTTP overhead
+                                    concurrency = 2; // Concurrency of 2 to keep pipeline active
                                 } else {
-                                    // Fast link (Mobile Hotspot / High-speed LAN)
-                                    chunkSize = 4 * 1024 * 1024;
-                                    if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;
+                                    // Fast link (Mobile Hotspot / High-speed LAN / > 30 Mbps)
+                                    chunkSize = 8 * 1024 * 1024;
                                     if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024;
                                     concurrency = 3;
                                 }
