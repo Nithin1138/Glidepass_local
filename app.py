@@ -1874,8 +1874,7 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
-# Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
+
 @app.post("/api/files/upload_raw")
 async def upload_file_raw(request: Request, filename: str, mode: str = "parallel", sid: str = None):
     if sid != SESSION_TOKEN:
@@ -1891,6 +1890,7 @@ async def upload_file_raw(request: Request, filename: str, mode: str = "parallel
         safe_filename = os.path.basename(filename)
         target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
         dest_path = os.path.join(target_dir, safe_filename)
+        part_path = dest_path + ".part"
         
         # Initialize global progress tracking for laptop app
         content_length = 0
@@ -1913,7 +1913,7 @@ async def upload_file_raw(request: Request, filename: str, mode: str = "parallel
         loop = asyncio.get_running_loop()
         
         # Open with 4MB OS write buffer — keeps syscalls large and infrequent
-        fd = await loop.run_in_executor(None, lambda: open(dest_path, "wb", buffering=4 * 1024 * 1024))
+        fd = await loop.run_in_executor(None, lambda: open(part_path, "wb", buffering=4 * 1024 * 1024))
         
         try:
             async for chunk in request.stream():
@@ -1922,7 +1922,13 @@ async def upload_file_raw(request: Request, filename: str, mode: str = "parallel
             await loop.run_in_executor(None, fd.flush)
         finally:
             await loop.run_in_executor(None, fd.close)
-                
+            
+        # Rename part file to final file
+        if os.path.exists(part_path):
+            if os.path.exists(dest_path):
+                os.remove(dest_path)
+            os.rename(part_path, dest_path)
+                 
         duration = time.time() - start_time
         save_file_duration(safe_filename, duration)
         _active_upload["active"] = False
@@ -1951,12 +1957,14 @@ async def preallocate_file(filename: str, size: int, mode: str = "parallel", sid
         safe_filename = os.path.basename(filename)
         target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
         dest_path = os.path.join(target_dir, safe_filename)
-        with open(dest_path, "wb") as f:
+        part_path = dest_path + ".part"
+        
+        with open(part_path, "wb") as f:
             f.truncate(size)  # Instant — just sets file size, no disk I/O
         # Open and cache fd so upload_direct reuses it without open()/close() per chunk
         import threading
-        _upload_fd_cache[dest_path] = {
-            "fd": os.open(dest_path, os.O_WRONLY),
+        _upload_fd_cache[part_path] = {
+            "fd": os.open(part_path, os.O_WRONLY),
             "size": size,
             "written": 0,
             "start_time": time.time(),
@@ -1990,14 +1998,13 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
         safe_filename = os.path.basename(filename)
         target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
         dest_path = os.path.join(target_dir, safe_filename)
+        part_path = dest_path + ".part"
 
         import asyncio
         loop = asyncio.get_running_loop()
 
         # Get cached fd (created during preallocate) to skip open()/close() overhead.
-        # CRITICAL: also skips check_feature_usage() which makes a blocking network call!
-        # Permission was already verified during preallocate — no need to re-check per chunk.
-        cache = _upload_fd_cache.get(dest_path)
+        cache = _upload_fd_cache.get(part_path)
         if cache:
             fd = cache["fd"]
             body = await request.body()
@@ -2012,16 +2019,23 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
                     os.close(fd)
                 except OSError:
                     pass
+                
+                # Rename part file to final file
+                if os.path.exists(part_path):
+                    if os.path.exists(dest_path):
+                        os.remove(dest_path)
+                    os.rename(part_path, dest_path)
+
                 duration = time.time() - cache["start_time"]
                 save_file_duration(safe_filename, duration)
                 _active_upload["active"] = False
-                _upload_fd_cache.pop(dest_path, None)
+                _upload_fd_cache.pop(part_path, None)
         else:
             # Fallback: fd not in cache (preallocate was not called) — check permission then write
             allowed, err = check_feature_usage("allow_file_share", "File Sharing")
             if not allowed:
                 return {"status": "error", "message": err}
-            fd = os.open(dest_path, os.O_WRONLY)
+            fd = os.open(part_path, os.O_WRONLY)
             try:
                 body = await request.body()
                 await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
@@ -2032,6 +2046,47 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
     except Exception as e:
         _active_upload["active"] = False
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/files/upload_status")
+async def get_upload_status(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    return _active_upload
+
+
+@app.post("/api/files/upload_cancel")
+async def cancel_active_upload(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    
+    global _active_upload
+    if _active_upload.get("active"):
+        filename = _active_upload["filename"]
+        mode = _active_upload["mode"]
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        part_path = os.path.join(target_dir, filename + ".part")
+        
+        # Pop and close cached file descriptor if open
+        cache = _upload_fd_cache.pop(part_path, None)
+        if cache:
+            try:
+                os.close(cache["fd"])
+            except Exception:
+                pass
+        
+        # Clean up incomplete .part file from disk
+        if os.path.exists(part_path):
+            try:
+                os.remove(part_path)
+            except Exception:
+                pass
+        
+        _active_upload["active"] = False
+        return {"status": "success"}
+    return {"status": "error", "message": "No active upload to cancel"}
 
 
 @app.websocket("/ws/upload")
@@ -2058,9 +2113,10 @@ async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: 
 
     safe_filename = os.path.basename(filename)
     dest_path = os.path.join(SHARED_DIR, safe_filename)
+    part_path = dest_path + ".part"
 
     # Pre-allocate the full file instantly (no actual I/O, just sets file size)
-    with open(dest_path, "wb") as f:
+    with open(part_path, "wb") as f:
         f.truncate(size)
 
     import asyncio
@@ -2070,7 +2126,7 @@ async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: 
     # Dedicated thread pool for disk writes — keeps event loop free for new receives
     write_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
-    fd = os.open(dest_path, os.O_WRONLY)
+    fd = os.open(part_path, os.O_WRONLY)
     received = 0
     last_ack = 0
     ACK_EVERY = 8 * 1024 * 1024   # ACK every 8MB — less JSON overhead vs 4MB
@@ -2101,6 +2157,12 @@ async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: 
         # Ensure the last write completes before signalling success
         if pending_write is not None:
             await pending_write
+
+        # Rename part file to final file
+        if os.path.exists(part_path):
+            if os.path.exists(dest_path):
+                os.remove(dest_path)
+            os.rename(part_path, dest_path)
 
         await websocket.send_json({"status": "success", "filename": safe_filename})
     except WebSocketDisconnect:

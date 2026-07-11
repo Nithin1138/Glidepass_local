@@ -1750,8 +1750,28 @@ class LANpadLauncher:
         r3.pack(fill="x", padx=12, pady=(2, 8))
         progress_percent_lbl = tk.Label(r3, text="0%", font=(self.FU, 8), fg=self.WHITE, bg="#0D0D10")
         progress_percent_lbl.pack(side="left")
+        
         progress_bytes_lbl = tk.Label(r3, text="0.00 / 0.00 MB", font=(self.FU, 8), fg=self.DIM, bg="#0D0D10")
         progress_bytes_lbl.pack(side="right")
+
+        progress_cancel_btn = tk.Label(r3, text="Cancel", font=(self.FU, 8, "bold"), fg="#FF4D4D", bg="#0D0D10", cursor="hand2")
+        progress_cancel_btn.pack(side="right", padx=(0, 10))
+
+        def desktop_cancel_upload(e=None):
+            from tkinter import messagebox
+            if messagebox.askyesno("Cancel Transfer", "Are you sure you want to cancel the current transfer?"):
+                import urllib.request
+                try:
+                    url = f"http://127.0.0.1:8000/api/files/upload_cancel?sid={self.SESSION_TOKEN}"
+                    req = urllib.request.Request(url, method="POST")
+                    with urllib.request.urlopen(req) as resp:
+                        pass
+                except Exception as ex:
+                    print(f"[launcher] Failed to cancel upload via API: {ex}")
+                progress_card.place_forget()
+                progress_data["active"] = False
+
+        progress_cancel_btn.bind("<Button-1>", desktop_cancel_upload)
 
         import time
         progress_data = {"copied": 0, "total": 0, "active": False, "speed": 0.0, "start_time": 0.0}
