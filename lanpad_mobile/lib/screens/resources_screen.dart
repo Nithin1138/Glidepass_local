@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../services/api_service.dart';
 import '../models/resource_model.dart';
-import '../widgets/nebula_background.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../config/theme.dart';
@@ -21,6 +21,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
   List<Hub> _hubs = [];
   bool _isLoading = false;
+  String? _loadError;
 
   // Selected state path
   Hub? _selectedHub;
@@ -48,12 +49,19 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
   Future<void> _loadHubs() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
-    final list = await _apiService.fetchHubs();
-    setState(() {
-      _hubs = list;
-      _isLoading = false;
-    });
+    setState(() { _isLoading = true; _loadError = null; });
+    try {
+      final list = await _apiService.fetchHubs();
+      if (mounted) {
+        setState(() {
+          _hubs = list;
+          _isLoading = false;
+          if (list.isEmpty) _loadError = 'No hubs returned from server';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _isLoading = false; _loadError = e.toString(); });
+    }
   }
 
   Future<void> _selectHub(Hub hub) async {
@@ -382,7 +390,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const NebulaBackground(),
+          const AuroraBackground(),
           
           SafeArea(
             child: Column(
@@ -475,8 +483,46 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
   // LAYER 1: HUBS VIEW
   Widget _buildHubsView() {
-    if (_hubs.isEmpty) {
-      return Center(child: Text('No resource hubs discovered', style: TextStyle(color: AppTheme.textMuted)));
+    if (_loadError != null || _hubs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.cloud_off, size: 40, color: AppTheme.textMuted),
+            const SizedBox(height: 12),
+            Text(
+              _loadError != null ? 'Could not load resources' : 'No hubs available',
+              style: TextStyle(color: AppTheme.textMain, fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _loadError ?? 'Make sure the server is running and connected',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _loadHubs,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.accentColor.withOpacity(0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.refresh_cw, size: 14, color: AppTheme.accentColor),
+                    const SizedBox(width: 8),
+                    Text('Retry', style: TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
     return ListView.builder(
       itemCount: _hubs.length,

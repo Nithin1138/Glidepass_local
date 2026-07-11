@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/connection_service.dart';
-import '../widgets/nebula_background.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/connection_pill.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/liquid_glass_card.dart';
@@ -119,15 +119,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final isLan = _connectionService.isLocalConnection;
-    final hasTunnel = (_connectionService.tunnelUrl?.isNotEmpty ?? false);
-    final hasLan = (_connectionService.lanIp?.isNotEmpty ?? false);
-    final canSwitch = _connectionService.isConnected && (isLan ? hasTunnel : hasLan);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          const NebulaBackground(),
+          const AuroraBackground(),
 
           // Header Bar
           Positioned(
@@ -183,127 +180,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 26),
 
-                  // ── Connection Mode Toggle Card ──────────────────────
-                  LiquidGlassCard(
-                    isFlat: false,
-                    hasGlow: _connectionService.isConnected,
-                    glowIntensity: 0.5,
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              isLan ? LucideIcons.wifi : LucideIcons.globe,
-                              color: AppTheme.accentColor,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 7),
-                            Text(
-                              'CONNECTION MODE',
-                              style: TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Segmented Toggle
-                        Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppTheme.borderColor.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              _buildModeTab(
-                                label: 'LAN Direct',
-                                icon: LucideIcons.wifi,
-                                isSelected: isLan,
-                                isAvailable: hasLan,
-                                onTap: isLan ? null : (canSwitch ? _toggleConnectionMode : null),
-                              ),
-                              _buildModeTab(
-                                label: 'Hybrid Relay',
-                                icon: LucideIcons.globe,
-                                isSelected: !isLan,
-                                isAvailable: hasTunnel,
-                                onTap: !isLan ? null : (canSwitch ? _toggleConnectionMode : null),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // Status line
-                        if (_isSwitchingMode)
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: 13,
-                                height: 13,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: AppTheme.accentColor,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Switching…',
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                              ),
-                            ],
-                          )
-                        else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              AnimatedBuilder(
-                                animation: _pulseAnimation,
-                                builder: (context, _) => Opacity(
-                                  opacity: _pulseAnimation.value,
-                                  child: Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: _connectionService.isConnected
-                                          ? const Color(0xFF00E676)
-                                          : Colors.grey,
-                                      shape: BoxShape.circle,
-                                      boxShadow: _connectionService.isConnected
-                                          ? [BoxShadow(color: const Color(0xFF00E676).withOpacity(0.7), blurRadius: 5)]
-                                          : [],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  isLan
-                                      ? hasTunnel
-                                          ? 'On Wi-Fi. Tap Hybrid Relay to switch to remote access.'
-                                          : 'Connected via Wi-Fi. No relay tunnel detected.'
-                                      : hasLan
-                                          ? 'On Relay tunnel. Tap LAN Direct to switch to Wi-Fi.'
-                                          : 'Connected via relay tunnel.',
-                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11, height: 1.4),
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
                   // ── Stats Strip ──────────────────────────────────────
                   LiquidGlassCard(
                     isFlat: true,
@@ -346,14 +222,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   if (_connectionService.devices.isEmpty)
                     LiquidGlassCard(
                       isFlat: false,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          child: Text(
-                            'No computers added yet',
-                            style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.laptop, size: 36, color: AppTheme.textMuted),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No Laptop Paired',
+                            style: TextStyle(
+                              color: AppTheme.textMain,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Pair a laptop to start using LANpad',
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          AnimatedButton(
+                            onTap: () async {
+                              _triggerHaptic();
+                              final success = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (context) => const ConnectScreen(isAddingDevice: true),
+                                ),
+                              );
+                              if (success == true) {
+                                _loadStats();
+                                setState(() {});
+                              }
+                            },
+                            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.scan_qr_code, color: Colors.white, size: 16),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Pair Laptop',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else

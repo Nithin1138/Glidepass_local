@@ -10,7 +10,7 @@ import '../services/api_service.dart';
 import '../services/connection_service.dart';
 import '../services/websocket_service.dart';
 import '../models/file_model.dart';
-import '../widgets/nebula_background.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../config/theme.dart';
@@ -246,7 +246,7 @@ class _FilesScreenState extends State<FilesScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const NebulaBackground(),
+          const AuroraBackground(),
           
           SafeArea(
             child: Column(

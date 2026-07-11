@@ -4,8 +4,56 @@ import '../services/connection_service.dart';
 import '../config/theme.dart';
 import 'liquid_glass_card.dart';
 
-class ConnectionPill extends StatelessWidget {
+class ConnectionPill extends StatefulWidget {
   const ConnectionPill({super.key});
+
+  @override
+  State<ConnectionPill> createState() => _ConnectionPillState();
+}
+
+class _ConnectionPillState extends State<ConnectionPill> {
+  bool _isSwitching = false;
+
+  Future<void> _switchMode(ConnectionService connectionService) async {
+    if (_isSwitching) return;
+    final isLan = connectionService.isLocalConnection;
+    // Check availability of the target mode
+    if (isLan) {
+      final tunnel = connectionService.tunnelUrl;
+      if (tunnel == null || tunnel.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Relay not available – start a tunnel on server'),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        return;
+      }
+    } else {
+      final lan = connectionService.lanIp;
+      if (lan == null || lan.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('LAN not available – check Wi-Fi'),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        return;
+      }
+    }
+    setState(() => _isSwitching = true);
+    final success = await connectionService.switchConnection();
+    if (mounted) {
+      setState(() => _isSwitching = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(success
+            ? 'Switched to ${connectionService.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay'}'
+            : 'Failed to switch – check connection'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: success ? AppTheme.accentColor : AppTheme.redStatus,
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,37 +116,30 @@ class ConnectionPill extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            // Switch Connection Icon Button (refresh-cw)
-            if (connectionService.tunnelUrl != null || connectionService.lanIp != null)
-              GestureDetector(
-                onTap: () async {
-                  final success = await connectionService.switchConnection();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Switched connection path'
-                              : 'Failed to switch connection path',
+            const SizedBox(width: 6),
+            // Mode Switch Button – two arrows
+            GestureDetector(
+              onTap: () => _switchMode(connectionService),
+              child: LiquidGlassCard(
+                padding: const EdgeInsets.all(8),
+                borderRadius: 12,
+                isFlat: true,
+                child: _isSwitching
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: AppTheme.accentColor,
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: success ? AppTheme.accentColor : AppTheme.redStatus,
+                      )
+                    : Icon(
+                        LucideIcons.arrow_left_right,
+                        size: 14,
+                        color: AppTheme.textMain,
                       ),
-                    );
-                  }
-                },
-                child: LiquidGlassCard(
-                  padding: const EdgeInsets.all(8),
-                  borderRadius: 12,
-                  isFlat: true,
-                  child: Icon(
-                    LucideIcons.refresh_cw,
-                    size: 16,
-                    color: AppTheme.textMain,
-                  ),
-                ),
               ),
+            ),
           ],
         );
       },
