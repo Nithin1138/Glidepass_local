@@ -313,6 +313,7 @@ class LANpadLauncher:
         self.update_in_progress = False
         self.monetization_enabled = False
         self.free_enabled = False
+        self.connected_hubs = []
 
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
@@ -1455,8 +1456,15 @@ class LANpadLauncher:
             self.files_view.tkraise()
             if hasattr(self, "_refresh_files_list"):
                 self._refresh_files_list()
+            if hasattr(self, "_connect_hub_btn"):
+                if self.connected_hubs:
+                    self._connect_hub_btn.config(text=f"Connected Hubs ({len(self.connected_hubs)})", fg="#00C853")
+                else:
+                    self._connect_hub_btn.config(text="Connect Hub", fg="#0077C0")
         elif name == "remote":
             self.remote_view.tkraise()
+            if hasattr(self, "_refresh_remote_view"):
+                self._refresh_remote_view()
         else:
             self.bypass_view.tkraise()
             self.copy_bookmarklet(silent=True)
@@ -1637,9 +1645,9 @@ class LANpadLauncher:
         tk.Label(hdr, text="Files Center", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
 
         # Connect Hub Action Button (styled to fit theme)
-        connect_hub_btn = tk.Label(hdr, text="Connect Hub", font=(self.FU, 8, "bold"), bg=self.BG2, fg="#0077C0", padx=12, pady=5, cursor="hand2")
-        connect_hub_btn.pack(side="right", padx=(0, 4))
-        connect_hub_btn.bind("<Button-1>", lambda e: self.show_view("remote"))
+        self._connect_hub_btn = tk.Label(hdr, text="Connect Hub", font=(self.FU, 8, "bold"), bg=self.BG2, fg="#0077C0", padx=12, pady=5, cursor="hand2")
+        self._connect_hub_btn.pack(side="right", padx=(0, 4))
+        self._connect_hub_btn.bind("<Button-1>", lambda e: self.show_view("remote"))
 
         # ── Dropzone Card & Drag-and-Drop Setup ──────────────────────────────
         shared_path = os.path.expanduser("~/Downloads/LANpad")
@@ -2314,30 +2322,37 @@ class LANpadLauncher:
         ic.create_oval(17, 6, 25, 14, outline="#0077C0", width=2)
         
         # Title
-        tk.Label(hdr, text="Connect to Remote Hub", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
+        hdr_title = tk.Label(hdr, text="Connected Hubs", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE)
+        hdr_title.pack(side="left", padx=8)
         
         FU = self.FU
         FD = self.FD
         
-        remote_url = tk.StringVar()
-        session_token = tk.StringVar()
-        
         main_container = tk.Frame(v, bg=self.BG)
         main_container.place(x=18, y=105 + yo, width=W - 36, height=620)
         
-        def show_connection_screen():
+        remote_url = tk.StringVar()
+        session_token = tk.StringVar()
+        
+        def refresh_remote_ui():
             for widget in main_container.winfo_children():
                 widget.destroy()
                 
+            if not self.connected_hubs:
+                hdr_title.config(text="Connect to Remote Hub")
+                show_connection_screen()
+            else:
+                hdr_title.config(text="Connected Hubs")
+                show_hubs_list_screen()
+                
+        def show_connection_screen():
             lbl_desc = tk.Label(main_container, text="Enter the IP address or URL and Session Token of the other laptop's LANpad app.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
             lbl_desc.pack(anchor="w", pady=(0, 20))
             
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             host_ent = tk.Entry(main_container, textvariable=remote_url, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
             host_ent.pack(fill="x", ipady=8, pady=(0, 15))
-            if not remote_url.get():
-                remote_url.set("")
-                
+            
             tk.Label(main_container, text="SESSION TOKEN (SID)", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_ent = tk.Entry(main_container, textvariable=session_token, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
             token_ent.pack(fill="x", ipady=8, pady=(0, 20))
@@ -2346,9 +2361,13 @@ class LANpadLauncher:
             btn_connect.pack(fill="x", pady=(0, 5))
             btn_connect.bind("<Button-1>", lambda e: connect_to_hub())
             
-            # Where to get these info card
+            if self.connected_hubs:
+                btn_cancel = tk.Label(main_container, text="Cancel", font=(FU, 9, "bold"), bg=self.BG, fg=self.DIM, cursor="hand2", pady=8)
+                btn_cancel.pack(fill="x", pady=(5, 0))
+                btn_cancel.bind("<Button-1>", lambda e: refresh_remote_ui())
+            
             info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=12, pady=12, highlightthickness=1, highlightbackground=self.BORDER)
-            info_card.pack(fill="x", pady=(25, 0))
+            info_card.pack(fill="x", pady=(20, 0))
             
             tk.Label(info_card, text="💡 Where to find these on Laptop B:", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", anchor="w").pack(fill="x", pady=(0, 8))
             
@@ -2368,6 +2387,12 @@ class LANpadLauncher:
             if not url_str.startswith("http://") and not url_str.startswith("https://"):
                 url_str = "http://" + url_str
                 
+            for hub in self.connected_hubs:
+                if hub["url"] == url_str:
+                    messagebox.showinfo("Already Connected", f"Already connected to {url_str}")
+                    refresh_remote_ui()
+                    return
+            
             try:
                 import urllib.request
                 import json
@@ -2376,73 +2401,23 @@ class LANpadLauncher:
                 with urllib.request.urlopen(req, timeout=5) as response:
                     data = json.loads(response.read().decode())
                     if data.get("status") == "success":
-                        show_files_screen(url_str, sid_str, data.get("files", []))
+                        self.connected_hubs.append({
+                            "url": url_str,
+                            "token": sid_str,
+                            "files": data.get("files", [])
+                        })
+                        remote_url.set("")
+                        session_token.set("")
+                        self.show_view("files")
                     else:
                         messagebox.showerror("Error", f"Failed: {data.get('message', 'Unknown error')}")
             except Exception as e:
                 messagebox.showerror("Connection Failed", f"Could not connect to remote hub:\n{e}")
 
-        def show_files_screen(url_str, sid_str, initial_files):
-            for widget in main_container.winfo_children():
-                widget.destroy()
-                
-            sub_hdr = tk.Frame(main_container, bg=self.BG)
-            sub_hdr.pack(fill="x", pady=(0, 10))
-            
-            disp_host = url_str.replace('http://','').replace('https://','')
-            if len(disp_host) > 28:
-                disp_host = disp_host[:16] + "..." + disp_host[-9:]
-            lbl_connected = tk.Label(sub_hdr, text=f"Connected: {disp_host}", font=(FU, 9, "bold"), bg=self.BG, fg="#00C853")
-            lbl_connected.pack(side="left")
-            
-            btn_disc = tk.Label(sub_hdr, text="Disconnect", font=(FU, 9, "bold"), bg=self.BG, fg="#FF4D4D", cursor="hand2")
-            btn_disc.pack(side="right")
-            btn_disc.bind("<Button-1>", lambda e: show_connection_screen())
-            
-            def upload_files():
-                from tkinter import filedialog
-                file_paths = filedialog.askopenfilenames(title="Select Files to Send to Remote Hub")
-                if not file_paths:
-                    return
-                    
-                def worker():
-                    for path in file_paths:
-                        if not os.path.exists(path):
-                            continue
-                        filename = os.path.basename(path)
-                        size = os.path.getsize(path)
-                        
-                        try:
-                            pre_url = f"{url_str}/api/files/preallocate?filename={urllib.parse.quote(filename)}&size={size}&mode=parallel&sid={urllib.parse.quote(sid_str)}"
-                            pre_req = urllib.request.Request(pre_url, method="POST")
-                            with urllib.request.urlopen(pre_req) as resp:
-                                pass
-                                
-                            chunk_size = 4 * 1024 * 1024
-                            with open(path, "rb") as f:
-                                offset = 0
-                                while offset < size:
-                                    chunk_data = f.read(chunk_size)
-                                    if not chunk_data:
-                                        break
-                                    
-                                    up_url = f"{url_str}/api/files/upload_direct?filename={urllib.parse.quote(filename)}&offset={offset}&mode=parallel&sid={urllib.parse.quote(sid_str)}"
-                                    up_req = urllib.request.Request(up_url, data=chunk_data, method="POST")
-                                    up_req.add_header("Content-Type", "application/octet-stream")
-                                    with urllib.request.urlopen(up_req) as resp:
-                                        pass
-                                    offset += len(chunk_data)
-                                    
-                            v.after(0, lambda fn=filename: messagebox.showinfo("Success", f"Successfully uploaded {fn} to remote hub!"))
-                        except Exception as ex:
-                            v.after(0, lambda fn=filename, err=ex: messagebox.showerror("Upload Failed", f"Failed to upload {fn}:\n{err}"))
-                    
-                    v.after(100, refresh_list)
-                    
-                threading.Thread(target=worker, daemon=True).start()
-                
-            btn_send = tk.Button(main_container, text="SEND FILE TO REMOTE HUB", font=(FU, 9, "bold"), bg="#0077C0", fg=self.WHITE, activebackground="#005A90", activeforeground=self.WHITE, relief="flat", bd=0, command=upload_files)
-            btn_send.pack(fill="x", ipady=6, pady=(0, 15))
+        def show_hubs_list_screen():
+            btn_add = tk.Label(main_container, text="+ Connect Another Device", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", pady=8, highlightthickness=1, highlightbackground="#0077C0", cursor="hand2")
+            btn_add.pack(fill="x", pady=(0, 15))
+            btn_add.bind("<Button-1>", lambda e: show_connection_screen())
             
             list_frame = tk.Frame(main_container, bg=self.BG)
             list_frame.pack(fill="both", expand=True)
@@ -2456,77 +2431,155 @@ class LANpadLauncher:
             
             scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
             scrollable_frame.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
-            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=360)
+            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=344)
             
-            def refresh_list():
-                try:
-                    import urllib.request
-                    import json
-                    list_url = f"{url_str}/api/files/list?sid={urllib.parse.quote(sid_str)}"
-                    req = urllib.request.Request(list_url, method="GET")
-                    with urllib.request.urlopen(req, timeout=5) as response:
-                        data = json.loads(response.read().decode())
-                        if data.get("status") == "success":
-                            render_list(data.get("files", []))
-                except Exception as e:
-                    print(f"Failed to refresh list: {e}")
-                    
-            def render_list(files):
-                for widget in scrollable_frame.winfo_children():
-                    widget.destroy()
-                    
-                if not files:
-                    tk.Label(scrollable_frame, text="No shared files on this remote hub.", font=(FU, 9), bg=self.BG, fg=self.DIM, pady=20).pack(fill="x")
-                    return
-                    
-                for f in files:
-                    fname = f.get("name")
-                    fsize = f.get("size", 0)
-                    
-                    if fsize < 1024:
-                        size_str = f"{fsize} B"
-                    elif fsize < 1024 * 1024:
-                        size_str = f"{fsize / 1024:.1f} KB"
-                    elif fsize < 1024 * 1024 * 1024:
-                        size_str = f"{fsize / (1024 * 1024):.1f} MB"
-                    else:
-                        size_str = f"{fsize / (1024 * 1024 * 1024):.1f} GB"
-                        
-                    card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=10, pady=8, highlightthickness=1, highlightbackground=self.BORDER)
-                    card.pack(fill="x", pady=(0, 6))
-                    
-                    lbl_name = tk.Label(card, text=fname, font=(FU, 9, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
-                    lbl_name.pack(fill="x")
-                    
-                    bottom_row = tk.Frame(card, bg=self.BG2)
-                    bottom_row.pack(fill="x", pady=(4, 0))
-                    
-                    lbl_size = tk.Label(bottom_row, text=size_str, font=(FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
-                    lbl_size.pack(side="left")
-                    
-                    def make_download_handler(filename, size):
-                        def handler(e=None):
-                            dest_dir = os.path.expanduser("~/Downloads/LANpad")
-                            os.makedirs(dest_dir, exist_ok=True)
-                            dest_path = os.path.join(dest_dir, filename)
+            for hub in self.connected_hubs:
+                url_str = hub["url"]
+                sid_str = hub["token"]
+                files = hub["files"]
+                
+                disp_host = url_str.replace('http://','').replace('https://','')
+                
+                dev_card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=self.BORDER)
+                dev_card.pack(fill="x", pady=(0, 15))
+                
+                title_row = tk.Frame(dev_card, bg=self.BG2)
+                title_row.pack(fill="x", pady=(0, 6))
+                
+                lbl_connected = tk.Label(title_row, text=f"🟢 {disp_host}", font=(FU, 9, "bold"), bg=self.BG2, fg="#00C853", anchor="w")
+                lbl_connected.pack(side="left")
+                
+                def make_disconnect_handler(target_url):
+                    def handler(e=None):
+                        self.connected_hubs = [h for h in self.connected_hubs if h["url"] != target_url]
+                        refresh_remote_ui()
+                    return handler
+                
+                btn_disc = tk.Label(title_row, text="Disconnect", font=(FU, 9, "bold"), bg=self.BG2, fg="#FF4D4D", cursor="hand2")
+                btn_disc.pack(side="right")
+                btn_disc.bind("<Button-1>", make_disconnect_handler(url_str))
+                
+                action_row = tk.Frame(dev_card, bg=self.BG2)
+                action_row.pack(fill="x", pady=(4, 8))
+                
+                def make_upload_handler(target_url, target_token, target_hub):
+                    def upload_files(e=None):
+                        from tkinter import filedialog
+                        file_paths = filedialog.askopenfilenames(title=f"Send Files to {target_url.replace('http://','').replace('https://','')}")
+                        if not file_paths:
+                            return
                             
-                            def download_worker():
+                        def worker():
+                            for path in file_paths:
+                                if not os.path.exists(path):
+                                    continue
+                                filename = os.path.basename(path)
+                                size = os.path.getsize(path)
+                                
                                 try:
-                                    down_url = f"{url_str}/api/files/download/{urllib.parse.quote(filename)}?sid={urllib.parse.quote(sid_str)}"
-                                    req = urllib.request.Request(down_url)
-                                    with urllib.request.urlopen(req) as resp:
-                                        with open(dest_path, "wb") as local_file:
-                                            shutil_copy(resp, local_file)
-                                    v.after(0, lambda fn=filename: messagebox.showinfo("Downloaded", f"Finished downloading:\n{fn}\nSaved to LANpad Downloads folder."))
-                                except Exception as err:
-                                    v.after(0, lambda fn=filename, ex=err: messagebox.showerror("Download Failed", f"Could not download {fn}:\n{ex}"))
-                            threading.Thread(target=download_worker, daemon=True).start()
-                        return handler
+                                    pre_url = f"{target_url}/api/files/preallocate?filename={urllib.parse.quote(filename)}&size={size}&mode=parallel&sid={urllib.parse.quote(target_token)}"
+                                    pre_req = urllib.request.Request(pre_url, method="POST")
+                                    with urllib.request.urlopen(pre_req) as resp:
+                                        pass
+                                        
+                                    chunk_size = 4 * 1024 * 1024
+                                    with open(path, "rb") as f:
+                                        offset = 0
+                                        while offset < size:
+                                            chunk_data = f.read(chunk_size)
+                                            if not chunk_data:
+                                                break
+                                            
+                                            up_url = f"{target_url}/api/files/upload_direct?filename={urllib.parse.quote(filename)}&offset={offset}&mode=parallel&sid={urllib.parse.quote(target_token)}"
+                                            up_req = urllib.request.Request(up_url, data=chunk_data, method="POST")
+                                            up_req.add_header("Content-Type", "application/octet-stream")
+                                            with urllib.request.urlopen(up_req) as resp:
+                                                pass
+                                            offset += len(chunk_data)
+                                            
+                                    v.after(0, lambda fn=filename: messagebox.showinfo("Success", f"Successfully uploaded {fn}!"))
+                                except Exception as ex:
+                                    v.after(0, lambda fn=filename, err=ex: messagebox.showerror("Upload Failed", f"Failed to upload {fn}:\n{err}"))
+                            
+                            v.after(100, lambda: make_refresh_handler(target_url, target_token, target_hub)())
+                            
+                        threading.Thread(target=worker, daemon=True).start()
+                    return upload_files
+                
+                def make_refresh_handler(target_url, target_token, target_hub):
+                    def refresh_files(e=None):
+                        try:
+                            import urllib.request
+                            import json
+                            list_url = f"{target_url}/api/files/list?sid={urllib.parse.quote(target_token)}"
+                            req = urllib.request.Request(list_url, method="GET")
+                            with urllib.request.urlopen(req, timeout=5) as response:
+                                data = json.loads(response.read().decode())
+                                if data.get("status") == "success":
+                                    target_hub["files"] = data.get("files", [])
+                                    v.after(0, refresh_remote_ui)
+                        except Exception as e:
+                            print(f"Failed to refresh remote files: {e}")
+                    return refresh_files
+                
+                btn_send = tk.Label(action_row, text="↑ Send File", font=(FU, 8, "bold"), bg="#0077C0", fg=self.WHITE, padx=8, pady=4, cursor="hand2")
+                btn_send.pack(side="left", padx=(0, 6))
+                btn_send.bind("<Button-1>", make_upload_handler(url_str, sid_str, hub))
+                
+                btn_refresh = tk.Label(action_row, text="⟳ Refresh Files", font=(FU, 8, "bold"), bg=self.BG, fg="#0077C0", padx=8, pady=4, cursor="hand2", highlightthickness=1, highlightbackground=self.BORDER)
+                btn_refresh.pack(side="left")
+                btn_refresh.bind("<Button-1>", make_refresh_handler(url_str, sid_str, hub))
+                
+                tk.Label(dev_card, text="Shared Files:", font=(FU, 8, "bold"), bg=self.BG2, fg=self.DIM, anchor="w").pack(fill="x", pady=(6, 4))
+                
+                if not files:
+                    tk.Label(dev_card, text="No shared files on this remote hub.", font=(FU, 8, "italic"), bg=self.BG2, fg=self.DIM, anchor="w").pack(fill="x", pady=2)
+                else:
+                    for f in files:
+                        fname = f.get("name")
+                        fsize = f.get("size", 0)
                         
-                    btn_dl = tk.Label(bottom_row, text="↓ Get", font=(FU, 8, "bold"), bg="#0077C0", fg=self.WHITE, padx=8, pady=3, cursor="hand2")
-                    btn_dl.pack(side="right")
-                    btn_dl.bind("<Button-1>", make_download_handler(fname, fsize))
-                    
+                        if fsize < 1024:
+                            size_str = f"{fsize} B"
+                        elif fsize < 1024 * 1024:
+                            size_str = f"{fsize / 1024:.1f} KB"
+                        elif fsize < 1024 * 1024 * 1024:
+                            size_str = f"{fsize / (1024 * 1024):.1f} MB"
+                        else:
+                            size_str = f"{fsize / (1024 * 1024 * 1024):.1f} GB"
+                            
+                        file_row = tk.Frame(dev_card, bg=self.BG2)
+                        file_row.pack(fill="x", pady=2)
+                        
+                        lbl_file = tk.Label(file_row, text=fname, font=(FU, 8), fg=self.WHITE, bg=self.BG2, anchor="w", justify="left")
+                        lbl_file.pack(side="left", fill="x", expand=True)
+                        
+                        def make_download_handler(filename, size, target_url, target_token):
+                            def handler(e=None):
+                                dest_dir = os.path.expanduser("~/Downloads/LANpad")
+                                os.makedirs(dest_dir, exist_ok=True)
+                                dest_path = os.path.join(dest_dir, filename)
+                                
+                                def download_worker():
+                                    try:
+                                        down_url = f"{target_url}/api/files/download/{urllib.parse.quote(filename)}?sid={urllib.parse.quote(target_token)}"
+                                        req = urllib.request.Request(down_url)
+                                        with urllib.request.urlopen(req) as resp:
+                                            with open(dest_path, "wb") as local_file:
+                                                shutil_copy(resp, local_file)
+                                        v.after(0, lambda fn=filename: messagebox.showinfo("Downloaded", f"Finished downloading:\n{fn}\nSaved to LANpad Downloads folder."))
+                                    except Exception as err:
+                                        v.after(0, lambda fn=filename, ex=err: messagebox.showerror("Download Failed", f"Could not download {fn}:\n{ex}"))
+                                threading.Thread(target=download_worker, daemon=True).start()
+                            return handler
+                        
+                        btn_dl = tk.Label(file_row, text="Get", font=(FU, 7, "bold"), bg="#0077C0", fg=self.WHITE, padx=6, pady=2, cursor="hand2")
+                        btn_dl.pack(side="right", padx=(4, 0))
+                        btn_dl.bind("<Button-1>", make_download_handler(fname, fsize, url_str, sid_str))
+                        
+                        lbl_fsize = tk.Label(file_row, text=size_str, font=(FU, 7), fg=self.DIM, bg=self.BG2)
+                        lbl_fsize.pack(side="right")
+                        
             def shutil_copy(src, dst):
                 buffer_size = 1024*1024
                 while True:
@@ -2534,10 +2587,9 @@ class LANpadLauncher:
                     if not buf:
                         break
                     dst.write(buf)
-                    
-            render_list(initial_files)
-            
-        show_connection_screen()
+        
+        self._refresh_remote_view = refresh_remote_ui
+        refresh_remote_ui()
 
     # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
 
