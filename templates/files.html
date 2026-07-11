@@ -218,6 +218,12 @@
             transform: scale(0.95);
         }
 
+        .header-btn.active {
+            background: var(--accent-color);
+            color: #050505;
+            border-color: var(--accent-color);
+        }
+
         .disconnect-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -327,11 +333,11 @@
                         </button>
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button class="header-btn" id="mode-parallel-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--accent-color); background: rgba(0, 200, 83, 0.15); color: var(--accent-color); padding: 8px 10px; border-radius: 10px;">
+                        <button class="header-btn active" id="mode-parallel-btn">
                             <i data-lucide="zap" size="14"></i>
                             <span>Parallel Mode</span>
                         </button>
-                        <button class="header-btn" id="mode-inbox-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); padding: 8px 10px; border-radius: 10px;">
+                        <button class="header-btn" id="mode-inbox-btn">
                             <i data-lucide="inbox" size="14"></i>
                             <span>Inbox Mode</span>
                         </button>
@@ -490,24 +496,14 @@
 
         modeParallelBtn.addEventListener('click', () => {
             activeTransferMode = "parallel";
-            modeParallelBtn.style.borderColor = "var(--accent-color)";
-            modeParallelBtn.style.background = "rgba(0, 200, 83, 0.15)";
-            modeParallelBtn.style.color = "var(--accent-color)";
-
-            modeInboxBtn.style.borderColor = "var(--border-color)";
-            modeInboxBtn.style.background = "transparent";
-            modeInboxBtn.style.color = "var(--text-muted)";
+            modeParallelBtn.classList.add('active');
+            modeInboxBtn.classList.remove('active');
         });
 
         modeInboxBtn.addEventListener('click', () => {
             activeTransferMode = "inbox";
-            modeInboxBtn.style.borderColor = "var(--accent-color)";
-            modeInboxBtn.style.background = "rgba(0, 200, 83, 0.15)";
-            modeInboxBtn.style.color = "var(--accent-color)";
-
-            modeParallelBtn.style.borderColor = "var(--border-color)";
-            modeParallelBtn.style.background = "transparent";
-            modeParallelBtn.style.color = "var(--text-muted)";
+            modeInboxBtn.classList.add('active');
+            modeParallelBtn.classList.remove('active');
         });
 
         disconnectBtn.addEventListener('click', () => {
