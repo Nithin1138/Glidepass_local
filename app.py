@@ -1232,22 +1232,27 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
         safe_filename = os.path.basename(filename)
         dest_path = os.path.join(SHARED_DIR, safe_filename)
         
-        # Direct sync writes — on SSD a 4MB write takes <2ms, negligible event loop block
+        import asyncio
+        loop = asyncio.get_running_loop()
+        
         chunks = []
         chunks_size = 0
-        buffer_limit = 4 * 1024 * 1024  # 4MB buffer — fewer write syscalls
+        buffer_limit = 8 * 1024 * 1024  # 8MB buffer to minimize write operations
         
-        with open(dest_path, "wb") as f:
+        # Open file with a 1MB internal OS buffer
+        with open(dest_path, "wb", buffering=1024 * 1024) as f:
             async for chunk in request.stream():
                 chunks.append(chunk)
                 chunks_size += len(chunk)
                 if chunks_size >= buffer_limit:
-                    f.write(b''.join(chunks))
+                    data_to_write = b''.join(chunks)
+                    await loop.run_in_executor(None, f.write, data_to_write)
                     chunks = []
                     chunks_size = 0
             
             if chunks:
-                f.write(b''.join(chunks))
+                data_to_write = b''.join(chunks)
+                await loop.run_in_executor(None, f.write, data_to_write)
                 
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
@@ -1542,13 +1547,26 @@ async def download_file(filename: str, sid: str = None):
         file_path = zip_path
         safe_filename = zip_filename
 
-    # Use native FastAPI FileResponse for high-performance direct file sending (utilizes kernel-level sendfile)
-    from fastapi.responses import FileResponse
-    return FileResponse(
-        file_path,
-        media_type="application/octet-stream",
-        filename=safe_filename
-    )
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    import urllib.parse
+    
+    async def iterfile():
+        loop = asyncio.get_running_loop()
+        with open(file_path, mode="rb") as f:
+            chunk_size = 1024 * 1024  # 1MB chunks
+            while True:
+                chunk = await loop.run_in_executor(None, f.read, chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+
+    encoded_filename = urllib.parse.quote(safe_filename)
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+        "Content-Length": str(os.path.getsize(file_path)),
+    }
+    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
 
 
 @app.delete("/api/files/delete/{filename}")

@@ -2845,8 +2845,22 @@ class LANpadLauncher:
         try:
             import uvicorn
             from app import app
+            import socket
+            class CustomServer(uvicorn.Server):
+                def install_signal_handlers(self):
+                    pass
+                async def startup(self, sockets=None):
+                    await super().startup(sockets)
+                    for server in getattr(self, "servers", []):
+                        if hasattr(server, "sockets"):
+                            for sock in server.sockets:
+                                try:
+                                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4 * 1024 * 1024)
+                                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4 * 1024 * 1024)
+                                except Exception:
+                                    pass
             config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, log_level="error")
-            self.server_instance = uvicorn.Server(config)
+            self.server_instance = CustomServer(config)
             t = threading.Thread(target=self.server_instance.run, daemon=True)
             t.start()
             self.process = "THREADED"
