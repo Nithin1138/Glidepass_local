@@ -299,9 +299,14 @@
 
         <div class="view">
             <!-- Dynamic LAN Direct WiFi Banner -->
-            <div id="lan-banner" style="display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 12px 16px; font-size: 13px; font-weight: 700; text-align: center; cursor: pointer; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(245,158,11,0.25); border-radius: 12px; margin: 16px; border: 1px solid rgba(255,255,255,0.2); animation: pulse-glow 2s infinite;">
-                <span style="display: flex; align-items: center; gap: 6px;">📶 <span>Direct WiFi Mode available (50MB/s+)</span></span>
-                <span style="background: #000; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px;">Switch Mode</span>
+            <div id="lan-banner" style="display: none; align-items: center; justify-content: space-between; background: rgba(0, 119, 192, 0.08); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; margin: 16px 16px 4px 16px; font-size: 0.75rem; color: var(--text-main); font-family: var(--font-display);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background-color: #00F59B; border-radius: 50%; box-shadow: 0 0 8px #00F59B;"></span>
+                    <span>Direct WiFi Mode available (50MB/s+)</span>
+                </div>
+                <button style="background: var(--accent-color); color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.2s;">
+                    Switch Mode
+                </button>
             </div>
 
             <div class="command-center">
