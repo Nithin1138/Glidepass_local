@@ -54,7 +54,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppTheme.isDark;
+    final isDark = context.isDark;
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Bottom bar padding and layout calculation
@@ -63,48 +63,53 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final double barWidth = screenWidth - (barMargin * 2);
     final double itemWidth = (barWidth - (barPadding * 2)) / 5;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          // Screen Content Stack
-          IndexedStack(
-            index: _currentIndex,
-            children: _pages,
-          ),
-          
-          // Floating Liquid Glass Tab Bar
-          Positioned(
-            bottom: barMargin + MediaQuery.of(context).padding.bottom,
-            left: barMargin,
-            right: barMargin,
-            child: SizedBox(
-              height: 72,
-              child: LiquidGlassCard(
-                padding: const EdgeInsets.symmetric(horizontal: barPadding),
-                borderRadius: 24,
-                isFlat: false, // Include soft neumorphic depth
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildTabItem(0, Icons.home_outlined, 'Home', itemWidth),
-                    _buildTabItem(1, LucideIcons.keyboard, 'Control', itemWidth),
-                    _buildTabItem(2, LucideIcons.folder_up, 'Transfer', itemWidth),
-                    _buildTabItem(3, LucideIcons.book_open, 'Hubs', itemWidth),
-                    _buildTabItem(4, LucideIcons.user, 'Settings', itemWidth),
-                  ],
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        AppTheme.themeModeNotifier,
+        AppTheme.accentColorNotifier,
+      ]),
+      builder: (context, _) {
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              IndexedStack(
+                index: _currentIndex,
+                children: _pages,
+              ),
+              Positioned(
+                bottom: barMargin + MediaQuery.of(context).padding.bottom,
+                left: barMargin,
+                right: barMargin,
+                child: SizedBox(
+                  height: 72,
+                  child: LiquidGlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: barPadding),
+                    borderRadius: 24,
+                    isFlat: false,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildTabItem(context, 0, Icons.home_outlined, 'Home', itemWidth),
+                        _buildTabItem(context, 1, LucideIcons.keyboard, 'Control', itemWidth),
+                        _buildTabItem(context, 2, LucideIcons.folder_up, 'Transfer', itemWidth),
+                        _buildTabItem(context, 3, LucideIcons.book_open, 'Hubs', itemWidth),
+                        _buildTabItem(context, 4, LucideIcons.user, 'Settings', itemWidth),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildTabItem(int index, IconData icon, String label, double width) {
+  Widget _buildTabItem(BuildContext context, int index, IconData icon, String label, double width) {
     final isSelected = _currentIndex == index;
-    final isDark = AppTheme.isDark;
+    final isDark = context.isDark;
 
     if (index == 2) {
       // Elevated action button in the center (from 1st image design)

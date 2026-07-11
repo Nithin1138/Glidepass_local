@@ -143,23 +143,33 @@ class _SplashScreenState extends State<SplashScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(_logoText.length, (index) {
+                            final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                                || AppTheme.isDark;
+                            final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
                             return AnimatedOpacity(
                               duration: const Duration(milliseconds: 400),
                               opacity: _letterOpacityStops[index],
                               child: Text(
                                 _logoText[index],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Outfit',
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 6.0,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.white24,
-                                      blurRadius: 15,
-                                    ),
-                                  ],
+                                  color: textColor,
+                                  shadows: isDark
+                                      ? const [
+                                          Shadow(
+                                            color: Colors.white24,
+                                            blurRadius: 15,
+                                          ),
+                                        ]
+                                      : const [
+                                          Shadow(
+                                            color: Color(0x220F172A),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
                                 ),
                               ),
                             );

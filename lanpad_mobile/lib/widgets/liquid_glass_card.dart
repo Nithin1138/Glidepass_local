@@ -2,6 +2,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
+/// Liquid Glass Card — iOS Control Center style.
+/// Performance notes:
+///  - Plain Container (no AnimatedContainer) — no per-rebuild overhead
+///  - BackdropFilter blur at 18px sigma (balanced quality/perf)
+///  - RepaintBoundary applied by caller if needed
 class LiquidGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -29,91 +34,89 @@ class LiquidGlassCard extends StatelessWidget {
     final isDark = context.isDark;
     final accentColor = context.accentColor;
 
-    // ── Glow shadow (accent) ─────────────────────────────────────────────
+    // ── Shadow ──────────────────────────────────────────────────────────
     final List<BoxShadow> shadows = [
       if (hasGlow)
         BoxShadow(
-          color: accentColor.withOpacity(0.28 * glowIntensity),
-          blurRadius: 24,
-          spreadRadius: 2,
+          color: accentColor.withOpacity(0.25 * glowIntensity),
+          blurRadius: 20,
+          spreadRadius: 1,
         ),
-      if (!isFlat && isDark)
+      if (!isFlat)
         BoxShadow(
-          color: Colors.black.withOpacity(0.35),
-          offset: const Offset(0, 6),
-          blurRadius: 16,
-        ),
-      if (!isFlat && !isDark)
-        BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withOpacity(isDark ? 0.30 : 0.10),
           offset: const Offset(0, 4),
-          blurRadius: 12,
+          blurRadius: 14,
         ),
     ];
 
-    // ── Frosted glass fill ───────────────────────────────────────────────
-    // Dark: translucent white sheen (like iOS control center)
-    // Light: clean white translucency
-    final Color fillColor = liquidColor != null
-        ? liquidColor!.withOpacity(isDark ? 0.18 : 0.28)
-        : (isDark
-            ? Colors.white.withOpacity(0.10)   // frosted glass base
-            : Colors.white.withOpacity(0.70));
+    // ── Fill ────────────────────────────────────────────────────────────
+    // Dark: translucent glass (like iOS) — white base at low opacity so
+    //       the blurred background colour shows through vibrantly.
+    // Light: white-based translucency so text stays readable.
+    final Color? customFill =
+        liquidColor != null ? liquidColor!.withOpacity(isDark ? 0.15 : 0.20) : null;
 
-    // Top-edge specular highlight — the key liquid glass "rim"
+    final Color darkFill = Colors.white.withOpacity(0.09);
+    final Color lightFill = Colors.white.withOpacity(0.72);
+
+    // ── Top-edge specular gradient (the "rim") ──────────────────────────
     final Gradient glassGradient = isDark
         ? LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.18),  // bright top-left rim
-              Colors.white.withOpacity(0.07),  // mid translucency
-              Colors.white.withOpacity(0.04),  // dark bottom-right
+              Colors.white.withOpacity(0.18), // bright top-left specular
+              Colors.white.withOpacity(0.06), // mid
+              Colors.white.withOpacity(0.02), // dark bottom-right
             ],
-            stops: const [0.0, 0.4, 1.0],
+            stops: const [0.0, 0.45, 1.0],
           )
         : LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.90),
-              Colors.white.withOpacity(0.55),
-              Colors.white.withOpacity(0.35),
+              Colors.white.withOpacity(0.95), // near-opaque top-left
+              Colors.white.withOpacity(0.70), // mid
+              Colors.white.withOpacity(0.50), // slight tint bottom-right
             ],
             stops: const [0.0, 0.5, 1.0],
           );
 
-    // ── Border: bright top/left specular + subtle overall ───────────────
-    final Border glassBorder = borderColor != null
+    // ── Border ──────────────────────────────────────────────────────────
+    final BoxBorder glassBorder = borderColor != null
         ? Border.all(color: borderColor!, width: 1.0)
         : (isDark
             ? Border(
-                top: BorderSide(color: Colors.white.withOpacity(0.30), width: 1.0),
-                left: BorderSide(color: Colors.white.withOpacity(0.20), width: 0.8),
-                right: BorderSide(color: Colors.white.withOpacity(0.06), width: 0.8),
-                bottom: BorderSide(color: Colors.white.withOpacity(0.06), width: 0.8),
+                top: BorderSide(
+                    color: Colors.white.withOpacity(0.32), width: 1.0),
+                left: BorderSide(
+                    color: Colors.white.withOpacity(0.22), width: 0.8),
+                right: BorderSide(
+                    color: Colors.white.withOpacity(0.07), width: 0.8),
+                bottom: BorderSide(
+                    color: Colors.white.withOpacity(0.07), width: 0.8),
               )
-            : Border.all(color: Colors.white.withOpacity(0.70), width: 1.0));
+            : Border.all(
+                color: Colors.white.withOpacity(0.80), width: 1.2));
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
+    final br = BorderRadius.circular(borderRadius);
+
+    return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: br,
         boxShadow: shadows,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: br,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28.0, sigmaY: 28.0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
+          filter: ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0),
+          child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: fillColor,
+              color: customFill ?? (isDark ? darkFill : lightFill),
               gradient: glassGradient,
-              borderRadius: BorderRadius.circular(borderRadius),
+              borderRadius: br,
               border: glassBorder,
             ),
             child: child,
