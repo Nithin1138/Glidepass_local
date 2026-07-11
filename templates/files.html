@@ -356,6 +356,16 @@
                             <span>DISCONNECT</span>
                         </button>
                     </div>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button class="header-btn" id="mode-parallel-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--accent-color); background: rgba(0, 200, 83, 0.15); color: var(--accent-color); padding: 8px 10px; border-radius: 10px;">
+                            <i data-lucide="zap" size="14"></i>
+                            <span>Parallel Mode</span>
+                        </button>
+                        <button class="header-btn" id="mode-inbox-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); padding: 8px 10px; border-radius: 10px;">
+                            <i data-lucide="inbox" size="14"></i>
+                            <span>Inbox Mode</span>
+                        </button>
+                    </div>
                 </header>
 
                 <!-- Tunnel Performance Warning -->
@@ -484,6 +494,33 @@
             });
         }
 
+        // --- Transfer Mode Selection (Parallel vs Inbox) ---
+        let activeTransferMode = "parallel";
+        const modeParallelBtn = document.getElementById('mode-parallel-btn');
+        const modeInboxBtn = document.getElementById('mode-inbox-btn');
+
+        modeParallelBtn.addEventListener('click', () => {
+            activeTransferMode = "parallel";
+            modeParallelBtn.style.borderColor = "var(--accent-color)";
+            modeParallelBtn.style.background = "rgba(0, 200, 83, 0.15)";
+            modeParallelBtn.style.color = "var(--accent-color)";
+
+            modeInboxBtn.style.borderColor = "var(--border-color)";
+            modeInboxBtn.style.background = "transparent";
+            modeInboxBtn.style.color = "var(--text-muted)";
+        });
+
+        modeInboxBtn.addEventListener('click', () => {
+            activeTransferMode = "inbox";
+            modeInboxBtn.style.borderColor = "var(--accent-color)";
+            modeInboxBtn.style.background = "rgba(0, 200, 83, 0.15)";
+            modeInboxBtn.style.color = "var(--accent-color)";
+
+            modeParallelBtn.style.borderColor = "var(--border-color)";
+            modeParallelBtn.style.background = "transparent";
+            modeParallelBtn.style.color = "var(--text-muted)";
+        });
+
         disconnectBtn.addEventListener('click', () => {
             if (confirm("Disconnect and reset session?")) {
                 sessionStorage.removeItem('sid');
@@ -600,7 +637,7 @@
                 xhr.addEventListener('error', () => reject(new Error('Network error')));
                 xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
 
-                xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}&sid=${encodeURIComponent(sid)}`);
+                xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`);
                 xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                 xhr.send(file); // Native browser-managed zero-overhead stream
             });
@@ -745,7 +782,7 @@
 
             try {
                 const preRes = await fetch(
-                    `/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&sid=${encodeURIComponent(sid)}`,
+                    `/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`,
                     { method: 'POST' }
                 );
                 const preData = await preRes.json();
@@ -880,7 +917,7 @@
                         }
                     };
                     
-                    xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&sid=${encodeURIComponent(sid)}`);
+                    xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`);
                     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                     xhr.send(blob);
                 }

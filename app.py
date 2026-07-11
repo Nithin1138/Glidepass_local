@@ -1184,8 +1184,23 @@ def _safe_pyautogui():
 # ── File Sharing Operations ───────────────────────────────────────────────────
 
 SHARED_DIR = os.path.expanduser("~/Downloads/LANpad")
+INBOX_DIR = os.path.join(SHARED_DIR, ".inbox")
+
 if not os.path.exists(SHARED_DIR):
     os.makedirs(SHARED_DIR, exist_ok=True)
+if not os.path.exists(INBOX_DIR):
+    os.makedirs(INBOX_DIR, exist_ok=True)
+
+
+# Global state to track real-time upload progress from mobile/clients to show in laptop app
+_active_upload = {
+    "filename": "",
+    "size": 0,
+    "written": 0,
+    "start_time": 0.0,
+    "active": False,
+    "mode": "parallel"
+}
 
 
 def save_file_duration(filename: str, duration: float):
@@ -1227,6 +1242,7 @@ async def list_files(sid: str = None):
                 pass
 
         files = []
+        # 1. Main Shared Directory Files
         if os.path.exists(SHARED_DIR):
             for name in os.listdir(SHARED_DIR):
                 full_path = os.path.join(SHARED_DIR, name)
@@ -1236,7 +1252,21 @@ async def list_files(sid: str = None):
                         "name": name,
                         "size": stat.st_size,
                         "modified": stat.st_mtime,
-                        "duration": durations.get(name)
+                        "duration": durations.get(name),
+                        "inbox": False
+                    })
+        # 2. Inbox Directory Files (Waiting to be accepted)
+        if os.path.exists(INBOX_DIR):
+            for name in os.listdir(INBOX_DIR):
+                full_path = os.path.join(INBOX_DIR, name)
+                if os.path.isfile(full_path) and not name.startswith("."):
+                    stat = os.stat(full_path)
+                    files.append({
+                        "name": name,
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime,
+                        "duration": durations.get(name),
+                        "inbox": True
                     })
         files.sort(key=lambda x: x["modified"], reverse=True)
         return {"status": "success", "files": files}
@@ -1272,7 +1302,7 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
 # Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
 # Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
 @app.post("/api/files/upload_raw")
-async def upload_file_raw(request: Request, filename: str, sid: str = None):
+async def upload_file_raw(request: Request, filename: str, mode: str = "parallel", sid: str = None):
     if sid != SESSION_TOKEN:
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
@@ -1284,7 +1314,25 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
         start_time = time.time()
         
         safe_filename = os.path.basename(filename)
-        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
+        
+        # Initialize global progress tracking for laptop app
+        content_length = 0
+        try:
+            content_length = int(request.headers.get("content-length", 0))
+        except Exception:
+            pass
+            
+        global _active_upload
+        _active_upload = {
+            "filename": safe_filename,
+            "size": content_length,
+            "written": 0,
+            "start_time": start_time,
+            "active": True,
+            "mode": mode
+        }
         
         import asyncio
         loop = asyncio.get_running_loop()
@@ -1295,14 +1343,17 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
         try:
             async for chunk in request.stream():
                 await loop.run_in_executor(None, fd.write, chunk)
+                _active_upload["written"] += len(chunk)
             await loop.run_in_executor(None, fd.flush)
         finally:
             await loop.run_in_executor(None, fd.close)
                 
         duration = time.time() - start_time
         save_file_duration(safe_filename, duration)
+        _active_upload["active"] = False
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
+        _active_upload["active"] = False
         return {"status": "error", "message": str(e)}
 
 
@@ -1312,7 +1363,7 @@ _upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
 
 
 @app.post("/api/files/preallocate")
-async def preallocate_file(filename: str, size: int, sid: str = None):
+async def preallocate_file(filename: str, size: int, mode: str = "parallel", sid: str = None):
     """Pre-allocate the destination file so parallel chunk writers can seek to their offsets."""
     if sid != SESSION_TOKEN:
         from fastapi.responses import JSONResponse
@@ -1323,7 +1374,8 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
     try:
         import time
         safe_filename = os.path.basename(filename)
-        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
         with open(dest_path, "wb") as f:
             f.truncate(size)  # Instant — just sets file size, no disk I/O
         # Open and cache fd so upload_direct reuses it without open()/close() per chunk
@@ -1335,13 +1387,23 @@ async def preallocate_file(filename: str, size: int, sid: str = None):
             "start_time": time.time(),
             "lock": threading.Lock(),
         }
+        
+        global _active_upload
+        _active_upload = {
+            "filename": safe_filename,
+            "size": size,
+            "written": 0,
+            "start_time": time.time(),
+            "active": True,
+            "mode": mode
+        }
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
 @app.post("/api/files/upload_direct")
-async def upload_file_direct(request: Request, filename: str, offset: int, sid: str = None):
+async def upload_file_direct(request: Request, filename: str, offset: int, mode: str = "parallel", sid: str = None):
     """Write streamed data directly to the final file at the given byte offset.
     Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions.
     PERFORMANCE: Skips license check for chunks after preallocate (permission already verified)."""
@@ -1351,7 +1413,8 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
     try:
         import time
         safe_filename = os.path.basename(filename)
-        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
 
         import asyncio
         loop = asyncio.get_running_loop()
@@ -1367,6 +1430,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
             # Track written bytes; close fd once all data is received
             with cache["lock"]:
                 cache["written"] += len(body)
+                _active_upload["written"] = cache["written"]
                 done = cache["written"] >= cache["size"]
             if done:
                 try:
@@ -1375,6 +1439,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
                     pass
                 duration = time.time() - cache["start_time"]
                 save_file_duration(safe_filename, duration)
+                _active_upload["active"] = False
                 _upload_fd_cache.pop(dest_path, None)
         else:
             # Fallback: fd not in cache (preallocate was not called) — check permission then write
@@ -1390,6 +1455,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
 
         return {"status": "success", "offset": offset}
     except Exception as e:
+        _active_upload["active"] = False
         return {"status": "error", "message": str(e)}
 
 
@@ -1570,8 +1636,12 @@ async def download_file(filename: str, sid: str = None):
     safe_filename = os.path.basename(filename)
     file_path = os.path.join(SHARED_DIR, safe_filename)
     if not os.path.exists(file_path):
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="File not found")
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
     
     from fastapi.responses import StreamingResponse
     from fastapi.concurrency import run_in_threadpool
@@ -1638,9 +1708,16 @@ async def delete_file(filename: str, sid: str = None):
         return {"status": "error", "message": err}
     safe_filename = os.path.basename(filename)
     file_path = os.path.join(SHARED_DIR, safe_filename)
+    inbox_path = os.path.join(INBOX_DIR, safe_filename)
     try:
+        deleted = False
         if os.path.exists(file_path):
             os.remove(file_path)
+            deleted = True
+        if os.path.exists(inbox_path):
+            os.remove(inbox_path)
+            deleted = True
+        if deleted:
             return {"status": "success"}
         return {"status": "error", "message": "File not found"}
     except Exception as e:
@@ -1713,6 +1790,14 @@ async def get_mobile_results(request: Request):
         return _reported_mobile_results
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=403, content={"error": "Access denied"})
+
+
+@app.get("/api/benchmark/upload_progress")
+async def get_upload_progress(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"error": "Access denied"})
+    return _active_upload
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
