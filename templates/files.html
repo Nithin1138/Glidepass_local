@@ -873,16 +873,11 @@
         // Pre-allocates the file then writes N chunks concurrently to exact byte
         // offsets via os.pwrite(). No temp files or merge step needed.
         async function uploadViaHttpChunks(file, totalMB, resumeOffset = 0) {
-            // Scale chunk sizes up for larger files to sustain high-speed streaming.
-            // Under HTTP/1.1, modern mobile browsers support up to 8 concurrent connections.
-            // Capping chunk size at 16MB prevents GC thrashing on mobile browsers while maximizing throughput.
-            let chunkSize = 4 * 1024 * 1024; // 4MB default for small files
-            if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;   // 8MB for files > 50MB
-            if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024; // 16MB max chunk size
+            // Initial probe parameters: start with 1MB chunk to measure link performance without clogging
+            let chunkSize = 1024 * 1024;
             if (file.size < chunkSize) chunkSize = file.size || 1;
 
-            const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
-            const CONCURRENCY = 3; // Pipelining: 3 concurrent streams keeps wireless pipe full, matches sequential disk writes, and stops GC throttling
+            let concurrency = 1; // Start with 1 to probe the network without clogging it
 
             // Only preallocate if starting from 0 offset
             if (resumeOffset === 0) {
@@ -905,25 +900,29 @@
             }
 
             const startTime = Date.now();
-            const loadedBytes = new Float64Array(totalChunks);
-            
-            // Mark previously written chunks as loaded in UI
-            const startingChunkIdx = Math.floor(resumeOffset / chunkSize);
-            for (let i = 0; i < startingChunkIdx; i++) {
-                loadedBytes[i] = (i === totalChunks - 1) ? (file.size - (i * chunkSize)) : chunkSize;
-            }
-
             const speedHistory = [];
-            let activeUploads = 0, nextChunkIdx = startingChunkIdx, hasFailed = false, lastUpdate = 0;
+            let activeUploads = 0;
+            let currentOffset = resumeOffset;
+            let completedBytes = resumeOffset;
+            const activeChunkProgress = {};
+            let nextChunkId = 0;
+            let hasFailed = false;
+            let lastUpdate = 0;
+            let isFirstChunkMeasured = false;
 
             await new Promise((resolve) => {
                 function updateProgress() {
                     const now = Date.now();
                     if (now - lastUpdate < 80) return;
                     lastUpdate = now;
-                    let totalLoaded = 0;
-                    for (let i = 0; i < totalChunks; i++) totalLoaded += loadedBytes[i];
+                    
+                    let activeBytes = 0;
+                    for (const cid in activeChunkProgress) {
+                        activeBytes += activeChunkProgress[cid];
+                    }
+                    let totalLoaded = completedBytes + activeBytes;
                     if (totalLoaded > file.size) totalLoaded = file.size;
+                    
                     const pct = Math.round((totalLoaded / file.size) * 100);
                     progressBar.style.width = pct + '%';
                     percentLbl.textContent = pct + '%';
@@ -948,7 +947,7 @@
 
                     // Apply Exponential Moving Average (EMA) to smooth out jumpy wireless readings
                     if (!window._lastEmaSpeedChunks) window._lastEmaSpeedChunks = rawSpd;
-                    const alpha = 0.25; // 25% new reading, 75% previous reading for smooth transitions
+                    const alpha = 0.25; 
                     const smoothedSpd = (alpha * rawSpd) + ((1 - alpha) * window._lastEmaSpeedChunks);
                     window._lastEmaSpeedChunks = smoothedSpd;
                     
@@ -967,9 +966,11 @@
                     speedLbl.textContent = `${elapsedStr} / ${etaStr} | ${smoothedSpd.toFixed(2)} MB/s`;
                     bytesLbl.textContent = `${(totalLoaded / 1048576).toFixed(2)} / ${totalMB} MB`;
                 }
+
                 function pumpNext() {
                     if (hasFailed || isUploadCancelled) return;
-                    if (nextChunkIdx >= totalChunks) {
+                    
+                    if (currentOffset >= file.size) {
                         if (activeUploads === 0) {
                             progressContainer.style.display = 'none';
                             addSessionFile(file.name);
@@ -979,16 +980,24 @@
                         }
                         return;
                     }
-                    const idx = nextChunkIdx++;
-                    activeUploads++;
-                    const byteOffset = idx * chunkSize;
-                    sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, 3);
+
+                    while (activeUploads < concurrency && currentOffset < file.size && !hasFailed && !isUploadCancelled) {
+                        const cid = nextChunkId++;
+                        const byteOffset = currentOffset;
+                        const sliceSize = Math.min(chunkSize, file.size - byteOffset);
+                        currentOffset += sliceSize;
+                        activeUploads++;
+                        sendChunk(file.slice(byteOffset, byteOffset + sliceSize), cid, byteOffset, sliceSize, 3);
+                    }
                 }
-                function sendChunk(blob, idx, byteOffset, retriesLeft) {
+
+                function sendChunk(blob, cid, byteOffset, sliceSize, retriesLeft) {
                     if (isUploadCancelled) return;
                     let xhr = new XMLHttpRequest();
                     registerXhr(xhr);
                     
+                    const chunkStartTime = Date.now();
+
                     function cleanup() {
                         if (!xhr) return;
                         unregisterXhr(xhr);
@@ -996,29 +1005,53 @@
                         xhr.onload = null;
                         xhr.onerror = null;
                         xhr = null;
-                        blob = null; // Free memory slice reference immediately for GC
+                        blob = null; 
                     }
 
                     xhr.upload.onprogress = (e) => {
-                        if (e.lengthComputable) { loadedBytes[idx] = e.loaded; updateProgress(); }
+                        if (e.lengthComputable) { 
+                            activeChunkProgress[cid] = e.loaded; 
+                            updateProgress(); 
+                        }
                     };
                     
                     xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            loadedBytes[idx] = blob.size; 
+                            completedBytes += sliceSize;
+                            delete activeChunkProgress[cid];
                             updateProgress(); 
                             activeUploads--; 
                             cleanup();
+
+                            // Adapt parameters based on the speed of the first completed chunk
+                            if (!isFirstChunkMeasured) {
+                                isFirstChunkMeasured = true;
+                                const duration = (Date.now() - chunkStartTime) / 1000;
+                                const speedMbps = (sliceSize * 8) / (duration * 1000 * 1000);
+                                if (speedMbps < 6) {
+                                    // Slow Wifi Router detected! Keep concurrency at 1, shrink chunks to 512KB
+                                    chunkSize = 512 * 1024;
+                                    concurrency = 1;
+                                } else {
+                                    // Fast link (Mobile Hotspot / High-speed LAN)
+                                    // Scale chunk sizes up for maximum throughput
+                                    chunkSize = 4 * 1024 * 1024;
+                                    if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;
+                                    if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024;
+                                    concurrency = 3;
+                                }
+                            }
+
                             pumpNext();
                         } else if (retriesLeft > 0) {
                             cleanup();
-                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
+                            setTimeout(() => sendChunk(file.slice(byteOffset, byteOffset + sliceSize), cid, byteOffset, sliceSize, retriesLeft - 1), 400);
                         } else {
                             hasFailed = true; 
                             progressContainer.style.display = 'none';
                             cleanup();
                             if (!isUploadCancelled) {
-                                showToast(`Upload failed on part ${idx + 1}`, 'error'); 
+                                showToast(`Upload failed on offset ${byteOffset}`, 'error'); 
                             }
                             resolve();
                         }
@@ -1027,7 +1060,7 @@
                     xhr.onerror = () => {
                         if (retriesLeft > 0) {
                             cleanup();
-                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
+                            setTimeout(() => sendChunk(file.slice(byteOffset, byteOffset + sliceSize), cid, byteOffset, sliceSize, retriesLeft - 1), 400);
                         } else {
                             hasFailed = true; 
                             progressContainer.style.display = 'none';
@@ -1038,12 +1071,15 @@
                             resolve();
                         }
                     };
-                    
-                    xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`);
+
+                    const upUrl = `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`;
+                    xhr.open('POST', upUrl);
                     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                     xhr.send(blob);
                 }
-                for (let i = 0; i < Math.min(CONCURRENCY, totalChunks - startingChunkIdx); i++) pumpNext();
+
+                // Start the pump
+                pumpNext();
             });
         }
 
