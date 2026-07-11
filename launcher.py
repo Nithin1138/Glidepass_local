@@ -1646,24 +1646,68 @@ class LANpadLauncher:
         sec_title_lbl = tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM)
         sec_title_lbl.pack(side="left", anchor="center")
         
-        refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 11, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
-        refresh_lbl.pack(side="right", anchor="center")
+        # ── Refresh Button (Vector Icon & Text) ──────────────────────────────
+        refresh_btn_frame = tk.Frame(sec_frame, bg=self.BG, cursor="hand2")
+        refresh_btn_frame.pack(side="right", anchor="center")
+        
+        refresh_cv = tk.Canvas(refresh_btn_frame, width=16, height=16, bg=self.BG, highlightthickness=0)
+        refresh_cv.pack(side="left")
+        
+        refresh_lbl = tk.Label(refresh_btn_frame, text="Refresh", font=(self.FU, 10, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
+        refresh_lbl.pack(side="left", padx=(4, 0))
+
+        def draw_refresh_icon():
+            refresh_cv.delete("all")
+            # Larger, cleaner circular arrow
+            refresh_cv.create_arc(2, 2, 14, 14, start=55, extent=265, style="arc", outline="#0077C0", width=2)
+            refresh_cv.create_polygon(9, 1, 15, 2, 11, 7, fill="#0077C0", outline="")
+
+        draw_refresh_icon()
 
         show_deleted_mode = [False]
 
+        # ── Toggle Button (Vector Icon & Text) ───────────────────────────────
+        toggle_btn_frame = tk.Frame(sec_frame, bg=self.BG, cursor="hand2")
+        toggle_btn_frame.pack(side="right", padx=(0, 20), anchor="center")
+
+        toggle_cv = tk.Canvas(toggle_btn_frame, width=16, height=16, bg=self.BG, highlightthickness=0)
+        toggle_cv.pack(side="left")
+
+        toggle_text_lbl = tk.Label(toggle_btn_frame, text="Deleted Logs", font=(self.FU, 9, "bold"), bg=self.BG, fg="#FF4D4D", cursor="hand2")
+        toggle_text_lbl.pack(side="left", padx=(4, 0))
+
+        def draw_toggle_icon(deleted_mode):
+            toggle_cv.delete("all")
+            if deleted_mode:
+                # Vector Folder Icon
+                toggle_cv.create_polygon(2, 3, 7, 3, 9, 5, 14, 5, 14, 13, 2, 13, fill="#0077C0", outline="")
+            else:
+                # Vector Trash Can Icon
+                toggle_cv.create_rectangle(6, 1, 10, 3, fill="#FF4D4D", outline="")
+                toggle_cv.create_rectangle(2, 3, 14, 5, fill="#FF4D4D", outline="")
+                toggle_cv.create_polygon(4, 5, 12, 5, 11, 15, 5, 15, fill="#FF4D4D", outline="")
+
+        draw_toggle_icon(False)
+
         def toggle_view_mode(e=None):
             show_deleted_mode[0] = not show_deleted_mode[0]
+            draw_toggle_icon(show_deleted_mode[0])
             if show_deleted_mode[0]:
                 sec_title_lbl.config(text="DELETED FILES LOG", fg="#FF4D4D")
-                toggle_mode_lbl.config(text="📁 Active Files", fg="#0077C0")
+                toggle_text_lbl.config(text="Active Files", fg="#0077C0")
             else:
                 sec_title_lbl.config(text="SHARED FILES ON LAPTOP", fg=self.DIM)
-                toggle_mode_lbl.config(text="🗑 Deleted Logs", fg="#FF4D4D")
+                toggle_text_lbl.config(text="Deleted Logs", fg="#FF4D4D")
             refresh_files()
 
-        toggle_mode_lbl = tk.Label(sec_frame, text="🗑 Deleted Logs", font=(self.FU, 9, "bold"), bg=self.BG, fg="#FF4D4D", cursor="hand2")
-        toggle_mode_lbl.pack(side="right", padx=(0, 15), anchor="center")
-        toggle_mode_lbl.bind("<Button-1>", toggle_view_mode)
+        # Bind events to the whole button containers (icon canvas + label)
+        refresh_cv.bind("<Button-1>", lambda e: refresh_files())
+        refresh_lbl.bind("<Button-1>", lambda e: refresh_files())
+        refresh_btn_frame.bind("<Button-1>", lambda e: refresh_files())
+
+        toggle_cv.bind("<Button-1>", toggle_view_mode)
+        toggle_text_lbl.bind("<Button-1>", toggle_view_mode)
+        toggle_btn_frame.bind("<Button-1>", toggle_view_mode)
 
         # ── Scrollable list container ────────────────────────────────────────
         list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
