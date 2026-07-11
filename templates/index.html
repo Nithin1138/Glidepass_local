@@ -758,16 +758,25 @@
             });
         }
 
+        // Extract and save session ID (sid) from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
         updateHomeNotificationUI();
 
         const launchBtn = document.getElementById('launch-btn');
         launchBtn.addEventListener('click', () => {
-            window.location.href = '/center';
+            const s = sessionStorage.getItem('sid') || '';
+            window.location.href = '/center' + (s ? '?sid=' + encodeURIComponent(s) : '');
         });
 
         const resourcesBtn = document.getElementById('resources-btn');
         resourcesBtn.addEventListener('click', () => {
-            window.location.href = '/resources';
+            const s = sessionStorage.getItem('sid') || '';
+            window.location.href = '/resources' + (s ? '?sid=' + encodeURIComponent(s) : '');
         });
 
         // Connect to active status websocket
