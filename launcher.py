@@ -1586,6 +1586,11 @@ class LANpadLauncher:
         # Title
         tk.Label(hdr, text="Files Center", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
 
+        # Connect Hub Action Button (styled to fit theme)
+        connect_hub_btn = tk.Label(hdr, text="Connect Hub", font=(self.FU, 8, "bold"), bg=self.BG2, fg="#0077C0", padx=12, pady=5, cursor="hand2")
+        connect_hub_btn.pack(side="right", padx=(0, 4))
+        connect_hub_btn.bind("<Button-1>", lambda e: self.show_remote_hub_connection())
+
         # ── Dropzone Card & Drag-and-Drop Setup ──────────────────────────────
         shared_path = os.path.expanduser("~/Downloads/LANpad")
 
@@ -1645,10 +1650,6 @@ class LANpadLauncher:
         
         sec_title_lbl = tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM)
         sec_title_lbl.pack(side="left", anchor="center")
-
-        connect_hub_btn = tk.Label(sec_frame, text="Connect Hub", font=(self.FU, 9, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
-        connect_hub_btn.pack(side="left", padx=(15, 0), anchor="center")
-        connect_hub_btn.bind("<Button-1>", lambda e: self.show_remote_hub_connection())
         
         # ── Refresh Button (Vector Icon & Text) ──────────────────────────────
         refresh_btn_frame = tk.Frame(sec_frame, bg=self.BG, cursor="hand2")
