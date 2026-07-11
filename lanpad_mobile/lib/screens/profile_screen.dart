@@ -147,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppTheme.isDark;
+    final isDark = context.isDark;
     
     return Scaffold(
       body: Stack(
@@ -192,21 +192,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 90,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: isDark 
-                          ? [
-                              BoxShadow(color: Colors.black.withOpacity(0.5), offset: const Offset(4, 4), blurRadius: 10),
-                              BoxShadow(color: Colors.white.withOpacity(0.02), offset: const Offset(-2, -2), blurRadius: 6),
-                            ]
-                          : [
-                              BoxShadow(color: const Color(0xFFBFC6D0).withOpacity(0.6), offset: const Offset(5, 5), blurRadius: 10),
-                              BoxShadow(color: Colors.white, offset: const Offset(-5, -5), blurRadius: 10),
-                            ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentColor.withOpacity(0.2),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                       child: CircleAvatar(
+                        radius: 45,
                         backgroundColor: AppTheme.cardBg,
                         child: Icon(
-                          LucideIcons.user,
-                          size: 38,
+                          LucideIcons.laptop,
+                          size: 40,
                           color: AppTheme.accentColor,
                         ),
                       ),
@@ -372,9 +371,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Server Latency',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -460,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildHapticButton(String level, String label) {
     final isSelected = _hapticLevel == level;
-    final isDark = AppTheme.isDark;
+    final isDark = context.isDark;
 
     return Expanded(
       child: GestureDetector(
