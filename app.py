@@ -532,13 +532,13 @@ except Exception as e:
 async def lifespan(app: FastAPI):
     # Copy local templates synchronously on startup to guarantee the latest templates are served
     os.makedirs(OTA_DIR, exist_ok=True)
-    for tmpl in ["index.html", "center.html", "files.html"]:
+    for tmpl in ["index.html", "center.html", "files.html", "lucide.min.js"]:
         local_path = resource_path(os.path.join("templates", tmpl))
         if os.path.exists(local_path):
             try:
                 import shutil
                 shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
-                print(f"[Lifespan] Synchronously copied local template: {tmpl}")
+                print(f"[Lifespan] Synchronously copied local template/resource: {tmpl}")
             except Exception as e:
                 print(f"[Lifespan] Failed to copy local template {tmpl}: {e}")
 
@@ -808,6 +808,15 @@ async def refund_policy_page():
 @app.get("/resources")
 async def resources_page():
     return _cached_file_response("resources.html")
+
+
+@app.get("/lucide.min.js")
+async def get_lucide():
+    path = os.path.join(OTA_DIR, "lucide.min.js")
+    if os.path.exists(path):
+        return FileResponse(path, media_type="application/javascript")
+    fallback_path = resource_path(os.path.join("templates", "lucide.min.js"))
+    return FileResponse(fallback_path, media_type="application/javascript")
 
 
 def _cached_file_response(filename: str):
