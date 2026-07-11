@@ -115,7 +115,9 @@ def get_local_ip():
 
 # Session management as per PRD
 import secrets
+import time
 SESSION_TOKEN = secrets.token_hex(16)  # 32 hex chars, 128-bit entropy
+SERVER_START_TIME = time.time()
 TUNNEL_URL = ""
 _ws_connect_attempts = {}  # {ip: [(timestamp, count), ...]}
 _http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
@@ -1857,12 +1859,23 @@ async def list_files(sid: str = None):
                 pass
 
         files = []
+        deleted_files = set()
+        if isinstance(durations.get("deleted_files"), list):
+            for entry in durations["deleted_files"]:
+                if isinstance(entry, dict) and "name" in entry:
+                    deleted_files.add(entry["name"])
+
         # 1. Main Shared Directory Files
         if os.path.exists(SHARED_DIR):
             for name in os.listdir(SHARED_DIR):
                 full_path = os.path.join(SHARED_DIR, name)
                 if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
+                    if name in deleted_files:
+                        continue
                     stat = os.stat(full_path)
+                    # Only show files created/modified in this session
+                    if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
+                        continue
                     files.append({
                         "name": name,
                         "size": stat.st_size,
@@ -1875,7 +1888,12 @@ async def list_files(sid: str = None):
             for name in os.listdir(INBOX_DIR):
                 full_path = os.path.join(INBOX_DIR, name)
                 if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
+                    if name in deleted_files:
+                        continue
                     stat = os.stat(full_path)
+                    # Only show files created/modified in this session
+                    if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
+                        continue
                     files.append({
                         "name": name,
                         "size": stat.st_size,
