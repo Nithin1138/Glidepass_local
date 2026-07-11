@@ -741,7 +741,7 @@
             if (file.size < chunkSize) chunkSize = file.size || 1;
 
             const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
-            const CONCURRENCY = 8; // Maximize parallel streams to saturate 5GHz bandwidth without overloading browser queue
+            const CONCURRENCY = 3; // Pipelining: 3 concurrent streams keeps wireless pipe full, matches sequential disk writes, and stops GC throttling
 
             try {
                 const preRes = await fetch(
@@ -833,28 +833,53 @@
                     sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, 3);
                 }
                 function sendChunk(blob, idx, byteOffset, retriesLeft) {
-                    const xhr = new XMLHttpRequest();
-                    xhr.upload.addEventListener('progress', (e) => {
+                    let xhr = new XMLHttpRequest();
+                    
+                    function cleanup() {
+                        if (!xhr) return;
+                        xhr.upload.onprogress = null;
+                        xhr.onload = null;
+                        xhr.onerror = null;
+                        xhr = null;
+                        blob = null; // Free memory slice reference immediately for GC
+                    }
+
+                    xhr.upload.onprogress = (e) => {
                         if (e.lengthComputable) { loadedBytes[idx] = e.loaded; updateProgress(); }
-                    });
-                    xhr.addEventListener('load', () => {
+                    };
+                    
+                    xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            loadedBytes[idx] = blob.size; updateProgress(); activeUploads--; pumpNext();
+                            loadedBytes[idx] = blob.size; 
+                            updateProgress(); 
+                            activeUploads--; 
+                            cleanup();
+                            pumpNext();
                         } else if (retriesLeft > 0) {
-                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 400);
+                            cleanup();
+                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
                         } else {
-                            hasFailed = true; progressContainer.style.display = 'none';
-                            showToast(`Upload failed on part ${idx + 1}`, 'error'); resolve();
+                            hasFailed = true; 
+                            progressContainer.style.display = 'none';
+                            cleanup();
+                            showToast(`Upload failed on part ${idx + 1}`, 'error'); 
+                            resolve();
                         }
-                    });
-                    xhr.addEventListener('error', () => {
+                    };
+                    
+                    xhr.onerror = () => {
                         if (retriesLeft > 0) {
-                            setTimeout(() => sendChunk(blob, idx, byteOffset, retriesLeft - 1), 400);
+                            cleanup();
+                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
                         } else {
-                            hasFailed = true; progressContainer.style.display = 'none';
-                            showToast('Network error during upload', 'error'); resolve();
+                            hasFailed = true; 
+                            progressContainer.style.display = 'none';
+                            cleanup();
+                            showToast('Network error during upload', 'error'); 
+                            resolve();
                         }
-                    });
+                    };
+                    
                     xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&sid=${encodeURIComponent(sid)}`);
                     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                     xhr.send(blob);
