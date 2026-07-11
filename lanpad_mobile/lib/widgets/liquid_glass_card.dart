@@ -10,7 +10,7 @@ class LiquidGlassCard extends StatelessWidget {
   final Color? liquidColor;
   final bool hasGlow;
   final double glowIntensity;
-  final bool isFlat; // True for standard flat liquid glass without neumorphic shadow depth
+  final bool isFlat;
 
   const LiquidGlassCard({
     super.key,
@@ -28,89 +28,75 @@ class LiquidGlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDark;
     final accentColor = context.accentColor;
-    
-    // Custom shadows simulating Neumorphism
-    List<BoxShadow> shadows = [];
-    if (!isFlat) {
-      if (isDark) {
-        shadows = [
-          // Dark Theme Neumorphic Shadows (Deep Blue/Black)
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            offset: const Offset(5, 5),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.02),
-            offset: const Offset(-3, -3),
-            blurRadius: 6,
-            spreadRadius: 0,
-          ),
-          if (hasGlow)
-            BoxShadow(
-              color: accentColor.withOpacity(0.2 * glowIntensity),
-              offset: const Offset(0, 0),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-        ];
-      } else {
-        // Light Theme Neumorphic Shadows (Soft extruded white/grey)
-        shadows = [
-          BoxShadow(
-            color: const Color(0xFFBFC6D0).withOpacity(0.6),
-            offset: const Offset(6, 6),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: Colors.white,
-            offset: const Offset(-6, -6),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-          if (hasGlow)
-            BoxShadow(
-              color: accentColor.withOpacity(0.15 * glowIntensity),
-              offset: const Offset(0, 0),
-              blurRadius: 15,
-              spreadRadius: 1,
-            ),
-        ];
-      }
-    }
 
-    // Liquid glossy gradient base
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: liquidColor != null
-          ? [liquidColor!.withOpacity(0.25), liquidColor!.withOpacity(0.08)]
-          : (isDark
-              ? [
-                  Colors.white.withOpacity(0.06),
-                  accentColor.withOpacity(0.03),
-                  Colors.black.withOpacity(0.15),
-                ]
-              : [
-                  Colors.white.withOpacity(0.85),
-                  Colors.white.withOpacity(0.4),
-                  const Color(0xFFDCE2E8).withOpacity(0.2),
-                ]),
-      stops: const [0.0, 0.5, 1.0],
-    );
+    // ── Glow shadow (accent) ─────────────────────────────────────────────
+    final List<BoxShadow> shadows = [
+      if (hasGlow)
+        BoxShadow(
+          color: accentColor.withOpacity(0.28 * glowIntensity),
+          blurRadius: 24,
+          spreadRadius: 2,
+        ),
+      if (!isFlat && isDark)
+        BoxShadow(
+          color: Colors.black.withOpacity(0.35),
+          offset: const Offset(0, 6),
+          blurRadius: 16,
+        ),
+      if (!isFlat && !isDark)
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          offset: const Offset(0, 4),
+          blurRadius: 12,
+        ),
+    ];
 
-    final border = Border.all(
-      color: borderColor ??
-          (isDark
-              ? Colors.white.withOpacity(0.12)
-              : Colors.white.withOpacity(0.65)),
-      width: 1.0,
-    );
+    // ── Frosted glass fill ───────────────────────────────────────────────
+    // Dark: translucent white sheen (like iOS control center)
+    // Light: clean white translucency
+    final Color fillColor = liquidColor != null
+        ? liquidColor!.withOpacity(isDark ? 0.18 : 0.28)
+        : (isDark
+            ? Colors.white.withOpacity(0.10)   // frosted glass base
+            : Colors.white.withOpacity(0.70));
+
+    // Top-edge specular highlight — the key liquid glass "rim"
+    final Gradient glassGradient = isDark
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.18),  // bright top-left rim
+              Colors.white.withOpacity(0.07),  // mid translucency
+              Colors.white.withOpacity(0.04),  // dark bottom-right
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          )
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.90),
+              Colors.white.withOpacity(0.55),
+              Colors.white.withOpacity(0.35),
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          );
+
+    // ── Border: bright top/left specular + subtle overall ───────────────
+    final Border glassBorder = borderColor != null
+        ? Border.all(color: borderColor!, width: 1.0)
+        : (isDark
+            ? Border(
+                top: BorderSide(color: Colors.white.withOpacity(0.30), width: 1.0),
+                left: BorderSide(color: Colors.white.withOpacity(0.20), width: 0.8),
+                right: BorderSide(color: Colors.white.withOpacity(0.06), width: 0.8),
+                bottom: BorderSide(color: Colors.white.withOpacity(0.06), width: 0.8),
+              )
+            : Border.all(color: Colors.white.withOpacity(0.70), width: 1.0));
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -119,15 +105,16 @@ class LiquidGlassCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+          filter: ImageFilter.blur(sigmaX: 28.0, sigmaY: 28.0),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 600),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOut,
             padding: padding,
             decoration: BoxDecoration(
-              gradient: gradient,
+              color: fillColor,
+              gradient: glassGradient,
               borderRadius: BorderRadius.circular(borderRadius),
-              border: border,
+              border: glassBorder,
             ),
             child: child,
           ),

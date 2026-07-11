@@ -12,68 +12,42 @@ class ConnectionPill extends StatefulWidget {
 }
 
 class _ConnectionPillState extends State<ConnectionPill> {
+  final ConnectionService _cs = ConnectionService();
   bool _isSwitching = false;
 
-  Future<void> _switchMode(ConnectionService connectionService) async {
+  Future<void> _doSwitch() async {
     if (_isSwitching) return;
-    final isLan = connectionService.isLocalConnection;
-    // Check availability of the target mode
-    if (isLan) {
-      final tunnel = connectionService.tunnelUrl;
-      if (tunnel == null || tunnel.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Relay not available – start a tunnel on server'),
-            behavior: SnackBarBehavior.floating,
-          ));
-        }
-        return;
-      }
-    } else {
-      final lan = connectionService.lanIp;
-      if (lan == null || lan.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('LAN not available – check Wi-Fi'),
-            behavior: SnackBarBehavior.floating,
-          ));
-        }
-        return;
-      }
-    }
     setState(() => _isSwitching = true);
-    final success = await connectionService.switchConnection();
-    if (mounted) {
-      setState(() => _isSwitching = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success
-            ? 'Switched to ${connectionService.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay'}'
-            : 'Failed to switch – check connection'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: success ? AppTheme.accentColor : AppTheme.redStatus,
-      ));
-    }
+    final success = await _cs.switchConnection();
+    if (!mounted) return;
+    setState(() => _isSwitching = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(
+        success
+            ? 'Switched to ${_cs.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay'}'
+            : 'Cannot switch – other mode not available',
+      ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: success ? AppTheme.accentColor : AppTheme.redStatus,
+      duration: const Duration(seconds: 2),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final connectionService = ConnectionService();
-
     return ListenableBuilder(
-      listenable: connectionService,
+      listenable: _cs,
       builder: (context, _) {
-        if (!connectionService.isConnected) {
-          return const SizedBox.shrink();
-        }
+        if (!_cs.isConnected) return const SizedBox.shrink();
 
-        final isLocal = connectionService.isLocalConnection;
+        final isLocal = _cs.isLocalConnection;
         final statusColor = isLocal ? const Color(0xFF00F59B) : const Color(0xFF3B82F6);
-        final connectionText = isLocal ? 'LAN Direct' : 'Hybrid Tunnel';
+        final connectionText = isLocal ? 'LAN Direct' : 'Hybrid Relay';
 
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Status Pill
+            // Status pill
             LiquidGlassCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
               borderRadius: 20,
@@ -81,6 +55,7 @@ class _ConnectionPillState extends State<ConnectionPill> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Dot
                   Container(
                     width: 6,
                     height: 6,
@@ -88,11 +63,7 @@ class _ConnectionPillState extends State<ConnectionPill> {
                       color: statusColor,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(
-                          color: statusColor.withOpacity(0.8),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
+                        BoxShadow(color: statusColor.withOpacity(0.8), blurRadius: 6, spreadRadius: 1),
                       ],
                     ),
                   ),
@@ -117,9 +88,9 @@ class _ConnectionPillState extends State<ConnectionPill> {
               ),
             ),
             const SizedBox(width: 6),
-            // Mode Switch Button – two arrows
+            // Switch button (⇄)
             GestureDetector(
-              onTap: () => _switchMode(connectionService),
+              onTap: _doSwitch,
               child: LiquidGlassCard(
                 padding: const EdgeInsets.all(8),
                 borderRadius: 12,

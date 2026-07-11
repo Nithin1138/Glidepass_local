@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/nebula_background.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/app_logo.dart';
 import '../services/connection_service.dart';
 import '../config/theme.dart';
@@ -122,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Stack(
         children: [
-          const NebulaBackground(),
+          const AuroraBackground(),
           
           AnimatedBuilder(
             animation: _controller,

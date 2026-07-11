@@ -23,10 +23,10 @@ class AppTheme {
 
   // Colors dynamically based on theme mode
   static Color get bgColor => isDark ? const Color(0xFF021024) : const Color(0xFFFDFBF7);
-  static Color get cardBg => isDark ? const Color(0x0AFFFFFF) : const Color(0x60FFFFFF);
-  static Color get borderColor => isDark ? const Color(0x14FFFFFF) : const Color(0x14000000);
+  static Color get cardBg => isDark ? const Color(0x1AFFFFFF) : const Color(0x60FFFFFF); // 10% → 10% white
+  static Color get borderColor => isDark ? const Color(0x26FFFFFF) : const Color(0x14000000); // 8% → 15% white
   static Color get textMain => isDark ? const Color(0xFFFAFAFA) : const Color(0xFF0F172A);
-  static Color get textMuted => isDark ? const Color(0x66FAFAFA) : const Color(0x880F172A);
+  static Color get textMuted => isDark ? const Color(0xB3FAFAFA) : const Color(0x880F172A); // 40% → 70% white
 
   static const Color redStatus = Color(0xFFEF4444);
   static const Color greenStatus = Color(0xFF10B981);
@@ -104,7 +104,7 @@ extension ThemeContext on BuildContext {
   Color get cardBg => Theme.of(this).colorScheme.surface;
   Color get borderColor => isDark ? const Color(0x14FFFFFF) : const Color(0x14000000);
   Color get textMain => Theme.of(this).colorScheme.onSurface;
-  Color get textMuted => Theme.of(this).textTheme.bodyMedium?.color ?? Colors.grey;
+  Color get textMuted => isDark ? const Color(0xB3FAFAFA) : (Theme.of(this).textTheme.bodyMedium?.color ?? Colors.grey);
   Color get accentColor => Theme.of(this).colorScheme.primary;
   Color get accentGlow => accentColor.withOpacity(0.3);
 }

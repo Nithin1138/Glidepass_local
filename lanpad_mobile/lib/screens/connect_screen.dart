@@ -4,7 +4,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/connection_service.dart';
-import '../widgets/nebula_background.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/app_logo.dart';
@@ -206,7 +206,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const NebulaBackground(),
+          const AuroraBackground(),
           
           SafeArea(
             child: SingleChildScrollView(

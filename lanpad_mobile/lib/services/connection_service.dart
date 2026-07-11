@@ -178,22 +178,49 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<bool> switchConnection() async {
-    if (!_isConnected) return false;
-    
+    if (!_isConnected || _sessionId == null) return false;
+
     String? targetUrl;
+
     if (isLocalConnection) {
-      // Switch to Tunnel URL
+      // Currently on LAN → switch to Tunnel (relay)
       if (_tunnelUrl != null && _tunnelUrl!.isNotEmpty) {
         targetUrl = _tunnelUrl;
+        debugPrint('[Switch] LAN → Relay: $targetUrl');
+      } else {
+        debugPrint('[Switch] No tunnel URL available');
+        return false;
       }
     } else {
-      // Switch to LAN Direct URL
-      if (_lanIp != null && _lanIp!.isNotEmpty) {
-        targetUrl = 'http://$_lanIp:8000';
+      // Currently on Relay → switch to LAN Direct
+      // First try to find any LAN device URL from the devices list
+      final lanDevice = _devices.firstWhere(
+        (d) {
+          final uri = Uri.tryParse(d['url'] ?? '');
+          if (uri == null) return false;
+          final h = uri.host;
+          return h == 'localhost' || h == '127.0.0.1' ||
+              h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.');
+        },
+        orElse: () => {},
+      );
+
+      if (lanDevice.isNotEmpty) {
+        targetUrl = lanDevice['url'];
+        debugPrint('[Switch] Relay → LAN (from devices): $targetUrl');
+      } else if (_lanIp != null && _lanIp!.isNotEmpty) {
+        // Fallback: construct from lanIp with the same port as current serverUrl
+        final currentUri = Uri.tryParse(_serverUrl ?? '');
+        final port = currentUri?.port ?? 8000;
+        targetUrl = 'http://$_lanIp:$port';
+        debugPrint('[Switch] Relay → LAN (constructed): $targetUrl');
+      } else {
+        debugPrint('[Switch] No LAN IP available');
+        return false;
       }
     }
 
-    if (targetUrl != null && _sessionId != null) {
+    if (targetUrl != null) {
       return await connect(targetUrl, _sessionId!);
     }
     return false;
