@@ -873,6 +873,13 @@ class LANpadLauncher:
         self._tunnel_url = None
         self.root.after(0, self._update_display)
 
+        def set_app_tunnel_url(url):
+            try:
+                import app
+                app.TUNNEL_URL = url
+            except Exception:
+                pass
+
         def shorten_url(url):
             # Return original URL directly for instant display
             return url
@@ -987,6 +994,7 @@ class LANpadLauncher:
                                     raw_url = match.group(0)
                                     print(f"\n[lanpad] Cloudflare URL: {raw_url}")
                                     self._tunnel_url = shorten_url(raw_url)
+                                    set_app_tunnel_url(raw_url)
                                     print(f"[lanpad] Tunnel ready: {self._tunnel_url}")
                                     self.gui_queue.put(self._update_display)
                                     url_found = True
@@ -1065,6 +1073,7 @@ class LANpadLauncher:
                                     raw_url = match.group(0)
                                     print(f"\n[lanpad] localhost.run URL: {raw_url}")
                                     self._tunnel_url = raw_url
+                                    set_app_tunnel_url(raw_url)
                                     self.gui_queue.put(self._update_display)
                                     url_found = True
                                     break
@@ -1175,6 +1184,7 @@ class LANpadLauncher:
                                     raw_url = "http://" + match.group(1)
                                     print(f"\n[lanpad] bore URL: {raw_url}")
                                     self._tunnel_url = raw_url
+                                    set_app_tunnel_url(raw_url)
                                     self.gui_queue.put(self._update_display)
                                     break
                         except Exception as _e:

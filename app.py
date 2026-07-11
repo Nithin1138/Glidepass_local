@@ -116,6 +116,7 @@ def get_local_ip():
 # Session management as per PRD
 import secrets
 SESSION_TOKEN = secrets.token_hex(16)  # 32 hex chars, 128-bit entropy
+TUNNEL_URL = ""
 _ws_connect_attempts = {}  # {ip: [(timestamp, count), ...]}
 _http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
 active_connections = []
@@ -843,6 +844,15 @@ def _cached_file_response(filename: str):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+
+@app.get("/api/connection/info")
+async def connection_info():
+    return {
+        "status": "success",
+        "lan_ip": get_local_ip(),
+        "tunnel_url": TUNNEL_URL
+    }
 
 
 @app.get("/logo.png")

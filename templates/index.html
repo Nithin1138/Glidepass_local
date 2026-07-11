@@ -692,6 +692,11 @@
                     <span>Browse Resources</span>
                     <i data-lucide="compass" size="20"></i>
                 </button>
+                <button class="connect-btn-main" id="switch-conn-btn"
+                    style="display: none; margin-top: 15px; background: rgba(0, 119, 192, 0.15); border: 1px solid var(--accent-color); color: var(--text-main);">
+                    <span id="switch-conn-text">Switch Connection</span>
+                    <i data-lucide="shuffle" size="20"></i>
+                </button>
             </div>
         </div>
 
@@ -779,6 +784,42 @@
             const s = sessionStorage.getItem('sid') || '';
             window.location.href = '/resources' + (s ? '?sid=' + encodeURIComponent(s) : '');
         });
+
+        // Connection Info & Switcher
+        async function initConnectionSwitcher() {
+            try {
+                const s = sessionStorage.getItem('sid') || '';
+                const response = await fetch(`/api/connection/info?_t=${Date.now()}`);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const switchBtn = document.getElementById('switch-conn-btn');
+                    const switchText = document.getElementById('switch-conn-text');
+                    const hostname = window.location.hostname;
+                    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+                    
+                    if (isLocal) {
+                        if (data.tunnel_url) {
+                            switchText.textContent = 'Switch to Hybrid Mode';
+                            switchBtn.style.display = 'flex';
+                            switchBtn.addEventListener('click', () => {
+                                window.location.href = data.tunnel_url + (s ? '?sid=' + encodeURIComponent(s) : '');
+                            });
+                        }
+                    } else {
+                        if (data.lan_ip) {
+                            switchText.textContent = 'Switch to LAN Direct';
+                            switchBtn.style.display = 'flex';
+                            switchBtn.addEventListener('click', () => {
+                                window.location.href = `http://${data.lan_ip}:8000/` + (s ? `?sid=${encodeURIComponent(s)}` : '');
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load connection info switcher:', e);
+            }
+        }
+        initConnectionSwitcher();
 
         // Connect to active status websocket
         function connectWebSocket() {
