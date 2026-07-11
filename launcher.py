@@ -1871,6 +1871,8 @@ class LANpadLauncher:
                     for src, is_dir in files_to_copy:
                         if is_dir:
                             dest_dir = os.path.join(dst, os.path.basename(src))
+                            if os.path.abspath(src) == os.path.abspath(dest_dir):
+                                continue # Skip copying directory to itself
                             if os.path.exists(dest_dir):
                                 if os.path.isdir(dest_dir):
                                     shutil.rmtree(dest_dir)
@@ -1895,6 +1897,8 @@ class LANpadLauncher:
                                                 progress_cb(copied_bytes, total_bytes)
                         else:
                             dest_file = os.path.join(dst, os.path.basename(src))
+                            if os.path.abspath(src) == os.path.abspath(dest_file):
+                                continue # Skip copying file to itself
                             if os.path.exists(dest_file):
                                 os.remove(dest_file)
                             with open(src, "rb") as fsrc:
