@@ -1775,8 +1775,6 @@ class LANpadLauncher:
         # ── Scrollable list container ────────────────────────────────────────
         list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
         list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
-
-        scrollbar = tk.Scrollbar(v, orient="vertical", command=list_canvas.yview)
         
         scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
         scrollable_frame.bind(
@@ -1787,11 +1785,15 @@ class LANpadLauncher:
         )
         
         list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
-        # ── Scrollable list container ────────────────────────────────────────
-        list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
-        list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
 
-        scrollbar = tk.Scrollbar(v, orient="vertical", command=list_canvas.yview)
+        def _on_files_mousewheel(event):
+            if sys.platform == "darwin":
+                list_canvas.yview_scroll(int(-1 * event.delta), "units")
+            else:
+                list_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                
+        list_canvas.bind("<MouseWheel>", _on_files_mousewheel)
+        scrollable_frame.bind("<MouseWheel>", _on_files_mousewheel)
         
         # ── Progress Bar Card (Hidden by default) ─────────────────────────────
         progress_card = tk.Frame(v, bg="#0D0D10", highlightthickness=1, highlightbackground="#1F1F24")
@@ -2079,13 +2081,7 @@ class LANpadLauncher:
                     msg = "No files deleted this session." if show_deleted_mode[0] else "No files shared yet. Choose a file above to start!"
                     lbl = tk.Label(scrollable_frame, text=msg, font=(self.FU, 10), bg=self.BG, fg=self.DIM, pady=40)
                     lbl.pack(fill="x")
-                    scrollbar.place_forget()
                 else:
-                    # Show scrollbar only if items exceed viewport height
-                    if len(files_list) > 5:
-                        scrollbar.place(x=W - 15, y=285 + yo, height=430)
-                    else:
-                        scrollbar.place_forget()
 
                     for item in files_list:
                         if show_deleted_mode[0]:
@@ -2248,6 +2244,80 @@ class LANpadLauncher:
                             del_btn = tk.Label(btn_col, text="✕", font=(self.FU, 11, "bold"), bg="#3B1C1C", fg="#FF4D4D", padx=12, pady=4, relief="flat", cursor="hand2")
                             del_btn.pack(side="left", padx=4)
                             del_btn.bind("<Button-1>", lambda e, fn=f, ib=is_inbox_file: make_delete_handler(fn, ib)())
+                            
+                    # ── Render Connected Hubs Section ────────────────────────
+                    if self.connected_hubs and not show_deleted_mode[0]:
+                        for hub in self.connected_hubs:
+                            hub_url = hub["url"]
+                            hub_token = hub["token"]
+                            hub_files = hub["files"]
+                            
+                            disp_host = hub_url.replace('http://','').replace('https://','')
+                            
+                            sec_card = tk.Frame(scrollable_frame, bg=self.BG, pady=10)
+                            sec_card.pack(fill="x")
+                            tk.Label(sec_card, text=f"FILES ON REMOTE DEVICE ({disp_host})", font=(self.FU, 8, "bold"), bg=self.BG, fg="#0077C0").pack(side="left")
+                            
+                            if not hub_files:
+                                none_lbl = tk.Label(scrollable_frame, text="No shared files on this remote device.", font=(self.FU, 9, "italic"), bg=self.BG, fg=self.DIM, pady=15)
+                                none_lbl.pack(fill="x")
+                            else:
+                                for rf in hub_files:
+                                    rfname = rf.get("name")
+                                    rfsize = rf.get("size", 0)
+                                    
+                                    if rfsize < 1024:
+                                        rfsize_str = f"{rfsize} B"
+                                    elif rfsize < 1024 * 1024:
+                                        rfsize_str = f"{rfsize / 1024:.1f} KB"
+                                    elif rfsize < 1024 * 1024 * 1024:
+                                        rfsize_str = f"{rfsize / (1024 * 1024):.1f} MB"
+                                    else:
+                                        rfsize_str = f"{rfsize / (1024 * 1024 * 1024):.1f} GB"
+                                        
+                                    card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=self.BORDER)
+                                    card.pack(fill="x", pady=(0, 8))
+                                    
+                                    text_col = tk.Frame(card, bg=self.BG2)
+                                    text_col.pack(side="left", fill="both", expand=True)
+                                    
+                                    name_lbl = tk.Label(text_col, text=rfname, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
+                                    name_lbl.pack(fill="x")
+                                    
+                                    size_lbl = tk.Label(text_col, text=rfsize_str, font=(self.FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
+                                    size_lbl.pack(fill="x")
+                                    
+                                    btn_col = tk.Frame(card, bg=self.BG2)
+                                    btn_col.pack(side="right", fill="y")
+                                    
+                                    def make_download_handler(filename, size, target_url, target_token):
+                                        def handler(e=None):
+                                            dest_dir = os.path.expanduser("~/Downloads/LANpad")
+                                            os.makedirs(dest_dir, exist_ok=True)
+                                            dest_path = os.path.join(dest_dir, filename)
+                                            
+                                            def download_worker():
+                                                try:
+                                                    down_url = f"{target_url}/api/files/download/{urllib.parse.quote(filename)}?sid={urllib.parse.quote(target_token)}"
+                                                    req = urllib.request.Request(down_url)
+                                                    with urllib.request.urlopen(req) as resp:
+                                                        with open(dest_path, "wb") as local_file:
+                                                            buffer_size = 1024*1024
+                                                            while True:
+                                                                buf = resp.read(buffer_size)
+                                                                if not buf:
+                                                                    break
+                                                                local_file.write(buf)
+                                                    self.root.after(0, lambda fn=filename: messagebox.showinfo("Downloaded", f"Finished downloading:\n{fn}\nSaved to LANpad Downloads folder."))
+                                                    self.root.after(100, refresh_files)
+                                                except Exception as err:
+                                                    self.root.after(0, lambda fn=filename, ex=err: messagebox.showerror("Download Failed", f"Could not download {fn}:\n{ex}"))
+                                            threading.Thread(target=download_worker, daemon=True).start()
+                                        return handler
+                                    
+                                    dl_btn = tk.Label(btn_col, text="↓ Download", font=(self.FU, 9, "bold"), bg="#0077C0", fg="#FFFFFF", padx=10, pady=4, relief="flat", cursor="hand2")
+                                    dl_btn.pack(side="left", padx=4)
+                                    dl_btn.bind("<Button-1>", make_download_handler(rfname, rfsize, hub_url, hub_token))
             except Exception as e:
                 lbl = tk.Label(scrollable_frame, text=f"Error: {e}", font=(self.FU, 10), bg=self.BG, fg=self.RED, pady=20)
                 lbl.pack(fill="x")
@@ -2423,15 +2493,20 @@ class LANpadLauncher:
             list_frame.pack(fill="both", expand=True)
             
             list_canvas = tk.Canvas(list_frame, bg=self.BG, highlightthickness=0)
-            list_canvas.pack(fill="both", expand=True, side="left")
-            
-            scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=list_canvas.yview)
-            scrollbar.pack(fill="y", side="right")
-            list_canvas.configure(yscrollcommand=scrollbar.set)
+            list_canvas.pack(fill="both", expand=True)
             
             scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
             scrollable_frame.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
-            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=344)
+            list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=364)
+            
+            def _on_mousewheel(event):
+                if sys.platform == "darwin":
+                    list_canvas.yview_scroll(int(-1 * event.delta), "units")
+                else:
+                    list_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            
+            list_canvas.bind("<MouseWheel>", _on_mousewheel)
+            scrollable_frame.bind("<MouseWheel>", _on_mousewheel)
             
             for hub in self.connected_hubs:
                 url_str = hub["url"]
