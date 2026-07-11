@@ -41,6 +41,8 @@ class ConnectionService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _serverUrl = prefs.getString(AppConstants.keyServerUrl);
     _sessionId = prefs.getString(AppConstants.keySessionId);
+    _tunnelUrl = prefs.getString(AppConstants.keyTunnelUrl);
+    _lanIp = prefs.getString(AppConstants.keyLanIp);
     
     final String? devicesJson = prefs.getString('devices_list');
     if (devicesJson != null) {
@@ -89,6 +91,8 @@ class ConnectionService extends ChangeNotifier {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(AppConstants.keyServerUrl, targetUrl);
           await prefs.setString(AppConstants.keySessionId, sid);
+          await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
+          await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
           
           // Automatically register device in the list
           String name = 'Device ${_devices.length + 1}';
@@ -137,6 +141,8 @@ class ConnectionService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.keyServerUrl);
     await prefs.remove(AppConstants.keySessionId);
+    await prefs.remove(AppConstants.keyTunnelUrl);
+    await prefs.remove(AppConstants.keyLanIp);
     
     notifyListeners();
   }
@@ -154,6 +160,11 @@ class ConnectionService extends ChangeNotifier {
           _isConnected = true;
           _tunnelUrl = data['tunnel_url'];
           _lanIp = data['lan_ip'];
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
+          await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
+          
           notifyListeners();
           return true;
         }

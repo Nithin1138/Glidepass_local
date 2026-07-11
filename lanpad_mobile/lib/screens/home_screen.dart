@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/connection_service.dart';
 import '../widgets/nebula_background.dart';
 import '../widgets/connection_pill.dart';
@@ -20,28 +19,40 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final ConnectionService _connectionService = ConnectionService();
   int _pasteCount = 0;
   int _filesCount = 0;
+  bool _isSwitchingMode = false;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _connectionService.addListener(_onConnectionChanged);
     _loadStats();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
     _connectionService.removeListener(_onConnectionChanged);
+    _pulseController.dispose();
     super.dispose();
   }
 
   void _onConnectionChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadStats() async {
@@ -50,14 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _pasteCount = prefs.getInt('paste_count') ?? 0;
       _filesCount = prefs.getInt('files_count') ?? 0;
     });
-  }
-
-  Future<void> _openSupport() async {
-    _triggerHaptic();
-    final url = Uri.parse('https://lanpad.app/support');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
   }
 
   void _triggerHaptic() {
@@ -81,139 +84,248 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToTab(int index) {
+  Future<void> _toggleConnectionMode() async {
+    if (_isSwitchingMode || !_connectionService.isConnected) return;
+
+    final isLan = _connectionService.isLocalConnection;
+    if (isLan) {
+      final tunnel = _connectionService.tunnelUrl;
+      if (tunnel == null || tunnel.isEmpty) {
+        _showToast('Relay not available – start a tunnel on the server', isError: true);
+        return;
+      }
+    } else {
+      final lan = _connectionService.lanIp;
+      if (lan == null || lan.isEmpty) {
+        _showToast('LAN not available – check Wi-Fi', isError: true);
+        return;
+      }
+    }
+
+    setState(() => _isSwitchingMode = true);
     _triggerHaptic();
-    final navState = MainNavigationScreen.of(context);
-    if (navState != null) {
-      navState.setIndex(index);
+
+    final success = await _connectionService.switchConnection();
+    setState(() => _isSwitchingMode = false);
+
+    if (success) {
+      final newMode = _connectionService.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay';
+      _showToast('Switched to $newMode');
+    } else {
+      _showToast('Could not switch – check connection', isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppTheme.isDark;
+    final isLan = _connectionService.isLocalConnection;
+    final hasTunnel = (_connectionService.tunnelUrl?.isNotEmpty ?? false);
+    final hasLan = (_connectionService.lanIp?.isNotEmpty ?? false);
+    final canSwitch = _connectionService.isConnected && (isLan ? hasTunnel : hasLan);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           const NebulaBackground(),
-          
-          // Header Actions
+
+          // Header Bar
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
+            top: MediaQuery.of(context).padding.top + 14,
             left: 16,
             right: 16,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const ConnectionPill(),
-                
-                Row(
-                  children: [
-                    // Notification Button
-                    GestureDetector(
-                      onTap: () {
-                        _triggerHaptic();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'Notifications synchronized with local device',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: AppTheme.accentColor,
-                          ),
-                        );
-                      },
-                      child: LiquidGlassCard(
-                        padding: const EdgeInsets.all(10),
-                        borderRadius: 12,
-                        isFlat: true,
-                        child: Icon(
-                          LucideIcons.bell,
-                          size: 20,
-                          color: AppTheme.textMain,
-                        ),
-                      ),
-                    ),
-                  ],
+                LiquidGlassCard(
+                  padding: const EdgeInsets.all(10),
+                  borderRadius: 12,
+                  isFlat: true,
+                  child: Icon(LucideIcons.bell, size: 20, color: AppTheme.textMain),
                 ),
               ],
             ),
           ),
-          
-          // Dashboard Contents
+
+          // Scrollable Body
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24.0, 80.0, 24.0, 110.0),
+              padding: const EdgeInsets.fromLTRB(20, 68, 20, 110),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 20),
-                  
-                  // App Logo with Bobbing Animation
+                  const SizedBox(height: 10),
+
+                  // Logo + Title
                   Center(
                     child: Column(
                       children: [
-                        const AppLogo(size: 90, animate: true),
-                        const SizedBox(height: 12),
+                        const AppLogo(size: 68, animate: true),
+                        const SizedBox(height: 10),
                         Text(
                           'LANPAD',
                           style: TextStyle(
                             fontFamily: 'Outfit',
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 4.0,
+                            letterSpacing: 5.0,
                             color: AppTheme.textMain,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  Text(
-                    'Linked Up',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textMain,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Connected to laptop command center. Ready to bridge your data.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textMuted,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  
-                  // Stats Summary Panel
-                  LiquidGlassCard(
-                    isFlat: false,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatItem('Keyboard Injects', _pasteCount.toString()),
-                        Container(width: 1, height: 30, color: AppTheme.borderColor),
-                        _buildStatItem('Files Shared', _filesCount.toString()),
-                        Container(width: 1, height: 30, color: AppTheme.borderColor),
-                        _buildStatItem(
-                          'Path', 
-                          _connectionService.isLocalConnection ? 'LAN' : 'Tunnel',
+                        const SizedBox(height: 4),
+                        Text(
+                          'Remote Control  ·  File Bridge  ·  Clipboard',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  
-                  // Devices Switcher Header
+                  const SizedBox(height: 26),
+
+                  // ── Connection Mode Toggle Card ──────────────────────
+                  LiquidGlassCard(
+                    isFlat: false,
+                    hasGlow: _connectionService.isConnected,
+                    glowIntensity: 0.5,
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isLan ? LucideIcons.wifi : LucideIcons.globe,
+                              color: AppTheme.accentColor,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              'CONNECTION MODE',
+                              style: TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Segmented Toggle
+                        Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppTheme.borderColor.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              _buildModeTab(
+                                label: 'LAN Direct',
+                                icon: LucideIcons.wifi,
+                                isSelected: isLan,
+                                isAvailable: hasLan,
+                                onTap: isLan ? null : (canSwitch ? _toggleConnectionMode : null),
+                              ),
+                              _buildModeTab(
+                                label: 'Hybrid Relay',
+                                icon: LucideIcons.globe,
+                                isSelected: !isLan,
+                                isAvailable: hasTunnel,
+                                onTap: !isLan ? null : (canSwitch ? _toggleConnectionMode : null),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Status line
+                        if (_isSwitchingMode)
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 13,
+                                height: 13,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: AppTheme.accentColor,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Switching…',
+                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (context, _) => Opacity(
+                                  opacity: _pulseAnimation.value,
+                                  child: Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: _connectionService.isConnected
+                                          ? const Color(0xFF00E676)
+                                          : Colors.grey,
+                                      shape: BoxShape.circle,
+                                      boxShadow: _connectionService.isConnected
+                                          ? [BoxShadow(color: const Color(0xFF00E676).withOpacity(0.7), blurRadius: 5)]
+                                          : [],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  isLan
+                                      ? hasTunnel
+                                          ? 'On Wi-Fi. Tap Hybrid Relay to switch to remote access.'
+                                          : 'Connected via Wi-Fi. No relay tunnel detected.'
+                                      : hasLan
+                                          ? 'On Relay tunnel. Tap LAN Direct to switch to Wi-Fi.'
+                                          : 'Connected via relay tunnel.',
+                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Stats Strip ──────────────────────────────────────
+                  LiquidGlassCard(
+                    isFlat: true,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem(LucideIcons.keyboard, 'Pastes', '$_pasteCount'),
+                        Container(width: 1, height: 26, color: AppTheme.borderColor),
+                        _buildStatItem(LucideIcons.files, 'Files', '$_filesCount'),
+                        Container(width: 1, height: 26, color: AppTheme.borderColor),
+                        _buildStatItem(
+                          isLan ? LucideIcons.wifi : LucideIcons.globe,
+                          'Path',
+                          isLan ? 'LAN' : 'Relay',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Target Computers ─────────────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -221,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'TARGET COMPUTERS',
                         style: TextStyle(
                           color: AppTheme.textMuted,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.5,
                         ),
@@ -229,17 +341,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(LucideIcons.monitor, color: AppTheme.textMuted, size: 14),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
-                  // Devices Switcher list
                   if (_connectionService.devices.isEmpty)
                     LiquidGlassCard(
                       isFlat: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        child: Center(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           child: Text(
-                            'No target devices registered',
+                            'No computers added yet',
                             style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                           ),
                         ),
@@ -255,41 +366,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.only(bottom: 10.0),
                         child: AnimatedButton(
                           onTap: () async {
-                            _triggerHaptic();
                             if (isActive) return;
+                            _triggerHaptic();
                             final success = await _connectionService.selectDevice(index);
-                            if (success) {
-                              _showToast('Switched to ${device['name']}');
-                            } else {
-                              _showToast('Failed to connect to ${device['name']}', isError: true);
-                            }
+                            _showToast(
+                              success
+                                  ? 'Switched to ${device['name']}'
+                                  : 'Failed to connect to ${device['name']}',
+                              isError: !success,
+                            );
                           },
                           decoration: BoxDecoration(
-                            color: isActive 
-                                ? AppTheme.accentColor.withOpacity(0.08) 
+                            color: isActive
+                                ? AppTheme.accentColor.withOpacity(0.08)
                                 : AppTheme.cardBg,
                             border: Border.all(
-                              color: isActive 
-                                  ? AppTheme.accentColor.withOpacity(0.6) 
+                              color: isActive
+                                  ? AppTheme.accentColor.withOpacity(0.55)
                                   : AppTheme.borderColor,
                               width: isActive ? 1.5 : 1.0,
                             ),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                width: 42,
+                                height: 42,
                                 decoration: BoxDecoration(
-                                  color: isActive 
-                                      ? AppTheme.accentColor.withOpacity(0.12) 
-                                      : AppTheme.borderColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
+                                  color: isActive
+                                      ? AppTheme.accentColor.withOpacity(0.14)
+                                      : AppTheme.borderColor.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(11),
                                 ),
                                 child: Icon(
                                   LucideIcons.laptop,
                                   color: isActive ? AppTheme.accentColor : AppTheme.textMuted,
-                                  size: 16,
+                                  size: 19,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -302,16 +415,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       style: TextStyle(
                                         color: AppTheme.textMain,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        fontSize: 14,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       device['url'] ?? '',
-                                      style: TextStyle(
-                                        color: AppTheme.textMuted,
-                                        fontSize: 11,
-                                      ),
+                                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -319,19 +429,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               if (isActive)
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.green,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.greenAccent,
-                                        blurRadius: 6,
-                                        spreadRadius: 1,
-                                      )
-                                    ]
+                                AnimatedBuilder(
+                                  animation: _pulseAnimation,
+                                  builder: (context, _) => Opacity(
+                                    opacity: _pulseAnimation.value,
+                                    child: Container(
+                                      width: 9,
+                                      height: 9,
+                                      margin: const EdgeInsets.only(right: 6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF00E676),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color(0xFF00E676),
+                                            blurRadius: 7,
+                                            spreadRadius: 1,
+                                          )
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               IconButton(
@@ -347,84 +464,98 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     }),
+
                   const SizedBox(height: 12),
 
-                  // Add Another Device Button
-                  AnimatedButton(
-                    onTap: () async {
-                      _triggerHaptic();
-                      final success = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (context) => const ConnectScreen(isAddingDevice: true),
-                        ),
-                      );
-                      if (success == true) {
-                        _loadStats();
-                        setState(() {});
-                      }
-                    },
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardBg,
-                      border: Border.all(color: AppTheme.borderColor),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.circle_plus, color: AppTheme.accentColor, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Add Another Device',
-                          style: TextStyle(
-                            color: AppTheme.textMain,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                  // ── Add Laptop + Disconnect row ───────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AnimatedButton(
+                          onTap: () async {
+                            _triggerHaptic();
+                            final success = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (context) => const ConnectScreen(isAddingDevice: true),
+                              ),
+                            );
+                            if (success == true) {
+                              _loadStats();
+                              setState(() {});
+                            }
+                          },
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardBg,
+                            border: Border.all(color: AppTheme.borderColor),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(LucideIcons.circle_plus, color: AppTheme.accentColor, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Add Laptop',
+                                style: TextStyle(
+                                  color: AppTheme.textMain,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AnimatedButton(
+                          onTap: () async {
+                            _triggerHaptic();
+                            await _connectionService.disconnect();
+                            if (context.mounted) {
+                              Navigator.of(context).pushReplacement(
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) =>
+                                      const ConnectScreen(),
+                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                    return FadeTransition(opacity: animation, child: child);
+                                  },
+                                  transitionDuration: const Duration(milliseconds: 400),
+                                ),
+                              );
+                            }
+                          },
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          decoration: BoxDecoration(
+                            color: AppTheme.redStatus.withOpacity(0.07),
+                            border: Border.all(
+                              color: AppTheme.redStatus.withOpacity(0.45),
+                              width: 1.2,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(LucideIcons.log_out, color: AppTheme.redStatus, size: 16),
+                              SizedBox(width: 8),
+                              Text(
+                                'Disconnect',
+                                style: TextStyle(
+                                  color: AppTheme.redStatus,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 40),
 
-                  // Highlighted Disconnect Button
-                  AnimatedButton(
-                    onTap: () async {
-                      _triggerHaptic();
-                      await _connectionService.disconnect();
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          PageRouteBuilder(
-                            pageBuilder: (context, animation, secondaryAnimation) => const ConnectScreen(),
-                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                              return FadeTransition(opacity: animation, child: child);
-                            },
-                            transitionDuration: const Duration(milliseconds: 400),
-                          ),
-                        );
-                      }
-                    },
-                    decoration: BoxDecoration(
-                      color: AppTheme.redStatus.withOpacity(0.08),
-                      border: Border.all(color: AppTheme.redStatus.withOpacity(0.5), width: 1.5),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.log_out, color: AppTheme.redStatus, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Disconnect Server',
-                          style: TextStyle(
-                            color: AppTheme.redStatus,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 35),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -434,23 +565,86 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildModeTab({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required bool isAvailable,
+    VoidCallback? onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.accentColor.withOpacity(0.85)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.accentColor.withOpacity(0.3),
+                      blurRadius: 10,
+                    )
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 13,
+                    color: isSelected
+                        ? Colors.white
+                        : isAvailable
+                            ? AppTheme.textMuted
+                            : AppTheme.textMuted.withOpacity(0.35),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : isAvailable
+                              ? AppTheme.textMuted
+                              : AppTheme.textMuted.withOpacity(0.35),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String label, String value) {
     return Column(
       children: [
+        Icon(icon, size: 14, color: AppTheme.accentColor),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: AppTheme.accentColor,
-            fontFamily: 'Outfit',
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textMain,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-        ),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
       ],
     );
   }
