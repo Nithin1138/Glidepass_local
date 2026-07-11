@@ -23,9 +23,8 @@
             return false;
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap"></noscript>
     <style>
         :root {
             --bg: #050505;
@@ -2284,8 +2283,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: res.title, content: res.content, type: res.type, language: res.language })
                 });
-            } catch (err) { }
-            window.location.href = '/center';
+            window.location.href = '/center?code=' + encodeURIComponent(res.content) + '&title=' + encodeURIComponent(res.title) + '&language=' + encodeURIComponent(res.language || '');
         });
 
         // Report Actions
