@@ -22,6 +22,36 @@ def get_active_session_token():
         print("Please make sure the server is running on port 8000.")
         sys.exit(1)
 
+def poll_mobile_benchmark():
+    print("\n--- WAITING FOR MOBILE SPEED TEST TO BE RUN ---")
+    print("Instructions:")
+    print("1. Open the page on your mobile phone via direct LAN IP or Cloudflare.")
+    print("2. Tap the 'SPEED TEST' button and click 'Run Speed Test'.")
+    print("This script will automatically detect and print the results once finished.\n")
+    
+    url = f"{SERVER_URL}/api/benchmark/get_mobile"
+    start_poll = time.time()
+    
+    # Reset/clear previous reported result first by writing empty dict via a private request if needed
+    # but we can just check if timestamp of reported result is fresh (after start_poll)
+    while True:
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data and "timestamp" in data:
+                    res_time = data["timestamp"]
+                    if res_time > start_poll:
+                        print("✓ Mobile speed test detected!")
+                        return data
+        except Exception:
+            pass
+        
+        # Print a dot every 2 seconds to show active polling status
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        time.sleep(2)
+
 def create_4gb_file():
     print(f"Creating a 4GB dummy file for speed testing at: {TEMP_FILE_PATH}")
     buffer_size = 16 * 1024 * 1024  # 16MB
@@ -107,19 +137,15 @@ def run_download_test(sid):
 if __name__ == "__main__":
     sid = get_active_session_token()
     
+    # 1. Run local Laptop transfers
     if not os.path.exists(TEMP_FILE_PATH):
         create_4gb_file()
     
+    laptop_up = 0.0
+    laptop_dl = 0.0
     try:
-        up = run_upload_test(sid)
-        dl = run_download_test(sid)
-        
-        print("\n======================================")
-        print("         BENCHMARK RESULTS            ")
-        print("======================================")
-        print(f"Upload Speed:   {up:.2f} MB/s")
-        print(f"Download Speed: {dl:.2f} MB/s")
-        print("======================================\n")
+        laptop_up = run_upload_test(sid)
+        laptop_dl = run_download_test(sid)
     finally:
         if os.path.exists(TEMP_FILE_PATH):
             os.remove(TEMP_FILE_PATH)
@@ -130,3 +156,20 @@ if __name__ == "__main__":
             urllib.request.urlopen(req)
         except Exception:
             pass
+
+    # 2. Wait and poll for Mobile speedtest results
+    mobile_data = poll_mobile_benchmark()
+    
+    # 3. Print combined benchmark results
+    print("\n==================================================")
+    print("            FINAL BENCHMARK COMPARISON            ")
+    print("==================================================")
+    print("DEVICE   | DIRECTION | SPEED (MB/s) | STATUS")
+    print("---------+-----------+--------------+-------------")
+    print(f"Laptop   | Upload    | {laptop_up:12.2f} | Localhost")
+    print(f"Laptop   | Download  | {laptop_dl:12.2f} | Localhost")
+    print("---------+-----------+--------------+-------------")
+    print(f"Mobile   | Ping      | {float(mobile_data.get('ping', 0)):10.1f} ms | LAN / Hotspot")
+    print(f"Mobile   | Upload    | {float(mobile_data.get('upload', 0)):12.2f} | LAN / Hotspot")
+    print(f"Mobile   | Download  | {float(mobile_data.get('download', 0)):12.2f} | LAN / Hotspot")
+    print("==================================================\n")

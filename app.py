@@ -1323,9 +1323,12 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
         if cache:
             fd = cache["fd"]
             body = await request.body()
-            os.pwrite(fd, body, offset)
-            cache["written"] += len(body)
-            if cache["written"] >= cache["size"]:
+            await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
+            # Track written bytes; close fd once all data is received
+            with cache["lock"]:
+                cache["written"] += len(body)
+                done = cache["written"] >= cache["size"]
+            if done:
                 try:
                     os.close(fd)
                 except OSError:
@@ -1339,7 +1342,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
             fd = os.open(dest_path, os.O_WRONLY)
             try:
                 body = await request.body()
-                os.pwrite(fd, body, offset)
+                await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
             finally:
                 os.close(fd)
 
@@ -1639,6 +1642,33 @@ async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
 async def get_benchmark_token(request: Request):
     if request.client.host in ("127.0.0.1", "localhost", "::1"):
         return {"session_token": SESSION_TOKEN}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=403, content={"error": "Access denied"})
+
+
+_reported_mobile_results = {}
+
+@app.post("/api/benchmark/report_mobile")
+async def report_mobile_results(request: Request):
+    global _reported_mobile_results
+    import time
+    try:
+        data = await request.json()
+        _reported_mobile_results = {
+            "ping": data.get("ping"),
+            "download": data.get("download"),
+            "upload": data.get("upload"),
+            "timestamp": time.time()
+        }
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/benchmark/get_mobile")
+async def get_mobile_results(request: Request):
+    global _reported_mobile_results
+    if request.client.host in ("127.0.0.1", "localhost", "::1"):
+        return _reported_mobile_results
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=403, content={"error": "Access denied"})
 
