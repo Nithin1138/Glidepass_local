@@ -1710,14 +1710,13 @@ async def delete_file(filename: str, sid: str = None):
     file_path = os.path.join(SHARED_DIR, safe_filename)
     inbox_path = os.path.join(INBOX_DIR, safe_filename)
     try:
-        deleted = False
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            deleted = True
+        # If it's in the inbox, delete it from disk
         if os.path.exists(inbox_path):
             os.remove(inbox_path)
-            deleted = True
-        if deleted:
+            return {"status": "success"}
+        # If it's already accepted in the main shared folder, skip deleting it from disk
+        # but return success so the mobile web view hides it locally
+        if os.path.exists(file_path):
             return {"status": "success"}
         return {"status": "error", "message": "File not found"}
     except Exception as e:

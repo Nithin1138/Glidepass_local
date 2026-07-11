@@ -955,7 +955,11 @@
         }
 
         function renderFiles(files) {
-            if (files.length === 0) {
+            // Filter out files that the mobile user has clicked "Delete" on
+            const deletedSet = new Set(JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]'));
+            const activeFiles = files.filter(f => !deletedSet.has(f.name));
+
+            if (activeFiles.length === 0) {
                 filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared yet. Select a file above to start!</div>`;
                 return;
             }
@@ -963,7 +967,7 @@
             // Track downloaded files in sessionStorage
             const downloadedSet = new Set(JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]'));
 
-            filesList.innerHTML = files.map(file => {
+            filesList.innerHTML = activeFiles.map(file => {
                 const nameEscaped = encodeURIComponent(file.name);
                 const isDownloaded = downloadedSet.has(file.name);
                 const borderStyle = isDownloaded
@@ -1004,24 +1008,31 @@
             setTimeout(() => fetchFilesList(), 300);
         };
 
-        async function deleteSharedFile(filename) {
+        window.deleteSharedFile = async function(filenameEscaped) {
             if (confirm("Are you sure you want to delete this file?")) {
+                const decName = decodeURIComponent(filenameEscaped);
                 try {
-                    const res = await fetch(`/api/files/delete/${filename}?sid=${encodeURIComponent(sid)}`, { method: 'DELETE' });
+                    // Record it locally to hide it immediately from mobile view
+                    const deleted = JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]');
+                    if (!deleted.includes(decName)) {
+                        deleted.push(decName);
+                        localStorage.setItem('deletedMobileFiles', JSON.stringify(deleted));
+                    }
+                    
+                    const res = await fetch(`/api/files/delete/${filenameEscaped}?sid=${encodeURIComponent(sid)}`, { method: 'DELETE' });
                     const data = await res.json();
                     if (data.status === 'success') {
-                        showToast('File deleted successfully');
+                        showToast('File removed successfully');
                         fetchFilesList();
                     } else {
-                        showToast(data.message || 'Delete failed', 'error');
+                        showToast(data.message || 'Failed to delete file', 'error');
                     }
-                } catch(e) {
-                    showToast('Delete failed', 'error');
+                } catch (e) {
+                    showToast('Failed to delete file', 'error');
                 }
             }
-        }
+        };
 
-        window.deleteSharedFile = deleteSharedFile;
         refreshFilesBtn.addEventListener('click', fetchFilesList);
 
         // --- Speed Test Logic ---
