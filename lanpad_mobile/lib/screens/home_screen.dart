@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/connection_service.dart';
+import '../services/api_service.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/connection_pill.dart';
 import '../widgets/animated_button.dart';
@@ -24,6 +27,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _pasteCount = 0;
   int _filesCount = 0;
   bool _isSwitchingMode = false;
+  
+  final ApiService _apiService = ApiService();
+  String _clipboardText = '';
+  bool _isSyncingClipboard = false;
+  bool _isPushingClipboard = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -33,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _connectionService.addListener(_onConnectionChanged);
     _loadStats();
+    _fetchCurrentClipboard();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -61,6 +70,84 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _pasteCount = prefs.getInt('paste_count') ?? 0;
       _filesCount = prefs.getInt('files_count') ?? 0;
     });
+  }
+
+  Future<void> _fetchCurrentClipboard() async {
+    if (!_connectionService.isConnected) return;
+    final res = await _apiService.fetchClipboard();
+    if (res['status'] == 'success' && res['text'] != null) {
+      if (mounted) {
+        setState(() {
+          _clipboardText = res['text'];
+        });
+      }
+    }
+  }
+
+  Future<void> _syncClipboard() async {
+    if (_isSyncingClipboard || !_connectionService.isConnected) return;
+    setState(() => _isSyncingClipboard = true);
+    _triggerHaptic();
+    
+    final res = await _apiService.fetchClipboard();
+    setState(() => _isSyncingClipboard = false);
+
+    if (res['status'] == 'success' && res['text'] != null) {
+      final text = res['text'] as String;
+      if (text.isNotEmpty) {
+        await Clipboard.setData(ClipboardData(text: text));
+        setState(() => _clipboardText = text);
+        _showToast('Copied laptop clipboard to mobile!');
+      } else {
+        _showToast('Laptop clipboard is empty');
+      }
+    } else {
+      _showToast('Failed to pull clipboard', isError: true);
+    }
+  }
+
+  Future<void> _pushClipboard() async {
+    if (_isPushingClipboard || !_connectionService.isConnected) return;
+    setState(() => _isPushingClipboard = true);
+    _triggerHaptic();
+
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text ?? '';
+      if (text.isEmpty) {
+        _showToast('Mobile clipboard is empty', isError: true);
+        setState(() => _isPushingClipboard = false);
+        return;
+      }
+
+      // Send to server (we can hit copy endpoint with post body, or let's simulate paste on target computer)
+      final url = _connectionService.serverUrl;
+      final sid = _connectionService.sessionId;
+      if (url != null && sid != null) {
+        final response = await http.post(
+          Uri.parse('$url/api/paste'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'text': text, 'sid': sid}),
+        ).timeout(const Duration(seconds: 4));
+
+        if (response.statusCode == 200) {
+          final resData = jsonDecode(response.body);
+          if (resData['status'] == 'success') {
+            setState(() => _clipboardText = text);
+            _showToast('Pushed mobile clipboard to laptop!');
+            _loadStats();
+          } else {
+            _showToast('Failed to push: ${resData['message']}', isError: true);
+          }
+        } else {
+          _showToast('Push failed: server error', isError: true);
+        }
+      }
+    } catch (e) {
+      _showToast('Error pushing clipboard: $e', isError: true);
+    } finally {
+      setState(() => _isPushingClipboard = false);
+    }
   }
 
   void _triggerHaptic() {
@@ -200,6 +287,135 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // ── Clipboard Card ────────────────────────────────────
+                  if (_connectionService.isConnected) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'CLIPBOARD BRIDGE',
+                          style: TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        Icon(LucideIcons.clipboard_copy, color: AppTheme.textMuted, size: 14),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    LiquidGlassCard(
+                      isFlat: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _clipboardText.isEmpty
+                                      ? 'No clipboard content synced yet'
+                                      : _clipboardText,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _clipboardText.isEmpty ? AppTheme.textMuted : AppTheme.textMain,
+                                    fontWeight: _clipboardText.isEmpty ? FontWeight.normal : FontWeight.w500,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _syncClipboard,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentColor.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (_isSyncingClipboard)
+                                          SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 1.5,
+                                              color: AppTheme.accentColor,
+                                            ),
+                                          )
+                                        else
+                                          Icon(LucideIcons.download, size: 13, color: AppTheme.accentColor),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Pull from Laptop',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.accentColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _pushClipboard,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.cardBg,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppTheme.borderColor),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (_isPushingClipboard)
+                                          SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 1.5,
+                                              color: AppTheme.textMain,
+                                            ),
+                                          )
+                                        else
+                                          Icon(LucideIcons.upload, size: 13, color: AppTheme.textMain),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Push to Laptop',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textMain,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
 
                   // ── Target Computers ─────────────────────────────────
                   Row(

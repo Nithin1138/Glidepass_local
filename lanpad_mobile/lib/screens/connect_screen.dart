@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import '../services/connection_service.dart';
 import '../widgets/aurora_background.dart';
@@ -26,6 +29,79 @@ class _ConnectScreenState extends State<ConnectScreen> {
   bool _isScanning = false;
   bool _isLoading = false;
   int _connectionTab = 0; // 0 for Scan QR, 1 for Manual Entry
+  List<String> _discoveredUrls = [];
+  bool _isDiscovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _discoverLocalDevices();
+  }
+
+  Future<void> _discoverLocalDevices() async {
+    if (_isDiscovering) return;
+    setState(() {
+      _isDiscovering = true;
+      _discoveredUrls.clear();
+    });
+
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+
+      String? localIp;
+      for (var interface in interfaces) {
+        for (var addr in interface.addresses) {
+          if (!addr.isLoopback) {
+            localIp = addr.address;
+            break;
+          }
+        }
+        if (localIp != null) break;
+      }
+
+      if (localIp != null) {
+        final parts = localIp.split('.');
+        if (parts.length == 4) {
+          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
+          final List<Future<void>> tasks = [];
+          
+          // Asynchronously ping all 254 addresses in parallel with short timeout
+          for (int i = 1; i <= 254; i++) {
+            final ip = '$subnet.$i';
+            final url = 'http://$ip:8000';
+            tasks.add(
+              http.get(Uri.parse('$url/api/connection/info')).timeout(const Duration(milliseconds: 550)).then((res) {
+                if (res.statusCode == 200) {
+                  final data = jsonDecode(res.body);
+                  if (data['status'] == 'success') {
+                    if (mounted) {
+                      setState(() {
+                        if (!_discoveredUrls.contains(url)) {
+                          _discoveredUrls.add(url);
+                        }
+                      });
+                    }
+                  }
+                }
+              }).catchError((_) {}),
+            );
+          }
+          await Future.wait(tasks);
+        }
+      }
+    } catch (e) {
+      debugPrint('Local discovery error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDiscovering = false;
+        });
+      }
+    }
+  }
 
   Future<void> _startQRScan() async {
     _triggerHaptic();
@@ -384,6 +460,126 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           ],
                         ),
                       ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Auto-Discovery Section
+                      Text(
+                        'DISCOVERED ON WI-FI',
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      if (_isDiscovering && _discoveredUrls.isEmpty)
+                        LiquidGlassCard(
+                          isFlat: true,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: AppTheme.accentColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Scanning local Wi-Fi for laptops...',
+                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (_discoveredUrls.isEmpty)
+                        LiquidGlassCard(
+                          isFlat: true,
+                          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                          child: Column(
+                            children: [
+                              Text(
+                                'No laptops found on this Wi-Fi subnet yet',
+                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: _discoverLocalDevices,
+                                child: Text(
+                                  'Scan Again',
+                                  style: TextStyle(
+                                    color: AppTheme.accentColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ..._discoveredUrls.map((url) {
+                          final uri = Uri.tryParse(url);
+                          final ip = uri?.host ?? url;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                _triggerHaptic();
+                                _urlController.text = url;
+                                // Auto connect with empty sid (or let user type token)
+                                _submitConnection(url, _sidController.text);
+                              },
+                              child: LiquidGlassCard(
+                                isFlat: true,
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                child: Row(
+                                  children: [
+                                    Icon(LucideIcons.laptop, color: AppTheme.accentColor, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'LANpad Laptop',
+                                            style: TextStyle(
+                                              color: AppTheme.textMain,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            ip,
+                                            style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      'Connect ➔',
+                                      style: TextStyle(
+                                        color: AppTheme.accentColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
                     ] else ...[
                       // Manual entry layout
                       LiquidGlassCard(
