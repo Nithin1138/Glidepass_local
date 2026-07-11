@@ -78,7 +78,9 @@ class _AnimatedButtonState extends State<AnimatedButton>
       onTap: widget.onTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
           padding: widget.padding,
           decoration: widget.decoration,
           child: Center(child: widget.child),

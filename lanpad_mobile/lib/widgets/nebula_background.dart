@@ -48,25 +48,58 @@ class _NebulaBackgroundState extends State<NebulaBackground>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final isDark = AppTheme.isDark;
+        final isDark = context.isDark;
+
+        final decoration = isDark
+            ? const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
+                  colors: [
+                    Color(0xFF000511),
+                    Color(0xFF021024),
+                    Color(0xFF052659),
+                    Color(0xFF021024),
+                    Color(0xFF000511),
+                  ],
+                  stops: [0.0, 0.25, 0.55, 0.8, 1.0],
+                ),
+              )
+            : const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFDFBF7),
+                    Color(0xFFEBF0F5),
+                  ],
+                ),
+              );
 
         return Stack(
           children: [
-            // Base Background Color
-            Container(color: AppTheme.bgColor),
+            // Base Background Silk Wave
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOut,
+              decoration: decoration,
+              width: double.infinity,
+              height: double.infinity,
+            ),
             
             // Nebula 1 (Glowing Theme Accent)
             Positioned(
               top: -150 + sin(_controller.value * 2 * pi) * 50,
               left: -150 + cos(_controller.value * 2 * pi) * 50,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 600),
                 width: 500,
                 height: 500,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.accentColor.withOpacity(isDark ? 0.18 : 0.12),
+                      context.accentColor.withOpacity(isDark ? 0.18 : 0.12),
                       Colors.transparent,
                     ],
                   ),
@@ -78,7 +111,8 @@ class _NebulaBackgroundState extends State<NebulaBackground>
             Positioned(
               bottom: -100 + cos(_controller.value * 2 * pi + 1) * 60,
               right: -100 + sin(_controller.value * 2 * pi + 1) * 60,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 600),
                 width: 450,
                 height: 450,
                 decoration: BoxDecoration(
@@ -87,7 +121,7 @@ class _NebulaBackgroundState extends State<NebulaBackground>
                     colors: [
                       (isDark 
                           ? const Color(0x26C7EEFF) 
-                          : AppTheme.accentColor.withOpacity(0.08)),
+                          : context.accentColor.withOpacity(0.08)),
                       Colors.transparent,
                     ],
                   ),

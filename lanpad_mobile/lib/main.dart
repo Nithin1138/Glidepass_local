@@ -25,6 +25,14 @@ class LanpadApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.activeTheme,
           themeMode: AppTheme.themeModeNotifier.value,
+          builder: (context, child) {
+            return AnimatedTheme(
+              data: AppTheme.activeTheme,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOut,
+              child: child!,
+            );
+          },
           initialRoute: '/',
           routes: {
             '/': (context) => const SplashScreen(),

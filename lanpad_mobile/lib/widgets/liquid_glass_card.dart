@@ -26,7 +26,8 @@ class LiquidGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppTheme.isDark;
+    final isDark = context.isDark;
+    final accentColor = context.accentColor;
     
     // Custom shadows simulating Neumorphism
     List<BoxShadow> shadows = [];
@@ -48,7 +49,7 @@ class LiquidGlassCard extends StatelessWidget {
           ),
           if (hasGlow)
             BoxShadow(
-              color: AppTheme.accentColor.withOpacity(0.2 * glowIntensity),
+              color: accentColor.withOpacity(0.2 * glowIntensity),
               offset: const Offset(0, 0),
               blurRadius: 20,
               spreadRadius: 2,
@@ -71,7 +72,7 @@ class LiquidGlassCard extends StatelessWidget {
           ),
           if (hasGlow)
             BoxShadow(
-              color: AppTheme.accentColor.withOpacity(0.15 * glowIntensity),
+              color: accentColor.withOpacity(0.15 * glowIntensity),
               offset: const Offset(0, 0),
               blurRadius: 15,
               spreadRadius: 1,
@@ -89,7 +90,7 @@ class LiquidGlassCard extends StatelessWidget {
           : (isDark
               ? [
                   Colors.white.withOpacity(0.06),
-                  AppTheme.accentColor.withOpacity(0.03),
+                  accentColor.withOpacity(0.03),
                   Colors.black.withOpacity(0.15),
                 ]
               : [
@@ -108,7 +109,9 @@ class LiquidGlassCard extends StatelessWidget {
       width: 1.0,
     );
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: shadows,
@@ -117,7 +120,9 @@ class LiquidGlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
             padding: padding,
             decoration: BoxDecoration(
               gradient: gradient,

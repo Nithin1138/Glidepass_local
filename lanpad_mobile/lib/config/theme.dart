@@ -22,7 +22,7 @@ class AppTheme {
   ];
 
   // Colors dynamically based on theme mode
-  static Color get bgColor => isDark ? const Color(0xFF02060E) : const Color(0xFFFDFBF7);
+  static Color get bgColor => isDark ? const Color(0xFF021024) : const Color(0xFFFDFBF7);
   static Color get cardBg => isDark ? const Color(0x0AFFFFFF) : const Color(0x60FFFFFF);
   static Color get borderColor => isDark ? const Color(0x14FFFFFF) : const Color(0x14000000);
   static Color get textMain => isDark ? const Color(0xFFFAFAFA) : const Color(0xFF0F172A);
@@ -96,4 +96,15 @@ class AppTheme {
       ),
     );
   }
+}
+
+extension ThemeContext on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  Color get bgColor => Theme.of(this).scaffoldBackgroundColor;
+  Color get cardBg => Theme.of(this).colorScheme.surface;
+  Color get borderColor => isDark ? const Color(0x14FFFFFF) : const Color(0x14000000);
+  Color get textMain => Theme.of(this).colorScheme.onSurface;
+  Color get textMuted => Theme.of(this).textTheme.bodyMedium?.color ?? Colors.grey;
+  Color get accentColor => Theme.of(this).colorScheme.primary;
+  Color get accentGlow => accentColor.withOpacity(0.3);
 }

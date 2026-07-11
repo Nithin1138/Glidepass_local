@@ -465,7 +465,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () => _saveHapticLevel(level),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected 
