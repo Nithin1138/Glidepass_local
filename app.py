@@ -195,7 +195,8 @@ def get_license_tier():
                 return "DEVELOPER"
             free_enabled = data.get("free_enabled", False)
     except Exception:
-        pass
+        # Cache the failure / offline status for 10 minutes (600s) to avoid repeated blocking timeouts
+        _license_tier_cache = {"tier": "DEVELOPER", "ts": time.time() + 540}
 
     license_path = os.path.expanduser("~/.lanpad_license.json")
     if os.path.exists(license_path):
@@ -263,7 +264,12 @@ def get_cloud_limits(tier):
                     "plans": data.get("plans", [])
                 }
         except Exception:
-            pass
+            # Cache failure / offline status for 10 minutes (600s) to avoid repeated blocking timeouts
+            CLOUD_LIMITS_CACHE = {
+                "timestamp": time.time() + 540,
+                "monetization_enabled": False,
+                "plans": []
+            }
 
     # Base limits (default to 0=unlimited, Admin can restrict via cloud)
     limits = {
