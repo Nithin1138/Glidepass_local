@@ -1742,6 +1742,40 @@ _active_upload = {
 }
 
 
+def save_deleted_file(filename: str, size: int):
+    """Saves info about a deleted file to .metadata.json."""
+    try:
+        import json
+        import time
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        data = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        
+        # Ensure 'deleted_files' list exists
+        if "deleted_files" not in data or not isinstance(data["deleted_files"], list):
+            data["deleted_files"] = []
+            
+        # Append deleted file entry
+        entry = {
+            "name": filename,
+            "size": size,
+            "deleted_at": time.time() * 1000  # milliseconds
+        }
+        # Avoid duplicate names in the deleted list
+        if not any(x.get("name") == filename for x in data["deleted_files"]):
+            data["deleted_files"].append(entry)
+            
+        with open(meta_path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+
 def save_file_duration(filename: str, duration: float):
     """Saves file transfer duration to .metadata.json inside the LANpad shared directory."""
     try:
@@ -1754,6 +1788,8 @@ def save_file_duration(filename: str, duration: float):
                     data = json.load(f)
             except Exception:
                 pass
+        
+        # Keep durations key separate from any generic keys
         data[filename] = round(duration, 1)
         with open(meta_path, "w") as f:
             json.dump(data, f)
@@ -2249,13 +2285,18 @@ async def delete_file(filename: str, sid: str = None):
     file_path = os.path.join(SHARED_DIR, safe_filename)
     inbox_path = os.path.join(INBOX_DIR, safe_filename)
     try:
+        size = 0
         # If it's in the inbox, delete it from disk
         if os.path.exists(inbox_path):
+            size = os.path.getsize(inbox_path)
             os.remove(inbox_path)
+            save_deleted_file(safe_filename, size)
             return {"status": "success"}
         # If it's already accepted in the main shared folder, skip deleting it from disk
         # but return success so the mobile web view hides it locally
         if os.path.exists(file_path):
+            size = os.path.getsize(file_path)
+            save_deleted_file(safe_filename, size)
             return {"status": "success"}
         return {"status": "error", "message": "File not found"}
     except Exception as e:

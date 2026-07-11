@@ -1643,10 +1643,27 @@ class LANpadLauncher:
         sec_frame = tk.Frame(v, bg=self.BG)
         sec_frame.place(x=18, y=250 + yo, width=W - 36, height=24)
         
-        tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM).pack(side="left", anchor="center")
+        sec_title_lbl = tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM)
+        sec_title_lbl.pack(side="left", anchor="center")
         
         refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 11, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
         refresh_lbl.pack(side="right", anchor="center")
+
+        show_deleted_mode = [False]
+
+        def toggle_view_mode(e=None):
+            show_deleted_mode[0] = not show_deleted_mode[0]
+            if show_deleted_mode[0]:
+                sec_title_lbl.config(text="DELETED FILES LOG", fg="#FF4D4D")
+                toggle_mode_lbl.config(text="📁 Active Files", fg="#0077C0")
+            else:
+                sec_title_lbl.config(text="SHARED FILES ON LAPTOP", fg=self.DIM)
+                toggle_mode_lbl.config(text="🗑 Deleted Logs", fg="#FF4D4D")
+            refresh_files()
+
+        toggle_mode_lbl = tk.Label(sec_frame, text="🗑 Deleted Logs", font=(self.FU, 9, "bold"), bg=self.BG, fg="#FF4D4D", cursor="hand2")
+        toggle_mode_lbl.pack(side="right", padx=(0, 15), anchor="center")
+        toggle_mode_lbl.bind("<Button-1>", toggle_view_mode)
 
         # ── Scrollable list container ────────────────────────────────────────
         list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
@@ -1900,29 +1917,40 @@ class LANpadLauncher:
             try:
                 import json
                 meta_path = os.path.join(shared_path, ".metadata.json")
+                meta_data = {}
                 durations = {}
+                deleted_files = []
                 if os.path.exists(meta_path):
                     try:
                         with open(meta_path, "r") as fmeta:
-                            durations = json.load(fmeta)
+                            meta_data = json.load(fmeta)
+                            # Durations are non-list entries
+                            durations = {k: v for k, v in meta_data.items() if k != "deleted_files"}
+                            deleted_files = meta_data.get("deleted_files", [])
                     except Exception:
                         pass
 
                 files_list = []
-                # Main shared folder files
-                if os.path.exists(shared_path):
-                    for f in sorted(os.listdir(shared_path)):
-                        if not f.startswith('.') and os.path.isfile(os.path.join(shared_path, f)):
-                            files_list.append((f, False))
-                # Inbox folder files
-                inbox_path = os.path.join(shared_path, ".inbox")
-                if os.path.exists(inbox_path):
-                    for f in sorted(os.listdir(inbox_path)):
-                        if not f.startswith('.') and os.path.isfile(os.path.join(inbox_path, f)):
-                            files_list.append((f, True))
+                if show_deleted_mode[0]:
+                    # Render deleted files
+                    for df in reversed(deleted_files):
+                        files_list.append((df["name"], False, df["size"], df.get("deleted_at")))
+                else:
+                    # Main shared folder files
+                    if os.path.exists(shared_path):
+                        for f in sorted(os.listdir(shared_path)):
+                            if not f.startswith('.') and os.path.isfile(os.path.join(shared_path, f)):
+                                files_list.append((f, False, os.path.getsize(os.path.join(shared_path, f)), None))
+                    # Inbox folder files
+                    inbox_path = os.path.join(shared_path, ".inbox")
+                    if os.path.exists(inbox_path):
+                        for f in sorted(os.listdir(inbox_path)):
+                            if not f.startswith('.') and os.path.isfile(os.path.join(inbox_path, f)):
+                                files_list.append((f, True, os.path.getsize(os.path.join(inbox_path, f)), None))
 
                 if not files_list:
-                    lbl = tk.Label(scrollable_frame, text="No files shared yet. Choose a file above to start!", font=(self.FU, 10), bg=self.BG, fg=self.DIM, pady=40)
+                    msg = "No files deleted this session." if show_deleted_mode[0] else "No files shared yet. Choose a file above to start!"
+                    lbl = tk.Label(scrollable_frame, text=msg, font=(self.FU, 10), bg=self.BG, fg=self.DIM, pady=40)
                     lbl.pack(fill="x")
                     scrollbar.place_forget()
                 else:
@@ -1932,10 +1960,15 @@ class LANpadLauncher:
                     else:
                         scrollbar.place_forget()
 
-                    for f, is_inbox_file in files_list:
+                    for item in files_list:
+                        if show_deleted_mode[0]:
+                            f, is_inbox_file, size_bytes, deleted_at = item
+                        else:
+                            f, is_inbox_file, size_bytes, _ = item
+
                         cur_dir = inbox_path if is_inbox_file else shared_path
                         f_path = os.path.join(cur_dir, f)
-                        size_bytes = os.path.getsize(f_path)
+                        
                         # format size
                         if size_bytes < 1024:
                             size_str = f"{size_bytes} B"
@@ -1946,26 +1979,35 @@ class LANpadLauncher:
                         else:
                             size_str = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
                         
-                        # Add transfer duration next to size if available
-                        duration = durations.get(f)
-                        if duration is not None:
-                            if duration < 60:
-                                size_str += f" (took {int(duration)}s)"
-                            else:
-                                size_str += f" (took {int(duration//60)}m {int(duration%60)}s)"
-                        
-                        if is_inbox_file:
-                            size_str += " [INBOX]"
+                        if show_deleted_mode[0]:
+                            if deleted_at:
+                                import datetime
+                                dt = datetime.datetime.fromtimestamp(deleted_at / 1000.0)
+                                time_str = dt.strftime("%H:%M")
+                                size_str += f" · Removed at {time_str}"
+                        else:
+                            # Add transfer duration next to size if available
+                            duration = durations.get(f)
+                            if duration is not None:
+                                if duration < 60:
+                                    size_str += f" (took {int(duration)}s)"
+                                else:
+                                    size_str += f" (took {int(duration//60)}m {int(duration%60)}s)"
+                            
+                            if is_inbox_file:
+                                size_str += " [INBOX]"
 
                         disp_name = f
                         if len(disp_name) > 30:
                             disp_name = disp_name[:18] + "..." + disp_name[-9:]
                         
                         is_opened = f in opened_files
-                        is_received_completed = (duration is not None) and (not is_inbox_file)
+                        is_received_completed = (durations.get(f) is not None) and (not is_inbox_file)
                         show_tick = is_opened or is_received_completed
 
-                        if is_inbox_file:
+                        if show_deleted_mode[0]:
+                            border_color = "#3B1C1C"
+                        elif is_inbox_file:
                             border_color = "#0077C0" # Inbox items get a highlighted blue border
                         else:
                             border_color = "#00C853" if show_tick else "#1A1A1F"
@@ -1973,7 +2015,7 @@ class LANpadLauncher:
                         card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
                         card.pack(fill="x", pady=(0, 8))
                         
-                        # Double click card to open (only if it's already in main shared folder)
+                        # Double click card to open (only if it's already in main shared folder and not deleted mode)
                         def make_open_handler(path_to_open, fname):
                             def handler(e=None):
                                 opened_files.add(fname)
@@ -1994,7 +2036,7 @@ class LANpadLauncher:
                                     messagebox.showerror("Error", f"Failed to accept file: {ex}")
                             return handler
 
-                        if not is_inbox_file:
+                        if not is_inbox_file and not show_deleted_mode[0]:
                             card.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         text_col = tk.Frame(card, bg=self.BG2)
@@ -2004,52 +2046,81 @@ class LANpadLauncher:
                         name_frame = tk.Frame(text_col, bg=self.BG2)
                         name_frame.pack(fill="x")
                         
-                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
+                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE if not show_deleted_mode[0] else self.DIM, bg=self.BG2, anchor="w")
                         name_lbl.pack(side="left")
-                        if not is_inbox_file:
+                        if not is_inbox_file and not show_deleted_mode[0]:
                             name_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
-                        if show_tick and not is_inbox_file:
+                        if show_tick and not is_inbox_file and not show_deleted_mode[0]:
                             check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=self.BG2)
                             check_lbl.pack(side="left", padx=(4, 0))
                         
                         size_lbl = tk.Label(text_col, text=size_str, font=(self.FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
                         size_lbl.pack(fill="x")
-                        if not is_inbox_file:
+                        if not is_inbox_file and not show_deleted_mode[0]:
                             size_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
                         
                         btn_col = tk.Frame(card, bg=self.BG2)
                         btn_col.pack(side="right", fill="y")
                         
-                        if is_inbox_file:
-                            # Accept/Download button for inbox files
-                            accept_btn = tk.Label(btn_col, text="↓ Download", font=(self.FU, 9, "bold"), bg="#0077C0", fg="#FFFFFF", padx=10, pady=4, relief="flat", cursor="hand2")
-                            accept_btn.pack(side="left", padx=4)
-                            accept_btn.bind("<Button-1>", lambda e, fn=f: make_accept_handler(fn)())
+                        if show_deleted_mode[0]:
+                            lbl = tk.Label(btn_col, text="Removed", font=(self.FU, 8, "bold"), fg="#FF4D4D", bg=self.BG2, padx=10, pady=4)
+                            lbl.pack(side="left")
                         else:
-                            # Open button — green if already opened/completed, blue if not
-                            btn_bg = "#1B4332" if show_tick else "#0077C0"
-                            btn_fg = "#00C853" if show_tick else "#FFFFFF"
-                            btn_text = "✓" if show_tick else "↓"
-                            open_btn = tk.Label(btn_col, text=btn_text, font=(self.FU, 11, "bold"), bg=btn_bg, fg=btn_fg, padx=12, pady=4, relief="flat", cursor="hand2")
-                            open_btn.pack(side="left", padx=4)
-                            open_btn.bind("<Button-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
-                        
-                        # Delete button
-                        def make_delete_handler(fname, is_inb):
-                            def handler(e=None):
-                                if messagebox.askyesno("Delete File", f"Are you sure you want to delete {fname}?"):
-                                    try:
-                                        p = os.path.join(shared_path, ".inbox" if is_inb else "", fname)
-                                        if os.path.exists(p):
-                                            os.remove(p)
-                                        refresh_files()
-                                    except Exception as ex:
-                                        messagebox.showerror("Error", f"Could not delete: {ex}")
-                            return handler
-                        del_btn = tk.Label(btn_col, text="✕", font=(self.FU, 11, "bold"), bg="#3B1C1C", fg="#FF4D4D", padx=12, pady=4, relief="flat", cursor="hand2")
-                        del_btn.pack(side="left", padx=4)
-                        del_btn.bind("<Button-1>", lambda e, fn=f, ib=is_inbox_file: make_delete_handler(fn, ib)())
+                            if is_inbox_file:
+                                # Accept/Download button for inbox files
+                                accept_btn = tk.Label(btn_col, text="↓ Download", font=(self.FU, 9, "bold"), bg="#0077C0", fg="#FFFFFF", padx=10, pady=4, relief="flat", cursor="hand2")
+                                accept_btn.pack(side="left", padx=4)
+                                accept_btn.bind("<Button-1>", lambda e, fn=f: make_accept_handler(fn)())
+                            else:
+                                # Open button — green if already opened/completed, blue if not
+                                btn_bg = "#1B4332" if show_tick else "#0077C0"
+                                btn_fg = "#00C853" if show_tick else "#FFFFFF"
+                                btn_text = "✓" if show_tick else "↓"
+                                open_btn = tk.Label(btn_col, text=btn_text, font=(self.FU, 11, "bold"), bg=btn_bg, fg=btn_fg, padx=12, pady=4, relief="flat", cursor="hand2")
+                                open_btn.pack(side="left", padx=4)
+                                open_btn.bind("<Button-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                            
+                            # Delete button
+                            def make_delete_handler(fname, is_inb):
+                                def handler(e=None):
+                                    if messagebox.askyesno("Delete File", f"Are you sure you want to delete {fname}?"):
+                                        try:
+                                            p = os.path.join(shared_path, ".inbox" if is_inb else "", fname)
+                                            if os.path.exists(p):
+                                                size = os.path.getsize(p)
+                                                os.remove(p)
+                                                # Log in .metadata.json
+                                                try:
+                                                    import time
+                                                    m_path = os.path.join(shared_path, ".metadata.json")
+                                                    m_data = {}
+                                                    if os.path.exists(m_path):
+                                                        try:
+                                                            with open(m_path, "r") as fm:
+                                                                m_data = json.load(fm)
+                                                        except Exception:
+                                                            pass
+                                                    if "deleted_files" not in m_data or not isinstance(m_data["deleted_files"], list):
+                                                        m_data["deleted_files"] = []
+                                                    entry = {
+                                                        "name": fname,
+                                                        "size": size,
+                                                        "deleted_at": time.time() * 1000
+                                                    }
+                                                    if not any(x.get("name") == fname for x in m_data["deleted_files"]):
+                                                        m_data["deleted_files"].append(entry)
+                                                    with open(m_path, "w") as fm:
+                                                        json.dump(m_data, fm)
+                                                except Exception:
+                                                    pass
+                                            refresh_files()
+                                        except Exception as ex:
+                                            messagebox.showerror("Error", f"Could not delete: {ex}")
+                                return handler
+                            del_btn = tk.Label(btn_col, text="✕", font=(self.FU, 11, "bold"), bg="#3B1C1C", fg="#FF4D4D", padx=12, pady=4, relief="flat", cursor="hand2")
+                            del_btn.pack(side="left", padx=4)
+                            del_btn.bind("<Button-1>", lambda e, fn=f, ib=is_inbox_file: make_delete_handler(fn, ib)())
             except Exception as e:
                 lbl = tk.Label(scrollable_frame, text=f"Error: {e}", font=(self.FU, 10), bg=self.BG, fg=self.RED, pady=20)
                 lbl.pack(fill="x")
