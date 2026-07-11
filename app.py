@@ -44,7 +44,7 @@ if _sys.stderr is None:
 if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import FileResponse
 
 import httpx
@@ -158,7 +158,15 @@ def _read_custom_website_url():
             return None
     return None
 
+_license_tier_cache = {"tier": None, "ts": 0}
+
 def get_license_tier():
+    import time
+    global _license_tier_cache
+    # Return cached value for 60 seconds — avoids a blocking network call on every request
+    if _license_tier_cache["tier"] is not None and time.time() - _license_tier_cache["ts"] < 60:
+        return _license_tier_cache["tier"]
+
     # If monetization is disabled, we default to DEVELOPER (all features unlocked)
     free_enabled = False
     try:
@@ -168,6 +176,7 @@ def get_license_tier():
         with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if not data.get("monetization_enabled", False):
+                _license_tier_cache = {"tier": "DEVELOPER", "ts": time.time()}
                 return "DEVELOPER"
             free_enabled = data.get("free_enabled", False)
     except Exception:
@@ -208,13 +217,16 @@ def get_license_tier():
                         is_valid = False
 
                 if is_valid:
-                    return data.get("tier", "Basic")
+                    tier = data.get("tier", "Basic")
+                    _license_tier_cache = {"tier": tier, "ts": time.time()}
+                    return tier
         except Exception:
             pass
 
-    if free_enabled:
-        return "Free"
-    return "Basic" 
+    result = "Free" if free_enabled else "Basic"
+    _license_tier_cache = {"tier": result, "ts": time.time()}
+    return result
+
 
 CLOUD_LIMITS_CACHE = None
 
@@ -252,7 +264,9 @@ def get_cloud_limits(tier):
         "allow_refill": 0,
         "allow_resource_access": 0,
         "allow_resource_analytics": 0,
-        "allow_tunnel": 0
+        "allow_tunnel": 0,
+        "allow_vitcode": 0,
+        "allow_file_share": 0
     }
 
     # Unlock everything for DEVELOPER or if monetization is completely disabled
@@ -413,7 +427,7 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html"]:
+    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html", "files.html"]:
         success = False
         
         # 0. Try local templates directory (works in source runs and PyInstaller bundles)
@@ -501,7 +515,19 @@ except Exception as e:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Fetch latest templates in the background on startup
+    # Copy local templates synchronously on startup to guarantee the latest templates are served
+    os.makedirs(OTA_DIR, exist_ok=True)
+    for tmpl in ["index.html", "center.html", "files.html"]:
+        local_path = resource_path(os.path.join("templates", tmpl))
+        if os.path.exists(local_path):
+            try:
+                import shutil
+                shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
+                print(f"[Lifespan] Synchronously copied local template: {tmpl}")
+            except Exception as e:
+                print(f"[Lifespan] Failed to copy local template {tmpl}: {e}")
+
+    # Fetch latest OTA templates in the background on startup
     def fetch_ota_templates_safe():
         try:
             fetch_ota_templates()
@@ -734,6 +760,11 @@ async def center():
     return _cached_file_response("center.html")
 
 
+@app.get("/files")
+async def files_page():
+    return _cached_file_response("files.html")
+
+
 @app.get("/terms")
 async def terms_page():
     return _cached_file_response("terms_of_service.html")
@@ -765,7 +796,19 @@ async def resources_page():
 
 
 def _cached_file_response(filename: str):
-    response = FileResponse(get_template_path(filename))
+    from fastapi.responses import HTMLResponse
+    path = get_template_path(filename)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # Inject the active LAN IP of the computer
+        lan_ip = get_local_ip()
+        content = content.replace("{{LAN_IP}}", lan_ip)
+        response = HTMLResponse(content=content)
+    except Exception:
+        # Fallback to standard FileResponse on errors
+        response = FileResponse(path)
+        
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -1677,6 +1720,624 @@ def _safe_pyautogui():
         return None
 
 
+# ── File Sharing Operations ───────────────────────────────────────────────────
+
+SHARED_DIR = os.path.expanduser("~/Downloads/LANpad")
+INBOX_DIR = os.path.join(SHARED_DIR, ".inbox")
+
+if not os.path.exists(SHARED_DIR):
+    os.makedirs(SHARED_DIR, exist_ok=True)
+if not os.path.exists(INBOX_DIR):
+    os.makedirs(INBOX_DIR, exist_ok=True)
+
+
+# Global state to track real-time upload progress from mobile/clients to show in laptop app
+_active_upload = {
+    "filename": "",
+    "size": 0,
+    "written": 0,
+    "start_time": 0.0,
+    "active": False,
+    "mode": "parallel"
+}
+
+
+def save_file_duration(filename: str, duration: float):
+    """Saves file transfer duration to .metadata.json inside the LANpad shared directory."""
+    try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        data = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        data[filename] = round(duration, 1)
+        with open(meta_path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+
+@app.get("/api/files/list")
+async def list_files(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        durations = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    durations = json.load(f)
+            except Exception:
+                pass
+
+        files = []
+        # 1. Main Shared Directory Files
+        if os.path.exists(SHARED_DIR):
+            for name in os.listdir(SHARED_DIR):
+                full_path = os.path.join(SHARED_DIR, name)
+                if os.path.isfile(full_path) and not name.startswith("."):
+                    stat = os.stat(full_path)
+                    files.append({
+                        "name": name,
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime,
+                        "duration": durations.get(name),
+                        "inbox": False
+                    })
+        # 2. Inbox Directory Files (Waiting to be accepted)
+        if os.path.exists(INBOX_DIR):
+            for name in os.listdir(INBOX_DIR):
+                full_path = os.path.join(INBOX_DIR, name)
+                if os.path.isfile(full_path) and not name.startswith("."):
+                    stat = os.stat(full_path)
+                    files.append({
+                        "name": name,
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime,
+                        "duration": durations.get(name),
+                        "inbox": True
+                    })
+        files.sort(key=lambda x: x["modified"], reverse=True)
+        return {"status": "success", "files": files}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/upload")
+async def upload_file(file: UploadFile = File(...), sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        filename = os.path.basename(file.filename)
+        dest_path = os.path.join(SHARED_DIR, filename)
+        
+        from fastapi.concurrency import run_in_threadpool
+        import shutil
+
+        def save_file():
+            file.file.seek(0)
+            with open(dest_path, "wb") as f:
+                shutil.copyfileobj(file.file, f, length=1024 * 1024)
+
+        await run_in_threadpool(save_file)
+        return {"status": "success", "filename": filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
+# Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
+@app.post("/api/files/upload_raw")
+async def upload_file_raw(request: Request, filename: str, mode: str = "parallel", sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        import time
+        start_time = time.time()
+        
+        safe_filename = os.path.basename(filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
+        
+        # Initialize global progress tracking for laptop app
+        content_length = 0
+        try:
+            content_length = int(request.headers.get("content-length", 0))
+        except Exception:
+            pass
+            
+        global _active_upload
+        _active_upload = {
+            "filename": safe_filename,
+            "size": content_length,
+            "written": 0,
+            "start_time": start_time,
+            "active": True,
+            "mode": mode
+        }
+        
+        import asyncio
+        loop = asyncio.get_running_loop()
+        
+        # Open with 4MB OS write buffer — keeps syscalls large and infrequent
+        fd = await loop.run_in_executor(None, lambda: open(dest_path, "wb", buffering=4 * 1024 * 1024))
+        
+        try:
+            async for chunk in request.stream():
+                await loop.run_in_executor(None, fd.write, chunk)
+                _active_upload["written"] += len(chunk)
+            await loop.run_in_executor(None, fd.flush)
+        finally:
+            await loop.run_in_executor(None, fd.close)
+                
+        duration = time.time() - start_time
+        save_file_duration(safe_filename, duration)
+        _active_upload["active"] = False
+        return {"status": "success", "filename": safe_filename}
+    except Exception as e:
+        _active_upload["active"] = False
+        return {"status": "error", "message": str(e)}
+
+
+# Shared file descriptor cache: filename -> (fd, expected_size, bytes_written_counter)
+# Avoids repeated open()/close() syscalls across 12+ concurrent chunk requests
+_upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
+
+
+@app.post("/api/files/preallocate")
+async def preallocate_file(filename: str, size: int, mode: str = "parallel", sid: str = None):
+    """Pre-allocate the destination file so parallel chunk writers can seek to their offsets."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    try:
+        import time
+        safe_filename = os.path.basename(filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
+        with open(dest_path, "wb") as f:
+            f.truncate(size)  # Instant — just sets file size, no disk I/O
+        # Open and cache fd so upload_direct reuses it without open()/close() per chunk
+        import threading
+        _upload_fd_cache[dest_path] = {
+            "fd": os.open(dest_path, os.O_WRONLY),
+            "size": size,
+            "written": 0,
+            "start_time": time.time(),
+            "lock": threading.Lock(),
+        }
+        
+        global _active_upload
+        _active_upload = {
+            "filename": safe_filename,
+            "size": size,
+            "written": 0,
+            "start_time": time.time(),
+            "active": True,
+            "mode": mode
+        }
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/upload_direct")
+async def upload_file_direct(request: Request, filename: str, offset: int, mode: str = "parallel", sid: str = None):
+    """Write streamed data directly to the final file at the given byte offset.
+    Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions.
+    PERFORMANCE: Skips license check for chunks after preallocate (permission already verified)."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    try:
+        import time
+        safe_filename = os.path.basename(filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, safe_filename)
+
+        import asyncio
+        loop = asyncio.get_running_loop()
+
+        # Get cached fd (created during preallocate) to skip open()/close() overhead.
+        # CRITICAL: also skips check_feature_usage() which makes a blocking network call!
+        # Permission was already verified during preallocate — no need to re-check per chunk.
+        cache = _upload_fd_cache.get(dest_path)
+        if cache:
+            fd = cache["fd"]
+            body = await request.body()
+            await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
+            # Track written bytes; close fd once all data is received
+            with cache["lock"]:
+                cache["written"] += len(body)
+                _active_upload["written"] = cache["written"]
+                done = cache["written"] >= cache["size"]
+            if done:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                duration = time.time() - cache["start_time"]
+                save_file_duration(safe_filename, duration)
+                _active_upload["active"] = False
+                _upload_fd_cache.pop(dest_path, None)
+        else:
+            # Fallback: fd not in cache (preallocate was not called) — check permission then write
+            allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+            if not allowed:
+                return {"status": "error", "message": err}
+            fd = os.open(dest_path, os.O_WRONLY)
+            try:
+                body = await request.body()
+                await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
+            finally:
+                os.close(fd)
+
+        return {"status": "success", "offset": offset}
+    except Exception as e:
+        _active_upload["active"] = False
+        return {"status": "error", "message": str(e)}
+
+
+@app.websocket("/ws/upload")
+async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: str = None, size: int = 0):
+    """WebSocket-based file upload — single TCP connection, binary frames, zero HTTP overhead.
+    Pipelining: next receive starts while current write completes for maximum throughput."""
+    await websocket.accept()
+
+    if sid != SESSION_TOKEN:
+        await websocket.send_json({"status": "error", "message": "Unauthorized"})
+        await websocket.close(code=1008)
+        return
+
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        await websocket.send_json({"status": "error", "message": err})
+        await websocket.close()
+        return
+
+    if not filename or size <= 0:
+        await websocket.send_json({"status": "error", "message": "Missing filename or size"})
+        await websocket.close()
+        return
+
+    safe_filename = os.path.basename(filename)
+    dest_path = os.path.join(SHARED_DIR, safe_filename)
+
+    # Pre-allocate the full file instantly (no actual I/O, just sets file size)
+    with open(dest_path, "wb") as f:
+        f.truncate(size)
+
+    import asyncio
+    import concurrent.futures
+    loop = asyncio.get_running_loop()
+
+    # Dedicated thread pool for disk writes — keeps event loop free for new receives
+    write_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+
+    fd = os.open(dest_path, os.O_WRONLY)
+    received = 0
+    last_ack = 0
+    ACK_EVERY = 8 * 1024 * 1024   # ACK every 8MB — less JSON overhead vs 4MB
+    pending_write = None           # Current in-flight pwrite future
+
+    try:
+        while received < size:
+            data = await websocket.receive_bytes()
+            write_offset = received
+            received += len(data)
+
+            # Await the PREVIOUS write before starting the next receive+write cycle.
+            # This prevents unbounded memory growth while still pipelining effectively.
+            if pending_write is not None:
+                await pending_write
+
+            # Kick off the write without awaiting — receive next chunk while this writes
+            pending_write = loop.run_in_executor(
+                write_executor,
+                lambda d=data, o=write_offset: os.pwrite(fd, d, o)
+            )
+
+            # Send lightweight progress ACK
+            if received - last_ack >= ACK_EVERY or received >= size:
+                await websocket.send_json({"received": received, "total": size})
+                last_ack = received
+
+        # Ensure the last write completes before signalling success
+        if pending_write is not None:
+            await pending_write
+
+        await websocket.send_json({"status": "success", "filename": safe_filename})
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        try:
+            await websocket.send_json({"status": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        os.close(fd)
+        write_executor.shutdown(wait=False)
+
+
+
+@app.post("/api/files/upload_chunk")
+async def upload_file_chunk(request: Request, upload_id: str, chunk_index: int, sid: str = None):
+    """Legacy chunked upload — kept for backward compatibility."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    
+    import re
+    if not re.match(r"^[a-zA-Z0-9_\-]+$", upload_id):
+        return {"status": "error", "message": "Invalid upload_id"}
+        
+    try:
+        temp_filename = f".tmp_{upload_id}_{chunk_index}"
+        dest_path = os.path.join(SHARED_DIR, temp_filename)
+        
+        chunks = []
+        chunks_size = 0
+        with open(dest_path, "wb") as f:
+            async for chunk in request.stream():
+                chunks.append(chunk)
+                chunks_size += len(chunk)
+                if chunks_size >= 4 * 1024 * 1024:
+                    f.write(b''.join(chunks))
+                    chunks = []
+                    chunks_size = 0
+            if chunks:
+                f.write(b''.join(chunks))
+                
+        return {"status": "success", "chunk_index": chunk_index}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/files/merge_chunks")
+async def merge_file_chunks(upload_id: str, filename: str, total_chunks: int, sid: str = None):
+    """Legacy merge — kept for backward compatibility."""
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+        
+    import re
+    if not re.match(r"^[a-zA-Z0-9_\-]+$", upload_id):
+        return {"status": "error", "message": "Invalid upload_id"}
+        
+    try:
+        safe_filename = os.path.basename(filename)
+        dest_path = os.path.join(SHARED_DIR, safe_filename)
+        
+        from fastapi.concurrency import run_in_threadpool
+        
+        def do_merge():
+            with open(dest_path, "wb") as outfile:
+                for idx in range(total_chunks):
+                    chunk_path = os.path.join(SHARED_DIR, f".tmp_{upload_id}_{idx}")
+                    if not os.path.exists(chunk_path):
+                        raise Exception(f"Missing chunk {idx}")
+                    with open(chunk_path, "rb") as infile:
+                        while True:
+                            data = infile.read(4 * 1024 * 1024)
+                            if not data:
+                                break
+                            outfile.write(data)
+            
+            for idx in range(total_chunks):
+                chunk_path = os.path.join(SHARED_DIR, f".tmp_{upload_id}_{idx}")
+                try:
+                    os.remove(chunk_path)
+                except Exception:
+                    pass
+                    
+        await run_in_threadpool(do_merge)
+        return {"status": "success", "filename": safe_filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+
+@app.get("/api/files/download/{filename}")
+async def download_file(filename: str, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail=err)
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+    
+    from fastapi.responses import StreamingResponse
+    from fastapi.concurrency import run_in_threadpool
+    import urllib.parse
+    import shutil
+    import tempfile
+    
+    # If the target is a directory (like a Keynote .key package or folder), zip it on the fly
+    if os.path.isdir(file_path):
+        temp_dir = tempfile.gettempdir()
+        zip_filename = safe_filename + ".zip"
+        zip_path = os.path.join(temp_dir, zip_filename)
+        
+        def zip_dir():
+            if os.path.exists(zip_path):
+                try:
+                    os.remove(zip_path)
+                except Exception:
+                    pass
+            import zipfile
+            # Use ZIP_STORED (no compression) for instantaneous zipping at full disk I/O speeds
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zf:
+                for root, dirs, files in os.walk(file_path):
+                    for file in files:
+                        full_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(full_path, file_path)
+                        zf.write(full_path, rel_path)
+            
+        await run_in_threadpool(zip_dir)
+        file_path = zip_path
+        safe_filename = zip_filename
+
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    import urllib.parse
+    
+    file_size = os.path.getsize(file_path)
+    
+    async def iterfile():
+        loop = asyncio.get_running_loop()
+        with open(file_path, mode="rb", buffering=4 * 1024 * 1024) as f:
+            chunk_size = 4 * 1024 * 1024  # 4MB chunks for high-throughput LAN
+            while True:
+                chunk = await loop.run_in_executor(None, f.read, chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+
+    encoded_filename = urllib.parse.quote(safe_filename)
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+        "Content-Length": str(file_size),
+    }
+    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
+
+
+@app.delete("/api/files/delete/{filename}")
+async def delete_file(filename: str, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    allowed, err = check_feature_usage("allow_file_share", "File Sharing")
+    if not allowed:
+        return {"status": "error", "message": err}
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    inbox_path = os.path.join(INBOX_DIR, safe_filename)
+    try:
+        # If it's in the inbox, delete it from disk
+        if os.path.exists(inbox_path):
+            os.remove(inbox_path)
+            return {"status": "success"}
+        # If it's already accepted in the main shared folder, skip deleting it from disk
+        # but return success so the mobile web view hides it locally
+        if os.path.exists(file_path):
+            return {"status": "success"}
+        return {"status": "error", "message": "File not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/speedtest/upload")
+async def speedtest_upload(request: Request, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
+    # Consume request stream without writing to disk
+    async for _ in request.stream():
+        pass
+    return {"status": "success"}
+
+
+@app.get("/api/speedtest/download")
+async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    # Stream dummy bytes directly from memory (20MB default)
+    chunk = b"\0" * (1024 * 1024)  # 1MB chunk of zeros — saturates LAN bandwidth
+    def iter_dummy():
+        total_sent = 0
+        while total_sent < size:
+            to_send = min(len(chunk), size - total_sent)
+            yield chunk[:to_send]
+            total_sent += to_send
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        iter_dummy(),
+        media_type="application/octet-stream",
+        headers={"Content-Length": str(size)}
+    )
+
+
+@app.get("/api/benchmark/token")
+async def get_benchmark_token(request: Request):
+    if request.client.host in ("127.0.0.1", "localhost", "::1"):
+        return {"session_token": SESSION_TOKEN}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=403, content={"error": "Access denied"})
+
+
+_reported_mobile_results = {}
+
+@app.post("/api/benchmark/report_mobile")
+async def report_mobile_results(request: Request):
+    global _reported_mobile_results
+    import time
+    try:
+        data = await request.json()
+        _reported_mobile_results = {
+            "ping": data.get("ping"),
+            "download": data.get("download"),
+            "upload": data.get("upload"),
+            "timestamp": time.time()
+        }
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/benchmark/get_mobile")
+async def get_mobile_results(request: Request):
+    global _reported_mobile_results
+    if request.client.host in ("127.0.0.1", "localhost", "::1"):
+        return _reported_mobile_results
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=403, content={"error": "Access denied"})
+
+
+@app.get("/api/benchmark/upload_progress")
+async def get_upload_progress(sid: str = None):
+    if sid != SESSION_TOKEN:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"error": "Access denied"})
+    return _active_upload
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -1701,5 +2362,39 @@ if __name__ == "__main__":
         print("  - Make sure your firewall allows inbound TCP/8000.")
         print("  - Phone and laptop must be on the same Wi-Fi network.\n")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-       
+    # Boost throughput: uvloop = 2-4x faster event loop (C-based, replaces Python asyncio)
+    # httptools = llhttp-based HTTP parser (same as Node.js, much faster than h11)
+    # Thread pool sized to handle 6+ concurrent pwrite() calls without queuing
+    import concurrent.futures
+    import asyncio
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=24)  # 12 streams × 2 headroom
+    loop_instance = None
+    try:
+        import uvloop
+        loop_instance = uvloop.new_event_loop()
+        asyncio.set_event_loop(loop_instance)
+    except ImportError:
+        pass
+
+    uvicorn_kwargs = dict(
+        host="0.0.0.0",
+        port=8000,
+        http="httptools",      # Fast llhttp-based HTTP/1.1 parser
+        loop="uvloop",         # Fast C-based event loop
+        timeout_keep_alive=30,
+        limit_concurrency=200,
+        ws_max_size=8 * 1024 * 1024,  # 8 MB max WS message — allows 4 MB client chunks with headroom
+        ws_ping_interval=30,          # Keep WS alive during long uploads
+        ws_ping_timeout=60,           # Generous timeout for slow connections
+    )
+
+    # Gracefully fall back if uvloop/httptools not installed in this environment
+    try:
+        import uvloop  # noqa
+        import httptools  # noqa
+    except ImportError:
+        uvicorn_kwargs.pop("http", None)
+        uvicorn_kwargs.pop("loop", None)
+
+    uvicorn.run(app, **uvicorn_kwargs)
+   

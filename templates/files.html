@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LANpad Files Center</title>
+    <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.width = '100%';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '12px';
+        errDiv.style.fontSize = '12px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.wordBreak = 'break-all';
+        errDiv.innerHTML = '<strong>JS Error:</strong> ' + message + ' at ' + source + ':' + lineno;
+        document.body.appendChild(errDiv);
+        return false;
+    };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #FAFAFA;
+            --text-muted: rgba(250, 250, 250, 0.4);
+            --accent-color: #0077C0;
+            --accent-glow: rgba(0, 119, 192, 0.3);
+            --red-status: #C62828;
+            --green-status: #C7EEFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: hidden;
+        }
+
+        #app-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view {
+            width: 100%;
+            flex: 1;
+            opacity: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .space-bg {
+            position: absolute;
+            inset: 0;
+            background: #000000;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .nebula {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 119, 192, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 30% 70%, rgba(199, 238, 255, 0.1) 0%, transparent 35%),
+                radial-gradient(circle at 70% 30%, rgba(0, 119, 192, 0.08) 0%, transparent 35%);
+            filter: blur(40px);
+            animation: nebula-drift 30s infinite alternate linear;
+            pointer-events: none;
+        }
+
+        @keyframes nebula-drift {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(30deg) scale(1.1); }
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+        }
+
+        .layer1 {
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, #fff, rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: star-drift-1 40s linear infinite;
+            opacity: 0.9;
+        }
+
+        .layer2 {
+            background-image:
+                radial-gradient(1px 1px at 50px 100px, #fff, rgba(0, 0, 0, 0)),
+                radial-gradient(1px 1px at 100px 200px, #ffffff, rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 150px 50px, rgba(255, 255, 255, 0.7), rgba(0, 0, 0, 0)),
+                radial-gradient(2px 2px at 200px 150px, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0)),
+                radial-gradient(1px 1px at 250px 250px, #fff, rgba(0, 0, 0, 0));
+            background-repeat: repeat;
+            background-size: 300px 300px;
+            animation: star-drift-2 70s linear infinite;
+            opacity: 0.6;
+        }
+
+        .layer3 {
+            background-image:
+                radial-gradient(1px 1px at 100px 50px, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0)),
+                radial-gradient(1.5px 1.5px at 200px 150px, #ffffff, rgba(0, 0, 0, 0)),
+                radial-gradient(1px 1px at 300px 300px, rgba(255, 255, 255, 0.4), rgba(0, 0, 0, 0)),
+                radial-gradient(1px 1px at 350px 100px, rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0));
+            background-repeat: repeat;
+            background-size: 400px 400px;
+            animation: star-drift-3 100s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes star-drift-1 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -400px; }
+        }
+
+        @keyframes star-drift-2 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -600px; }
+        }
+
+        @keyframes star-drift-3 {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -800px; }
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Command Center View */
+        .command-center {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+            z-index: 1;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .top-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-color);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--green-status);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--green-status);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            padding: 12px 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .header-btn:active {
+            transform: scale(0.95);
+        }
+
+        .disconnect-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--red-status);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4d4d;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            border: none;
+            width: calc(100% - 40px);
+            max-width: 400px;
+            text-align: center;
+            box-shadow:
+                6px 6px 12px rgba(0, 0, 0, 0.4),
+                -2px -2px 8px rgba(255, 255, 255, 0.05),
+                inset 4px 4px 10px rgba(255, 255, 255, 0.4),
+                inset -4px -4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.success {
+            background: var(--accent-color);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .upgrade-badge {
+            position: absolute;
+            top: -5px;
+            right: 4px;
+            background: linear-gradient(135deg, #FFF59D 0%, #FBC02D 100%);
+            color: #050505;
+            font-size: 7px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(251, 192, 45, 0.5);
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 4px 15px rgba(245,158,11,0.25); filter: brightness(1); }
+            50% { box-shadow: 0 4px 25px rgba(245,158,11,0.5); filter: brightness(1.15); }
+            100% { box-shadow: 0 4px 15px rgba(245,158,11,0.25); filter: brightness(1); }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-wrapper" style="overflow: hidden; position: relative;">
+        <div class="space-bg">
+            <div class="nebula"></div>
+            <div class="stars layer1"></div>
+            <div class="stars layer2"></div>
+            <div class="stars layer3"></div>
+        </div>
+
+        <div class="view">
+            <!-- Dynamic LAN Direct WiFi Banner -->
+            <div id="lan-banner" style="display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 12px 16px; font-size: 13px; font-weight: 700; text-align: center; cursor: pointer; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(245,158,11,0.25); border-radius: 12px; margin: 16px; border: 1px solid rgba(255,255,255,0.2); animation: pulse-glow 2s infinite;">
+                <span style="display: flex; align-items: center; gap: 6px;">📶 <span>Direct WiFi Mode available (50MB/s+)</span></span>
+                <span style="background: #000; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px;">Switch Mode</span>
+            </div>
+
+            <div class="command-center">
+                <header>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="top-label" style="display: flex; align-items: center; gap: 8px;">
+                            <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
+                                <i data-lucide="arrow-left" size="16"></i>
+                            </button>
+                            <i data-lucide="folder-up" size="14"></i>
+                            <span style="font-weight: 900; letter-spacing: 0.05em;">LANPAD FILE TRANSFER <span class="status-dot"></span></span>
+                        </div>
+                        <button id="deleted-view-btn" style="background: rgba(255,77,77,0.12); border: 1px solid rgba(255,77,77,0.25); color: #ff6b6b; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; letter-spacing: 0.04em;">
+                            <i data-lucide="trash-2" size="12"></i> DELETED
+                        </button>
+                    </div>
+                    <div class="controls-row">
+                        <button class="header-btn" id="speedtest-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <i data-lucide="gauge" size="16"></i>
+                            <span>SPEED TEST</span>
+                        </button>
+                        <button class="header-btn disconnect-btn" id="disconnect-btn" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <i data-lucide="link-2-off" size="16"></i>
+                            <span>DISCONNECT</span>
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button class="header-btn" id="mode-parallel-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--accent-color); background: rgba(0, 200, 83, 0.15); color: var(--accent-color); padding: 8px 10px; border-radius: 10px;">
+                            <i data-lucide="zap" size="14"></i>
+                            <span>Parallel Mode</span>
+                        </button>
+                        <button class="header-btn" id="mode-inbox-btn" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.75rem; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); padding: 8px 10px; border-radius: 10px;">
+                            <i data-lucide="inbox" size="14"></i>
+                            <span>Inbox Mode</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Tunnel Performance Warning -->
+                <div id="tunnel-warning-card" style="display: none; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); border-radius: 14px; padding: 12px; font-size: 0.75rem; color: #ff4d4d; margin-bottom: 5px;">
+                    <i data-lucide="alert-triangle" size="14" style="vertical-align: middle; margin-right: 6px; display: inline-block;"></i>
+                    <strong>Connected via Internet Tunnel:</strong> Large files (like 3.4GB) will transfer slowly over Cloudflare. For lightning-fast speeds, scan the QR code from the <strong>"Local (Home Wi-Fi)"</strong> tab in your desktop app!
+                </div>
+
+                <!-- Dropzone / Selector -->
+                <div id="file-dropzone" style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 45px 20px; text-align: center; background: var(--card-bg); cursor: pointer; transition: all 0.3s; position: relative; backdrop-filter: blur(20px);">
+                    <input type="file" id="file-input" multiple style="display: none;">
+                    <i data-lucide="upload-cloud" size="36" style="color: var(--accent-color); margin-bottom: 12px; filter: drop-shadow(0 0 10px var(--accent-glow));"></i>
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #fff;">Choose Files / Drag & Drop</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Supports large files (5-10 GB+) cross-device over Local LAN</div>
+                </div>
+
+                <!-- Speed Test Card -->
+                <div id="speedtest-container" style="display: none; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; backdrop-filter: blur(20px);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="gauge" size="14" style="color: var(--accent-color);"></i> LAN Speed Test
+                        </span>
+                        <button id="close-speedtest-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; font-weight: bold; width: 24px; height: 24px;">✕</button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Ping / Latency:</span>
+                            <span id="st-ping-lbl" style="font-weight: bold; color: var(--text-main);">- ms</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Download Speed:</span>
+                            <span id="st-download-lbl" style="font-weight: bold; color: #00F59B;">- MB/s</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                            <span style="color: var(--text-muted);">Upload Speed:</span>
+                            <span id="st-upload-lbl" style="font-weight: bold; color: var(--accent-color);">- MB/s</span>
+                        </div>
+                    </div>
+                    
+                    <div id="st-progress-bar-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: none; margin-top: 4px;">
+                        <div id="st-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00F59B 0%, var(--accent-color) 100%); transition: width 0.1s ease-out;"></div>
+                    </div>
+                    
+                    <button id="run-speedtest-btn" style="background: var(--accent-color); color: #000; border: none; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; cursor: pointer; margin-top: 4px; width: 100%; transition: all 0.2s;">Run Speed Test</button>
+                </div>
+
+                <!-- Progress Bar Card -->
+                <div id="upload-progress-container" style="display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; text-transform: uppercase;">Uploading File</span>
+                        <span id="upload-speed-lbl" style="font-size: 0.7rem; color: var(--accent-color); font-weight: 800; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace; letter-spacing: 0.02em;">00:00 / 00:00 | 0.00 MB/s</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="upload-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color) 0%, #009BF5 100%); transition: width 0.1s ease-out;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                        <span id="upload-percent-lbl">0%</span>
+                        <span id="upload-bytes-lbl">0 / 0 MB</span>
+                    </div>
+                </div>
+
+                <!-- Shared Files list - session only -->
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">This Session</span>
+                        <button id="refresh-files-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700;">
+                            <i data-lucide="refresh-cw" size="12"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="shared-files-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                        <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared yet. Select a file above to start!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ DELETED FILES SUB-VIEW ═══════════════════ -->
+    <div id="deleted-view" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 500; flex-direction: column; padding: 20px; max-width: 450px; margin: 0 auto; overflow-y: auto;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <button id="deleted-back-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 8px;">
+                <i data-lucide="arrow-left" size="16"></i>
+            </button>
+            <div>
+                <div style="font-size: 0.65rem; font-weight: 800; color: #ff6b6b; letter-spacing: 0.07em; text-transform: uppercase;">SESSION LOG</div>
+                <div style="font-size: 1rem; font-weight: 700; color: #fff;">Deleted Files</div>
+            </div>
+        </div>
+        <div id="deleted-files-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files deleted this session.</div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+
+        function formatTime(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) return '00:00';
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            if (h > 0) {
+                return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        lucide.createIcons();
+
+        // Capture session ID (sid) from URL and save to sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
+        // --- Smart LAN Direct WiFi Switcher ---
+        const lanIp = "{{LAN_IP}}";
+        const currentHost = window.location.hostname;
+        if (lanIp && currentHost !== lanIp) {
+            const banner = document.getElementById('lan-banner');
+            if (banner) {
+                banner.style.display = 'flex';
+                banner.addEventListener('click', () => {
+                    window.location.href = `http://${lanIp}:8000/files?sid=${encodeURIComponent(sid)}`;
+                });
+            }
+        }
+
+        const backBtn = document.getElementById('back-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = '/' + (sid ? `?sid=${encodeURIComponent(sid)}` : '');
+            });
+        }
+
+        // --- Transfer Mode Selection (Parallel vs Inbox) ---
+        let activeTransferMode = "parallel";
+        const modeParallelBtn = document.getElementById('mode-parallel-btn');
+        const modeInboxBtn = document.getElementById('mode-inbox-btn');
+
+        modeParallelBtn.addEventListener('click', () => {
+            activeTransferMode = "parallel";
+            modeParallelBtn.style.borderColor = "var(--accent-color)";
+            modeParallelBtn.style.background = "rgba(0, 200, 83, 0.15)";
+            modeParallelBtn.style.color = "var(--accent-color)";
+
+            modeInboxBtn.style.borderColor = "var(--border-color)";
+            modeInboxBtn.style.background = "transparent";
+            modeInboxBtn.style.color = "var(--text-muted)";
+        });
+
+        modeInboxBtn.addEventListener('click', () => {
+            activeTransferMode = "inbox";
+            modeInboxBtn.style.borderColor = "var(--accent-color)";
+            modeInboxBtn.style.background = "rgba(0, 200, 83, 0.15)";
+            modeInboxBtn.style.color = "var(--accent-color)";
+
+            modeParallelBtn.style.borderColor = "var(--border-color)";
+            modeParallelBtn.style.background = "transparent";
+            modeParallelBtn.style.color = "var(--text-muted)";
+        });
+
+        disconnectBtn.addEventListener('click', () => {
+            if (confirm("Disconnect and reset session?")) {
+                sessionStorage.removeItem('sid');
+                window.location.href = '/';
+            }
+        });
+
+        // --- File Sharing Logic ---
+        const fileInput = document.getElementById('file-input');
+        const fileDropzone = document.getElementById('file-dropzone');
+        const progressContainer = document.getElementById('upload-progress-container');
+        const progressBar = document.getElementById('upload-progress-bar');
+        const speedLbl = document.getElementById('upload-speed-lbl');
+        const percentLbl = document.getElementById('upload-percent-lbl');
+        const bytesLbl = document.getElementById('upload-bytes-lbl');
+        const filesList = document.getElementById('shared-files-list');
+        const refreshFilesBtn = document.getElementById('refresh-files-btn');
+
+        fileDropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => handleFilesSelected(fileInput.files));
+
+        fileDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropzone.style.borderColor = 'var(--accent-color)';
+        });
+        fileDropzone.addEventListener('dragleave', () => {
+            fileDropzone.style.borderColor = 'var(--border-color)';
+        });
+        fileDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropzone.style.borderColor = 'var(--border-color)';
+            if (e.dataTransfer.files.length > 0) {
+                handleFilesSelected(e.dataTransfer.files);
+            }
+        });
+
+        async function handleFilesSelected(files) {
+            if (files.length === 0) return;
+            for (let i = 0; i < files.length; i++) {
+                await uploadSingleFile(files[i]);
+            }
+            fileInput.value = '';
+            fetchFilesList();
+        }
+
+        async function uploadViaHttpRaw(file, totalMB) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                const startTime = Date.now();
+                const speedHistory = [];
+                let lastUpdate = 0;
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const now = Date.now();
+                        if (now - lastUpdate < 80 && e.loaded < file.size) return;
+                        lastUpdate = now;
+                        const pct = Math.round((e.loaded / file.size) * 100);
+                        progressBar.style.width = pct + '%';
+                        percentLbl.textContent = pct + '%';
+                        
+                        // Rolling 1-second speed calculation
+                        speedHistory.push({ time: now, loaded: e.loaded });
+                        const oneSecAgo = now - 1000;
+                        while (speedHistory.length > 2 && speedHistory[0].time < oneSecAgo) {
+                            speedHistory.shift();
+                        }
+                        let rawSpd = 0.0;
+                        if (speedHistory.length >= 2) {
+                            const first = speedHistory[0];
+                            const last = speedHistory[speedHistory.length - 1];
+                            const dt = (last.time - first.time) / 1000;
+                            const db = last.loaded - first.loaded;
+                            rawSpd = dt > 0 ? (db / dt / 1048576) : 0.0;
+                        } else {
+                            const elapsed = (now - startTime) / 1000;
+                            rawSpd = elapsed > 0 ? (e.loaded / elapsed / 1048576) : 0.0;
+                        }
+
+                        // Apply Exponential Moving Average (EMA) to smooth out jumpy wireless readings
+                        if (!window._lastEmaSpeed) window._lastEmaSpeed = rawSpd;
+                        const alpha = 0.25; // 25% new reading, 75% previous reading for smooth transitions
+                        const smoothedSpd = (alpha * rawSpd) + ((1 - alpha) * window._lastEmaSpeed);
+                        window._lastEmaSpeed = smoothedSpd;
+                        
+                        // Calculate ETA (Remaining Time)
+                        let remainingSeconds = 0;
+                        if (smoothedSpd > 0.05) {
+                            const remainingBytes = file.size - e.loaded;
+                            const speedBytesPerSec = smoothedSpd * 1048576;
+                            remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
+                        }
+                        
+                        const elapsedSeconds = Math.round((now - startTime) / 1000);
+                        const elapsedStr = formatTime(elapsedSeconds);
+                        const etaStr = formatTime(remainingSeconds);
+
+                        speedLbl.textContent = `${elapsedStr} / ${etaStr} | ${smoothedSpd.toFixed(2)} MB/s`;
+                        bytesLbl.textContent = `${(e.loaded / 1048576).toFixed(2)} / ${totalMB} MB`;
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        progressBar.style.width = '100%';
+                        percentLbl.textContent = '100%';
+                        addSessionFile(file.name);
+                        showToast(`✓ Uploaded ${file.name}`);
+                        resolve();
+                    } else {
+                        reject(new Error(`Upload failed: status ${xhr.status}`));
+                    }
+                });
+
+                xhr.addEventListener('error', () => reject(new Error('Network error')));
+                xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+
+                xhr.open('POST', `/api/files/upload_raw?filename=${encodeURIComponent(file.name)}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.send(file); // Native browser-managed zero-overhead stream
+            });
+        }
+
+        function uploadSingleFile(file) {
+            return new Promise(async (resolve) => {
+                const totalMB = (file.size / 1048576).toFixed(2);
+
+                progressContainer.style.display = 'flex';
+                progressBar.style.width = '0%';
+                percentLbl.textContent = '0%';
+                speedLbl.textContent = '0.00 MB/s';
+                bytesLbl.textContent = `0.00 / ${totalMB} MB`;
+
+                try {
+                    // Try the parallel HTTP chunked upload first for files > 10MB to saturate wireless bandwidth.
+                    // This uses 6 parallel TCP connections which beats single-stream TCP window limitations.
+                    if (file.size > 10 * 1024 * 1024) {
+                        await uploadViaHttpChunks(file, totalMB);
+                    } else {
+                        await uploadViaHttpRaw(file, totalMB);
+                    }
+                } catch (chunkErr) {
+                    console.warn("Preferred upload path failed, falling back to raw HTTP stream:", chunkErr);
+                    try {
+                        await uploadViaHttpRaw(file, totalMB);
+                    } catch (rawErr) {
+                        console.warn("Raw HTTP stream upload failed, falling back to WebSockets:", rawErr);
+                        try {
+                            await uploadViaWebSocket(file, totalMB);
+                        } catch (wsErr) {
+                            showToast("All upload channels failed", "error");
+                        }
+                    }
+                }
+                resolve();
+            });
+        }
+
+        // ── WebSocket binary streaming ────────────────────────────────────────────
+        // Single TCP connection, pure binary frames = zero per-chunk HTTP overhead.
+        // Server writes each ArrayBuffer directly to disk via os.pwrite().
+        async function uploadViaWebSocket(file, totalMB) {
+            return new Promise((resolve, reject) => {
+                const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+                const wsUrl = `${proto}://${location.host}/ws/upload?sid=${encodeURIComponent(sid)}&filename=${encodeURIComponent(file.name)}&size=${file.size}`;
+                const ws = new WebSocket(wsUrl);
+                ws.binaryType = 'arraybuffer';
+
+                // 4 MB chunk — large enough to saturate mobile WiFi,
+                // small enough to not stall the JS event loop per read.
+                const CHUNK_SIZE = 4 * 1024 * 1024;
+                const startTime = Date.now();
+                let sent = 0;
+                let progressInterval = null;
+
+                function updateProgress(received) {
+                    const pct = Math.min(100, Math.round((received / file.size) * 100));
+                    progressBar.style.width = pct + '%';
+                    percentLbl.textContent = pct + '%';
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const spd = elapsed > 0 ? (received / elapsed / 1048576).toFixed(2) : '0.00';
+                    speedLbl.textContent = `${spd} MB/s`;
+                    bytesLbl.textContent = `${(received / 1048576).toFixed(2)} / ${totalMB} MB`;
+                }
+
+                ws.onopen = async () => {
+                    // Tick progress bar based on bytes sent (optimistic)
+                    progressInterval = setInterval(() => updateProgress(sent), 100);
+                    try {
+                        let offset = 0;
+                        while (offset < file.size) {
+                            const end = Math.min(offset + CHUNK_SIZE, file.size);
+                            const buf = await file.slice(offset, end).arrayBuffer();
+                            // Back-pressure: pause if server is falling behind
+                            while (ws.bufferedAmount > 16 * 1024 * 1024) {
+                                await new Promise(r => setTimeout(r, 5));
+                            }
+                            ws.send(buf);
+                            sent = end;
+                            offset = end;
+                        }
+                        // All bytes sent — wait for server's final ACK
+                    } catch (err) {
+                        clearInterval(progressInterval);
+                        ws.close();
+                        reject(err);
+                    }
+                };
+
+                ws.onmessage = (ev) => {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg.received !== undefined) updateProgress(msg.received);
+                        if (msg.status === 'success') {
+                            clearInterval(progressInterval);
+                            updateProgress(file.size);
+                            progressContainer.style.display = 'none';
+                            addSessionFile(file.name);
+                            showToast(`✓ Uploaded ${file.name}`);
+                            fetchFilesList();
+                            resolve();
+                        } else if (msg.status === 'error') {
+                            clearInterval(progressInterval);
+                            progressContainer.style.display = 'none';
+                            reject(new Error(msg.message || 'Upload failed'));
+                        }
+                    } catch (e) { /* ignore JSON parse errors on binary frames */ }
+                };
+
+                ws.onerror = () => {
+                    clearInterval(progressInterval);
+                    progressContainer.style.display = 'none';
+                    reject(new Error('WebSocket error'));
+                };
+
+                ws.onclose = (e) => {
+                    clearInterval(progressInterval);
+                    // 1000=normal, 1001=going away — not error conditions
+                    if (e.code !== 1000 && e.code !== 1001) {
+                        progressContainer.style.display = 'none';
+                        reject(new Error(`WebSocket closed unexpectedly: ${e.code}`));
+                    }
+                };
+            });
+        }
+
+        // ── HTTP parallel direct-write fallback ──────────────────────────────────
+        // Pre-allocates the file then writes N chunks concurrently to exact byte
+        // offsets via os.pwrite(). No temp files or merge step needed.
+        async function uploadViaHttpChunks(file, totalMB) {
+            // Scale chunk sizes up for larger files to sustain high-speed streaming.
+            // Under HTTP/1.1, modern mobile browsers support up to 8 concurrent connections.
+            // Capping chunk size at 16MB prevents GC thrashing on mobile browsers while maximizing throughput.
+            let chunkSize = 4 * 1024 * 1024; // 4MB default for small files
+            if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;   // 8MB for files > 50MB
+            if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024; // 16MB max chunk size
+            if (file.size < chunkSize) chunkSize = file.size || 1;
+
+            const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+            const CONCURRENCY = 3; // Pipelining: 3 concurrent streams keeps wireless pipe full, matches sequential disk writes, and stops GC throttling
+
+            try {
+                const preRes = await fetch(
+                    `/api/files/preallocate?filename=${encodeURIComponent(file.name)}&size=${file.size}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`,
+                    { method: 'POST' }
+                );
+                const preData = await preRes.json();
+                if (preData.status !== 'success') {
+                    progressContainer.style.display = 'none';
+                    showToast('Failed to initialize upload', 'error');
+                    return;
+                }
+            } catch (e) {
+                progressContainer.style.display = 'none';
+                showToast('Failed to initialize upload', 'error');
+                return;
+            }
+
+            const startTime = Date.now();
+            const loadedBytes = new Float64Array(totalChunks);
+            const speedHistory = [];
+            let activeUploads = 0, nextChunkIdx = 0, hasFailed = false, lastUpdate = 0;
+
+            await new Promise((resolve) => {
+                function updateProgress() {
+                    const now = Date.now();
+                    if (now - lastUpdate < 80) return;
+                    lastUpdate = now;
+                    let totalLoaded = 0;
+                    for (let i = 0; i < totalChunks; i++) totalLoaded += loadedBytes[i];
+                    if (totalLoaded > file.size) totalLoaded = file.size;
+                    const pct = Math.round((totalLoaded / file.size) * 100);
+                    progressBar.style.width = pct + '%';
+                    percentLbl.textContent = pct + '%';
+                    
+                    // Rolling 1-second speed calculation
+                    speedHistory.push({ time: now, loaded: totalLoaded });
+                    const oneSecAgo = now - 1000;
+                    while (speedHistory.length > 2 && speedHistory[0].time < oneSecAgo) {
+                        speedHistory.shift();
+                    }
+                    let rawSpd = 0.0;
+                    if (speedHistory.length >= 2) {
+                        const first = speedHistory[0];
+                        const last = speedHistory[speedHistory.length - 1];
+                        const dt = (last.time - first.time) / 1000;
+                        const db = last.loaded - first.loaded;
+                        rawSpd = dt > 0 ? (db / dt / 1048576) : 0.0;
+                    } else {
+                        const elapsed = (now - startTime) / 1000;
+                        rawSpd = elapsed > 0 ? (totalLoaded / elapsed / 1048576) : 0.0;
+                    }
+
+                    // Apply Exponential Moving Average (EMA) to smooth out jumpy wireless readings
+                    if (!window._lastEmaSpeedChunks) window._lastEmaSpeedChunks = rawSpd;
+                    const alpha = 0.25; // 25% new reading, 75% previous reading for smooth transitions
+                    const smoothedSpd = (alpha * rawSpd) + ((1 - alpha) * window._lastEmaSpeedChunks);
+                    window._lastEmaSpeedChunks = smoothedSpd;
+                    
+                    // Calculate ETA (Remaining Time)
+                    let remainingSeconds = 0;
+                    if (smoothedSpd > 0.05) {
+                        const remainingBytes = file.size - totalLoaded;
+                        const speedBytesPerSec = smoothedSpd * 1048576;
+                        remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
+                    }
+                    
+                    const elapsedSeconds = Math.round((now - startTime) / 1000);
+                    const elapsedStr = formatTime(elapsedSeconds);
+                    const etaStr = formatTime(remainingSeconds);
+
+                    speedLbl.textContent = `${elapsedStr} / ${etaStr} | ${smoothedSpd.toFixed(2)} MB/s`;
+                    bytesLbl.textContent = `${(totalLoaded / 1048576).toFixed(2)} / ${totalMB} MB`;
+                }
+                function pumpNext() {
+                    if (hasFailed) return;
+                    if (nextChunkIdx >= totalChunks) {
+                        if (activeUploads === 0) {
+                            progressContainer.style.display = 'none';
+                            addSessionFile(file.name);
+                            showToast(`✓ Uploaded ${file.name}`);
+                            fetchFilesList();
+                            resolve();
+                        }
+                        return;
+                    }
+                    const idx = nextChunkIdx++;
+                    activeUploads++;
+                    const byteOffset = idx * chunkSize;
+                    sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, 3);
+                }
+                function sendChunk(blob, idx, byteOffset, retriesLeft) {
+                    let xhr = new XMLHttpRequest();
+                    
+                    function cleanup() {
+                        if (!xhr) return;
+                        xhr.upload.onprogress = null;
+                        xhr.onload = null;
+                        xhr.onerror = null;
+                        xhr = null;
+                        blob = null; // Free memory slice reference immediately for GC
+                    }
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) { loadedBytes[idx] = e.loaded; updateProgress(); }
+                    };
+                    
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            loadedBytes[idx] = blob.size; 
+                            updateProgress(); 
+                            activeUploads--; 
+                            cleanup();
+                            pumpNext();
+                        } else if (retriesLeft > 0) {
+                            cleanup();
+                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
+                        } else {
+                            hasFailed = true; 
+                            progressContainer.style.display = 'none';
+                            cleanup();
+                            showToast(`Upload failed on part ${idx + 1}`, 'error'); 
+                            resolve();
+                        }
+                    };
+                    
+                    xhr.onerror = () => {
+                        if (retriesLeft > 0) {
+                            cleanup();
+                            setTimeout(() => sendChunk(file.slice(byteOffset, Math.min(byteOffset + chunkSize, file.size)), idx, byteOffset, retriesLeft - 1), 400);
+                        } else {
+                            hasFailed = true; 
+                            progressContainer.style.display = 'none';
+                            cleanup();
+                            showToast('Network error during upload', 'error'); 
+                            resolve();
+                        }
+                    };
+                    
+                    xhr.open('POST', `/api/files/upload_direct?filename=${encodeURIComponent(file.name)}&offset=${byteOffset}&mode=${activeTransferMode}&sid=${encodeURIComponent(sid)}`);
+                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                    xhr.send(blob);
+                }
+                for (let i = 0; i < Math.min(CONCURRENCY, totalChunks); i++) pumpNext();
+            });
+        }
+
+        async function fetchFilesList() {
+            const icon = refreshFilesBtn.querySelector('svg') || refreshFilesBtn.querySelector('i');
+            if (icon) icon.classList.add('spinning');
+            try {
+                const res = await fetch(`/api/files/list?sid=${encodeURIComponent(sid)}`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderFiles(data.files);
+                } else {
+                    filesList.innerHTML = `<div style="text-align: center; color: var(--red-status); padding: 20px 10px; font-size: 0.8rem;">${data.message}</div>`;
+                }
+            } catch (e) {
+                filesList.innerHTML = `<div style="text-align: center; color: var(--red-status); padding: 20px 10px; font-size: 0.8rem;">Failed to load files</div>`;
+            } finally {
+                setTimeout(() => {
+                    const currentIcon = refreshFilesBtn.querySelector('svg') || refreshFilesBtn.querySelector('i');
+                    if (currentIcon) currentIcon.classList.remove('spinning');
+                }, 600);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // ─── Session file tracking ─────────────────────────────────────────────────
+        // Track which file names were uploaded in this browser session
+        function getSessionFiles() {
+            return new Set(JSON.parse(sessionStorage.getItem('sessionSharedFiles') || '[]'));
+        }
+        function addSessionFile(name) {
+            const arr = JSON.parse(sessionStorage.getItem('sessionSharedFiles') || '[]');
+            if (!arr.includes(name)) { arr.push(name); }
+            sessionStorage.setItem('sessionSharedFiles', JSON.stringify(arr));
+        }
+        // Deleted files (per-session, stored in sessionStorage)
+        function getSessionDeleted() {
+            return JSON.parse(sessionStorage.getItem('sessionDeletedFiles') || '[]');
+        }
+        function addSessionDeleted(info) { // info = {name, size, deletedAt}
+            const arr = getSessionDeleted();
+            if (!arr.find(f => f.name === info.name)) { arr.push(info); }
+            sessionStorage.setItem('sessionDeletedFiles', JSON.stringify(arr));
+        }
+
+        function renderFiles(files) {
+            const sessionSet = getSessionFiles();
+            const deletedSet = new Set(getSessionDeleted().map(f => f.name));
+
+            // Only show files that were shared this session and not deleted
+            const activeFiles = files.filter(f => sessionSet.has(f.name) && !deletedSet.has(f.name));
+
+            if (activeFiles.length === 0) {
+                filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared this session. Upload a file above to start!</div>`;
+                return;
+            }
+
+            // Track downloaded files in sessionStorage
+            const downloadedSet = new Set(JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]'));
+
+            filesList.innerHTML = activeFiles.map(file => {
+                const nameEscaped = encodeURIComponent(file.name);
+                const isDownloaded = downloadedSet.has(file.name);
+                const borderStyle = isDownloaded
+                    ? 'border: 1px solid rgba(0, 200, 83, 0.6); box-shadow: 0 0 8px rgba(0, 200, 83, 0.15);'
+                    : 'border: 1px solid var(--border-color);';
+                return `
+                    <div id="file-card-${nameEscaped}" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); ${borderStyle} border-radius: 12px; padding: 12px 16px; backdrop-filter: blur(10px); transition: border-color 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="display: flex; flex-direction: column; gap: 3px; max-width: 65%; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>
+                                ${isDownloaded ? '<i data-lucide="check-circle-2" size="14" style="color: #00C853; flex-shrink: 0;"></i>' : ''}
+                            </div>
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(file.size)}${file.duration ? ` (took ${formatTime(Math.round(file.duration))})` : ''}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/api/files/download/${nameEscaped}?sid=${encodeURIComponent(sid)}" download="${file.name}" onclick="window.markFileDownloaded('${file.name.replace(/'/g, "\\'")}')" style="background: ${isDownloaded ? 'rgba(0, 200, 83, 0.2)' : 'var(--accent-color)'}; color: ${isDownloaded ? '#00C853' : '#000'}; border: ${isDownloaded ? '1px solid rgba(0, 200, 83, 0.4)' : 'none'}; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i data-lucide="${isDownloaded ? 'check' : 'download'}" size="14" style="pointer-events: none;"></i>
+                            </a>
+                            <button onclick="window.deleteSharedFile('${nameEscaped}', ${file.size})" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="trash-2" size="14"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Mark a file as downloaded and re-render the card with green border
+        window.markFileDownloaded = function(filename) {
+            const downloaded = JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]');
+            if (!downloaded.includes(filename)) {
+                downloaded.push(filename);
+                sessionStorage.setItem('downloadedFiles', JSON.stringify(downloaded));
+            }
+            // Re-render after a short delay so the browser starts the download first
+            setTimeout(() => fetchFilesList(), 300);
+        };
+
+        window.deleteSharedFile = async function(filenameEscaped, fileSize) {
+            if (confirm("Remove this file from the session view?")) {
+                const decName = decodeURIComponent(filenameEscaped);
+                try {
+                    // Record deletion in session storage for Deleted view
+                    addSessionDeleted({ name: decName, size: fileSize || 0, deletedAt: Date.now() });
+                    
+                    // Also persist in localStorage for cross-reload tracking
+                    const ldel = JSON.parse(localStorage.getItem('deletedMobileFiles') || '[]');
+                    if (!ldel.includes(decName)) { ldel.push(decName); localStorage.setItem('deletedMobileFiles', JSON.stringify(ldel)); }
+
+                    const res = await fetch(`/api/files/delete/${filenameEscaped}?sid=${encodeURIComponent(sid)}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        showToast('File removed from session');
+                        fetchFilesList();
+                    } else {
+                        showToast(data.message || 'Failed to remove file', 'error');
+                    }
+                } catch (e) {
+                    showToast('Failed to remove file', 'error');
+                }
+            }
+        };
+
+        // ─── Deleted view ──────────────────────────────────────────────────────────
+        const deletedViewEl = document.getElementById('deleted-view');
+        const deletedViewBtn = document.getElementById('deleted-view-btn');
+        const deletedBackBtn = document.getElementById('deleted-back-btn');
+        const deletedFilesList = document.getElementById('deleted-files-list');
+
+        function renderDeletedView() {
+            const entries = getSessionDeleted();
+            if (entries.length === 0) {
+                deletedFilesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files deleted this session.</div>`;
+            } else {
+                deletedFilesList.innerHTML = entries.slice().reverse().map(f => {
+                    const dt = new Date(f.deletedAt);
+                    const timeStr = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,77,77,0.05); border: 1px solid rgba(255,77,77,0.15); border-radius: 12px; padding: 12px 16px;">
+                            <div style="display: flex; flex-direction: column; gap: 3px; max-width: 75%; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <i data-lucide="file-x" size="13" style="color: #ff6b6b; flex-shrink: 0;"></i>
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${f.name}">${f.name}</span>
+                                </div>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">${formatBytes(f.size)} &nbsp;·&nbsp; Removed at ${timeStr}</span>
+                            </div>
+                            <i data-lucide="trash-2" size="14" style="color: rgba(255,77,77,0.4); flex-shrink: 0;"></i>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        }
+
+        if (deletedViewBtn) {
+            deletedViewBtn.addEventListener('click', () => {
+                renderDeletedView();
+                deletedViewEl.style.display = 'flex';
+            });
+        }
+        if (deletedBackBtn) {
+            deletedBackBtn.addEventListener('click', () => {
+                deletedViewEl.style.display = 'none';
+            });
+        }
+
+        refreshFilesBtn.addEventListener('click', fetchFilesList);
+
+        // --- Speed Test Logic ---
+        const speedtestBtn = document.getElementById('speedtest-btn');
+        const speedtestContainer = document.getElementById('speedtest-container');
+        const closeSpeedtestBtn = document.getElementById('close-speedtest-btn');
+        const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
+        
+        const stPingLbl = document.getElementById('st-ping-lbl');
+        const stDownloadLbl = document.getElementById('st-download-lbl');
+        const stUploadLbl = document.getElementById('st-upload-lbl');
+        const stProgressBarContainer = document.getElementById('st-progress-bar-container');
+        const stProgressBar = document.getElementById('st-progress-bar');
+
+        if (speedtestBtn) {
+            speedtestBtn.addEventListener('click', () => {
+                if (speedtestContainer.style.display === 'none' || !speedtestContainer.style.display) {
+                    speedtestContainer.style.display = 'flex';
+                    speedtestContainer.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    speedtestContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        if (closeSpeedtestBtn) {
+            closeSpeedtestBtn.addEventListener('click', () => {
+                speedtestContainer.style.display = 'none';
+            });
+        }
+        
+        async function runSpeedTest() {
+            runSpeedtestBtn.disabled = true;
+            runSpeedtestBtn.textContent = "Testing...";
+            stProgressBarContainer.style.display = 'block';
+            stProgressBar.style.width = '0%';
+            
+            stPingLbl.textContent = "Measuring...";
+            stDownloadLbl.textContent = "- MB/s";
+            stUploadLbl.textContent = "- MB/s";
+            
+            try {
+                // 1. Measure Ping / Latency (5 iterations)
+                let pings = [];
+                for (let i = 0; i < 5; i++) {
+                    const start = performance.now();
+                    await fetch(`/api/files/list?sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
+                    pings.push(performance.now() - start);
+                    stProgressBar.style.width = ((i + 1) * 5) + '%';
+                }
+                const avgPing = (pings.reduce((a, b) => a + b, 0) / pings.length).toFixed(1);
+                stPingLbl.textContent = `${avgPing} ms`;
+                
+                // 2. Measure Download Speed (20MB payload)
+                stDownloadLbl.textContent = "0.00 MB/s";
+                const dlStart = performance.now();
+                const dlSize = 20 * 1024 * 1024;
+                const dlRes = await fetch(`/api/speedtest/download?size=${dlSize}&sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
+                
+                const reader = dlRes.body.getReader();
+                let loaded = 0;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    loaded += value.length;
+                    const pct = 25 + Math.round((loaded / dlSize) * 35);
+                    stProgressBar.style.width = pct + '%';
+                    
+                    const elapsed = (performance.now() - dlStart) / 1000;
+                    if (elapsed > 0) {
+                        const dlSpeed = (loaded / elapsed / 1048576).toFixed(2);
+                        stDownloadLbl.textContent = `${dlSpeed} MB/s`;
+                    }
+                }
+                
+                const finalDlDuration = (performance.now() - dlStart) / 1000;
+                const finalDlSpeed = (loaded / finalDlDuration / 1048576).toFixed(2);
+                stDownloadLbl.textContent = `${finalDlSpeed} MB/s`;
+                
+                // 3. Measure Upload Speed (10MB payload)
+                stUploadLbl.textContent = "0.00 MB/s";
+                const ulStart = performance.now();
+                const ulSize = 10 * 1024 * 1024;
+                const dummyData = new Uint8Array(ulSize);
+                
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `/api/speedtest/upload?sid=${encodeURIComponent(sid)}`);
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            const pct = 60 + Math.round((e.loaded / e.total) * 40);
+                            stProgressBar.style.width = pct + '%';
+                            
+                            const elapsed = (performance.now() - ulStart) / 1000;
+                            if (elapsed > 0) {
+                                const ulSpeed = (e.loaded / elapsed / 1048576).toFixed(2);
+                                stUploadLbl.textContent = `${ulSpeed} MB/s`;
+                            }
+                        }
+                    });
+                    xhr.onload = () => resolve();
+                    xhr.onerror = () => reject(new Error("Upload failed"));
+                    xhr.send(dummyData);
+                });
+                
+                const finalUlDuration = (performance.now() - ulStart) / 1000;
+                const finalUlSpeed = (ulSize / finalUlDuration / 1048576).toFixed(2);
+                stUploadLbl.textContent = `${finalUlSpeed} MB/s`;
+                
+                // Automatically report speed test results if running on a mobile client
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+                    fetch('/api/benchmark/report_mobile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ping: avgPing,
+                            download: finalDlSpeed,
+                            upload: finalUlSpeed
+                        })
+                    }).catch(err => console.error("Failed to report mobile benchmark:", err));
+                }
+                
+            } catch (err) {
+                console.error(err);
+                showToast("Speed test failed: " + err.message, "error");
+            } finally {
+                stProgressBar.style.width = '100%';
+                setTimeout(() => {
+                    stProgressBarContainer.style.display = 'none';
+                }, 1000);
+                runSpeedtestBtn.disabled = false;
+                runSpeedtestBtn.textContent = "Run Speed Test";
+            }
+        }
+        
+        runSpeedtestBtn.addEventListener('click', runSpeedTest);
+
+        // Fetch list on load
+        fetchFilesList();
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            toast.style.transform = 'translateX(-50%) scale(1.05)';
+            setTimeout(() => toast.style.transform = 'translateX(-50%) scale(1)', 150);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateX(-50%)';
+            }, 2500);
+        }
+
+        // Connect to active status websocket
+        function connectWebSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${proto}//${window.location.host}/ws/connect?sid=${encodeURIComponent(sid)}`;
+            const ws = new WebSocket(wsUrl);
+            let pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send('ping');
+                }
+            }, 10000);
+            ws.onclose = () => {
+                clearInterval(pingInterval);
+                setTimeout(connectWebSocket, 3000);
+            };
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+        // Show tunnel speed warning if not connected via local IP/localhost
+        const hostname = window.location.hostname;
+        if (hostname.includes('trycloudflare.com')) {
+            const warningCard = document.getElementById('tunnel-warning-card');
+            if (warningCard) {
+                warningCard.style.display = 'block';
+            }
+        }
+
+        connectWebSocket();
+    </script>
+</body>
+
+</html>

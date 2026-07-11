@@ -319,15 +319,18 @@ class LANpadLauncher:
         self.lock_view   = tk.Frame(root, bg=self.BG)
         self.splash_view = tk.Frame(root, bg=self.BG)
         self.legal_view  = tk.Frame(root, bg=self.BG)
+        self.files_view  = tk.Frame(root, bg=self.BG)
         self.main_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.lock_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.splash_view.place(x=0, y=0, relwidth=1, relheight=1)
         self.legal_view.place(x=0, y=0, relwidth=1, relheight=1)
+        self.files_view.place(x=0, y=0, relwidth=1, relheight=1)
 
         self._build_main()
         self._build_lock()
         self._build_splash()
         self._build_legal()
+        self._build_files()
 
         self._tick_dot()
         self.check_process_status()
@@ -355,6 +358,7 @@ class LANpadLauncher:
         
         self.root.after(2000, self.check_for_updates)
         self._poll_tunnel()
+        self.root.after(200, self.start_mobile_progress_polling)
 
     def process_gui_queue(self):
         try:
@@ -478,7 +482,7 @@ class LANpadLauncher:
         tw = len(text) * (7 if _mac else 10) + (30 if _mac else 40)
         cv = tk.Canvas(parent, width=tw, height=28, bg=self.BG, highlightthickness=0)
         cv.pack(side=side, padx=18, pady=(24, 0))
-        rounded_rect(cv, 0, 2, tw, 26, r=12, fill=fill, outline="")
+        rounded_rect(cv, 2, 2, tw - 2, 26, r=12, fill=fill, outline="")
         cv.create_text(tw // 2, 14, text=text, fill=fg,
                        font=(self.FU, 11, "bold"))
         if cmd:
@@ -666,6 +670,42 @@ class LANpadLauncher:
                                   bg=self.BG, highlightthickness=0)
         self._btn_cv.place(x=24, y=626 + yo * 2.5)
         self._draw_main_btn(active=False)
+
+        # Open Received Files / Send/Receive Buttons
+        def open_shared_folder():
+            import os
+            import subprocess
+            import platform
+            path = os.path.expanduser("~/Downloads/LANpad")
+            if not os.path.exists(path):
+                os.makedirs(path, exist_ok=True)
+            if platform.system() == "Darwin":
+                subprocess.Popen(["open", path])
+            elif platform.system() == "Windows":
+                os.startfile(path)
+            else:
+                subprocess.Popen(["xdg-open", path])
+
+        def open_send_receive():
+            self.show_view("files")
+
+        self._send_receive_btn = tk.Label(v, text="Send/Receive", fg=self.WHITE,
+                                          bg=self.BG2, font=(self.FU, 10, "bold"),
+                                          highlightthickness=1, highlightbackground="#2A2A30",
+                                          cursor="hand2")
+        self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
+        self._send_receive_btn.bind("<Button-1>", lambda e: open_send_receive())
+        self._send_receive_btn.bind("<Enter>", lambda e: self._send_receive_btn.config(highlightbackground=self.WHITE))
+        self._send_receive_btn.bind("<Leave>", lambda e: self._send_receive_btn.config(highlightbackground="#2A2A30"))
+
+        self._files_btn = tk.Label(v, text="Open Files", fg=self.WHITE,
+                                   bg=self.BG2, font=(self.FU, 10, "bold"),
+                                   highlightthickness=1, highlightbackground="#2A2A30",
+                                   cursor="hand2")
+        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
+        self._files_btn.bind("<Button-1>", lambda e: open_shared_folder())
+        self._files_btn.bind("<Enter>", lambda e: self._files_btn.config(highlightbackground=self.WHITE))
+        self._files_btn.bind("<Leave>", lambda e: self._files_btn.config(highlightbackground="#2A2A30"))
 
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
@@ -1363,6 +1403,13 @@ class LANpadLauncher:
             self.splash_view.tkraise()
         elif name == "legal":
             self.legal_view.tkraise()
+        elif name == "files":
+            self.files_view.tkraise()
+            if hasattr(self, "_refresh_files_list"):
+                self._refresh_files_list()
+        else:
+            self.bypass_view.tkraise()
+            self.copy_bookmarklet(silent=True)
 
     def update_lock_time_left(self):
         try:
@@ -1509,6 +1556,544 @@ class LANpadLauncher:
         except Exception as e:
             print(f"[auth] AppleScript fallback failed: {e}")
             return False
+
+    def _build_files(self):
+        v = self.files_view
+        W = 400
+        _mac = sys.platform == "darwin"
+        yo = 0 if _mac else 12  # Y-offset for Windows spacing
+
+        # Flat background
+        bg_cv = tk.Canvas(v, width=W, height=760, bg=self.BG, highlightthickness=0)
+        bg_cv.place(x=0, y=0)
+
+        # ── Titlebar (Native Layout) ─────────────────────────────────────────
+        tb = tk.Frame(v, bg=self.BG, height=60)
+        tb.place(x=0, y=0, relwidth=1)
+        self._pill_button(tb, "← Back", self.WHITE, self.BG2,
+                          cmd=lambda: self.show_view("main"), side="right")
+
+        # ── Header ───────────────────────────────────────────────────────────
+        hdr = tk.Frame(v, bg=self.BG)
+        hdr.place(x=18, y=58 + yo, width=W - 36)
+        
+        # Folder icon tile (custom vector folder drawing)
+        ic = tk.Canvas(hdr, width=32, height=32, bg=self.BG, highlightthickness=0)
+        ic.pack(side="left")
+        rounded_rect(ic, 0, 0, 32, 32, r=8, fill=self.BG2, outline="")
+        ic.create_polygon(8, 10, 14, 10, 16, 12, 24, 12, 24, 22, 8, 22, fill="#0077C0", outline="")
+
+        # Title
+        tk.Label(hdr, text="Files Center", font=(self.FD, 14, "bold"), bg=self.BG, fg=self.WHITE).pack(side="left", padx=8)
+
+        # ── Dropzone Card & Drag-and-Drop Setup ──────────────────────────────
+        shared_path = os.path.expanduser("~/Downloads/LANpad")
+
+        def parse_dropped_paths(text):
+            import re
+            paths = []
+            pattern = r'\{([^}]+)\}|(\S+)'
+            for match in re.finditer(pattern, text):
+                path = match.group(1) or match.group(2)
+                if path:
+                    paths.append(path.strip())
+            return paths
+
+        dropzone = tk.Canvas(v, width=W - 36, height=130, bg=self.BG, highlightthickness=0)
+        dropzone.place(x=18, y=105 + yo)
+
+        # Styled DnD entry inside dropzone
+        dnd_var = tk.StringVar()
+        dnd_entry = tk.Entry(dropzone, textvariable=dnd_var, bg=self.BG2, fg=self.DIM,
+                             font=(self.FU, 8), bd=0, highlightthickness=0, justify="center", insertontime=0)
+        dnd_entry.place(x=10, y=90, width=W - 36 - 20, height=26)
+
+        placeholder = "Supports large files (5-10 GB+) cross-device over Local LAN"
+        dnd_entry.insert(0, placeholder)
+
+        def draw_dropzone(hover=False):
+            dropzone.delete("all")
+            fill_color = "#16161D" if hover else self.BG2
+            outline_color = "#0077C0" if hover else "#2A2A30"
+            # Draw rounded dashed rect
+            rounded_rect(dropzone, 2, 2, W - 38, 128, r=16, fill=fill_color, outline=outline_color, width=1)
+            
+            # Custom Vector Cloud Icon with Arrow
+            cx = (W - 36) // 2
+            cy = 38
+            dropzone.create_oval(cx - 24, cy - 8, cx - 4, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_oval(cx - 8, cy - 22, cx + 18, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_oval(cx + 8, cy - 8, cx + 24, cy + 12, fill="#0077C0", outline="")
+            dropzone.create_rectangle(cx - 16, cy, cx + 16, cy + 12, fill="#0077C0", outline="")
+            
+            # White Arrow inside Cloud
+            dropzone.create_line(cx + 1, cy + 6, cx + 1, cy - 8, fill=self.WHITE, width=2)
+            dropzone.create_line(cx + 1, cy - 8, cx - 3, cy - 4, fill=self.WHITE, width=2)
+            dropzone.create_line(cx + 1, cy - 8, cx + 5, cy - 4, fill=self.WHITE, width=2)
+            
+            # Text
+            dropzone.create_text((W - 36) // 2, 70, text="Choose Files / Drag & Drop", font=(self.FU, 12, "bold"), fill=self.WHITE)
+            
+            # Keep entry visual style updated
+            dnd_entry.config(bg=fill_color)
+
+        draw_dropzone()
+
+        # ── Section Title & Refresh ──────────────────────────────────────────
+        sec_frame = tk.Frame(v, bg=self.BG)
+        sec_frame.place(x=18, y=250 + yo, width=W - 36, height=24)
+        
+        tk.Label(sec_frame, text="SHARED FILES ON LAPTOP", font=(self.FU, 9, "bold"), bg=self.BG, fg=self.DIM).pack(side="left", anchor="center")
+        
+        refresh_lbl = tk.Label(sec_frame, text="⟳ Refresh", font=(self.FU, 11, "bold"), bg=self.BG, fg="#0077C0", cursor="hand2")
+        refresh_lbl.pack(side="right", anchor="center")
+
+        # ── Scrollable list container ────────────────────────────────────────
+        list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
+        list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
+
+        scrollbar = tk.Scrollbar(v, orient="vertical", command=list_canvas.yview)
+        
+        scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: list_canvas.configure(
+                scrollregion=list_canvas.bbox("all")
+            )
+        )
+        
+        list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
+        # ── Scrollable list container ────────────────────────────────────────
+        list_canvas = tk.Canvas(v, bg=self.BG, highlightthickness=0)
+        list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
+
+        scrollbar = tk.Scrollbar(v, orient="vertical", command=list_canvas.yview)
+        
+        # ── Progress Bar Card (Hidden by default) ─────────────────────────────
+        progress_card = tk.Frame(v, bg="#0D0D10", highlightthickness=1, highlightbackground="#1F1F24")
+        
+        # Row 1: Title & Speed
+        r1 = tk.Frame(progress_card, bg="#0D0D10")
+        r1.pack(fill="x", padx=12, pady=(8, 2))
+        progress_title_lbl = tk.Label(r1, text="Sending File...", font=(self.FU, 9, "bold"), fg=self.WHITE, bg="#0D0D10")
+        progress_title_lbl.pack(side="left")
+        progress_speed_lbl = tk.Label(r1, text="0.00 MB/s", font=(self.FU, 8, "bold"), fg="#0077C0", bg="#0D0D10")
+        progress_speed_lbl.pack(side="right")
+        
+        # Row 2: Progress Canvas
+        progress_bar_canvas = tk.Canvas(progress_card, height=6, bg="#1A1A1F", highlightthickness=0)
+        progress_bar_canvas.pack(fill="x", padx=12, pady=4)
+        
+        # Row 3: Percent & Bytes
+        r3 = tk.Frame(progress_card, bg="#0D0D10")
+        r3.pack(fill="x", padx=12, pady=(2, 8))
+        progress_percent_lbl = tk.Label(r3, text="0%", font=(self.FU, 8), fg=self.WHITE, bg="#0D0D10")
+        progress_percent_lbl.pack(side="left")
+        progress_bytes_lbl = tk.Label(r3, text="0.00 / 0.00 MB", font=(self.FU, 8), fg=self.DIM, bg="#0D0D10")
+        progress_bytes_lbl.pack(side="right")
+
+        import time
+        progress_data = {"copied": 0, "total": 0, "active": False, "speed": 0.0, "start_time": 0.0}
+        
+        self._progress_card = progress_card
+        self._progress_title_lbl = progress_title_lbl
+        self._progress_speed_lbl = progress_speed_lbl
+        self._progress_bar_canvas = progress_bar_canvas
+        self._progress_percent_lbl = progress_percent_lbl
+        self._progress_bytes_lbl = progress_bytes_lbl
+        self._progress_data = progress_data
+        self._sec_frame = sec_frame
+        self._list_canvas = list_canvas
+        self._yo = yo
+        self._W = W
+
+        def copy_batch_with_progress(paths, dst, progress_cb, finish_cb):
+            import threading
+            import shutil
+            def run_copy():
+                try:
+                    total_bytes = 0
+                    files_to_copy = []
+                    for fp in paths:
+                        if not os.path.exists(fp):
+                            continue
+                        if os.path.isdir(fp):
+                            dir_size = 0
+                            for root, dirs, files in os.walk(fp):
+                                for file in files:
+                                    dir_size += os.path.getsize(os.path.join(root, file))
+                            total_bytes += dir_size
+                            files_to_copy.append((fp, True))
+                        else:
+                            total_bytes += os.path.getsize(fp)
+                            files_to_copy.append((fp, False))
+                    
+                    if total_bytes == 0:
+                        finish_cb(None)
+                        return
+
+                    copied_bytes = 0
+                    for src, is_dir in files_to_copy:
+                        if is_dir:
+                            dest_dir = os.path.join(dst, os.path.basename(src))
+                            if os.path.abspath(src) == os.path.abspath(dest_dir):
+                                continue # Skip copying directory to itself
+                            if os.path.exists(dest_dir):
+                                if os.path.isdir(dest_dir):
+                                    shutil.rmtree(dest_dir)
+                                else:
+                                    os.remove(dest_dir)
+                            os.makedirs(dest_dir, exist_ok=True)
+                            for root, dirs, files in os.walk(src):
+                                rel_dir = os.path.relpath(root, src)
+                                cur_dest_dir = os.path.join(dest_dir, rel_dir) if rel_dir != "." else dest_dir
+                                os.makedirs(cur_dest_dir, exist_ok=True)
+                                for file in files:
+                                    file_src = os.path.join(root, file)
+                                    file_dst = os.path.join(cur_dest_dir, file)
+                                    with open(file_src, "rb") as fsrc:
+                                        with open(file_dst, "wb") as fdst:
+                                            while True:
+                                                chunk = fsrc.read(4 * 1024 * 1024)
+                                                if not chunk:
+                                                    break
+                                                fdst.write(chunk)
+                                                copied_bytes += len(chunk)
+                                                progress_cb(copied_bytes, total_bytes)
+                        else:
+                            dest_file = os.path.join(dst, os.path.basename(src))
+                            if os.path.abspath(src) == os.path.abspath(dest_file):
+                                continue # Skip copying file to itself
+                            if os.path.exists(dest_file):
+                                os.remove(dest_file)
+                            with open(src, "rb") as fsrc:
+                                with open(dest_file, "wb") as fdst:
+                                    while True:
+                                        chunk = fsrc.read(4 * 1024 * 1024)
+                                        if not chunk:
+                                            break
+                                        fdst.write(chunk)
+                                        copied_bytes += len(chunk)
+                                        progress_cb(copied_bytes, total_bytes)
+                    finish_cb(None)
+                except Exception as ex:
+                    finish_cb(ex)
+            threading.Thread(target=run_copy, daemon=True).start()
+
+        def start_async_copy(paths):
+            from tkinter import messagebox
+            progress_data["copied"] = 0
+            progress_data["total"] = 0
+            progress_data["active"] = True
+            progress_data["start_time"] = time.time()
+
+            # Shift list view down and show progress card
+            progress_card.place(x=18, y=242 + yo, width=W - 36, height=75)
+            sec_frame.place(x=18, y=322 + yo, width=W - 36, height=24)
+            list_canvas.place(x=18, y=352 + yo, width=W - 36, height=365)
+            
+            # Redraw progress bar
+            progress_bar_canvas.delete("bar")
+            
+            def progress_cb(copied, total):
+                progress_data["copied"] = copied
+                progress_data["total"] = total
+                
+            def finish_cb(err):
+                progress_data["active"] = False
+                if err:
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Copy failed: {err}"))
+                self.root.after(0, refresh_files)
+
+            copy_batch_with_progress(paths, shared_path, progress_cb, finish_cb)
+            
+            def poll_progress():
+                if not progress_data["active"]:
+                    progress_card.place_forget()
+                    sec_frame.place(x=18, y=250 + yo, width=W - 36, height=24)
+                    list_canvas.place(x=18, y=285 + yo, width=W - 36, height=430)
+                    return
+                
+                copied = progress_data["copied"]
+                total = progress_data["total"]
+                if total > 0:
+                    percent = int(copied / total * 100)
+                    elapsed = time.time() - progress_data["start_time"]
+                    speed = (copied / (1024 * 1024)) / elapsed if elapsed > 0 else 0.0
+                    
+                    bar_width = int((W - 36 - 24) * (copied / total))
+                    progress_bar_canvas.delete("bar")
+                    progress_bar_canvas.create_rectangle(0, 0, bar_width, 6, fill="#0077C0", outline="", tags="bar")
+                    
+                    progress_title_lbl.config(text="Sending File..." if percent < 100 else "Completed")
+                    progress_speed_lbl.config(text=f"{speed:.2f} MB/s")
+                    progress_percent_lbl.config(text=f"{percent}%")
+                    
+                    copied_mb = copied / (1024 * 1024)
+                    total_mb = total / (1024 * 1024)
+                    if total_mb >= 1024:
+                        progress_bytes_lbl.config(text=f"{copied_mb/1024:.2f} / {total_mb/1024:.2f} GB")
+                    else:
+                        progress_bytes_lbl.config(text=f"{copied_mb:.2f} / {total_mb:.2f} MB")
+                
+                v.after(100, poll_progress)
+                
+            poll_progress()
+
+        scrollable_frame = tk.Frame(list_canvas, bg=self.BG)
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: list_canvas.configure(
+                scrollregion=list_canvas.bbox("all")
+            )
+        )
+        
+        list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
+        list_canvas.configure(yscrollcommand=scrollbar.set)
+
+        def process_dropped_files(paths_str):
+            if not paths_str:
+                return
+            # Filter out the placeholder text if present
+            paths_str = paths_str.replace(placeholder, "").strip()
+            if not paths_str:
+                return
+            
+            paths = parse_dropped_paths(paths_str)
+            dnd_entry.delete(0, tk.END)
+            dnd_entry.insert(0, placeholder)
+            dnd_entry.config(fg=self.DIM)
+            v.focus_set()
+            
+            start_async_copy(paths)
+
+        def on_dnd_change(*args):
+            val = dnd_var.get().strip()
+            if val and val != placeholder:
+                v.after(100, lambda: process_dropped_files(dnd_var.get().strip()))
+
+        dnd_var.trace_add("write", on_dnd_change)
+
+        def on_enter_dropzone(e):
+            draw_dropzone(True)
+            dnd_entry.focus_set()
+
+        def on_leave_dropzone(e):
+            draw_dropzone(False)
+
+        dropzone.bind("<Enter>", on_enter_dropzone)
+        dropzone.bind("<Leave>", on_leave_dropzone)
+        dnd_entry.bind("<Enter>", on_enter_dropzone)
+        dnd_entry.bind("<Leave>", on_leave_dropzone)
+
+        # Track which files have been opened/downloaded this session
+        opened_files = set()
+
+        def refresh_files():
+            # Clear previous items
+            for widget in scrollable_frame.winfo_children():
+                widget.destroy()
+                
+            if not os.path.exists(shared_path):
+                os.makedirs(shared_path, exist_ok=True)
+            
+            try:
+                import json
+                meta_path = os.path.join(shared_path, ".metadata.json")
+                durations = {}
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, "r") as fmeta:
+                            durations = json.load(fmeta)
+                    except Exception:
+                        pass
+
+                files_list = []
+                # Main shared folder files
+                if os.path.exists(shared_path):
+                    for f in sorted(os.listdir(shared_path)):
+                        if not f.startswith('.') and os.path.isfile(os.path.join(shared_path, f)):
+                            files_list.append((f, False))
+                # Inbox folder files
+                inbox_path = os.path.join(shared_path, ".inbox")
+                if os.path.exists(inbox_path):
+                    for f in sorted(os.listdir(inbox_path)):
+                        if not f.startswith('.') and os.path.isfile(os.path.join(inbox_path, f)):
+                            files_list.append((f, True))
+
+                if not files_list:
+                    lbl = tk.Label(scrollable_frame, text="No files shared yet. Choose a file above to start!", font=(self.FU, 10), bg=self.BG, fg=self.DIM, pady=40)
+                    lbl.pack(fill="x")
+                    scrollbar.place_forget()
+                else:
+                    # Show scrollbar only if items exceed viewport height
+                    if len(files_list) > 5:
+                        scrollbar.place(x=W - 15, y=285 + yo, height=430)
+                    else:
+                        scrollbar.place_forget()
+
+                    for f, is_inbox_file in files_list:
+                        cur_dir = inbox_path if is_inbox_file else shared_path
+                        f_path = os.path.join(cur_dir, f)
+                        size_bytes = os.path.getsize(f_path)
+                        # format size
+                        if size_bytes < 1024:
+                            size_str = f"{size_bytes} B"
+                        elif size_bytes < 1024 * 1024:
+                            size_str = f"{size_bytes / 1024:.1f} KB"
+                        elif size_bytes < 1024 * 1024 * 1024:
+                            size_str = f"{size_bytes / (1024 * 1024):.1f} MB"
+                        else:
+                            size_str = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+                        
+                        # Add transfer duration next to size if available
+                        duration = durations.get(f)
+                        if duration is not None:
+                            if duration < 60:
+                                size_str += f" (took {int(duration)}s)"
+                            else:
+                                size_str += f" (took {int(duration//60)}m {int(duration%60)}s)"
+                        
+                        if is_inbox_file:
+                            size_str += " [INBOX]"
+
+                        disp_name = f
+                        if len(disp_name) > 30:
+                            disp_name = disp_name[:18] + "..." + disp_name[-9:]
+                        
+                        is_opened = f in opened_files
+                        is_received_completed = (duration is not None) and (not is_inbox_file)
+                        show_tick = is_opened or is_received_completed
+
+                        if is_inbox_file:
+                            border_color = "#0077C0" # Inbox items get a highlighted blue border
+                        else:
+                            border_color = "#00C853" if show_tick else "#1A1A1F"
+                        
+                        card = tk.Frame(scrollable_frame, bg=self.BG2, bd=0, padx=12, pady=10, highlightthickness=1, highlightbackground=border_color)
+                        card.pack(fill="x", pady=(0, 8))
+                        
+                        # Double click card to open (only if it's already in main shared folder)
+                        def make_open_handler(path_to_open, fname):
+                            def handler(e=None):
+                                opened_files.add(fname)
+                                open_path(path_to_open)
+                                self.root.after(300, refresh_files)
+                            return handler
+                        
+                        def make_accept_handler(fname):
+                            def handler(e=None):
+                                try:
+                                    src_inbox = os.path.join(shared_path, ".inbox", fname)
+                                    dst_main = os.path.join(shared_path, fname)
+                                    if os.path.exists(dst_main):
+                                        os.remove(dst_main)
+                                    os.rename(src_inbox, dst_main)
+                                    refresh_files()
+                                except Exception as ex:
+                                    messagebox.showerror("Error", f"Failed to accept file: {ex}")
+                            return handler
+
+                        if not is_inbox_file:
+                            card.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                        
+                        text_col = tk.Frame(card, bg=self.BG2)
+                        text_col.pack(side="left", fill="both", expand=True)
+                        
+                        # Name row with optional check icon
+                        name_frame = tk.Frame(text_col, bg=self.BG2)
+                        name_frame.pack(fill="x")
+                        
+                        name_lbl = tk.Label(name_frame, text=disp_name, font=(self.FU, 10, "bold"), fg=self.WHITE, bg=self.BG2, anchor="w")
+                        name_lbl.pack(side="left")
+                        if not is_inbox_file:
+                            name_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                        
+                        if show_tick and not is_inbox_file:
+                            check_lbl = tk.Label(name_frame, text="✓", font=(self.FU, 10, "bold"), fg="#00C853", bg=self.BG2)
+                            check_lbl.pack(side="left", padx=(4, 0))
+                        
+                        size_lbl = tk.Label(text_col, text=size_str, font=(self.FU, 8), fg=self.DIM, bg=self.BG2, anchor="w")
+                        size_lbl.pack(fill="x")
+                        if not is_inbox_file:
+                            size_lbl.bind("<Double-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                        
+                        btn_col = tk.Frame(card, bg=self.BG2)
+                        btn_col.pack(side="right", fill="y")
+                        
+                        if is_inbox_file:
+                            # Accept/Download button for inbox files
+                            accept_btn = tk.Label(btn_col, text="↓ Download", font=(self.FU, 9, "bold"), bg="#0077C0", fg="#FFFFFF", padx=10, pady=4, relief="flat", cursor="hand2")
+                            accept_btn.pack(side="left", padx=4)
+                            accept_btn.bind("<Button-1>", lambda e, fn=f: make_accept_handler(fn)())
+                        else:
+                            # Open button — green if already opened/completed, blue if not
+                            btn_bg = "#1B4332" if show_tick else "#0077C0"
+                            btn_fg = "#00C853" if show_tick else "#FFFFFF"
+                            btn_text = "✓" if show_tick else "↓"
+                            open_btn = tk.Label(btn_col, text=btn_text, font=(self.FU, 11, "bold"), bg=btn_bg, fg=btn_fg, padx=12, pady=4, relief="flat", cursor="hand2")
+                            open_btn.pack(side="left", padx=4)
+                            open_btn.bind("<Button-1>", lambda e, p=f_path, fn=f: make_open_handler(p, fn)())
+                        
+                        # Delete button
+                        def make_delete_handler(fname, is_inb):
+                            def handler(e=None):
+                                if messagebox.askyesno("Delete File", f"Are you sure you want to delete {fname}?"):
+                                    try:
+                                        p = os.path.join(shared_path, ".inbox" if is_inb else "", fname)
+                                        if os.path.exists(p):
+                                            os.remove(p)
+                                        refresh_files()
+                                    except Exception as ex:
+                                        messagebox.showerror("Error", f"Could not delete: {ex}")
+                            return handler
+                        del_btn = tk.Label(btn_col, text="✕", font=(self.FU, 11, "bold"), bg="#3B1C1C", fg="#FF4D4D", padx=12, pady=4, relief="flat", cursor="hand2")
+                        del_btn.pack(side="left", padx=4)
+                        del_btn.bind("<Button-1>", lambda e, fn=f, ib=is_inbox_file: make_delete_handler(fn, ib)())
+            except Exception as e:
+                lbl = tk.Label(scrollable_frame, text=f"Error: {e}", font=(self.FU, 10), bg=self.BG, fg=self.RED, pady=20)
+                lbl.pack(fill="x")
+
+        def open_path(path):
+            try:
+                import platform
+                import subprocess
+                if platform.system() == "Darwin":
+                    subprocess.Popen(["open", path])
+                elif platform.system() == "Windows":
+                    os.startfile(path)
+                else:
+                    subprocess.Popen(["xdg-open", path])
+            except Exception as e:
+                from tkinter import messagebox
+                messagebox.showerror("Error", f"Could not open file: {e}")
+
+        def delete_file(filename):
+            from tkinter import messagebox
+            try:
+                if messagebox.askyesno("Delete File", f"Are you sure you want to delete {filename}?"):
+                    os.remove(os.path.join(shared_path, filename))
+                    refresh_files()
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not delete file: {e}")
+
+        def add_file():
+            from tkinter import filedialog
+            file_paths = filedialog.askopenfilenames(title="Select Files to Share")
+            if file_paths:
+                start_async_copy(file_paths)
+
+        # Bind Dropzone clicks
+        dropzone.bind("<Button-1>", lambda e: add_file())
+        dropzone.bind("<Enter>", lambda e: draw_dropzone(True))
+        dropzone.bind("<Leave>", lambda e: draw_dropzone(False))
+        dropzone.config(cursor="hand2")
+        
+        # Bind Refresh label clicks
+        refresh_lbl.bind("<Button-1>", lambda e: refresh_files())
+        
+        # Save reference for external updates
+        self._refresh_files_list = refresh_files
 
     # ── MONETIZATION & ACTIVATION LOCK SCREEN ────────────────────────────────
 
@@ -2370,8 +2955,22 @@ class LANpadLauncher:
         try:
             import uvicorn
             from app import app
+            import socket
+            class CustomServer(uvicorn.Server):
+                def install_signal_handlers(self):
+                    pass
+                async def startup(self, sockets=None):
+                    await super().startup(sockets)
+                    for server in getattr(self, "servers", []):
+                        if hasattr(server, "sockets"):
+                            for sock in server.sockets:
+                                try:
+                                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4 * 1024 * 1024)
+                                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4 * 1024 * 1024)
+                                except Exception:
+                                    pass
             config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, log_level="error")
-            self.server_instance = uvicorn.Server(config)
+            self.server_instance = CustomServer(config)
             t = threading.Thread(target=self.server_instance.run, daemon=True)
             t.start()
             self.process = "THREADED"
@@ -2790,6 +3389,97 @@ rm -f "{download_path}"
                 status_win.destroy()
 
         threading.Thread(target=_download_and_install, daemon=True).start()
+
+    def start_mobile_progress_polling(self):
+        self._last_mobile_upload_active = False
+        self.poll_mobile_upload_progress()
+
+    def poll_mobile_upload_progress(self):
+        self.root.after(200, self.poll_mobile_upload_progress)
+        
+        # Don't poll if server is off or the main GUI dashboard hasn't been built yet
+        if not getattr(self, "_server_on", False) or not hasattr(self, "_progress_card"):
+            return
+
+        # If a laptop local copy operation is currently running, don't overwrite its progress bar!
+        if self._progress_data.get("active", False):
+            return
+
+        # Fetch progress details
+        active_data = None
+        # Try direct import first (shares thread memory)
+        try:
+            from app import _active_upload
+            if _active_upload and _active_upload.get("active"):
+                active_data = _active_upload.copy()
+        except Exception:
+            pass
+
+        # Fallback to HTTP API
+        if not active_data:
+            try:
+                import urllib.request
+                import json
+                from app import SESSION_TOKEN
+                token_query = f"?sid={SESSION_TOKEN}" if SESSION_TOKEN else ""
+                url = f"http://127.0.0.1:8000/api/benchmark/upload_progress{token_query}"
+                req = urllib.request.Request(url)
+                with urllib.request.urlopen(req, timeout=0.1) as response:
+                    res = json.loads(response.read().decode())
+                    if res and res.get("active"):
+                        active_data = res
+            except Exception:
+                pass
+
+        if active_data and active_data.get("active"):
+            self._last_mobile_upload_active = True
+            
+            # Show progress bar
+            self._progress_card.place(x=18, y=242 + self._yo, width=self._W - 36, height=75)
+            self._sec_frame.place(x=18, y=322 + self._yo, width=self._W - 36, height=24)
+            self._list_canvas.place(x=18, y=352 + self._yo, width=self._W - 36, height=365)
+
+            # Update labels
+            mode_prefix = "Receiving to Inbox" if active_data.get("mode") == "inbox" else "Receiving"
+            self._progress_title_lbl.config(text=f"{mode_prefix}: {active_data['filename']}")
+            
+            copied = active_data['written']
+            total = active_data['size']
+            elapsed = time.time() - active_data['start_time']
+            speed = (copied / (1024 * 1024)) / elapsed if elapsed > 0 else 0.0
+
+            eta_str = "00:00"
+            if speed > 0.05 and total > copied:
+                remaining_bytes = total - copied
+                remaining_seconds = int(remaining_bytes / (speed * 1024 * 1024))
+                m, s = divmod(remaining_seconds, 60)
+                eta_str = f"{m:02d}:{s:02d}"
+
+            el_m, el_s = divmod(int(elapsed), 60)
+            elapsed_str = f"{el_m:02d}:{el_s:02d}"
+
+            self._progress_speed_lbl.config(text=f"{elapsed_str} / {eta_str} | {speed:.2f} MB/s", fg="#00C853")
+            
+            percent = int(copied / total * 100) if total > 0 else 0
+            self._progress_percent_lbl.config(text=f"{percent}%")
+            self._progress_bytes_lbl.config(text=f"{copied / 1048576:.2f} / {total / 1048576:.2f} MB")
+
+            # Redraw progress bar in green
+            self._progress_bar_canvas.delete("bar")
+            bar_width = int((self._W - 36 - 24) * (copied / total)) if total > 0 else 0
+            self._progress_bar_canvas.create_rectangle(0, 0, bar_width, 6, fill="#00C853", width=0, tags="bar")
+        else:
+            if self._last_mobile_upload_active:
+                self._last_mobile_upload_active = False
+                
+                # Hide progress bar
+                self._progress_card.place_forget()
+                self._sec_frame.place(x=18, y=250 + self._yo, width=self._W - 36, height=24)
+                self._list_canvas.place(x=18, y=285 + self._yo, width=self._W - 36, height=430)
+                
+                # Instantly refresh list to show newly uploaded file
+                if hasattr(self, "_refresh_files_list"):
+                    self._refresh_files_list()
 
     def on_quit(self, *args):
         self.stop_tunnel()
