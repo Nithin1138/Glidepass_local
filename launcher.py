@@ -314,6 +314,7 @@ class LANpadLauncher:
         self.monetization_enabled = False
         self.free_enabled = False
         self.connected_hubs = []
+        self.session_deleted_files = []
 
         # ── View containers ───────────────────────────────────────────────────
         self.main_view   = tk.Frame(root, bg=self.BG)
@@ -2060,8 +2061,8 @@ class LANpadLauncher:
 
                 files_list = []
                 if show_deleted_mode[0]:
-                    # Render deleted files
-                    for df in reversed(deleted_files):
+                    # Render deleted files from this session only
+                    for df in reversed(self.session_deleted_files):
                         files_list.append((df["name"], False, df["size"], df.get("deleted_at")))
                 else:
                     # Main shared folder files
@@ -2212,6 +2213,14 @@ class LANpadLauncher:
                                             if os.path.exists(p):
                                                 size = os.path.getsize(p)
                                                 os.remove(p)
+                                                
+                                                # Track in session deleted files
+                                                self.session_deleted_files.append({
+                                                    "name": fname,
+                                                    "size": size,
+                                                    "deleted_at": time.time() * 1000
+                                                })
+                                                
                                                 # Log in .metadata.json
                                                 try:
                                                     import time
