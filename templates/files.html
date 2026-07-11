@@ -442,6 +442,17 @@
         }
         window.scrollTo(0, 0);
 
+        function formatTime(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            if (h > 0) {
+                return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
         lucide.createIcons();
 
         // Capture session ID (sid) from URL and save to sessionStorage
@@ -559,26 +570,18 @@
                         window._lastEmaSpeed = smoothedSpd;
                         
                         // Calculate ETA (Remaining Time)
-                        let etaStr = '--s';
+                        let remainingSeconds = 0;
                         if (smoothedSpd > 0.05) {
                             const remainingBytes = file.size - e.loaded;
                             const speedBytesPerSec = smoothedSpd * 1048576;
-                            const remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
-                            
-                            if (remainingSeconds >= 3600) {
-                                const h = Math.floor(remainingSeconds / 3600);
-                                const m = Math.floor((remainingSeconds % 3600) / 60);
-                                etaStr = `${h}h ${m}m`;
-                            } else if (remainingSeconds >= 60) {
-                                const m = Math.floor(remainingSeconds / 60);
-                                const s = remainingSeconds % 60;
-                                etaStr = `${m}m ${s}s`;
-                            } else {
-                                etaStr = `${remainingSeconds}s`;
-                            }
+                            remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
                         }
+                        
+                        const elapsedSeconds = Math.round((now - startTime) / 1000);
+                        const elapsedStr = formatTime(elapsedSeconds);
+                        const etaStr = formatTime(remainingSeconds);
 
-                        speedLbl.textContent = `${etaStr} remaining | ${smoothedSpd.toFixed(2)} MB/s`;
+                        speedLbl.textContent = `${elapsedStr} / ${etaStr} | ${smoothedSpd.toFixed(2)} MB/s`;
                         bytesLbl.textContent = `${(e.loaded / 1048576).toFixed(2)} / ${totalMB} MB`;
                     }
                 });
@@ -796,26 +799,18 @@
                     window._lastEmaSpeedChunks = smoothedSpd;
                     
                     // Calculate ETA (Remaining Time)
-                    let etaStr = '--s';
+                    let remainingSeconds = 0;
                     if (smoothedSpd > 0.05) {
                         const remainingBytes = file.size - totalLoaded;
                         const speedBytesPerSec = smoothedSpd * 1048576;
-                        const remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
-                        
-                        if (remainingSeconds >= 3600) {
-                            const h = Math.floor(remainingSeconds / 3600);
-                            const m = Math.floor((remainingSeconds % 3600) / 60);
-                            etaStr = `${h}h ${m}m`;
-                        } else if (remainingSeconds >= 60) {
-                            const m = Math.floor(remainingSeconds / 60);
-                            const s = remainingSeconds % 60;
-                            etaStr = `${m}m ${s}s`;
-                        } else {
-                            etaStr = `${remainingSeconds}s`;
-                        }
+                        remainingSeconds = Math.max(0, Math.round(remainingBytes / speedBytesPerSec));
                     }
+                    
+                    const elapsedSeconds = Math.round((now - startTime) / 1000);
+                    const elapsedStr = formatTime(elapsedSeconds);
+                    const etaStr = formatTime(remainingSeconds);
 
-                    speedLbl.textContent = `${etaStr} remaining | ${smoothedSpd.toFixed(2)} MB/s`;
+                    speedLbl.textContent = `${elapsedStr} / ${etaStr} | ${smoothedSpd.toFixed(2)} MB/s`;
                     bytesLbl.textContent = `${(totalLoaded / 1048576).toFixed(2)} / ${totalMB} MB`;
                 }
                 function pumpNext() {
