@@ -1259,24 +1259,15 @@ async def upload_file_raw(request: Request, filename: str, sid: str = None):
         import asyncio
         loop = asyncio.get_running_loop()
         
-        chunks = []
-        chunks_size = 0
-        buffer_limit = 8 * 1024 * 1024  # 8MB buffer to minimize write operations
+        # Open with 4MB OS write buffer — keeps syscalls large and infrequent
+        fd = await loop.run_in_executor(None, lambda: open(dest_path, "wb", buffering=4 * 1024 * 1024))
         
-        # Open file with a 1MB internal OS buffer
-        with open(dest_path, "wb", buffering=1024 * 1024) as f:
+        try:
             async for chunk in request.stream():
-                chunks.append(chunk)
-                chunks_size += len(chunk)
-                if chunks_size >= buffer_limit:
-                    data_to_write = b''.join(chunks)
-                    await loop.run_in_executor(None, f.write, data_to_write)
-                    chunks = []
-                    chunks_size = 0
-            
-            if chunks:
-                data_to_write = b''.join(chunks)
-                await loop.run_in_executor(None, f.write, data_to_write)
+                await loop.run_in_executor(None, fd.write, chunk)
+            await loop.run_in_executor(None, fd.flush)
+        finally:
+            await loop.run_in_executor(None, fd.close)
                 
         return {"status": "success", "filename": safe_filename}
     except Exception as e:
@@ -1575,10 +1566,12 @@ async def download_file(filename: str, sid: str = None):
     from fastapi.responses import StreamingResponse
     import urllib.parse
     
+    file_size = os.path.getsize(file_path)
+    
     async def iterfile():
         loop = asyncio.get_running_loop()
-        with open(file_path, mode="rb") as f:
-            chunk_size = 1024 * 1024  # 1MB chunks
+        with open(file_path, mode="rb", buffering=4 * 1024 * 1024) as f:
+            chunk_size = 4 * 1024 * 1024  # 4MB chunks for high-throughput LAN
             while True:
                 chunk = await loop.run_in_executor(None, f.read, chunk_size)
                 if not chunk:
@@ -1588,7 +1581,7 @@ async def download_file(filename: str, sid: str = None):
     encoded_filename = urllib.parse.quote(safe_filename)
     headers = {
         "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
-        "Content-Length": str(os.path.getsize(file_path)),
+        "Content-Length": str(file_size),
     }
     return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
 
@@ -1628,8 +1621,8 @@ async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
     if sid != SESSION_TOKEN:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Unauthorized session")
-    # Stream random/dummy bytes directly from memory (10MB default)
-    chunk = b"\0" * (128 * 1024)  # 128KB chunk of zeros
+    # Stream dummy bytes directly from memory (20MB default)
+    chunk = b"\0" * (1024 * 1024)  # 1MB chunk of zeros — saturates LAN bandwidth
     def iter_dummy():
         total_sent = 0
         while total_sent < size:
@@ -1638,7 +1631,11 @@ async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
             total_sent += to_send
     
     from fastapi.responses import StreamingResponse
-    return StreamingResponse(iter_dummy(), media_type="application/octet-stream")
+    return StreamingResponse(
+        iter_dummy(),
+        media_type="application/octet-stream",
+        headers={"Content-Length": str(size)}
+    )
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

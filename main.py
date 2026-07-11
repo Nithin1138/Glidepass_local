@@ -91,8 +91,25 @@ class ServerManager:
         
         from app import app as fastapi_app
         import uvicorn
+        import socket as _socket
+        
+        class CustomServer(uvicorn.Server):
+            """Uvicorn server with enlarged TCP buffers for high-throughput LAN transfers."""
+            def install_signal_handlers(self):
+                pass
+            async def startup(self, sockets=None):
+                await super().startup(sockets)
+                for server in getattr(self, "servers", []):
+                    if hasattr(server, "sockets"):
+                        for sock in server.sockets:
+                            try:
+                                sock.setsockopt(_socket.SOL_SOCKET, _socket.SO_RCVBUF, 4 * 1024 * 1024)
+                                sock.setsockopt(_socket.SOL_SOCKET, _socket.SO_SNDBUF, 4 * 1024 * 1024)
+                            except Exception:
+                                pass
+        
         config = uvicorn.Config(app=fastapi_app, host="0.0.0.0", port=8000, log_level="error")
-        self.server_instance = uvicorn.Server(config)
+        self.server_instance = CustomServer(config)
         
         def run_server():
             try:
