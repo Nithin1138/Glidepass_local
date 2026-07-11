@@ -1323,12 +1323,9 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
         if cache:
             fd = cache["fd"]
             body = await request.body()
-            await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
-            # Track written bytes; close fd once all data is received
-            with cache["lock"]:
-                cache["written"] += len(body)
-                done = cache["written"] >= cache["size"]
-            if done:
+            os.pwrite(fd, body, offset)
+            cache["written"] += len(body)
+            if cache["written"] >= cache["size"]:
                 try:
                     os.close(fd)
                 except OSError:
@@ -1342,7 +1339,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, sid: 
             fd = os.open(dest_path, os.O_WRONLY)
             try:
                 body = await request.body()
-                await loop.run_in_executor(None, lambda: os.pwrite(fd, body, offset))
+                os.pwrite(fd, body, offset)
             finally:
                 os.close(fd)
 
