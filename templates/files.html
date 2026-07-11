@@ -1028,13 +1028,20 @@
                                 isFirstChunkMeasured = true;
                                 const duration = (Date.now() - chunkStartTime) / 1000;
                                 const speedMbps = (sliceSize * 8) / (duration * 1000 * 1000);
-                                if (speedMbps < 6) {
-                                    // Slow Wifi Router detected! Keep concurrency at 1, shrink chunks to 512KB
-                                    chunkSize = 512 * 1024;
+                                if (speedMbps < 2) {
+                                    // Extremely slow connection
+                                    chunkSize = 256 * 1024; // 256 KB
                                     concurrency = 1;
+                                } else if (speedMbps < 8) {
+                                    // Slow Wifi Router (0.5 - 5 Mbps / MBs)
+                                    chunkSize = 512 * 1024; // 512 KB
+                                    concurrency = 2; // Concurrency of 2 to keep pipeline active without bufferbloat
+                                } else if (speedMbps < 25) {
+                                    // Medium WiFi
+                                    chunkSize = 1024 * 1024; // 1 MB
+                                    concurrency = 3;
                                 } else {
                                     // Fast link (Mobile Hotspot / High-speed LAN)
-                                    // Scale chunk sizes up for maximum throughput
                                     chunkSize = 4 * 1024 * 1024;
                                     if (file.size > 50 * 1024 * 1024) chunkSize = 8 * 1024 * 1024;
                                     if (file.size > 300 * 1024 * 1024) chunkSize = 16 * 1024 * 1024;
