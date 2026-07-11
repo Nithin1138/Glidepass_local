@@ -2419,11 +2419,11 @@ class LANpadLauncher:
             lbl_desc.pack(anchor="w", pady=(0, 20))
             
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
-            host_ent = tk.Entry(main_container, textvariable=remote_url, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
+            host_ent = tk.Entry(main_container, textvariable=remote_url, bg="#1E1E26", fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#0077C0", insertbackground=self.WHITE)
             host_ent.pack(fill="x", ipady=8, pady=(0, 15))
             
             tk.Label(main_container, text="SESSION TOKEN (SID)", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
-            token_ent = tk.Entry(main_container, textvariable=session_token, bg=self.BG2, fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground=self.BORDER, highlightcolor="#0077C0", insertbackground=self.WHITE)
+            token_ent = tk.Entry(main_container, textvariable=session_token, bg="#1E1E26", fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#0077C0", insertbackground=self.WHITE)
             token_ent.pack(fill="x", ipady=8, pady=(0, 20))
             
             btn_connect = tk.Label(main_container, text="CONNECT", font=(FU, 10, "bold"), bg="#0077C0", fg=self.WHITE, pady=10, relief="flat", cursor="hand2")
