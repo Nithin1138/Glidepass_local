@@ -1821,7 +1821,7 @@ async def list_files(sid: str = None):
         if os.path.exists(SHARED_DIR):
             for name in os.listdir(SHARED_DIR):
                 full_path = os.path.join(SHARED_DIR, name)
-                if os.path.isfile(full_path) and not name.startswith("."):
+                if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
                     stat = os.stat(full_path)
                     files.append({
                         "name": name,
@@ -1834,7 +1834,7 @@ async def list_files(sid: str = None):
         if os.path.exists(INBOX_DIR):
             for name in os.listdir(INBOX_DIR):
                 full_path = os.path.join(INBOX_DIR, name)
-                if os.path.isfile(full_path) and not name.startswith("."):
+                if os.path.isfile(full_path) and not name.startswith(".") and not name.endswith(".part"):
                     stat = os.stat(full_path)
                     files.append({
                         "name": name,

@@ -2003,13 +2003,13 @@ class LANpadLauncher:
                     # Main shared folder files
                     if os.path.exists(shared_path):
                         for f in sorted(os.listdir(shared_path)):
-                            if not f.startswith('.') and os.path.isfile(os.path.join(shared_path, f)):
+                            if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(shared_path, f)):
                                 files_list.append((f, False, os.path.getsize(os.path.join(shared_path, f)), None))
                     # Inbox folder files
                     inbox_path = os.path.join(shared_path, ".inbox")
                     if os.path.exists(inbox_path):
                         for f in sorted(os.listdir(inbox_path)):
-                            if not f.startswith('.') and os.path.isfile(os.path.join(inbox_path, f)):
+                            if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(inbox_path, f)):
                                 files_list.append((f, True, os.path.getsize(os.path.join(inbox_path, f)), None))
 
                 if not files_list:
