@@ -662,7 +662,7 @@ class LANpadLauncher:
             H_val = int(c["height"])
             rounded_rect(c, 0, 2, W_val, H_val - 2, r=10, fill="#0077C0", outline="#0077C0")
             c.create_text(W_val // 2, H_val // 2, text="Link Copied to Clipboard!", font=(self.FU, 10, "bold"), fill=self.WHITE, anchor="center")
-            self.root.after(1200, lambda: self._draw_ip(self.server_active))
+            self.root.after(1200, lambda: self._draw_ip(self._server_on))
 
         self._ip_cv.bind("<Button-1>", copy_ip_to_clipboard)
         self._ip_cv.config(cursor="hand2")
