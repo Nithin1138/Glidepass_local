@@ -301,12 +301,23 @@
             <!-- Dynamic LAN Direct WiFi Banner -->
             <div id="lan-banner" style="display: none; align-items: center; justify-content: space-between; background: rgba(0, 119, 192, 0.08); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; margin: 16px 16px 4px 16px; font-size: 0.75rem; color: var(--text-main); font-family: var(--font-display);">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; background-color: #00F59B; border-radius: 50%; box-shadow: 0 0 8px #00F59B;"></span>
-                    <span>Direct WiFi Mode available (50MB/s+)</span>
+                    <span style="display: inline-block; width: 8px; height: 8px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 8px #3b82f6;"></span>
+                    <span>Connection is slow. Switch to LAN (50+MB/s)</span>
                 </div>
-                <button style="background: var(--accent-color); color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.2s;">
-                    Switch Mode
+                <button id="lan-explain-btn" style="background: var(--accent-color); color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.2s;">
+                    Switch
                 </button>
+            </div>
+
+            <!-- Hidden Red Explanation Card (toggled by Switch button) -->
+            <div id="lan-explain-card" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; padding: 14px; margin: 4px 16px 12px 16px; font-size: 0.75rem; color: #ef4444; font-family: var(--font-main); line-height: 1.4;">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <i data-lucide="alert-triangle" size="16" style="flex-shrink: 0; margin-top: 1px; color: #ef4444;"></i>
+                    <div>
+                        <strong>Why Switch to LAN?</strong>
+                        <p style="margin-top: 4px; color: rgba(239, 68, 68, 0.85);">You are currently connected via an external Cloudflare Internet Tunnel. Large file transfers will be extremely slow. For lightning-fast speeds (50+ MB/s), connect your phone to the computer's <strong>Home Wi-Fi</strong> network and click <a href="#" id="lan-direct-link" style="color: var(--accent-color); font-weight: bold; text-decoration: underline;">Switch to LAN Direct Link</a>!</p>
+                    </div>
+                </div>
             </div>
 
             <div class="command-center">
@@ -344,28 +355,6 @@
                         </button>
                     </div>
                 </header>
-
-                <!-- Sleek Top Banner (Single Line) -->
-                <div id="lan-switch-banner" style="display: none; align-items: center; justify-content: space-between; background: rgba(0, 119, 192, 0.08); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-main); font-family: var(--font-display);">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="display: inline-block; width: 8px; height: 8px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 8px #3b82f6;"></span>
-                        <span>Connection is slow. Switch to LAN (40-60 MB/s)</span>
-                    </div>
-                    <button id="lan-explain-btn" style="background: var(--accent-color); color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.2s;">
-                        Switch
-                    </button>
-                </div>
-
-                <!-- Hidden Red Explanation Card (toggled by Switch button) -->
-                <div id="lan-explain-card" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; padding: 14px; font-size: 0.75rem; color: #ef4444; margin-bottom: 12px; font-family: var(--font-main); line-height: 1.4;">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <i data-lucide="alert-triangle" size="16" style="flex-shrink: 0; margin-top: 1px; color: #ef4444;"></i>
-                        <div>
-                            <strong>Why Switch to LAN?</strong>
-                            <p style="margin-top: 4px; color: rgba(239, 68, 68, 0.85);">You are currently connected via an external Cloudflare Internet Tunnel. Large file transfers will be extremely slow. For lightning-fast speeds (40-60 MB/s), connect your phone directly to the computer's <strong>Home Wi-Fi</strong> network or scan the <strong>"Local (Home Wi-Fi)"</strong> QR code on the desktop app!</p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Dropzone / Selector -->
                 <div id="file-dropzone" style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 45px 20px; text-align: center; background: var(--card-bg); cursor: pointer; transition: all 0.3s; position: relative; backdrop-filter: blur(20px);">
@@ -492,7 +481,8 @@
             if (banner) {
                 banner.style.display = 'flex';
                 banner.addEventListener('click', () => {
-                    window.location.href = `http://${lanIp}:8000/files?sid=${encodeURIComponent(sid)}`;
+                    const btn = document.getElementById('lan-explain-btn');
+                    if (btn) btn.click();
                 });
             }
         }
@@ -1427,18 +1417,11 @@
             fetchFilesList();
         }, 5000);
         // Show tunnel speed warning if not connected via local IP/localhost
-        const hostname = window.location.hostname;
-        if (hostname.includes('trycloudflare.com') || hostname.includes('lanpad.app')) {
-            const switchBanner = document.getElementById('lan-switch-banner');
-            if (switchBanner) {
-                switchBanner.style.display = 'flex';
-            }
-        }
-
         // Toggle explanation notice
         const explainBtn = document.getElementById('lan-explain-btn');
         if (explainBtn) {
-            explainBtn.addEventListener('click', () => {
+            explainBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Avoid triggering parent banner click
                 const card = document.getElementById('lan-explain-card');
                 if (card) {
                     const isHidden = card.style.display === 'none';
@@ -1448,6 +1431,15 @@
                     explainBtn.style.color = isHidden ? 'rgba(255,255,255,0.8)' : '#000';
                     explainBtn.style.border = isHidden ? '1px solid var(--border-color)' : 'none';
                 }
+            });
+        }
+
+        // Dynamically build LAN direct switch link
+        const directLink = document.getElementById('lan-direct-link');
+        if (directLink && lanIp) {
+            directLink.href = `http://${lanIp}:8000/files?sid=${encodeURIComponent(sid)}`;
+            directLink.addEventListener('click', (e) => {
+                e.stopPropagation(); // Avoid triggering toggle collapse
             });
         }
 
