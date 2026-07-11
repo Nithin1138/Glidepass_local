@@ -1995,7 +1995,6 @@ class LANpadLauncher:
         )
         
         list_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=W - 36)
-        list_canvas.configure(yscrollcommand=scrollbar.set)
 
         def process_dropped_files(paths_str):
             if not paths_str:
