@@ -671,6 +671,15 @@
                 <div class="stars layer3"></div>
             </div>
             <div class="onboarding" style="position: relative; z-index: 1;">
+                <!-- Status Pill Switcher -->
+                <div id="switch-conn-pill-container" style="display: none; justify-content: center; margin-bottom: 24px; width: 100%;">
+                    <div id="switch-conn-btn" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 30px; font-size: 0.75rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);">
+                        <span id="switch-conn-status-dot" style="width: 6px; height: 6px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 6px #3b82f6;"></span>
+                        <span id="switch-conn-text" style="color: var(--text-muted);">Connection: Hybrid</span>
+                        <span style="color: var(--accent-color); font-weight: 700; font-family: var(--font-display); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 2px;">Switch</span>
+                    </div>
+                </div>
+
                 <div class="logo-stack">
                     <div
                         style="width: 80px; height: 80px; background: var(--bg-color); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 20px;">
@@ -683,22 +692,16 @@
                     <h1>Linked Up</h1>
                     <p>Connected to laptop command center. Ready to bridge your data.</p>
                 </div>
-                <button class="connect-btn-main" id="launch-btn">
-                    <span>ENTER COMMAND CENTER</span>
-                    <i data-lucide="chevron-right" size="20"></i>
-                </button>
-                <button class="connect-btn-main" id="resources-btn"
-                    style="margin-top: 15px; background: rgba(72, 187, 120, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color);">
-                    <span>Browse Resources</span>
-                    <i data-lucide="compass" size="20"></i>
-                </button>
-                <!-- Status Pill Switcher -->
-                <div id="switch-conn-pill-container" style="display: none; justify-content: center; margin-top: 24px; width: 100%;">
-                    <div id="switch-conn-btn" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 30px; font-size: 0.75rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);">
-                        <span id="switch-conn-status-dot" style="width: 6px; height: 6px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 6px #3b82f6;"></span>
-                        <span id="switch-conn-text" style="color: var(--text-muted);">Connection: Hybrid</span>
-                        <span style="color: var(--accent-color); font-weight: 700; font-family: var(--font-display); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 2px;">Switch</span>
-                    </div>
+                <div class="actions-row" style="display: flex; gap: 12px; width: 100%; margin-top: 24px;">
+                    <button class="connect-btn-main" id="launch-btn" style="flex: 1; margin-top: 0; padding: 14px 10px; font-size: 0.75rem; gap: 6px;">
+                        <span>COMMAND CENTER</span>
+                        <i data-lucide="chevron-right" size="16"></i>
+                    </button>
+                    <button class="connect-btn-main" id="resources-btn"
+                        style="flex: 1; margin-top: 0; padding: 14px 10px; font-size: 0.75rem; gap: 6px; background: rgba(72, 187, 120, 0.15); border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none;">
+                        <span>RESOURCES</span>
+                        <i data-lucide="compass" size="16"></i>
+                    </button>
                 </div>
             </div>
         </div>
