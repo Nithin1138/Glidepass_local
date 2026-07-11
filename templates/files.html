@@ -570,15 +570,24 @@
                 bytesLbl.textContent = `0.00 / ${totalMB} MB`;
 
                 try {
-                    // Try the single raw HTTP stream first — native browser performance, 50-80MB/s on LAN
-                    await uploadViaHttpRaw(file, totalMB);
-                } catch (rawErr) {
-                    console.warn("Raw HTTP stream upload failed, falling back to WebSockets:", rawErr);
-                    try {
-                        await uploadViaWebSocket(file, totalMB);
-                    } catch (wsErr) {
-                        console.warn("WebSocket upload failed, falling back to parallel HTTP chunks:", wsErr);
+                    // Try the parallel HTTP chunked upload first for files > 10MB to saturate wireless bandwidth.
+                    // This uses 6 parallel TCP connections which beats single-stream TCP window limitations.
+                    if (file.size > 10 * 1024 * 1024) {
                         await uploadViaHttpChunks(file, totalMB);
+                    } else {
+                        await uploadViaHttpRaw(file, totalMB);
+                    }
+                } catch (chunkErr) {
+                    console.warn("Preferred upload path failed, falling back to raw HTTP stream:", chunkErr);
+                    try {
+                        await uploadViaHttpRaw(file, totalMB);
+                    } catch (rawErr) {
+                        console.warn("Raw HTTP stream upload failed, falling back to WebSockets:", rawErr);
+                        try {
+                            await uploadViaWebSocket(file, totalMB);
+                        } catch (wsErr) {
+                            showToast("All upload channels failed", "error");
+                        }
                     }
                 }
                 resolve();
