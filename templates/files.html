@@ -66,7 +66,7 @@
             max-width: 450px;
             min-height: 100vh;
             min-height: 100dvh;
-            background: var(--bg-color);
+            background: transparent;
             display: flex;
             flex-direction: column;
         }
@@ -88,9 +88,8 @@
         }
 
         .aurora-container {
-            position: absolute;
-            inset: -20%;
-            overflow: hidden;
+            position: fixed;
+            inset: 0;
             z-index: 0;
             pointer-events: none;
             background: #000;
@@ -99,8 +98,8 @@
         .aurora-blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.5;
+            filter: blur(80px);
+            opacity: 0.35;
             animation: aurora-float 15s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
         }
 
@@ -293,7 +292,7 @@
 </head>
 
 <body>
-    <div id="app-wrapper" style="overflow: hidden; position: relative;">
+    <div id="app-wrapper">
         <div class="aurora-container">
             <div class="aurora-blob aurora-1"></div>
             <div class="aurora-blob aurora-2"></div>
