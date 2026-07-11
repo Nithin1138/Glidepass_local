@@ -1934,6 +1934,16 @@ class LANpadLauncher:
             progress_data["active"] = True
             progress_data["start_time"] = time.time()
 
+            # Build a display name from the selected paths
+            if len(paths) == 1:
+                display_name = os.path.basename(paths[0])
+                if len(display_name) > 28:
+                    display_name = display_name[:14] + "..." + display_name[-10:]
+            else:
+                display_name = f"{len(paths)} files"
+            progress_data["display_name"] = display_name
+            progress_title_lbl.config(text=display_name)
+
             # Shift list view down and show progress card
             progress_card.place(x=18, y=242 + yo, width=W - 36, height=75)
             sec_frame.place(x=18, y=322 + yo, width=W - 36, height=24)
@@ -1972,7 +1982,7 @@ class LANpadLauncher:
                     progress_bar_canvas.delete("bar")
                     progress_bar_canvas.create_rectangle(0, 0, bar_width, 6, fill="#0077C0", outline="", tags="bar")
                     
-                    progress_title_lbl.config(text="Sending File..." if percent < 100 else "Completed")
+                    progress_title_lbl.config(text=progress_data.get("display_name", "Copying...") if percent < 100 else "✓ Done")
                     progress_speed_lbl.config(text=f"{speed:.2f} MB/s")
                     progress_percent_lbl.config(text=f"{percent}%")
                     
