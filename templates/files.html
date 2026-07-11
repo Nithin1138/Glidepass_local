@@ -919,30 +919,36 @@
                 const avgPing = (pings.reduce((a, b) => a + b, 0) / pings.length).toFixed(1);
                 stPingLbl.textContent = `${avgPing} ms`;
                 
-                // 2. Measure Download Speed (10MB payload)
-                stDownloadLbl.textContent = "Testing...";
+                // 2. Measure Download Speed (20MB payload)
+                stDownloadLbl.textContent = "0.00 MB/s";
                 const dlStart = performance.now();
-                const dlRes = await fetch(`/api/speedtest/download?size=${10 * 1024 * 1024}&sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
+                const dlSize = 20 * 1024 * 1024;
+                const dlRes = await fetch(`/api/speedtest/download?size=${dlSize}&sid=${encodeURIComponent(sid)}`, { cache: 'no-store' });
                 
                 const reader = dlRes.body.getReader();
                 let loaded = 0;
-                const total = 10 * 1024 * 1024;
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     loaded += value.length;
-                    const pct = 25 + Math.round((loaded / total) * 35);
+                    const pct = 25 + Math.round((loaded / dlSize) * 35);
                     stProgressBar.style.width = pct + '%';
+                    
+                    const elapsed = (performance.now() - dlStart) / 1000;
+                    if (elapsed > 0) {
+                        const dlSpeed = (loaded / elapsed / 1048576).toFixed(2);
+                        stDownloadLbl.textContent = `${dlSpeed} MB/s`;
+                    }
                 }
                 
-                const dlDuration = (performance.now() - dlStart) / 1000;
-                const dlSpeed = (10 / dlDuration).toFixed(2);
-                stDownloadLbl.textContent = `${dlSpeed} MB/s`;
+                const finalDlDuration = (performance.now() - dlStart) / 1000;
+                const finalDlSpeed = (loaded / finalDlDuration / 1048576).toFixed(2);
+                stDownloadLbl.textContent = `${finalDlSpeed} MB/s`;
                 
-                // 3. Measure Upload Speed (5MB payload)
-                stUploadLbl.textContent = "Testing...";
+                // 3. Measure Upload Speed (10MB payload)
+                stUploadLbl.textContent = "0.00 MB/s";
                 const ulStart = performance.now();
-                const ulSize = 5 * 1024 * 1024;
+                const ulSize = 10 * 1024 * 1024;
                 const dummyData = new Uint8Array(ulSize);
                 
                 await new Promise((resolve, reject) => {
@@ -952,6 +958,12 @@
                         if (e.lengthComputable) {
                             const pct = 60 + Math.round((e.loaded / e.total) * 40);
                             stProgressBar.style.width = pct + '%';
+                            
+                            const elapsed = (performance.now() - ulStart) / 1000;
+                            if (elapsed > 0) {
+                                const ulSpeed = (e.loaded / elapsed / 1048576).toFixed(2);
+                                stUploadLbl.textContent = `${ulSpeed} MB/s`;
+                            }
                         }
                     });
                     xhr.onload = () => resolve();
@@ -959,9 +971,9 @@
                     xhr.send(dummyData);
                 });
                 
-                const ulDuration = (performance.now() - ulStart) / 1000;
-                const ulSpeed = (5 / ulDuration).toFixed(2);
-                stUploadLbl.textContent = `${ulSpeed} MB/s`;
+                const finalUlDuration = (performance.now() - ulStart) / 1000;
+                const finalUlSpeed = (ulSize / finalUlDuration / 1048576).toFixed(2);
+                stUploadLbl.textContent = `${finalUlSpeed} MB/s`;
                 
             } catch (err) {
                 console.error(err);
