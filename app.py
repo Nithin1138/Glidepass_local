@@ -310,17 +310,17 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "vitcodes.html"]:
+    for tmpl in ["index.html", "center.html", "vitcodes.html", "files.html"]:
         success = False
         
-        # 0. Try local templates directory in workspace
-        local_path = os.path.join("templates", tmpl)
+        # 0. Try local templates directory (works in source runs and PyInstaller bundles)
+        local_path = resource_path(os.path.join("templates", tmpl))
         if os.path.exists(local_path):
             try:
                 import shutil
                 shutil.copy2(local_path, os.path.join(OTA_DIR, tmpl))
                 success = True
-                print(f"[OTA] Successfully copied {tmpl} from local repository templates")
+                print(f"[OTA] Successfully copied {tmpl} from local repository/bundled templates")
             except Exception as e:
                 print(f"[OTA] Failed to copy {tmpl} from local repository: {e}")
 
@@ -1542,23 +1542,13 @@ async def download_file(filename: str, sid: str = None):
         file_path = zip_path
         safe_filename = zip_filename
 
-    def iterfile():
-        # Open file descriptor once and stream it synchronously inside uvicorn's threadpool to eliminate context switching
-        with open(file_path, mode="rb") as f:
-            chunk_size = 8 * 1024 * 1024  # 8MB chunks
-            while True:
-                chunk = f.read(chunk_size)
-                if not chunk:
-                    break
-                yield chunk
-
-    # Properly URL encode filename for Content-Disposition header
-    encoded_filename = urllib.parse.quote(safe_filename)
-    headers = {
-        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
-        "Content-Length": str(os.path.getsize(file_path)),
-    }
-    return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
+    # Use native FastAPI FileResponse for high-performance direct file sending (utilizes kernel-level sendfile)
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        file_path,
+        media_type="application/octet-stream",
+        filename=safe_filename
+    )
 
 
 @app.delete("/api/files/delete/{filename}")
