@@ -2062,6 +2062,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
                 save_file_duration(safe_filename, duration)
                 _active_upload["active"] = False
                 _upload_fd_cache.pop(part_path, None)
+                asyncio.ensure_future(broadcast_files_changed())
         else:
             # Fallback: fd not in cache (preallocate was not called) — check permission then write
             allowed, err = check_feature_usage("allow_file_share", "File Sharing")

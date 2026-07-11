@@ -1100,11 +1100,9 @@
             const sessionSet = getSessionFiles();
             const deletedSet = new Set(getSessionDeleted().map(f => f.name));
 
-            // Only show files that were shared this session, or are in the inbox folder, and not deleted
+            // Show all files from the server, as long as they are not deleted in this session
             const activeFiles = files.filter(f => {
-                const isSessionShared = sessionSet.has(f.name);
-                const isInboxWaiting = f.inbox === true;
-                return (isSessionShared || isInboxWaiting) && !deletedSet.has(f.name);
+                return !deletedSet.has(f.name);
             });
 
             if (activeFiles.length === 0) {
