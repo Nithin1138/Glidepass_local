@@ -178,7 +178,10 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<bool> switchConnection() async {
-    if (!_isConnected || _sessionId == null) return false;
+    if (!_isConnected || _sessionId == null) {
+      debugPrint('[Switch] Cannot switch: not connected or no session ID');
+      return false;
+    }
 
     String? targetUrl;
 
@@ -186,14 +189,24 @@ class ConnectionService extends ChangeNotifier {
       // Currently on LAN → switch to Tunnel (relay)
       if (_tunnelUrl != null && _tunnelUrl!.isNotEmpty) {
         targetUrl = _tunnelUrl;
-        debugPrint('[Switch] LAN → Relay: $targetUrl');
+        debugPrint('[Switch] LAN → Relay (direct): $targetUrl');
       } else {
-        debugPrint('[Switch] No tunnel URL available');
-        return false;
+        // Fallback: search devices list for any remote Cloudflare or public tunnel URL
+        final remoteDevice = _devices.firstWhere(
+          (d) {
+            final url = d['url'] ?? '';
+            return url.contains('.trycloudflare.com') || url.contains('lanpad.app') || url.contains('.locallink');
+          },
+          orElse: () => {},
+        );
+        if (remoteDevice.isNotEmpty) {
+          targetUrl = remoteDevice['url'];
+          debugPrint('[Switch] LAN → Relay (from devices list): $targetUrl');
+        }
       }
     } else {
       // Currently on Relay → switch to LAN Direct
-      // First try to find any LAN device URL from the devices list
+      // Try to find any LAN device URL from the devices list
       final lanDevice = _devices.firstWhere(
         (d) {
           final uri = Uri.tryParse(d['url'] ?? '');
@@ -207,22 +220,23 @@ class ConnectionService extends ChangeNotifier {
 
       if (lanDevice.isNotEmpty) {
         targetUrl = lanDevice['url'];
-        debugPrint('[Switch] Relay → LAN (from devices): $targetUrl');
+        debugPrint('[Switch] Relay → LAN (from devices list): $targetUrl');
       } else if (_lanIp != null && _lanIp!.isNotEmpty) {
-        // Fallback: construct from lanIp with the same port as current serverUrl
-        final currentUri = Uri.tryParse(_serverUrl ?? '');
-        final port = currentUri?.port ?? 8000;
-        targetUrl = 'http://$_lanIp:$port';
-        debugPrint('[Switch] Relay → LAN (constructed): $targetUrl');
-      } else {
-        debugPrint('[Switch] No LAN IP available');
-        return false;
+        // Fallback: construct from lanIp.
+        // Try to check if the user had a previous LAN URL's port, default to 8000
+        targetUrl = 'http://$_lanIp:8000';
+        debugPrint('[Switch] Relay → LAN (constructed fallback): $targetUrl');
       }
     }
 
     if (targetUrl != null) {
-      return await connect(targetUrl, _sessionId!);
+      debugPrint('[Switch] Connecting to switch target: $targetUrl');
+      final success = await connect(targetUrl, _sessionId!);
+      debugPrint('[Switch] Switch connection result: $success');
+      return success;
     }
+
+    debugPrint('[Switch] Switch failed: No target URL found');
     return false;
   }
 
