@@ -656,10 +656,13 @@
         <!-- Initial View -->
         <div id="initial-view" class="view active" style="position: relative;">
             <!-- Status Pill Switcher at Top Left -->
-            <div id="switch-conn-pill-container" style="display: none; position: absolute; top: 20px; left: 20px; z-index: 10; align-items: center;">
+            <div id="switch-conn-pill-container" style="display: none; position: absolute; top: 20px; left: 20px; z-index: 10; align-items: center; gap: 8px;">
                 <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
                     <span id="switch-conn-status-dot" style="width: 5px; height: 5px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 6px #3b82f6;"></span>
                     <span id="switch-conn-text" style="color: var(--text-muted);">Connection: Hybrid</span>
+                </div>
+                <div id="switch-conn-btn" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.2s;" title="Switch Connection">
+                    <i data-lucide="refresh-cw" size="16" style="color: var(--text-main);"></i>
                 </div>
             </div>
 
@@ -701,11 +704,6 @@
                     style="margin-top: 12px; width: 100%; background: rgba(0, 119, 192, 0.12); border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none;">
                     <span>Browse Resources</span>
                     <i data-lucide="compass" size="20"></i>
-                </button>
-                <button class="connect-btn-main" id="switch-conn-btn"
-                    style="margin-top: 12px; width: 100%; display: none; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-main); box-shadow: none;">
-                    <span id="switch-conn-btn-text">Switch Connection</span>
-                    <i data-lucide="refresh-cw" size="20"></i>
                 </button>
             </div>
         </div>
@@ -817,10 +815,8 @@
                                 statusDot.style.boxShadow = '0 0 8px #00F59B';
                             }
                             pillContainer.style.display = 'flex';
-                            
-                            const btnText = document.getElementById('switch-conn-btn-text');
-                            if (btnText) btnText.textContent = 'Switch to Hybrid Tunnel';
                             switchBtn.style.display = 'flex';
+                            switchBtn.title = 'Switch to Hybrid Tunnel';
                             switchBtn.addEventListener('click', () => {
                                 window.location.href = data.tunnel_url + (s ? '?sid=' + encodeURIComponent(s) : '');
                             });
@@ -833,10 +829,8 @@
                                 statusDot.style.boxShadow = '0 0 8px #3b82f6';
                             }
                             pillContainer.style.display = 'flex';
-                            
-                            const btnText = document.getElementById('switch-conn-btn-text');
-                            if (btnText) btnText.textContent = 'Switch to LAN Direct';
                             switchBtn.style.display = 'flex';
+                            switchBtn.title = 'Switch to LAN Direct';
                             switchBtn.addEventListener('click', () => {
                                 window.location.href = `http://${data.lan_ip}:8000/` + (s ? `?sid=${encodeURIComponent(s)}` : '');
                             });
