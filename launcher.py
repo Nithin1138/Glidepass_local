@@ -2497,21 +2497,29 @@ class LANpadLauncher:
                 show_hubs_list_screen()
                 
         def show_connection_screen():
-            lbl_desc = tk.Label(main_container, text="Connect to another laptop running LANpad. Enter its IP address and 6-digit session code.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
-            lbl_desc.pack(anchor="w", pady=(0, 20))
+            # Description
+            lbl_desc = tk.Label(main_container, text="Connect to another laptop running LANpad. Scan nearby devices automatically, or enter IP manually.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
+            lbl_desc.pack(anchor="w", pady=(0, 10))
             
+            # Form Frame (advanced manual entry)
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             host_frame = tk.Frame(main_container, bg="#1E1E26", highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#3A3A45")
-            host_frame.pack(fill="x", pady=(0, 15))
+            host_frame.pack(fill="x", pady=(0, 10))
             host_ent = tk.Entry(host_frame, textvariable=remote_url, bg="#1E1E26", fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=0, insertbackground=self.WHITE)
             host_ent.pack(fill="x", ipady=8, padx=8)
             host_ent.insert(0, "e.g. 192.168.1.10:8000")
             host_ent.config(fg="#555566")
-            host_ent.bind("<FocusIn>", lambda e: (host_ent.delete(0, "end"), host_ent.config(fg=self.WHITE)) if host_ent.get().startswith("e.g.") else None)
+            
+            # Handle placeholder interaction
+            def on_focus_host(e):
+                if host_ent.get().startswith("e.g."):
+                    host_ent.delete(0, "end")
+                    host_ent.config(fg=self.WHITE)
+            host_ent.bind("<FocusIn>", on_focus_host)
             
             tk.Label(main_container, text="6-DIGIT SESSION CODE", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_frame = tk.Frame(main_container, bg="#1E1E26", highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#3A3A45")
-            token_frame.pack(fill="x", pady=(0, 20))
+            token_frame.pack(fill="x", pady=(0, 15))
             token_ent = tk.Entry(token_frame, textvariable=session_token, bg="#1E1E26", fg=self.WHITE, font=(FU, 14, "bold"), bd=0, highlightthickness=0, insertbackground=self.WHITE)
             token_ent.pack(fill="x", ipady=8, padx=8)
             
@@ -2524,16 +2532,130 @@ class LANpadLauncher:
                 btn_cancel.pack(fill="x", pady=(5, 0))
                 btn_cancel.bind("<Button-1>", lambda e: refresh_remote_ui())
             
-            info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=12, pady=12, highlightthickness=1, highlightbackground=self.BORDER)
-            info_card.pack(fill="x", pady=(20, 0))
+            # --- Nearby Devices List ---
+            nearby_header_frame = tk.Frame(main_container, bg=self.BG)
+            nearby_header_frame.pack(fill="x", pady=(15, 5))
             
-            tk.Label(info_card, text="💡 Where to find these on the other laptop:", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", anchor="w").pack(fill="x", pady=(0, 8))
+            tk.Label(nearby_header_frame, text="💻 NEARBY LANPAD DEVICES", font=(FU, 9, "bold"), bg=self.BG, fg=self.WHITE, anchor="w").pack(side="left")
             
-            p1 = "1. REMOTE IP:\nOn the other laptop's LANpad, look under 'Local Access' — e.g. 192.168.1.10:8000"
-            p2 = "2. SESSION CODE:\nThe last 6 characters shown in the 'Session Token' label on the other laptop's LANpad."
+            def trigger_scan(e=None):
+                btn_rescan.config(state="disabled")
+                lbl_scan_status.config(text="🔍 Scanning local network...")
+                scan_subnet()
+                
+            btn_rescan = tk.Button(nearby_header_frame, text="Rescan", font=(FU, 8, "bold"), bg=self.BG2, fg="#0077C0", activeforeground="#0077C0", highlightbackground=self.BG, command=trigger_scan, bd=0, cursor="hand2")
+            btn_rescan.pack(side="right")
             
-            tk.Label(info_card, text=p1, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x", pady=(0, 8))
-            tk.Label(info_card, text=p2, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x")
+            lbl_scan_status = tk.Label(main_container, text="Initializing scan...", font=(FU, 8), bg=self.BG, fg=self.DIM, anchor="w")
+            lbl_scan_status.pack(fill="x", pady=(0, 5))
+            
+            # Frame containing list of discovered devices
+            nearby_list_frame = tk.Frame(main_container, bg=self.BG)
+            nearby_list_frame.pack(fill="x", pady=(0, 10))
+            
+            def select_device(dev):
+                remote_url.set(f"{dev['ip']}:8000")
+                session_token.set("")
+                host_ent.config(fg=self.WHITE)
+                token_ent.focus_set()
+                
+            def scan_subnet():
+                def run():
+                    try:
+                        local_ip = self.get_local_ip()
+                        if not local_ip or local_ip == "127.0.0.1":
+                            self.root.after(0, lambda: lbl_scan_status.config(text="⚠️ No local network connection found"))
+                            self.root.after(0, lambda: btn_rescan.config(state="normal"))
+                            return
+                        
+                        parts = local_ip.split(".")
+                        if len(parts) != 4:
+                            self.root.after(0, lambda: lbl_scan_status.config(text="⚠️ Invalid IP format"))
+                            self.root.after(0, lambda: btn_rescan.config(state="normal"))
+                            return
+                            
+                        subnet = f"{parts[0]}.{parts[1]}.{parts[2]}"
+                        
+                        import urllib.request
+                        import json
+                        from concurrent.futures import ThreadPoolExecutor, as_completed
+                        
+                        found = []
+                        
+                        def check_ip(ip):
+                            url = f"http://{ip}:8000"
+                            try:
+                                req = urllib.request.Request(
+                                    f"{url}/api/connection/info",
+                                    headers={"User-Agent": "LANpad Desktop Launcher", "bypass-tunnel-reminder": "1", "ngrok-skip-browser-warning": "1"}
+                                )
+                                with urllib.request.urlopen(req, timeout=1.0) as resp:
+                                    if resp.status == 200:
+                                        data = json.loads(resp.read().decode("utf-8"))
+                                        if data.get("status") == "success":
+                                            return {
+                                                "name": data.get("device_name", "LANpad Laptop"),
+                                                "url": url,
+                                                "ip": ip
+                                            }
+                            except Exception:
+                                pass
+                            return None
+                            
+                        with ThreadPoolExecutor(max_workers=50) as executor:
+                            futures = [executor.submit(check_ip, f"{subnet}.{i}") for i in range(1, 255)]
+                            for future in as_completed(futures):
+                                res = future.result()
+                                if res:
+                                    found.append(res)
+                                    
+                        def update_ui():
+                            # Clear old list children
+                            for widget in nearby_list_frame.winfo_children():
+                                widget.destroy()
+                                
+                            if not found:
+                                lbl_scan_status.config(text="No devices discovered. Make sure LANpad is running on the other laptop.")
+                                btn_rescan.config(state="normal")
+                                return
+                                
+                            lbl_scan_status.config(text=f"Found {len(found)} device(s) nearby:")
+                            btn_rescan.config(state="normal")
+                            
+                            for dev in found:
+                                dev_frame = tk.Frame(nearby_list_frame, bg="#1E1E26", bd=0, padx=10, pady=8, highlightthickness=1, highlightbackground=self.BORDER)
+                                dev_frame.pack(fill="x", pady=4)
+                                
+                                lbl_name = tk.Label(dev_frame, text=f"💻 {dev['name']}", font=(FU, 9, "bold"), bg="#1E1E26", fg=self.WHITE, anchor="w")
+                                lbl_name.pack(side="left")
+                                
+                                lbl_ip = tk.Label(dev_frame, text=f"({dev['ip']})", font=(FU, 8), bg="#1E1E26", fg=self.DIM, anchor="w")
+                                lbl_ip.pack(side="left", padx=5)
+                                
+                                def make_callback(d=dev):
+                                    return lambda e: select_device(d)
+                                    
+                                btn_select = tk.Label(dev_frame, text="SELECT", font=(FU, 8, "bold"), bg="#0077C0", fg=self.WHITE, padx=8, pady=4, relief="flat", cursor="hand2")
+                                btn_select.pack(side="right")
+                                btn_select.bind("<Button-1>", make_callback())
+                                
+                        self.root.after(0, update_ui)
+                    except Exception as ex:
+                        self.root.after(0, lambda: lbl_scan_status.config(text=f"Scan error: {str(ex)}"))
+                        self.root.after(0, lambda: btn_rescan.config(state="normal"))
+                        
+                import threading
+                threading.Thread(target=run, daemon=True).start()
+                
+            # Run scan initially on load
+            trigger_scan()
+            
+            # --- Info Card Guide (Minimised to fit) ---
+            info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=10, pady=10, highlightthickness=1, highlightbackground=self.BORDER)
+            info_card.pack(fill="x", side="bottom", pady=(10, 0))
+            
+            p1 = "💡 Setup: Select a discovered device above (or enter its local IP manually if not shown), then key in the 6-digit Session Code displayed on its screen."
+            tk.Label(info_card, text=p1, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x")
             
         def connect_to_hub():
             url_str = remote_url.get().strip()
