@@ -339,6 +339,38 @@ class LANpadLauncher:
         self.monetization_enabled = False
         self.free_enabled = False
         self.connected_hubs = []
+        
+        # Compute local device name
+        try:
+            import hashlib
+            from platform_utils import get_hardware_id
+            hwid = get_hardware_id()
+            adjectives = [
+                "Active", "Alert", "Aero", "Amber", "Aqua", "Azure", "Bold", "Brave", "Bright", "Calm",
+                "Clever", "Cool", "Cozy", "Cute", "Daring", "Dashing", "Eager", "Easy", "Elite", "Fair",
+                "Fancy", "Fast", "Fine", "Flying", "Free", "Fresh", "Friendly", "Funny", "Gentle", "Giant",
+                "Glad", "Golden", "Grand", "Great", "Green", "Happy", "Hardy", "Honest", "Humble", "Jolly",
+                "Keen", "Kind", "Light", "Lively", "Loyal", "Lucky", "Lunar", "Merry", "Mild", "Neat",
+                "Nimble", "Noble", "Orange", "Polite", "Prime", "Proud", "Purple", "Quick", "Quiet", "Rapid",
+                "Ready", "Red", "Safe", "Shadow", "Sharp", "Shiny", "Silly", "Silver", "Smart", "Soft",
+                "Solar", "Strong", "Sunny", "Sweet", "Swift", "Tiny", "Vibrant", "Warm", "Wild", "Wise",
+                "Young"
+            ]
+            animals = [
+                "Ant", "Badger", "Bear", "Beaver", "Bee", "Bird", "Buffalo", "Bunny", "Butterfly", "Camel",
+                "Cat", "Cheetah", "Crab", "Crane", "Deer", "Dog", "Dolphin", "Dove", "Duck", "Eagle",
+                "Elephant", "Falcon", "Finch", "Fish", "Flamingo", "Fox", "Frog", "Gecko", "Giraffe", "Goat",
+                "Goose", "Hawk", "Hedgehog", "Hippo", "Horse", "Jaguar", "Kangaroo", "Kitten", "Koala", "Lemur",
+                "Leopard", "Lion", "Lobster", "Lynx", "Macaw", "Monkey", "Moose", "Octopus", "Otter", "Owl",
+                "Panda", "Panther", "Parrot", "Penguin", "Puma", "Puppy", "Rabbit", "Raven", "Rhino", "Robin",
+                "Rooster", "Seal", "Shark", "Sheep", "Sloth", "Sparrow", "Squirrel", "Starfish", "Swan", "Tiger",
+                "Turtle", "Walrus", "Whale", "Wolf", "Zebra"
+            ]
+            h = int(hashlib.sha256(hwid.encode("utf-8")).hexdigest()[:8], 16)
+            self.device_name = f"{adjectives[h % len(adjectives)]}{animals[(h // len(adjectives)) % len(animals)]}"
+        except Exception:
+            self.device_name = "LANpad Laptop"
+            
         self.session_deleted_files = []
 
         # ── View containers ───────────────────────────────────────────────────
@@ -364,6 +396,33 @@ class LANpadLauncher:
 
         self._tick_dot()
         self.check_process_status()
+        
+        # Hub polling loop to keep connection active and sync files in real time
+        def poll_connected_hubs():
+            import time
+            import urllib.request
+            import urllib.parse
+            import json
+            while True:
+                if getattr(self, "connected_hubs", None):
+                    for hub in list(self.connected_hubs):
+                        try:
+                            target_url = hub["url"]
+                            target_token = hub["token"]
+                            list_url = f"{target_url}/api/files/list?sid={urllib.parse.quote(target_token)}&client_device={urllib.parse.quote(self.device_name)}"
+                            req = urllib.request.Request(list_url, method="GET")
+                            with urllib.request.urlopen(req, timeout=3.0) as response:
+                                data = json.loads(response.read().decode())
+                                if data.get("status") == "success":
+                                    hub["files"] = data.get("files", [])
+                                    if self.root.winfo_exists() and hasattr(self, "_refresh_remote_view"):
+                                        self.root.after(0, self._refresh_remote_view)
+                        except Exception:
+                            pass
+                time.sleep(5.0)
+
+        import threading
+        threading.Thread(target=poll_connected_hubs, daemon=True).start()
         
         # Check if we have a valid cached license to skip splash
         has_valid_cache = False
@@ -578,37 +637,7 @@ class LANpadLauncher:
             padx_text = 0
 
         # Generate stable unique name and session code for display
-        import hashlib
-        try:
-            from platform_utils import get_hardware_id
-            hwid = get_hardware_id()
-        except Exception:
-            hwid = "UNKNOWN-HWID"
-        adjectives = [
-            "Active", "Alert", "Aero", "Amber", "Aqua", "Azure", "Bold", "Brave", "Bright", "Calm",
-            "Clever", "Cool", "Cozy", "Cute", "Daring", "Dashing", "Eager", "Easy", "Elite", "Fair",
-            "Fancy", "Fast", "Fine", "Flying", "Free", "Fresh", "Friendly", "Funny", "Gentle", "Giant",
-            "Glad", "Golden", "Grand", "Great", "Green", "Happy", "Hardy", "Honest", "Humble", "Jolly",
-            "Keen", "Kind", "Light", "Lively", "Loyal", "Lucky", "Lunar", "Merry", "Mild", "Neat",
-            "Nimble", "Noble", "Orange", "Polite", "Prime", "Proud", "Purple", "Quick", "Quiet", "Rapid",
-            "Ready", "Red", "Safe", "Shadow", "Sharp", "Shiny", "Silly", "Silver", "Smart", "Soft",
-            "Solar", "Strong", "Sunny", "Sweet", "Swift", "Tiny", "Vibrant", "Warm", "Wild", "Wise",
-            "Young"
-        ]
-        animals = [
-            "Ant", "Badger", "Bear", "Beaver", "Bee", "Bird", "Buffalo", "Bunny", "Butterfly", "Camel",
-            "Cat", "Cheetah", "Crab", "Crane", "Deer", "Dog", "Dolphin", "Dove", "Duck", "Eagle",
-            "Elephant", "Falcon", "Finch", "Fish", "Flamingo", "Fox", "Frog", "Gecko", "Giraffe", "Goat",
-            "Goose", "Hawk", "Hedgehog", "Hippo", "Horse", "Jaguar", "Kangaroo", "Kitten", "Koala", "Lemur",
-            "Leopard", "Lion", "Lobster", "Lynx", "Macaw", "Monkey", "Moose", "Octopus", "Otter", "Owl",
-            "Panda", "Panther", "Parrot", "Penguin", "Puma", "Puppy", "Rabbit", "Raven", "Rhino", "Robin",
-            "Rooster", "Seal", "Shark", "Sheep", "Sloth", "Sparrow", "Squirrel", "Starfish", "Swan", "Tiger",
-            "Turtle", "Walrus", "Whale", "Wolf", "Zebra"
-        ]
-        h = int(hashlib.sha256(hwid.encode("utf-8")).hexdigest()[:8], 16)
-        adj = adjectives[h % len(adjectives)]
-        animal = animals[(h // len(adjectives)) % len(animals)]
-        unique_name = f"{adj}{animal}"
+        unique_name = self.device_name
         try:
             SESSION_TOKEN = get_session_token()
             session_code = SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN
@@ -2514,6 +2543,10 @@ class LANpadLauncher:
             lbl_desc = tk.Label(main_container, text="Connect to another laptop running LANpad. Scan nearby devices automatically, or enter IP manually.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
             lbl_desc.pack(anchor="w", pady=(0, 10))
             
+            # Display selected device name above IP entry
+            lbl_connecting_to = tk.Label(main_container, text="", font=(FU, 9, "bold"), bg=self.BG, fg="#0077C0", anchor="w")
+            lbl_connecting_to.pack(anchor="w", pady=(0, 2))
+            
             # Form Frame (advanced manual entry)
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             host_frame = tk.Frame(main_container, bg="#1E1E26", highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#3A3A45")
@@ -2528,7 +2561,9 @@ class LANpadLauncher:
                 if host_ent.get().startswith("e.g."):
                     host_ent.delete(0, "end")
                     host_ent.config(fg=self.WHITE)
+                lbl_connecting_to.config(text="")
             host_ent.bind("<FocusIn>", on_focus_host)
+            host_ent.bind("<Key>", lambda e: lbl_connecting_to.config(text=""))
             
             tk.Label(main_container, text="6-DIGIT SESSION CODE", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_frame = tk.Frame(main_container, bg="#1E1E26", highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#3A3A45")
@@ -2570,6 +2605,7 @@ class LANpadLauncher:
                 remote_url.set(f"{dev['ip']}:8000")
                 session_token.set("")
                 host_ent.config(fg=self.WHITE)
+                lbl_connecting_to.config(text=f"Connecting to: {dev['name']}")
                 token_ent.focus_set()
                 
             def scan_subnet():
@@ -2596,6 +2632,8 @@ class LANpadLauncher:
                         found = []
                         
                         def check_ip(ip):
+                            if ip == local_ip:
+                                return None
                             url = f"http://{ip}:8000"
                             try:
                                 req = urllib.request.Request(
@@ -2606,8 +2644,11 @@ class LANpadLauncher:
                                     if resp.status == 200:
                                         data = json.loads(resp.read().decode("utf-8"))
                                         if data.get("status") == "success":
+                                            name = data.get("device_name", "LANpad Laptop")
+                                            if name == self.device_name:
+                                                return None
                                             return {
-                                                "name": data.get("device_name", "LANpad Laptop"),
+                                                "name": name,
                                                 "url": url,
                                                 "ip": ip
                                             }

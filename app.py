@@ -116,13 +116,15 @@ def get_local_ip():
 # Session management as per PRD
 import secrets
 import time
-SESSION_TOKEN = secrets.token_hex(16)  # 32 hex chars, 128-bit entropy
+import random
+SESSION_TOKEN = secrets.token_hex(13) + "".join(str(random.randint(0, 9)) for _ in range(6))  # 32 chars: 26 hex + 6 digits
 SERVER_START_TIME = time.time()
 TUNNEL_URL = ""
 _ws_connect_attempts = {}  # {ip: [(timestamp, count), ...]}
 _http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
 active_connections = []
 active_devices = {}
+_registered_clients = {}  # {client_device_name: last_seen_timestamp}
 
 def is_valid_sid(sid: str) -> bool:
     """Accept both the full 32-char session token and its last 6 digits.
@@ -1467,9 +1469,20 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/connections")
 async def get_connections():
+    # clean up stale registered clients (> 15 seconds)
+    import time
+    now = time.time()
+    stale = [name for name, ts in _registered_clients.items() if now - ts > 15]
+    for name in stale:
+        _registered_clients.pop(name, None)
+        
+    devices = list(active_devices.values()) + list(_registered_clients.keys())
+    # Deduplicate
+    devices = list(set(devices))
+    
     return {
-        "count": len(active_connections),
-        "devices": list(active_devices.values())
+        "count": len(active_connections) + len(_registered_clients),
+        "devices": devices
     }
 
 
@@ -2045,7 +2058,10 @@ def save_file_duration(filename: str, duration: float):
 
 
 @app.get("/api/files/list")
-async def list_files(sid: str = None):
+async def list_files(sid: str = None, client_device: str = None):
+    if client_device:
+        import time
+        _registered_clients[client_device] = time.time()
     if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
