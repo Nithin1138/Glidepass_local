@@ -251,6 +251,29 @@ class ApiService {
     return {'status': 'error'};
   }
 
+class MultipartRequestWithProgress extends http.MultipartRequest {
+  final Function(int, int) onProgress;
+
+  MultipartRequestWithProgress(
+    String method,
+    Uri url, {
+    required this.onProgress,
+  }) : super(method, url);
+
+  @override
+  http.ByteStream finalize() {
+    final byteStream = super.finalize();
+    final totalLength = contentLength;
+    int bytesSent = 0;
+
+    return http.ByteStream(byteStream.map((chunk) {
+      bytesSent += chunk.length;
+      onProgress(bytesSent, totalLength);
+      return chunk;
+    }));
+  }
+}
+
   Future<http.StreamedResponse> uploadFileDirect({
     required File file,
     required String filename,
@@ -259,39 +282,19 @@ class ApiService {
   }) async {
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
-    final encodedFilename = Uri.encodeComponent(filename);
-    final fileLength = await file.length();
+    final url = '$baseUrl/api/files/upload?mode=$mode&sid=$sid';
 
-    // 1. Call preallocate endpoint to set file size and open file descriptor on server
-    final preallocateUrl = '$baseUrl/api/files/preallocate?filename=$encodedFilename&size=$fileLength&mode=$mode&sid=$sid';
-    try {
-      final preResp = await httpClient.post(Uri.parse(preallocateUrl));
-      if (preResp.statusCode != 200) {
-        throw Exception('Preallocation failed: Status ${preResp.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Preallocation request failed: $e');
-    }
-
-    final url = '$baseUrl/api/files/upload_direct?filename=$encodedFilename&offset=0&mode=$mode&sid=$sid';
-
-    final request = http.StreamedRequest('POST', Uri.parse(url));
-    request.headers['Content-Type'] = 'application/octet-stream';
-    request.headers['Content-Length'] = fileLength.toString();
-
-    final fileStream = file.openRead();
-    int byteCount = 0;
-
-    fileStream.listen(
-      (data) {
-        byteCount += data.length;
-        request.sink.add(data);
-        onProgress(byteCount, fileLength);
-      },
-      onDone: () => request.sink.close(),
-      onError: (e) => request.sink.addError(e),
-      cancelOnError: true,
+    final request = MultipartRequestWithProgress(
+      'POST',
+      Uri.parse(url),
+      onProgress: onProgress,
     );
+
+    request.files.add(await http.MultipartFile.fromPath(
+      'file',
+      file.path,
+      filename: filename,
+    ));
 
     return await BypassTunnelClient().send(request);
   }

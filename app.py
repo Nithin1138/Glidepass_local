@@ -2137,7 +2137,7 @@ async def list_files(sid: str = None, client_device: str = None):
 
 
 @app.post("/api/files/upload")
-async def upload_file(file: UploadFile = File(...), sid: str = None):
+async def upload_file(file: UploadFile = File(...), mode: str = "parallel", sid: str = None):
     if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
@@ -2145,8 +2145,10 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
     if not allowed:
         return {"status": "error", "message": err}
     try:
+        import asyncio
         filename = os.path.basename(file.filename)
-        dest_path = os.path.join(SHARED_DIR, filename)
+        target_dir = INBOX_DIR if mode == "inbox" else SHARED_DIR
+        dest_path = os.path.join(target_dir, filename)
         
         from fastapi.concurrency import run_in_threadpool
         import shutil
@@ -2157,6 +2159,7 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
                 shutil.copyfileobj(file.file, f, length=1024 * 1024)
 
         await run_in_threadpool(save_file)
+        asyncio.ensure_future(broadcast_files_changed())
         return {"status": "success", "filename": filename}
     except Exception as e:
         return {"status": "error", "message": str(e)}
