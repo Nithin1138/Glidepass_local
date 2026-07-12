@@ -555,10 +555,11 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                   ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
+    ),
 
             // Main Display Pane
             Expanded(
