@@ -190,9 +190,9 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
 
       if (existing.isNotEmpty) {
         setState(() => _isManualSearching = false);
-        final success = await _submitConnection(existing['url'] as String, sessionCode, isManual: true);
-        if (!success) {
-          TopToast.show(context, 'Incorrect Session Code', isError: true);
+        final errorMsg = await _submitConnection(existing['url'] as String, sessionCode, isManual: true);
+        if (errorMsg != null) {
+          TopToast.show(context, errorMsg, isError: true);
         }
         return;
       }
@@ -249,9 +249,9 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           TopToast.show(context, 'Incorrect Session Code', isError: true);
           return;
         }
-        final success = await _submitConnection(foundUrl!, sessionCode, isManual: true);
-        if (!success) {
-          TopToast.show(context, 'Incorrect Session Code', isError: true);
+        final errorMsg = await _submitConnection(foundUrl!, sessionCode, isManual: true);
+        if (errorMsg != null) {
+          TopToast.show(context, errorMsg, isError: true);
         }
       } else {
         TopToast.show(context, 'Device "$deviceName" not found on this network', isError: true);
@@ -303,23 +303,23 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     }
   }
 
-  Future<bool> _submitConnection(String url, String sid, {bool isManual = false}) async {
+  Future<String?> _submitConnection(String url, String sid, {bool isManual = false}) async {
     if (url.isEmpty) {
       TopToast.show(context, 'No server URL found', isError: true);
-      return false;
+      return 'No server URL found';
     }
 
     setState(() => _isLoading = true);
-
-    final success = await ConnectionService().connect(url, sid);
+    
+    final errorMsg = await ConnectionService().connect(url, sid);
 
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (errorMsg == null) {
       if (mounted) {
         if (widget.isAddingDevice) {
           Navigator.of(context).pop(true);
-          return true;
+          return null;
         }
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
@@ -339,12 +339,12 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           ),
         );
       }
-      return true;
+      return null;
     } else {
       if (!isManual) {
-        TopToast.show(context, 'Failed to connect. Check device name / session code.', isError: true);
+        TopToast.show(context, 'Failed: $errorMsg', isError: true);
       }
-      return false;
+      return errorMsg;
     }
   }
 

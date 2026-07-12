@@ -78,7 +78,7 @@ class ConnectionService extends ChangeNotifier {
     }
   }
 
-  Future<bool> connect(String url, String sid) async {
+  Future<String?> connect(String url, String sid) async {
     _isConnecting = true;
     notifyListeners();
     
@@ -106,7 +106,7 @@ class ConnectionService extends ChangeNotifier {
             debugPrint('Connection failed: Session code mismatch.');
             _isConnecting = false;
             notifyListeners();
-            return false;
+            return 'Session code mismatch.';
           }
 
           _serverUrl = targetUrl;
@@ -146,16 +146,23 @@ class ConnectionService extends ChangeNotifier {
 
           _isConnecting = false;
           notifyListeners();
-          return true;
+          return null;
+        } else {
+          _isConnecting = false;
+          notifyListeners();
+          return 'Server returned error: ${data['message'] ?? 'Unknown'}';
         }
+      } else {
+        _isConnecting = false;
+        notifyListeners();
+        return 'HTTP Error: ${response.statusCode}';
       }
     } catch (e) {
       debugPrint('Failed to connect to $targetUrl: $e');
+      _isConnecting = false;
+      notifyListeners();
+      return e.toString();
     }
-    
-    _isConnecting = false;
-    notifyListeners();
-    return false;
   }
 
   Future<void> disconnect() async {
@@ -287,12 +294,12 @@ class ConnectionService extends ChangeNotifier {
     }
 
     debugPrint('[Switch] Attempting connect: $targetUrl');
-    final success = await connect(targetUrl!, _sessionId!);
-    debugPrint('[Switch] Result: $success');
-    if (!success) {
-      lastSwitchError = 'Failed to connect to target: $targetUrl';
+    final errorMsg = await connect(targetUrl!, _sessionId!);
+    debugPrint('[Switch] Result: $errorMsg');
+    if (errorMsg != null) {
+      lastSwitchError = 'Failed to connect to target: $errorMsg';
     }
-    return success;
+    return errorMsg == null;
   }
 
   Future<bool> selectDevice(int index) async {
@@ -300,7 +307,8 @@ class ConnectionService extends ChangeNotifier {
     final device = _devices[index];
     final url = device['url']!;
     final sid = device['sid']!;
-    return await connect(url, sid);
+    final errorMsg = await connect(url, sid);
+    return errorMsg == null;
   }
 
   Future<void> removeDevice(int index) async {
