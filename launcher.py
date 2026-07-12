@@ -59,6 +59,31 @@ def _enable_windows_dpi_awareness():
     except Exception:
         pass
 
+def get_session_token():
+    """Fetch the actual running session token from the FastAPI backend.
+    If the backend is offline or starting, fall back to the module import."""
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.Request(
+            "http://127.0.0.1:8000/api/benchmark/token",
+            headers={"User-Agent": "LANpad Desktop Launcher", "bypass-tunnel-reminder": "1", "ngrok-skip-browser-warning": "1"}
+        )
+        with urllib.request.urlopen(req, timeout=0.3) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                token = data.get("session_token")
+                if token:
+                    return token
+    except Exception:
+        pass
+    try:
+        from app import SESSION_TOKEN
+        return SESSION_TOKEN
+    except Exception:
+        return ""
+
+
 
 _enable_windows_dpi_awareness()
 
@@ -585,7 +610,7 @@ class LANpadLauncher:
         animal = animals[(h // len(adjectives)) % len(animals)]
         unique_name = f"{adj}{animal}"
         try:
-            from app import SESSION_TOKEN
+            SESSION_TOKEN = get_session_token()
             session_code = SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN
         except Exception:
             session_code = "------"
@@ -724,20 +749,14 @@ class LANpadLauncher:
         self._sid_lbl.place(x=0, y=512 + yo * 2.2, relwidth=1, anchor="nw")
         
         def update_sid_display():
-            try:
-                from app import SESSION_TOKEN
-            except ImportError:
-                SESSION_TOKEN = None
+            SESSION_TOKEN = get_session_token()
             if self._server_on and SESSION_TOKEN:
                 self._sid_lbl.config(text=f"Session Token: {SESSION_TOKEN}  (Click to Copy)", fg="#0077C0")
             else:
                 self._sid_lbl.config(text="Session Token: Off", fg=self.DIM)
                 
         def copy_sid_to_clipboard(e=None):
-            try:
-                from app import SESSION_TOKEN
-            except ImportError:
-                SESSION_TOKEN = None
+            SESSION_TOKEN = get_session_token()
             if SESSION_TOKEN and self._server_on:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(SESSION_TOKEN)
@@ -877,10 +896,7 @@ class LANpadLauncher:
             ip = self.get_local_ip()
             self._ip_text = f"http://{ip}:8000"
             self._draw_ip(True)
-            try:
-                from app import SESSION_TOKEN
-            except ImportError:
-                SESSION_TOKEN = ""
+            SESSION_TOKEN = get_session_token()
             url = f"http://{ip}:8000"
             if SESSION_TOKEN:
                 url = f"{url}?sid={SESSION_TOKEN}"
@@ -893,10 +909,7 @@ class LANpadLauncher:
             if self._tunnel_url:
                 self._ip_text = self._tunnel_url
                 self._draw_ip(True)
-                try:
-                    from app import SESSION_TOKEN
-                except ImportError:
-                    SESSION_TOKEN = ""
+                SESSION_TOKEN = get_session_token()
                 url = self._tunnel_url
                 if SESSION_TOKEN:
                     url = f"{url}?sid={SESSION_TOKEN}"
@@ -1887,7 +1900,7 @@ class LANpadLauncher:
             if messagebox.askyesno("Cancel Transfer", "Are you sure you want to cancel the current transfer?"):
                 import urllib.request
                 try:
-                    url = f"http://127.0.0.1:8000/api/files/upload_cancel?sid={self.SESSION_TOKEN}"
+                    url = f"http://127.0.0.1:8000/api/files/upload_cancel?sid={get_session_token()}"
                     req = urllib.request.Request(url, method="POST")
                     with urllib.request.urlopen(req) as resp:
                         pass
@@ -2610,6 +2623,8 @@ class LANpadLauncher:
                                     found.append(res)
                                     
                         def update_ui():
+                            if not nearby_list_frame.winfo_exists():
+                                return
                             # Clear old list children
                             for widget in nearby_list_frame.winfo_children():
                                 widget.destroy()
@@ -4223,7 +4238,7 @@ rm -f "{download_path}"
             try:
                 import urllib.request
                 import json
-                from app import SESSION_TOKEN
+                SESSION_TOKEN = get_session_token()
                 token_query = f"?sid={SESSION_TOKEN}" if SESSION_TOKEN else ""
                 url = f"http://127.0.0.1:8000/api/benchmark/upload_progress{token_query}"
                 req = urllib.request.Request(url)
