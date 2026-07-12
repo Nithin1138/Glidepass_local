@@ -120,6 +120,11 @@ jobs:
         run: |
           pip install pyinstaller Pillow requests httpx fastapi uvicorn pyautogui pyperclip pystray qrcode pynput python-multipart
 
+      - name: Install macOS specific dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          pip install rumps
+
       - name: Build macOS Client & DMG
         if: matrix.os == 'macos-latest'
         env:

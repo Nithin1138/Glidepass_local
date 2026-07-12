@@ -650,8 +650,9 @@ class LANpadLauncher:
         # Display device name and pairing code on the right side of the LANpad header
         tk.Label(v, text=unique_name, font=(self.FU, 12, "bold"),
                  bg=self.BG, fg=self.WHITE, anchor="e", bd=0, highlightthickness=0).place(x=376, y=72 + yo, anchor="ne")
-        tk.Label(v, text=f"Code: {session_code}", font=(self.FU, 12, "bold"),
-                 bg=self.BG, fg="#0077C0", anchor="e", bd=0, highlightthickness=0).place(x=376, y=94 + yo, anchor="ne")
+        self._code_lbl = tk.Label(v, text=f"Code: {session_code}", font=(self.FU, 12, "bold"),
+                 bg=self.BG, fg="#0077C0", anchor="e", bd=0, highlightthickness=0)
+        self._code_lbl.place(x=376, y=94 + yo, anchor="ne")
 
         # Subtitle returns to its original y position since the middle area is clear
         tk.Label(v,
@@ -781,8 +782,13 @@ class LANpadLauncher:
             SESSION_TOKEN = get_session_token()
             if self._server_on and SESSION_TOKEN:
                 self._sid_lbl.config(text=f"Session Token: {SESSION_TOKEN}  (Click to Copy)", fg="#0077C0")
+                if hasattr(self, "_code_lbl") and self._code_lbl.winfo_exists():
+                    session_code = SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN
+                    self._code_lbl.config(text=f"Code: {session_code}")
             else:
                 self._sid_lbl.config(text="Session Token: Off", fg=self.DIM)
+                if hasattr(self, "_code_lbl") and self._code_lbl.winfo_exists():
+                    self._code_lbl.config(text="Code: ------")
                 
         def copy_sid_to_clipboard(e=None):
             SESSION_TOKEN = get_session_token()
