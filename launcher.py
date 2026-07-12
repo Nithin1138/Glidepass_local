@@ -2755,7 +2755,7 @@ class LANpadLauncher:
                         return
                     server_code = info.get("session_code", "")
                     if server_code != sid_str:
-                        messagebox.showerror("Session Code Mismatch", f"The code you entered ({sid_str}) doesn't match the remote server's code ({server_code}).\n\nCheck the last 6 characters of the Session Token on the other laptop.")
+                        messagebox.showerror("Session Code Mismatch", "The code you entered doesn't match the remote server's code.\n\nCheck the last 6 characters of the Session Token on the other laptop.")
                         return
                     device_name = info.get("device_name", url_str)
                 # Fetch file list with the 6-digit code
