@@ -282,15 +282,40 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
     });
   }
 
+  Future<void> _reconnectSession() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Reconnecting Wi-Fi and refreshing tunnel...',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF1E1E2F),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    // Stop current tunnel and server
+    await _tunnelService.stopTunnel();
+    await _serverService.stopServer();
+
+    // Re-detect IP
+    await _fetchLocalIp();
+
+    // Start server and tunnel fresh
+    await _serverService.startServer();
+    await _tunnelService.startTunnel();
+
+    setState(() {});
+  }
+
   Future<void> _toggleServer() async {
     if (_serverService.isRunning) {
       await _serverService.stopServer();
       await _tunnelService.stopTunnel();
     } else {
       await _serverService.startServer();
-      if (!_isDirectLan) {
-        await _tunnelService.startTunnel();
-      }
+      // Always start the tunnel in the background regardless of current mode selection, so the link is hot and ready instantly!
+      await _tunnelService.startTunnel();
     }
     setState(() {});
   }
@@ -334,7 +359,6 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // App Title
                     Row(
                       children: [
                         Container(
@@ -358,6 +382,17 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                             color: Colors.white,
                           ),
                         ),
+                        const Spacer(),
+                        if (isRunning)
+                          IconButton(
+                            icon: const Icon(
+                              LucideIcons.refresh_cw,
+                              color: Color(0xFFFF7A45),
+                              size: 16,
+                            ),
+                            tooltip: 'Reconnect Wi-Fi / Refresh Tunnel',
+                            onPressed: _reconnectSession,
+                          ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -412,12 +447,9 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                       subtitle: 'Local Wi-Fi connections',
                       icon: LucideIcons.wifi,
                       isActive: _isDirectLan,
-                      onTap: () async {
+                      onTap: () {
                         if (_isDirectLan) return;
                         setState(() => _isDirectLan = true);
-                        if (isRunning) {
-                          await _tunnelService.stopTunnel();
-                        }
                       },
                     ),
                     const SizedBox(height: 8),
@@ -426,12 +458,9 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                       subtitle: 'Internet secure tunnel',
                       icon: LucideIcons.globe,
                       isActive: !_isDirectLan,
-                      onTap: () async {
+                      onTap: () {
                         if (!_isDirectLan) return;
                         setState(() => _isDirectLan = false);
-                        if (isRunning) {
-                          await _tunnelService.startTunnel();
-                        }
                       },
                     ),
                     if (isRunning) ...[
