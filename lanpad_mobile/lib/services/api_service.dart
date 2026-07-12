@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'http_client.dart';
 import 'connection_service.dart';
 import '../models/history_model.dart';
 import '../models/file_model.dart';
@@ -41,7 +42,7 @@ class ApiService {
   }) async {
     final url = _buildUrl('/paste');
     try {
-      final response = await http.post(
+      final response = await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -64,7 +65,7 @@ class ApiService {
   Future<Map<String, dynamic>> fetchClipboard() async {
     final url = _buildUrl('/get_clipboard');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -77,7 +78,7 @@ class ApiService {
   Future<Map<String, dynamic>> sendCopyCommand() async {
     final url = _buildUrl('/copy');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -90,7 +91,7 @@ class ApiService {
   Future<void> stopPasting() async {
     final url = _buildUrl('/stop');
     try {
-      await http.get(Uri.parse(url));
+      await httpClient.get(Uri.parse(url));
     } catch (e) {
       debugPrint('Failed to stop pasting: $e');
     }
@@ -99,7 +100,7 @@ class ApiService {
   Future<List<HistoryItem>> fetchHistory() async {
     final url = _buildUrl('/history');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'success' && data['history'] != null) {
@@ -116,7 +117,7 @@ class ApiService {
   Future<Map<String, dynamic>> checkTypingStatus() async {
     final url = _buildUrl('/typing_status');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -131,7 +132,7 @@ class ApiService {
   Future<List<Hub>> fetchHubs() async {
     final url = _buildUrl('/api/hubs');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['hubs'] != null) {
@@ -151,7 +152,7 @@ class ApiService {
   Future<List<ResourceSnippet>> fetchResources(String hubId) async {
     final url = _buildUrl('/api/resources', {'hubId': hubId});
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['resources'] != null) {
@@ -168,7 +169,7 @@ class ApiService {
   Future<bool> sendResource(String resourceId) async {
     final url = _buildUrl('/api/resources/$resourceId');
     try {
-      final response = await http.post(
+      final response = await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({}),
@@ -186,7 +187,7 @@ class ApiService {
   Future<bool> receiveResource(String text, String title) async {
     final url = _buildUrl('/receive_resource');
     try {
-      final response = await http.post(
+      final response = await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -209,7 +210,7 @@ class ApiService {
   Future<List<SharedFile>> fetchFiles() async {
     final url = _buildUrl('/api/files/list');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'success' && data['files'] != null) {
@@ -226,7 +227,7 @@ class ApiService {
   Future<bool> deleteFile(String filename) async {
     final url = _buildUrl('/api/files/delete/${Uri.encodeComponent(filename)}');
     try {
-      final response = await http.delete(Uri.parse(url));
+      final response = await httpClient.delete(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['status'] == 'success';
@@ -240,7 +241,7 @@ class ApiService {
   Future<Map<String, dynamic>> checkFeatureLimits() async {
     final url = _buildUrl('/limits');
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -264,7 +265,7 @@ class ApiService {
     // 1. Call preallocate endpoint to set file size and open file descriptor on server
     final preallocateUrl = '$baseUrl/api/files/preallocate?filename=$encodedFilename&size=$fileLength&mode=$mode&sid=$sid';
     try {
-      final preResp = await http.post(Uri.parse(preallocateUrl));
+      final preResp = await httpClient.post(Uri.parse(preallocateUrl));
       if (preResp.statusCode != 200) {
         throw Exception('Preallocation failed: Status ${preResp.statusCode}');
       }
@@ -292,6 +293,6 @@ class ApiService {
       cancelOnError: true,
     );
 
-    return await http.Client().send(request);
+    return await BypassTunnelClient().send(request);
   }
 }

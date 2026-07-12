@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final newMode = _connectionService.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay';
       _showToast('Switched to $newMode');
     } else {
-      _showToast('Could not switch – check connection', isError: true);
+      _showToast(_connectionService.lastSwitchError ?? 'Could not switch – check connection', isError: true);
     }
   }
 

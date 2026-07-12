@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'http_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 
@@ -17,6 +18,7 @@ class ConnectionService extends ChangeNotifier {
   String? _lanIp;
   String? _connectedDeviceName;
   List<Map<String, String>> _devices = [];
+  String? lastSwitchError;
 
   String? get serverUrl => _serverUrl;
   String? get sessionId => _sessionId;
@@ -29,14 +31,27 @@ class ConnectionService extends ChangeNotifier {
 
   bool get isLocalConnection {
     if (_serverUrl == null) return false;
-    final uri = Uri.tryParse(_serverUrl!);
-    if (uri == null) return false;
-    final host = uri.host;
-    return host == 'localhost' ||
-        host == '127.0.0.1' ||
-        host.startsWith('192.168.') ||
-        host.startsWith('10.') ||
-        host.startsWith('172.');
+    if (_tunnelUrl == null || _tunnelUrl!.trim().isEmpty) {
+      final uri = Uri.tryParse(_serverUrl!);
+      if (uri == null) return false;
+      final host = uri.host;
+      return host == 'localhost' ||
+          host == '127.0.0.1' ||
+          host.startsWith('192.168.') ||
+          host.startsWith('10.') ||
+          host.startsWith('172.') ||
+          host.endsWith('.local');
+    }
+    
+    String cleanUrl(String url) {
+      var u = url.trim().toLowerCase();
+      if (u.startsWith('http://')) u = u.substring(7);
+      if (u.startsWith('https://')) u = u.substring(8);
+      if (u.endsWith('/')) u = u.substring(0, u.length - 1);
+      return u;
+    }
+    
+    return cleanUrl(_serverUrl!) != cleanUrl(_tunnelUrl!);
   }
 
   Future<void> init() async {
@@ -78,7 +93,7 @@ class ConnectionService extends ChangeNotifier {
     }
 
     try {
-      final response = await http.get(
+      final response = await httpClient.get(
         Uri.parse('$targetUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}'),
       ).timeout(const Duration(seconds: 5));
 
@@ -164,7 +179,7 @@ class ConnectionService extends ChangeNotifier {
   Future<bool> checkConnection() async {
     if (_serverUrl == null) return false;
     try {
-      final response = await http.get(
+      final response = await httpClient.get(
         Uri.parse('$_serverUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}'),
       ).timeout(const Duration(seconds: 4));
 
@@ -199,16 +214,37 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<bool> switchConnection() async {
+    lastSwitchError = null;
     if (!_isConnected || _sessionId == null || _serverUrl == null) {
-      debugPrint('[Switch] Cannot switch: not connected or no session ID');
+      lastSwitchError = 'Not currently connected to any device.';
       return false;
+    }
+
+    // Always try to fetch the freshest connection info from the current active server
+    // before switching. This prevents using stale tunnel URLs if the backend was restarted.
+    try {
+      final resp = await httpClient.get(
+        Uri.parse('$_serverUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}'),
+      ).timeout(const Duration(seconds: 2));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        if (data['status'] == 'success') {
+          _tunnelUrl = data['tunnel_url']?.toString();
+          _lanIp = data['lan_ip']?.toString();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
+          await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
+        }
+      }
+    } catch (e) {
+      debugPrint('[Switch] Pre-switch info refresh failed: $e');
     }
 
     String? targetUrl;
 
     if (isLocalConnection) {
       // LAN → try Tunnel
-      if (_tunnelUrl != null && _tunnelUrl!.isNotEmpty) {
+      if (_tunnelUrl != null && _tunnelUrl!.trim().isNotEmpty) {
         targetUrl = _tunnelUrl;
       } else {
         final prefs = await SharedPreferences.getInstance();
@@ -219,19 +255,17 @@ class ConnectionService extends ChangeNotifier {
       }
     } else {
       // Relay → try LAN direct
-      if (_lanIp != null && _lanIp!.isNotEmpty) {
+      if (_lanIp != null && _lanIp!.trim().isNotEmpty) {
         int port = 8000;
-        final existingLan = _devices.firstWhere(
-          (d) {
-            final uri = Uri.tryParse(d['url'] ?? '');
-            if (uri == null) return false;
+        for (final d in _devices) {
+          final uri = Uri.tryParse(d['url']?.toString() ?? '');
+          if (uri != null) {
             final h = uri.host;
-            return h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.') || h == 'localhost';
-          },
-          orElse: () => {},
-        );
-        if (existingLan.isNotEmpty) {
-          port = Uri.tryParse(existingLan['url'] ?? '')?.port ?? 8000;
+            if (h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.') || h == 'localhost' || h == '127.0.0.1') {
+              port = uri.port;
+              break;
+            }
+          }
         }
         targetUrl = 'http://$_lanIp:$port';
       } else {
@@ -243,42 +277,22 @@ class ConnectionService extends ChangeNotifier {
       }
     }
 
-    // If still null, try one quick background refresh
-    if (targetUrl == null) {
-      try {
-        final resp = await http.get(
-          Uri.parse('$_serverUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}'),
-        ).timeout(const Duration(seconds: 2));
-        if (resp.statusCode == 200) {
-          final data = jsonDecode(resp.body);
-          if (data['status'] == 'success') {
-            _tunnelUrl = data['tunnel_url']?.toString();
-            _lanIp = data['lan_ip']?.toString();
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
-            await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
-
-            if (isLocalConnection) {
-              targetUrl = _tunnelUrl;
-            } else if (_lanIp != null) {
-              targetUrl = 'http://$_lanIp:8000';
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[Switch] Quick info refresh failed: $e');
+    if (targetUrl == null || targetUrl.trim().isEmpty) {
+      if (isLocalConnection) {
+        lastSwitchError = 'Relay URL is not available. Please start the Tunnel in the laptop launcher.';
+      } else {
+        lastSwitchError = 'LAN connection details not found. Connect locally first.';
       }
+      return false;
     }
 
-    if (targetUrl != null) {
-      debugPrint('[Switch] Attempting connect: $targetUrl');
-      final success = await connect(targetUrl!, _sessionId!);
-      debugPrint('[Switch] Result: $success');
-      return success;
+    debugPrint('[Switch] Attempting connect: $targetUrl');
+    final success = await connect(targetUrl!, _sessionId!);
+    debugPrint('[Switch] Result: $success');
+    if (!success) {
+      lastSwitchError = 'Failed to connect to target: $targetUrl';
     }
-
-    debugPrint('[Switch] No target URL found');
-    return false;
+    return success;
   }
 
   Future<bool> selectDevice(int index) async {

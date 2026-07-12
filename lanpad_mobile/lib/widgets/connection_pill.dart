@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../services/connection_service.dart';
 import '../config/theme.dart';
 import 'liquid_glass_card.dart';
+import 'top_toast.dart';
 
 class ConnectionPill extends StatefulWidget {
   const ConnectionPill({super.key});
@@ -21,16 +22,13 @@ class _ConnectionPillState extends State<ConnectionPill> {
     final success = await _cs.switchConnection();
     if (!mounted) return;
     setState(() => _isSwitching = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(
-        success
-            ? 'Switched to ${_cs.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay'}'
-            : 'Cannot switch – other mode not available',
-      ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: success ? AppTheme.accentColor : AppTheme.redStatus,
-      duration: const Duration(seconds: 2),
-    ));
+    TopToast.show(
+      context,
+      success
+          ? 'Switched to ${_cs.isLocalConnection ? 'LAN Direct' : 'Hybrid Relay'}'
+          : (_cs.lastSwitchError ?? 'Cannot switch – other mode not available'),
+      isError: !success,
+    );
   }
 
   @override
