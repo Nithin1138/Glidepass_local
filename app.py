@@ -124,6 +124,15 @@ _http_rate_limits = {}  # {ip: [(timestamp, endpoint), ...]}
 active_connections = []
 active_devices = {}
 
+def is_valid_sid(sid: str) -> bool:
+    """Accept both the full 32-char session token and its last 6 digits.
+    This allows both mobile QR scan (full token) and manual entry (short code)."""
+    if not sid or not SESSION_TOKEN:
+        return False
+    sid = sid.strip()
+    return sid == SESSION_TOKEN or sid == SESSION_TOKEN[-6:]
+
+
 async def broadcast_files_changed():
     """Notify all connected WebSocket clients that the file list has changed."""
     dead = []
@@ -908,7 +917,7 @@ async def get_logo():
 @app.post("/server/terminate")
 async def terminate_server(data: dict):
     token = data.get("session_id")
-    if token != SESSION_TOKEN:
+    if not is_valid_sid(token):
         return {"status": "error", "message": "Invalid session token"}
 
     def kill_server():
@@ -1411,9 +1420,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
     tier = get_license_tier()
     limits = get_cloud_limits(tier)
-    max_sessions = limits.get("max_sessions", 1)
-        
-    if len(active_connections) >= max_sessions:
+    max_sessions = limits.get("max_sessions", 999)
+    
+    # Only enforce a hard cap if the cloud has set an explicit commercial restriction
+    if max_sessions < 50 and len(active_connections) >= max_sessions:
         await websocket.accept()
         await websocket.send_text(json.dumps({"error": f"Session limit exceeded. {tier} tier allows max {max_sessions} active session(s). Please upgrade."}))
         await websocket.close()
@@ -2036,7 +2046,7 @@ def save_file_duration(filename: str, duration: float):
 
 @app.get("/api/files/list")
 async def list_files(sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2112,7 +2122,7 @@ async def list_files(sid: str = None):
 
 @app.post("/api/files/upload")
 async def upload_file(file: UploadFile = File(...), sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2138,7 +2148,7 @@ async def upload_file(file: UploadFile = File(...), sid: str = None):
 
 @app.post("/api/files/upload_raw")
 async def upload_file_raw(request: Request, filename: str, mode: str = "parallel", sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2209,7 +2219,7 @@ _upload_fd_cache = {}  # key: dest_path, value: {fd, size, lock}
 @app.post("/api/files/preallocate")
 async def preallocate_file(filename: str, size: int, mode: str = "parallel", sid: str = None):
     """Pre-allocate the destination file so parallel chunk writers can seek to their offsets."""
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2253,7 +2263,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
     """Write streamed data directly to the final file at the given byte offset.
     Uses os.pwrite() for atomic positional writes — safe for parallel non-overlapping regions.
     PERFORMANCE: Skips license check for chunks after preallocate (permission already verified)."""
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     try:
@@ -2314,7 +2324,7 @@ async def upload_file_direct(request: Request, filename: str, offset: int, mode:
 
 @app.get("/api/files/upload_status")
 async def get_upload_status(sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     return _active_upload
@@ -2322,7 +2332,7 @@ async def get_upload_status(sid: str = None):
 
 @app.post("/api/files/upload_cancel")
 async def cancel_active_upload(sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     
@@ -2359,7 +2369,7 @@ async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: 
     Pipelining: next receive starts while current write completes for maximum throughput."""
     await websocket.accept()
 
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         await websocket.send_json({"status": "error", "message": "Unauthorized"})
         await websocket.close(code=1008)
         return
@@ -2445,7 +2455,7 @@ async def upload_via_websocket(websocket: WebSocket, sid: str = None, filename: 
 @app.post("/api/files/upload_chunk")
 async def upload_file_chunk(request: Request, upload_id: str, chunk_index: int, sid: str = None):
     """Legacy chunked upload — kept for backward compatibility."""
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2481,7 +2491,7 @@ async def upload_file_chunk(request: Request, upload_id: str, chunk_index: int, 
 @app.post("/api/files/merge_chunks")
 async def merge_file_chunks(upload_id: str, filename: str, total_chunks: int, sid: str = None):
     """Legacy merge — kept for backward compatibility."""
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2527,7 +2537,7 @@ async def merge_file_chunks(upload_id: str, filename: str, total_chunks: int, si
 
 @app.get("/api/files/download/{filename}")
 async def download_file(filename: str, sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Unauthorized session")
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2601,7 +2611,7 @@ async def download_file(filename: str, sid: str = None):
 
 @app.delete("/api/files/delete/{filename}")
 async def delete_file(filename: str, sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     allowed, err = check_feature_usage("allow_file_share", "File Sharing")
@@ -2635,7 +2645,7 @@ async def delete_file(filename: str, sid: str = None):
 
 @app.post("/api/speedtest/upload")
 async def speedtest_upload(request: Request, sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
     # Consume request stream without writing to disk
@@ -2646,7 +2656,7 @@ async def speedtest_upload(request: Request, sid: str = None):
 
 @app.get("/api/speedtest/download")
 async def speedtest_download(size: int = 10 * 1024 * 1024, sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Unauthorized session")
     # Stream dummy bytes directly from memory (20MB default)
@@ -2703,7 +2713,7 @@ async def get_mobile_results(request: Request):
 
 @app.get("/api/benchmark/upload_progress")
 async def get_upload_progress(sid: str = None):
-    if sid != SESSION_TOKEN:
+    if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"error": "Access denied"})
     return _active_upload

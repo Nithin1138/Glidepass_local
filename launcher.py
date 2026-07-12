@@ -2497,7 +2497,7 @@ class LANpadLauncher:
                 show_hubs_list_screen()
                 
         def show_connection_screen():
-            lbl_desc = tk.Label(main_container, text="Enter the IP address or URL and Session Token of the other laptop's LANpad app.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
+            lbl_desc = tk.Label(main_container, text="Connect to another laptop running LANpad. Enter its IP address and 6-digit session code.", font=(FU, 9), bg=self.BG, fg=self.DIM, wraplength=360, justify="left")
             lbl_desc.pack(anchor="w", pady=(0, 20))
             
             tk.Label(main_container, text="REMOTE IP / HOST URL", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
@@ -2505,11 +2505,14 @@ class LANpadLauncher:
             host_frame.pack(fill="x", pady=(0, 15))
             host_ent = tk.Entry(host_frame, textvariable=remote_url, bg="#1E1E26", fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=0, insertbackground=self.WHITE)
             host_ent.pack(fill="x", ipady=8, padx=8)
+            host_ent.insert(0, "e.g. 192.168.1.10:8000")
+            host_ent.config(fg="#555566")
+            host_ent.bind("<FocusIn>", lambda e: (host_ent.delete(0, "end"), host_ent.config(fg=self.WHITE)) if host_ent.get().startswith("e.g.") else None)
             
-            tk.Label(main_container, text="SESSION TOKEN (SID)", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
+            tk.Label(main_container, text="6-DIGIT SESSION CODE", font=(FU, 8, "bold"), bg=self.BG, fg=self.DIM).pack(anchor="w", pady=(0, 4))
             token_frame = tk.Frame(main_container, bg="#1E1E26", highlightthickness=1, highlightbackground="#3A3A45", highlightcolor="#3A3A45")
             token_frame.pack(fill="x", pady=(0, 20))
-            token_ent = tk.Entry(token_frame, textvariable=session_token, bg="#1E1E26", fg=self.WHITE, font=(FU, 10), bd=0, highlightthickness=0, insertbackground=self.WHITE)
+            token_ent = tk.Entry(token_frame, textvariable=session_token, bg="#1E1E26", fg=self.WHITE, font=(FU, 14, "bold"), bd=0, highlightthickness=0, insertbackground=self.WHITE)
             token_ent.pack(fill="x", ipady=8, padx=8)
             
             btn_connect = tk.Label(main_container, text="CONNECT", font=(FU, 10, "bold"), bg="#0077C0", fg=self.WHITE, pady=10, relief="flat", cursor="hand2")
@@ -2524,19 +2527,26 @@ class LANpadLauncher:
             info_card = tk.Frame(main_container, bg=self.BG2, bd=0, padx=12, pady=12, highlightthickness=1, highlightbackground=self.BORDER)
             info_card.pack(fill="x", pady=(20, 0))
             
-            tk.Label(info_card, text="💡 Where to find these on Laptop B:", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", anchor="w").pack(fill="x", pady=(0, 8))
+            tk.Label(info_card, text="💡 Where to find these on the other laptop:", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", anchor="w").pack(fill="x", pady=(0, 8))
             
-            p1 = "1. REMOTE IP / HOST URL:\nOn Laptop B's LANpad app, look at the top section under 'Local Access' (e.g. 10.237.234.162:8000)."
-            p2 = "2. SESSION TOKEN:\nOn Laptop B's LANpad app, copy the alphanumeric key shown in the 'Session Token' label."
+            p1 = "1. REMOTE IP:\nOn the other laptop's LANpad, look under 'Local Access' — e.g. 192.168.1.10:8000"
+            p2 = "2. SESSION CODE:\nThe last 6 characters shown in the 'Session Token' label on the other laptop's LANpad."
             
             tk.Label(info_card, text=p1, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x", pady=(0, 8))
             tk.Label(info_card, text=p2, font=(FU, 8), bg=self.BG2, fg=self.DIM, justify="left", wraplength=340, anchor="w").pack(fill="x")
             
         def connect_to_hub():
             url_str = remote_url.get().strip()
+            # Ignore placeholder text
+            if url_str.startswith("e.g."):
+                url_str = ""
             sid_str = session_token.get().strip()
             if not url_str or not sid_str:
-                messagebox.showerror("Error", "Please enter both IP/URL and Session Token")
+                messagebox.showerror("Error", "Please enter both IP/URL and the 6-digit session code")
+                return
+            # Validate: session code must be exactly 6 hex chars
+            if len(sid_str) != 6:
+                messagebox.showerror("Invalid Code", "Session code must be exactly 6 characters (the last 6 of the Session Token shown on the other laptop).")
                 return
                 
             if not url_str.startswith("http://") and not url_str.startswith("https://"):
@@ -2551,14 +2561,29 @@ class LANpadLauncher:
             try:
                 import urllib.request
                 import json
-                list_url = f"{url_str}/api/files/list?sid={urllib.parse.quote(sid_str)}"
-                req = urllib.request.Request(list_url, method="GET")
+                # First verify connection using /api/connection/info
+                info_url = f"{url_str}/api/connection/info"
+                req = urllib.request.Request(info_url, headers={"ngrok-skip-browser-warning": "1", "bypass-tunnel-reminder": "1"})
                 with urllib.request.urlopen(req, timeout=5) as response:
+                    info = json.loads(response.read().decode())
+                    if info.get("status") != "success":
+                        messagebox.showerror("Error", "Could not reach the remote LANpad server.")
+                        return
+                    server_code = info.get("session_code", "")
+                    if server_code != sid_str:
+                        messagebox.showerror("Session Code Mismatch", f"The code you entered ({sid_str}) doesn't match the remote server's code ({server_code}).\n\nCheck the last 6 characters of the Session Token on the other laptop.")
+                        return
+                    device_name = info.get("device_name", url_str)
+                # Fetch file list with the 6-digit code
+                list_url = f"{url_str}/api/files/list?sid={urllib.parse.quote(sid_str)}"
+                req2 = urllib.request.Request(list_url, headers={"ngrok-skip-browser-warning": "1", "bypass-tunnel-reminder": "1"})
+                with urllib.request.urlopen(req2, timeout=5) as response:
                     data = json.loads(response.read().decode())
                     if data.get("status") == "success":
                         self.connected_hubs.append({
                             "url": url_str,
                             "token": sid_str,
+                            "name": device_name,
                             "files": data.get("files", [])
                         })
                         remote_url.set("")
@@ -2567,7 +2592,7 @@ class LANpadLauncher:
                     else:
                         messagebox.showerror("Error", f"Failed: {data.get('message', 'Unknown error')}")
             except Exception as e:
-                messagebox.showerror("Connection Failed", f"Could not connect to remote hub:\n{e}")
+                messagebox.showerror("Connection Failed", f"Could not connect to remote laptop:\n{e}")
 
         def show_hubs_list_screen():
             btn_add = tk.Label(main_container, text="+ Connect Another Device", font=(FU, 9, "bold"), bg=self.BG2, fg="#0077C0", pady=8, highlightthickness=1, highlightbackground="#0077C0", cursor="hand2")
