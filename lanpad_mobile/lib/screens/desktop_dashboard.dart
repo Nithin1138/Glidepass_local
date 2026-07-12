@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:system_tray/system_tray.dart';
+import 'package:window_manager/window_manager.dart';
 import '../services/server_service.dart';
 import '../services/tunnel_service.dart';
 
@@ -23,12 +26,231 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
   bool _isDirectLan = true;
   String _localIp = 'Detecting...';
 
+  final SystemTray _systemTray = SystemTray();
+  final Menu _menu = Menu();
+  bool _trayInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _serverSub = _serverService.onStatusChanged.listen((_) => setState(() {}));
-    _tunnelSub = _tunnelService.onStatusChanged.listen((_) => setState(() {}));
+    _serverSub = _serverService.onStatusChanged.listen((_) {
+      setState(() {});
+      _updateSystemTray();
+    });
+    _tunnelSub = _tunnelService.onStatusChanged.listen((_) {
+      setState(() {});
+      _updateSystemTray();
+    });
     _fetchLocalIp();
+    _initSystemTray();
+    
+    // Check macOS accessibility permission on first startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAccessibility();
+    });
+  }
+
+  Future<void> _initSystemTray() async {
+    if (!Platform.isMacOS && !Platform.isWindows) return;
+    try {
+      await _systemTray.initSystemTray(
+        title: "LANpad",
+        iconPath: Platform.isWindows ? 'assets/app_icon.ico' : 'assets/menubar_icon.png',
+        isTemplate: true,
+      );
+      _trayInitialized = true;
+      _updateSystemTray();
+    } catch (e) {
+      print("System tray init failed: $e");
+    }
+  }
+
+  Future<void> _updateSystemTray() async {
+    if (!_trayInitialized) return;
+    final isRunning = _serverService.isRunning;
+    
+    await _menu.buildFrom([
+      MenuItemLabel(
+        label: 'Server Status: ${isRunning ? 'Running' : 'Offline'}',
+        enabled: false,
+      ),
+      MenuSeparator(),
+      MenuItemLabel(
+        label: isRunning ? 'Stop Server' : 'Start Server',
+        onClicked: (menuItem) {
+          _toggleServer();
+        },
+      ),
+      MenuItemLabel(
+        label: 'Show Dashboard',
+        onClicked: (menuItem) async {
+          await windowManager.show();
+          await windowManager.focus();
+        },
+      ),
+      MenuItemLabel(
+        label: 'About LANpad',
+        onClicked: (menuItem) {
+          _showAboutDialog();
+        },
+      ),
+      MenuSeparator(),
+      MenuItemLabel(
+        label: 'Quit LANpad',
+        onClicked: (menuItem) {
+          exit(0);
+        },
+      ),
+    ]);
+    
+    await _systemTray.setContextMenu(_menu);
+  }
+
+  Future<void> _checkAccessibility() async {
+    if (!Platform.isMacOS) return;
+    const platform = MethodChannel('lanpad/system');
+    try {
+      final bool hasPermission = await platform.invokeMethod('checkAccessibility');
+      if (!hasPermission) {
+        _showPermissionDialog();
+      }
+    } catch (_) {}
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: const Color(0xFF1C1C24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFF2C2C3E)),
+          ),
+          child: Container(
+            width: 480,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0077C0).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        LucideIcons.shield_alert,
+                        color: Color(0xFF0077C0),
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LANpad Needs Permissions',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'To auto-type text from your phone, macOS requires you to grant Accessibility permissions to LANpad.\n\n'
+                            '1. Open System Settings -> Privacy & Security -> Accessibility.\n'
+                            '2. IMPORTANT: If LANpad is already listed, you MUST remove it first (select it and click the \'-\' button).\n'
+                            '3. Click the \'+\' button and add LANpad.app again.\n'
+                            '4. Restart LANpad.',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              height: 1.5,
+                              color: const Color(0xFFC0C0D0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Later',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0077C0),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Open Settings',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        const platform = MethodChannel('lanpad/system');
+                        await platform.invokeMethod('requestAccessibility');
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C1C24),
+          title: Text('About LANpad', style: GoogleFonts.outfit(color: Colors.white)),
+          content: Text(
+            'LANpad is a ultra-fast cross-device sharing bridge.\nVersion 1.2.3',
+            style: GoogleFonts.inter(color: const Color(0xFFC0C0D0)),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

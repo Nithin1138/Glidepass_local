@@ -25,6 +25,14 @@ class AppDelegate: FlutterAppDelegate {
         }
         self.simulateTyping(text: text)
         result("success")
+      } else if call.method == "checkAccessibility" {
+        result(AXIsProcessTrusted())
+      } else if call.method == "requestAccessibility" {
+        let prefpane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        if let url = URL(string: prefpane) {
+          NSWorkspace.shared.open(url)
+        }
+        result(true)
       } else {
         result(FlutterMethodNotImplemented)
       }
