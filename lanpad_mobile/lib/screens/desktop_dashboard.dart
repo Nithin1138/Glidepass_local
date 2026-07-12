@@ -355,10 +355,17 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                   right: BorderSide(color: Color(0xFF262636), width: 1),
                 ),
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 32, // account for padding
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                     Row(
                       children: [
                         Container(
@@ -483,7 +490,7 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const Spacer(),
                     // Device Status Badge
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -548,7 +555,10 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                   ],
                 ),
               ),
-            ),
+            );
+          },
+        ),
+      ),
 
             // Main Display Pane
             Expanded(
