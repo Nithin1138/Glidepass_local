@@ -42,12 +42,12 @@ class TunnelService {
       // Listen to stderr where cloudflared logs output
       _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
         if (_tunnelUrl == null) {
-          // Extract .trycloudflare.com url
           final match = RegExp(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com').firstMatch(line);
           if (match != null) {
             _tunnelUrl = match.group(0);
             _isConnecting = false;
             _statusController.add(null);
+            _notifyPythonServerOfTunnel(_tunnelUrl!);
           }
         }
       });
@@ -126,6 +126,18 @@ class TunnelService {
       return result.stdout.toString().trim() == 'arm64';
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> _notifyPythonServerOfTunnel(String url) async {
+    try {
+      final client = HttpClient();
+      final uri = Uri.parse('http://127.0.0.1:8000/api/tunnel/set?url=${Uri.encodeQueryComponent(url)}');
+      final request = await client.postUrl(uri);
+      await request.close();
+      print("[TunnelService] Successfully updated python server with tunnel url: $url");
+    } catch (e) {
+      print("[TunnelService] Failed to notify python server of tunnel url: $e");
     }
   }
 }

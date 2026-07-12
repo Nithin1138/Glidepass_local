@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../services/server_service.dart';
 import '../services/tunnel_service.dart';
 
@@ -180,9 +181,11 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                     subtitle: 'Local Wi-Fi connections',
                     icon: LucideIcons.wifi,
                     isActive: _isDirectLan,
-                    onTap: () {
-                      if (!isRunning) {
-                        setState(() => _isDirectLan = true);
+                    onTap: () async {
+                      if (_isDirectLan) return;
+                      setState(() => _isDirectLan = true);
+                      if (isRunning) {
+                        await _tunnelService.stopTunnel();
                       }
                     },
                   ),
@@ -192,13 +195,34 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                     subtitle: 'Internet secure tunnel',
                     icon: LucideIcons.globe,
                     isActive: !_isDirectLan,
-                    onTap: () {
-                      if (!isRunning) {
-                        setState(() => _isDirectLan = false);
+                    onTap: () async {
+                      if (!_isDirectLan) return;
+                      setState(() => _isDirectLan = false);
+                      if (isRunning) {
+                        await _tunnelService.startTunnel();
                       }
                     },
                   ),
-                  
+                  if (isRunning) ...[
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: QrImageView(
+                          data: _isDirectLan
+                              ? 'http://$_localIp:8000?sid=${_serverService.sessionToken}'
+                              : '${_tunnelService.tunnelUrl ?? 'https://lanpad.app'}?sid=${_serverService.sessionToken}',
+                          version: QrVersions.auto,
+                          size: 140.0,
+                          gapless: false,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   // Device Status Badge
                   Container(
@@ -487,45 +511,42 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Opacity(
-        opacity: _serverService.isRunning ? 0.5 : 1.0,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF222234) : const Color(0xFF1A1A26),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isActive ? const Color(0xFF0077C0) : const Color(0xFF2C2C3E),
-              width: 1.5,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF222234) : const Color(0xFF1A1A26),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? const Color(0xFF0077C0) : const Color(0xFF2C2C3E),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isActive ? const Color(0xFF0077C0) : const Color(0xFF8888A0), size: 20),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: const Color(0xFF8888A0),
+                  ),
+                ),
+              ],
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: isActive ? const Color(0xFF0077C0) : const Color(0xFF8888A0), size: 20),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: const Color(0xFF8888A0),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );

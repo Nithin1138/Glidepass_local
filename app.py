@@ -966,6 +966,14 @@ async def get_config(request: Request = None):
 SHUTDOWN_REQUESTED = False
 
 
+@app.post("/api/tunnel/set")
+async def set_tunnel_url(url: str = None):
+    global TUNNEL_URL
+    if url:
+        TUNNEL_URL = url
+    return {"status": "success"}
+
+
 @app.get("/shutdown")
 async def shutdown():
     global SHUTDOWN_REQUESTED
