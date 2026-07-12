@@ -62,6 +62,9 @@ a = Analysis(
         "platform_utils",
         # QR code generation (local, offline)
         "qrcode",
+        # FastAPI form data (file uploads)
+        "multipart",
+        "python_multipart",
     ],
     hookspath=["hooks"],
     hooksconfig={},
