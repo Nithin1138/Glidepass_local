@@ -4,8 +4,9 @@ import 'screens/splash_screen.dart';
 import 'screens/connect_screen.dart';
 import 'screens/main_navigation_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppTheme.init();
   runApp(const LanpadApp());
 }
 
@@ -23,16 +24,9 @@ class LanpadApp extends StatelessWidget {
         return MaterialApp(
           title: 'LANpad',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.activeTheme,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: AppTheme.themeModeNotifier.value,
-          builder: (context, child) {
-            return AnimatedTheme(
-              data: AppTheme.activeTheme,
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeInOut,
-              child: child!,
-            );
-          },
           initialRoute: '/',
           routes: {
             '/': (context) => const SplashScreen(),

@@ -7,6 +7,8 @@ import '../widgets/aurora_background.dart';
 import '../widgets/liquid_glass_card.dart';
 import '../widgets/animated_button.dart';
 import '../config/theme.dart';
+import 'command_center_screen.dart';
+import 'main_navigation_screen.dart';
 
 class ResourcesScreen extends StatefulWidget {
   const ResourcesScreen({super.key});
@@ -31,6 +33,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   List<ResourceSnippet> _resources = [];
   List<ResourceSnippet> _filteredResources = [];
   String _typeFilter = '';
+  final Set<String> _expandedSnippets = {};
 
   @override
   void initState() {
@@ -124,6 +127,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       _filteredResources = [];
       _searchController.clear();
       _typeFilter = '';
+      _expandedSnippets.clear();
     });
   }
 
@@ -133,11 +137,11 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.bgColor,
+          backgroundColor: context.bgColor,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: AppTheme.borderColor),
+            side: BorderSide(color: context.borderColor),
           ),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -145,11 +149,11 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               Expanded(
                 child: Text(
                   snippet.title,
-                  style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textMain),
+                  style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: context.textMain),
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: AppTheme.textMuted, size: 20),
+                icon: Icon(Icons.close, color: context.textMuted, size: 20),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -179,13 +183,13 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.cardBg,
+                        color: context.cardBg,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.borderColor),
+                        border: Border.all(color: context.borderColor),
                       ),
                       child: Text(
                         snippet.language!.toUpperCase(),
-                        style: TextStyle(fontSize: 8, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 8, color: context.textMuted, fontWeight: FontWeight.bold),
                       ),
                     ),
                 ],
@@ -198,7 +202,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(AppTheme.isDark ? 0.6 : 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.borderColor),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: SingleChildScrollView(
                   child: Text(
@@ -206,7 +210,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                     style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 12,
-                      color: AppTheme.textMain,
+                      color: context.textMain,
                       height: 1.4,
                     ),
                   ),
@@ -252,8 +256,8 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                 }
               },
               decoration: BoxDecoration(
-                color: AppTheme.cardBg,
-                border: Border.all(color: AppTheme.borderColor),
+                color: context.cardBg,
+                border: Border.all(color: context.borderColor),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -261,7 +265,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                 children: [
                   Icon(LucideIcons.zap, color: AppTheme.accentColor, size: 16),
                   const SizedBox(width: 6),
-                  Text('SEND TO LAPTOP', style: TextStyle(color: AppTheme.textMain, fontWeight: FontWeight.bold)),
+                  Text('SEND TO LAPTOP', style: TextStyle(color: context.textMain, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -290,9 +294,9 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0),
       decoration: BoxDecoration(
-        color: AppTheme.cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: context.borderColor),
       ),
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -304,7 +308,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
             },
             child: Container(
               alignment: Alignment.center,
-              child: Text('Catalog', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
+              child: Text('Catalog', style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.bold)),
             ),
           ),
           _crumbSeparator(),
@@ -326,7 +330,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               ),
               child: Text(
                 _selectedHub!.title,
-                style: TextStyle(fontSize: 10, color: AppTheme.textMain, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 10, color: context.textMain, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -378,7 +382,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6.0),
       child: Center(
-        child: Text('/', style: TextStyle(color: AppTheme.textMuted.withOpacity(0.3), fontSize: 12)),
+        child: Text('/', style: TextStyle(color: context.textMuted.withOpacity(0.3), fontSize: 12)),
       ),
     );
   }
@@ -488,16 +492,16 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.cloud_off, size: 40, color: AppTheme.textMuted),
+            Icon(LucideIcons.cloud_off, size: 40, color: context.textMuted),
             const SizedBox(height: 12),
             Text(
               _loadError != null ? 'Could not load resources' : 'No hubs available',
-              style: TextStyle(color: AppTheme.textMain, fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(color: context.textMain, fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const SizedBox(height: 6),
             Text(
               _loadError ?? 'Make sure the server is running and connected',
-              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+              style: TextStyle(color: context.textMuted, fontSize: 12),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -552,17 +556,17 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                       children: [
                         Text(
                           hub.title,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textMain),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'ID: ${hub.id}',
-                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          style: TextStyle(fontSize: 11, color: context.textMuted),
                         ),
                       ],
                     ),
                   ),
-                  Icon(LucideIcons.chevron_right, color: AppTheme.textMuted, size: 20),
+                  Icon(LucideIcons.chevron_right, color: context.textMuted, size: 20),
                 ],
               ),
             ),
@@ -576,7 +580,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   Widget _buildCategoriesView() {
     final categories = _selectedHub?.categories ?? [];
     if (categories.isEmpty) {
-      return Center(child: Text('No categories found', style: TextStyle(color: AppTheme.textMuted)));
+      return Center(child: Text('No categories found', style: TextStyle(color: context.textMuted)));
     }
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -611,12 +615,12 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                   cat.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textMain),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$topicsCount ${topicsCount == 1 ? "Session" : "Sessions"}',
-                  style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
+                  style: TextStyle(fontSize: 9, color: context.textMuted),
                 ),
               ],
             ),
@@ -630,7 +634,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   Widget _buildTopicsView() {
     final topics = _selectedCategory?.topics ?? [];
     if (topics.isEmpty) {
-      return Center(child: Text('No topics found', style: TextStyle(color: AppTheme.textMuted)));
+      return Center(child: Text('No topics found', style: TextStyle(color: context.textMuted)));
     }
     return ListView.builder(
       itemCount: topics.length,
@@ -657,10 +661,10 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                   Expanded(
                     child: Text(
                       topic.title ?? topic.name,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textMain),
                     ),
                   ),
-                  Icon(LucideIcons.chevron_right, color: AppTheme.textMuted, size: 18),
+                  Icon(LucideIcons.chevron_right, color: context.textMuted, size: 18),
                 ],
               ),
             ),
@@ -682,11 +686,11 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
           borderRadius: 12,
           child: TextField(
             controller: _searchController,
-            style: TextStyle(color: AppTheme.textMain, fontSize: 13),
+            style: TextStyle(color: context.textMain, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Search snippets...',
-              hintStyle: TextStyle(color: AppTheme.textMuted.withOpacity(0.4)),
-              prefixIcon: Icon(LucideIcons.search, size: 16, color: AppTheme.textMuted),
+              hintStyle: TextStyle(color: context.textMuted.withOpacity(0.4)),
+              prefixIcon: Icon(LucideIcons.search, size: 16, color: context.textMuted),
               border: InputBorder.none,
             ),
             onChanged: (val) => _filterResources(),
@@ -699,7 +703,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
           children: [
             Text(
               '${_filteredResources.length} Snippets found',
-              style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.bold),
             ),
             Row(
               children: [
@@ -716,58 +720,190 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         // List of snippets
         Expanded(
           child: _filteredResources.isEmpty
-              ? Center(child: Text('No snippets matching query', style: TextStyle(color: AppTheme.textMuted)))
+              ? Center(child: Text('No snippets matching query', style: TextStyle(color: context.textMuted)))
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 100), // padding to clear bottom navigation bar
                   itemCount: _filteredResources.length,
                   itemBuilder: (context, index) {
                     final snippet = _filteredResources[index];
+                    final isExpanded = _expandedSnippets.contains(snippet.id);
+                    final isCode = snippet.type.toLowerCase() == 'code';
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12.0),
                       child: GestureDetector(
-                        onTap: () => _showSnippetDetail(snippet),
+                        onTap: () {
+                          _triggerHaptic();
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedSnippets.remove(snippet.id);
+                            } else {
+                              _expandedSnippets.add(snippet.id);
+                            }
+                          });
+                        },
                         child: LiquidGlassCard(
                           isFlat: false,
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Title & Reading Icon / Expansion Indicator Row
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      'Snippet ${index + 1}: ${snippet.title}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isCode ? LucideIcons.code : LucideIcons.book_open, 
+                                          size: 16, 
+                                          color: AppTheme.accentColor
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            snippet.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 13, 
+                                              fontWeight: FontWeight.bold, 
+                                              color: context.textMain
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Icon(LucideIcons.book_open, size: 14, color: AppTheme.accentColor),
+                                  Icon(
+                                    isExpanded ? LucideIcons.chevron_up : LucideIcons.chevron_down,
+                                    size: 16,
+                                    color: context.textMuted
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                snippet.content,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppTheme.textMuted),
+                              
+                              // Snippet content box (2 lines when collapsed, full scrollable block when expanded)
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                padding: isExpanded ? const EdgeInsets.all(12) : EdgeInsets.zero,
+                                decoration: isExpanded ? BoxDecoration(
+                                  color: Colors.black.withOpacity(AppTheme.isDark ? 0.6 : 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: context.borderColor),
+                                ) : null,
+                                child: Text(
+                                  snippet.content,
+                                  maxLines: isExpanded ? null : 2,
+                                  overflow: isExpanded ? null : TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11, 
+                                    fontFamily: 'monospace', 
+                                    color: context.textMain,
+                                    height: 1.4
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
-                                children: snippet.tags
-                                    .take(2)
-                                    .map((t) => Container(
+                              
+                              // Tags / Details Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Wrap(
+                                    spacing: 4,
+                                    runSpacing: 4,
+                                    children: [
+                                      if (snippet.language != null && snippet.language!.isNotEmpty)
+                                        Container(
                                           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.cardBg,
+                                            color: AppTheme.accentColor.withOpacity(0.12),
                                             borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: AppTheme.accentColor.withOpacity(0.2)),
                                           ),
-                                          child: Text('#$t', style: TextStyle(fontSize: 8, color: AppTheme.textMuted)),
-                                        ))
-                                    .toList(),
+                                          child: Text(
+                                            snippet.language!.toUpperCase(), 
+                                            style: TextStyle(fontSize: 8, color: AppTheme.accentColor, fontWeight: FontWeight.bold)
+                                          ),
+                                        ),
+                                      ...snippet.tags.take(2).map((t) => Container(
+                                            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                                            decoration: BoxDecoration(
+                                              color: context.cardBg,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text('#$t', style: TextStyle(fontSize: 8, color: context.textMuted)),
+                                          )),
+                                    ],
+                                  ),
+                                  
+                                  // Quick Action Icons when expanded
+                                  if (isExpanded)
+                                    Row(
+                                      children: [
+                                        // Copy Icon Button
+                                        GestureDetector(
+                                          onTap: () {
+                                            _triggerHaptic();
+                                            Clipboard.setData(ClipboardData(text: snippet.content));
+                                            _showToast('Copied snippet content!');
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: context.cardBg,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: context.borderColor),
+                                            ),
+                                            child: Icon(LucideIcons.copy, size: 14, color: context.textMain),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Send & Redirect Button
+                                        GestureDetector(
+                                          onTap: () async {
+                                            _triggerHaptic();
+                                            // Write to external controller
+                                            CommandCenterScreen.externalController.text = snippet.content;
+                                            
+                                            // Trigger API send to laptop
+                                            final success = await _apiService.receiveResource(snippet.content, snippet.title);
+                                            if (success) {
+                                              _showToast('Dispatched to laptop command center!');
+                                            } else {
+                                              _showToast('Loaded to Command Center tab locally');
+                                            }
+                                            
+                                            // Switch active navigation index to Control (index 1)
+                                            if (context.mounted) {
+                                              MainNavigationScreen.of(context)?.setIndex(1);
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.accentColor,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Row(
+                                              children: [
+                                                Icon(LucideIcons.zap, size: 14, color: Colors.white),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'SEND', 
+                                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
                             ],
                           ),
@@ -795,12 +931,12 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
         decoration: BoxDecoration(
           color: active ? AppTheme.accentGlow.withOpacity(0.2) : Colors.transparent,
-          border: Border.all(color: active ? AppTheme.accentColor : AppTheme.borderColor),
+          border: Border.all(color: active ? AppTheme.accentColor : context.borderColor),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           title,
-          style: TextStyle(fontSize: 9, color: active ? AppTheme.textMain : AppTheme.textMuted, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 9, color: active ? context.textMain : context.textMuted, fontWeight: FontWeight.bold),
         ),
       ),
     );

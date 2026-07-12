@@ -207,11 +207,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isLan = _connectionService.isLocalConnection;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          const AuroraBackground(),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        AppTheme.themeModeNotifier,
+        AppTheme.accentColorNotifier,
+      ]),
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              const AuroraBackground(),
 
           // Header Bar
           Positioned(
@@ -226,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(10),
                   borderRadius: 12,
                   isFlat: true,
-                  child: Icon(LucideIcons.bell, size: 20, color: AppTheme.textMain),
+                  child: Icon(LucideIcons.bell, size: 20, color: context.textMain),
                 ),
               ],
             ),
@@ -254,13 +260,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 5.0,
-                            color: AppTheme.textMain,
+                            color: context.textMain,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Remote Control  ·  File Bridge  ·  Clipboard',
-                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          'Remote Control  ·  File Bridge',
+                          style: TextStyle(fontSize: 11, color: context.textMuted),
                         ),
                       ],
                     ),
@@ -275,9 +281,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildStatItem(LucideIcons.keyboard, 'Pastes', '$_pasteCount'),
-                        Container(width: 1, height: 26, color: AppTheme.borderColor),
+                        Container(width: 1, height: 26, color: context.borderColor),
                         _buildStatItem(LucideIcons.files, 'Files', '$_filesCount'),
-                        Container(width: 1, height: 26, color: AppTheme.borderColor),
+                        Container(width: 1, height: 26, color: context.borderColor),
                         _buildStatItem(
                           isLan ? LucideIcons.wifi : LucideIcons.globe,
                           'Path',
@@ -288,134 +294,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Clipboard Card ────────────────────────────────────
-                  if (_connectionService.isConnected) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'CLIPBOARD BRIDGE',
-                          style: TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        Icon(LucideIcons.clipboard_copy, color: AppTheme.textMuted, size: 14),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    LiquidGlassCard(
-                      isFlat: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _clipboardText.isEmpty
-                                      ? 'No clipboard content synced yet'
-                                      : _clipboardText,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: _clipboardText.isEmpty ? AppTheme.textMuted : AppTheme.textMain,
-                                    fontWeight: _clipboardText.isEmpty ? FontWeight.normal : FontWeight.w500,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _syncClipboard,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.accentColor.withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        if (_isSyncingClipboard)
-                                          SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 1.5,
-                                              color: AppTheme.accentColor,
-                                            ),
-                                          )
-                                        else
-                                          Icon(LucideIcons.download, size: 13, color: AppTheme.accentColor),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Pull from Laptop',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.accentColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _pushClipboard,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.cardBg,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppTheme.borderColor),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        if (_isPushingClipboard)
-                                          SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 1.5,
-                                              color: AppTheme.textMain,
-                                            ),
-                                          )
-                                        else
-                                          Icon(LucideIcons.upload, size: 13, color: AppTheme.textMain),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Push to Laptop',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textMain,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+
 
                   // ── Target Computers ─────────────────────────────────
                   Row(
@@ -424,13 +303,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Text(
                         'TARGET COMPUTERS',
                         style: TextStyle(
-                          color: AppTheme.textMuted,
+                          color: context.textMuted,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.5,
                         ),
                       ),
-                      Icon(LucideIcons.monitor, color: AppTheme.textMuted, size: 14),
+                      Icon(LucideIcons.monitor, color: context.textMuted, size: 14),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -442,12 +321,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.laptop, size: 36, color: AppTheme.textMuted),
+                          Icon(LucideIcons.laptop, size: 36, color: context.textMuted),
                           const SizedBox(height: 12),
                           Text(
                             'No Laptop Paired',
                             style: TextStyle(
-                              color: AppTheme.textMain,
+                              color: context.textMain,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -455,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           const SizedBox(height: 6),
                           Text(
                             'Pair a laptop to start using LANpad',
-                            style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            style: TextStyle(color: context.textMuted, fontSize: 12),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
@@ -519,11 +398,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: isActive
                                 ? AppTheme.accentColor.withOpacity(0.08)
-                                : AppTheme.cardBg,
+                                : context.cardBg,
                             border: Border.all(
                               color: isActive
                                   ? AppTheme.accentColor.withOpacity(0.55)
-                                  : AppTheme.borderColor,
+                                  : context.borderColor,
                               width: isActive ? 1.5 : 1.0,
                             ),
                             borderRadius: BorderRadius.circular(16),
@@ -536,12 +415,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 decoration: BoxDecoration(
                                   color: isActive
                                       ? AppTheme.accentColor.withOpacity(0.14)
-                                      : AppTheme.borderColor.withOpacity(0.08),
+                                      : context.borderColor.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(11),
                                 ),
                                 child: Icon(
                                   LucideIcons.laptop,
-                                  color: isActive ? AppTheme.accentColor : AppTheme.textMuted,
+                                  color: isActive ? AppTheme.accentColor : context.textMuted,
                                   size: 19,
                                 ),
                               ),
@@ -553,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     Text(
                                       device['name'] ?? 'Device',
                                       style: TextStyle(
-                                        color: AppTheme.textMain,
+                                        color: context.textMain,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -561,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     const SizedBox(height: 2),
                                     Text(
                                       device['url'] ?? '',
-                                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                      style: TextStyle(color: context.textMuted, fontSize: 11),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -593,10 +472,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               IconButton(
                                 icon: const Icon(LucideIcons.trash_2, size: 16, color: AppTheme.redStatus),
-                                onPressed: () {
+                                onPressed: () async {
                                   _triggerHaptic();
-                                  _connectionService.removeDevice(index);
+                                  await _connectionService.removeDevice(index);
                                   _showToast('Device removed');
+                                  if (_connectionService.devices.isEmpty && context.mounted) {
+                                    Navigator.of(context).pushReplacement(
+                                      PageRouteBuilder(
+                                        pageBuilder: (context, animation, secondaryAnimation) => const ConnectScreen(),
+                                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                          return FadeTransition(opacity: animation, child: child);
+                                        },
+                                        transitionDuration: const Duration(milliseconds: 400),
+                                      ),
+                                    );
+                                  }
                                 },
                               ),
                             ],
@@ -626,8 +516,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           },
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           decoration: BoxDecoration(
-                            color: AppTheme.cardBg,
-                            border: Border.all(color: AppTheme.borderColor),
+                            color: context.cardBg,
+                            border: Border.all(color: context.borderColor),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(
@@ -638,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               Text(
                                 'Add Laptop',
                                 style: TextStyle(
-                                  color: AppTheme.textMain,
+                                  color: context.textMain,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -703,6 +593,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
     );
+  },
+);
   }
 
   Widget _buildModeTab({
@@ -745,8 +637,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     color: isSelected
                         ? Colors.white
                         : isAvailable
-                            ? AppTheme.textMuted
-                            : AppTheme.textMuted.withOpacity(0.35),
+                            ? context.textMuted
+                            : context.textMuted.withOpacity(0.35),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -757,8 +649,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? AppTheme.textMuted
-                              : AppTheme.textMuted.withOpacity(0.35),
+                              ? context.textMuted
+                              : context.textMuted.withOpacity(0.35),
                     ),
                   ),
                 ],
@@ -780,11 +672,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textMain,
+            color: context.textMain,
           ),
         ),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+        Text(label, style: TextStyle(fontSize: 10, color: context.textMuted)),
       ],
     );
   }

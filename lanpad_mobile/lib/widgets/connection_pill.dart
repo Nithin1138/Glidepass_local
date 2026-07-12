@@ -42,14 +42,15 @@ class _ConnectionPillState extends State<ConnectionPill> {
 
         final isLocal = _cs.isLocalConnection;
         final statusColor = isLocal ? const Color(0xFF00F59B) : const Color(0xFF3B82F6);
-        final connectionText = isLocal ? 'LAN Direct' : 'Hybrid Relay';
+        final connectionText = isLocal ? 'LAN' : 'Relay';
+        final deviceName = _cs.connectedDeviceName;
 
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Status pill
             LiquidGlassCard(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
               borderRadius: 20,
               isFlat: true,
               child: Row(
@@ -67,23 +68,22 @@ class _ConnectionPillState extends State<ConnectionPill> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Connection: ',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMuted,
-                      fontWeight: FontWeight.w400,
+                  const SizedBox(width: 7),
+                  if (deviceName != null && deviceName.isNotEmpty) ...[
+                    Text(
+                      deviceName,
+                      style: TextStyle(fontSize: 11, color: context.textMain, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  Text(
-                    connectionText,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMain,
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      '  ·  $connectionText',
+                      style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.w400),
                     ),
-                  ),
+                  ] else ...[
+                    Text(
+                      connectionText,
+                      style: TextStyle(fontSize: 11, color: context.textMain, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -107,7 +107,7 @@ class _ConnectionPillState extends State<ConnectionPill> {
                     : Icon(
                         LucideIcons.arrow_left_right,
                         size: 14,
-                        color: AppTheme.textMain,
+                        color: context.textMain,
                       ),
               ),
             ),

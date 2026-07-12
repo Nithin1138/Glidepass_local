@@ -147,18 +147,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark;
-    
-    return Scaffold(
-      body: Stack(
-        children: [
-          const AuroraBackground(),
-          
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), // Bottom padding to clear float bar
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        AppTheme.themeModeNotifier,
+        AppTheme.accentColorNotifier,
+      ]),
+      builder: (context, _) {
+        final isDark = context.isDark;
+        
+        return Scaffold(
+          body: Stack(
+            children: [
+              const AuroraBackground(),
+              
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), // Bottom padding to clear float bar
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Title Header
                   Row(
@@ -202,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 45,
-                        backgroundColor: AppTheme.cardBg,
+                        backgroundColor: context.cardBg,
                         child: Icon(
                           LucideIcons.laptop,
                           size: 40,
@@ -226,16 +232,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
-                            color: AppTheme.textMuted,
+                            color: context.textMuted,
                           ),
                         ),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _nicknameController,
-                          style: TextStyle(color: AppTheme.textMain, fontSize: 14, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: context.textMain, fontSize: 14, fontWeight: FontWeight.bold),
                           decoration: InputDecoration(
                             hintText: 'Enter name',
-                            hintStyle: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)),
+                            hintStyle: TextStyle(color: context.textMuted.withOpacity(0.5)),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(vertical: 4),
@@ -247,61 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Theme Color Customizer
-                  LiquidGlassCard(
-                    isFlat: false,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'LIQUID GLASS THEME ACCENT',
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: AppTheme.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: AppTheme.presetAccents.map((color) {
-                            final isSelected = AppTheme.accentColor == color;
-                            return GestureDetector(
-                              onTap: () => _saveAccentColor(color),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected 
-                                      ? (isDark ? Colors.white : Colors.black87) 
-                                      : Colors.transparent,
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: color.withOpacity(0.4),
-                                      blurRadius: isSelected ? 8 : 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: isSelected 
-                                  ? const Icon(LucideIcons.check, size: 16, color: Colors.white)
-                                  : null,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+
                   
                   // Haptics Card
                   LiquidGlassCard(
@@ -316,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
-                            color: AppTheme.textMuted,
+                            color: context.textMuted,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -347,7 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
-                            color: AppTheme.textMuted,
+                            color: context.textMuted,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -373,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Text(
                                   'Server Latency',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textMain),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -386,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     fontSize: 13, 
                                     fontWeight: FontWeight.bold, 
                                     color: _latencyMs == -1 
-                                        ? AppTheme.textMuted 
+                                        ? context.textMuted 
                                         : _latencyMs == -2 
                                             ? AppTheme.redStatus 
                                             : AppTheme.greenStatus,
@@ -438,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'To connect LANpad mobile app directly to your laptop without a cloud proxy, ensure both devices are connected to the SAME Wi-Fi router network.',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textMain, height: 1.4),
+                            style: TextStyle(fontSize: 12, color: context.textMain, height: 1.4),
                           ),
                           const SizedBox(height: 8),
                           _buildGuideStep('1', 'Open LANpad on your computer.'),
@@ -454,6 +406,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -471,12 +425,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: BoxDecoration(
             color: isSelected 
               ? AppTheme.accentColor 
-              : AppTheme.cardBg,
+              : context.cardBg,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected 
                 ? AppTheme.accentColor 
-                : AppTheme.borderColor,
+                : context.borderColor,
             ),
           ),
           child: Center(
@@ -487,7 +441,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontWeight: FontWeight.bold,
                 color: isSelected 
                   ? Colors.white 
-                  : AppTheme.textMain,
+                  : context.textMain,
               ),
             ),
           ),
@@ -511,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+          style: TextStyle(fontSize: 10, color: context.textMuted),
         ),
       ],
     );
@@ -532,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: Text(
               instruction,
-              style: TextStyle(fontSize: 11, color: AppTheme.textMuted, height: 1.3),
+              style: TextStyle(fontSize: 11, color: context.textMuted, height: 1.3),
             ),
           ),
         ],

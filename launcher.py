@@ -515,7 +515,7 @@ class LANpadLauncher:
 
         # ── Status row ───────────────────────────────────────────────────────
         sr = tk.Frame(v, bg=self.BG)
-        sr.place(x=24, y=68 + (0 if _mac else 4))
+        sr.place(x=24, y=44 + (0 if _mac else 4))
         self._dot_cv = tk.Canvas(sr, width=8, height=8, bg=self.BG, highlightthickness=0)
         self._dot_cv.pack(side="left")
         self._dot_id = self._dot_cv.create_oval(1, 1, 7, 7, fill=self.DIM, outline="")
@@ -528,7 +528,7 @@ class LANpadLauncher:
         self._conn_lbl = tk.Label(v, text="0 Connected",
                                   font=(self.FU, 10, "bold"),
                                   bg=self.BG, fg=self.DIM, anchor="e", bd=0, highlightthickness=0)
-        self._conn_lbl.place(x=376, y=68 + (0 if _mac else 4), anchor="ne")
+        self._conn_lbl.place(x=376, y=44 + (0 if _mac else 4), anchor="ne")
 
         self._plan_lbl = tk.Label(v, text="Plan: BASIC  •  Upgrade",
                                   font=(self.FU, 9, "bold"),
@@ -538,7 +538,7 @@ class LANpadLauncher:
 
         # ── Hero text ────────────────────────────────────────────────────────
         title_frame = tk.Frame(v, bg=self.BG)
-        title_frame.place(x=24, y=96 + yo)
+        title_frame.place(x=24, y=72 + yo)
 
         try:
             self._main_logo_img = Image.open(resource_path("logo.png"))
@@ -552,17 +552,66 @@ class LANpadLauncher:
         except Exception as e:
             padx_text = 0
 
+        # Generate stable unique name and session code for display
+        import hashlib
+        try:
+            from platform_utils import get_hardware_id
+            hwid = get_hardware_id()
+        except Exception:
+            hwid = "UNKNOWN-HWID"
+        adjectives = [
+            "Active", "Alert", "Aero", "Amber", "Aqua", "Azure", "Bold", "Brave", "Bright", "Calm",
+            "Clever", "Cool", "Cozy", "Cute", "Daring", "Dashing", "Eager", "Easy", "Elite", "Fair",
+            "Fancy", "Fast", "Fine", "Flying", "Free", "Fresh", "Friendly", "Funny", "Gentle", "Giant",
+            "Glad", "Golden", "Grand", "Great", "Green", "Happy", "Hardy", "Honest", "Humble", "Jolly",
+            "Keen", "Kind", "Light", "Lively", "Loyal", "Lucky", "Lunar", "Merry", "Mild", "Neat",
+            "Nimble", "Noble", "Orange", "Polite", "Prime", "Proud", "Purple", "Quick", "Quiet", "Rapid",
+            "Ready", "Red", "Safe", "Shadow", "Sharp", "Shiny", "Silly", "Silver", "Smart", "Soft",
+            "Solar", "Strong", "Sunny", "Sweet", "Swift", "Tiny", "Vibrant", "Warm", "Wild", "Wise",
+            "Young"
+        ]
+        animals = [
+            "Ant", "Badger", "Bear", "Beaver", "Bee", "Bird", "Buffalo", "Bunny", "Butterfly", "Camel",
+            "Cat", "Cheetah", "Crab", "Crane", "Deer", "Dog", "Dolphin", "Dove", "Duck", "Eagle",
+            "Elephant", "Falcon", "Finch", "Fish", "Flamingo", "Fox", "Frog", "Gecko", "Giraffe", "Goat",
+            "Goose", "Hawk", "Hedgehog", "Hippo", "Horse", "Jaguar", "Kangaroo", "Kitten", "Koala", "Lemur",
+            "Leopard", "Lion", "Lobster", "Lynx", "Macaw", "Monkey", "Moose", "Octopus", "Otter", "Owl",
+            "Panda", "Panther", "Parrot", "Penguin", "Puma", "Puppy", "Rabbit", "Raven", "Rhino", "Robin",
+            "Rooster", "Seal", "Shark", "Sheep", "Sloth", "Sparrow", "Squirrel", "Starfish", "Swan", "Tiger",
+            "Turtle", "Walrus", "Whale", "Wolf", "Zebra"
+        ]
+        h = int(hashlib.sha256(hwid.encode("utf-8")).hexdigest()[:8], 16)
+        adj = adjectives[h % len(adjectives)]
+        animal = animals[(h // len(adjectives)) % len(animals)]
+        unique_name = f"{adj}{animal}"
+        try:
+            from app import SESSION_TOKEN
+            session_code = SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN
+        except Exception:
+            session_code = "------"
+
         tk.Label(title_frame, text="LANpad", font=(self.FD, 28, "bold"),
                  bg=self.BG, fg=self.WHITE, anchor="w", bd=0, highlightthickness=0).pack(side="left", padx=(padx_text, 0), anchor="center")
+        
+        # Display device name and pairing code on the right side of the LANpad header
+        tk.Label(v, text=unique_name, font=(self.FU, 12, "bold"),
+                 bg=self.BG, fg=self.WHITE, anchor="e", bd=0, highlightthickness=0).place(x=376, y=72 + yo, anchor="ne")
+        tk.Label(v, text=f"Code: {session_code}", font=(self.FU, 12, "bold"),
+                 bg=self.BG, fg="#0077C0", anchor="e", bd=0, highlightthickness=0).place(x=376, y=94 + yo, anchor="ne")
+
+        # Subtitle returns to its original y position since the middle area is clear
         tk.Label(v,
                  text="Bridge your devices locally.",
                  font=(self.FU, 14), bg=self.BG, fg=self.DIM,
-                 anchor="w", justify="left", bd=0, highlightthickness=0).place(x=24, y=136 + yo * 1.5)
+                 anchor="w", justify="left", bd=0, highlightthickness=0).place(x=24, y=112 + yo * 1.5)
+
+
+
 
         # Tab selector frame
         tab_h = 40 if _mac else 46
         self._tab_frame = tk.Frame(v, bg=self.BG)
-        self._tab_frame.place(x=24, y=184 + yo * 2, width=W - 48, height=tab_h + 2)
+        self._tab_frame.place(x=24, y=160 + yo * 2, width=W - 48, height=tab_h + 2)
         
         # Local Tab
         self._tab_local = tk.Canvas(self._tab_frame, width=(W - 48)//2 - 4, height=tab_h, bg=self.BG, highlightthickness=0)
@@ -644,14 +693,14 @@ class LANpadLauncher:
         # ── QR card ──────────────────────────────────────────────────────────
         self._qr_cv = tk.Canvas(v, width=W - 48, height=240,
                                  bg=self.BG, highlightthickness=0)
-        self._qr_cv.place(x=24, y=234 + yo * 2.2)
+        self._qr_cv.place(x=24, y=210 + yo * 2.2)
         self._draw_qr_empty()
         self._draw_tabs()
 
         # ── IP pill ──────────────────────────────────────────────────────────
         self._ip_cv = tk.Canvas(v, width=W - 48, height=50,
                                  bg=self.BG, highlightthickness=0)
-        self._ip_cv.place(x=24, y=482 + yo * 2.2)
+        self._ip_cv.place(x=24, y=458 + yo * 2.2)
         self._ip_text = "http://0.0.0.0:8000"
         
         def copy_ip_to_clipboard(e=None):
@@ -672,7 +721,7 @@ class LANpadLauncher:
 
         # ── Session Token Label ──────────────────────────────────────────────
         self._sid_lbl = tk.Label(v, text="Session Token: Off", font=(self.FU, 8, "bold"), bg=self.BG, fg=self.DIM, cursor="hand2")
-        self._sid_lbl.place(x=0, y=536 + yo * 2.2, relwidth=1, anchor="nw")
+        self._sid_lbl.place(x=0, y=512 + yo * 2.2, relwidth=1, anchor="nw")
         
         def update_sid_display():
             try:
@@ -700,7 +749,7 @@ class LANpadLauncher:
 
         # ── Info row (Port / Protocol / State) ───────────────────────────────
         cw = (W - 48 - 12) // 3
-        info_y = 554 + yo * 2.5
+        info_y = 530 + yo * 2.5
         info_specs = [("Port", "8000"), ("Protocol", "HTTP"), ("State", "Off")]
         self._info_cards = {}
         for i, (lbl, default) in enumerate(info_specs):
@@ -716,7 +765,7 @@ class LANpadLauncher:
         # ── Action button ────────────────────────────────────────────────────
         self._btn_cv = tk.Canvas(v, width=W - 48, height=58,
                                   bg=self.BG, highlightthickness=0)
-        self._btn_cv.place(x=24, y=626 + yo * 2.5)
+        self._btn_cv.place(x=24, y=602 + yo * 2.5)
         self._draw_main_btn(active=False)
 
         # Open Received Files / Send/Receive Buttons
@@ -741,7 +790,7 @@ class LANpadLauncher:
                                           bg=self.BG2, font=(self.FU, 10, "bold"),
                                           highlightthickness=1, highlightbackground="#2A2A30",
                                           cursor="hand2")
-        self._send_receive_btn.place(x=24, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
+        self._send_receive_btn.place(x=24, y=666 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
         self._send_receive_btn.bind("<Button-1>", lambda e: open_send_receive())
         self._send_receive_btn.bind("<Enter>", lambda e: self._send_receive_btn.config(highlightbackground=self.WHITE))
         self._send_receive_btn.bind("<Leave>", lambda e: self._send_receive_btn.config(highlightbackground="#2A2A30"))
@@ -750,7 +799,7 @@ class LANpadLauncher:
                                    bg=self.BG2, font=(self.FU, 10, "bold"),
                                    highlightthickness=1, highlightbackground="#2A2A30",
                                    cursor="hand2")
-        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=690 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
+        self._files_btn.place(x=24 + (W - 48) // 2 + 6, y=666 + yo * 2.4, width=(W - 48) // 2 - 6, height=36)
         self._files_btn.bind("<Button-1>", lambda e: open_shared_folder())
         self._files_btn.bind("<Enter>", lambda e: self._files_btn.config(highlightbackground=self.WHITE))
         self._files_btn.bind("<Leave>", lambda e: self._files_btn.config(highlightbackground="#2A2A30"))
@@ -758,7 +807,7 @@ class LANpadLauncher:
         # ── Footer ───────────────────────────────────────────────────────────
         tk.Label(v, text="Ensure server is running on your laptop.",
                  font=(self.FU, 9), bg=self.BG, fg=self.DIM, bd=0, highlightthickness=0).place(
-                 x=0, y=726 + yo * 2.2, relwidth=1, anchor="nw")
+                 x=0, y=716 + yo * 2.2, relwidth=1, anchor="nw")
 
     def _draw_tabs(self):
         # Local tab

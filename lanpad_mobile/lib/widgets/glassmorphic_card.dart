@@ -15,7 +15,7 @@ class GlassmorphicCard extends StatelessWidget {
     required this.child,
     this.blur = 20,
     this.opacity = 0.03,
-    this.borderRadius = 16,
+    this.borderRadius = 20,
     this.padding = const EdgeInsets.all(16),
     this.borderColor,
   });
@@ -29,17 +29,17 @@ class GlassmorphicCard extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(opacity),
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: borderColor ?? AppTheme.borderColor,
+              color: borderColor ?? context.borderColor,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(context.isDark ? 0.12 : 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
               // Inside top highlight
               BoxShadow(

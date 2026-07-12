@@ -102,71 +102,84 @@ class _FilesScreenState extends State<FilesScreen> {
 
   Future<void> _pickAndUploadFile() async {
     _triggerHaptic();
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
-      final file = File(path);
-      final filename = result.files.single.name;
-      
-      setState(() {
-        _isUploading = true;
-        _uploadProgressName = filename;
-        _uploadProgress = 0.0;
-      });
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result != null && result.files.isNotEmpty) {
+      final totalFiles = result.files.length;
+      int uploadedCount = 0;
 
-      final startTime = DateTime.now();
-
-      try {
-        final response = await _apiService.uploadFileDirect(
-          file: file,
-          filename: filename,
-          mode: _transferMode,
-          onProgress: (sent, total) {
-            if (!mounted) return;
-            final elapsed = DateTime.now().difference(startTime).inSeconds;
-            double speedMbps = 0.0;
-            if (elapsed > 0) {
-              speedMbps = (sent * 8) / (elapsed * 1024 * 1024);
-            }
-            final progressPct = sent / total;
-            
-            setState(() {
-              _uploadProgress = progressPct;
-              _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
-              if (speedMbps > 0) {
-                final remainingBytes = total - sent;
-                final etaSeconds = (remainingBytes * 8) / (speedMbps * 1024 * 1024);
-                _uploadEta = '${etaSeconds.round()}s remaining';
-              } else {
-                _uploadEta = 'calculating...';
-              }
-            });
-          },
-        );
-
-        if (response.statusCode == 200) {
-          _showToast('Upload completed successfully!');
-          _loadFiles();
-          
-          // Increment files stats
-          final prefs = await SharedPreferences.getInstance();
-          final current = prefs.getInt('files_count') ?? 0;
-          await prefs.setInt('files_count', current + 1);
-        } else {
-          _showToast('Upload failed: Status ${response.statusCode}', isError: true);
-        }
-      } catch (e) {
-        _showToast('Upload failed: $e', isError: true);
-      } finally {
+      for (int i = 0; i < totalFiles; i++) {
+        final fileInfo = result.files[i];
+        if (fileInfo.path == null) continue;
+        final path = fileInfo.path!;
+        final file = File(path);
+        final filename = fileInfo.name;
+        
+        final displayPrefix = '(${i + 1}/$totalFiles)';
         setState(() {
-          _isUploading = false;
-          _uploadProgressName = '';
+          _isUploading = true;
+          _uploadProgressName = '$displayPrefix $filename';
           _uploadProgress = 0.0;
           _uploadSpeed = '';
           _uploadEta = '';
         });
-        _triggerHaptic();
+
+        final startTime = DateTime.now();
+
+        try {
+          final response = await _apiService.uploadFileDirect(
+            file: file,
+            filename: filename,
+            mode: _transferMode,
+            onProgress: (sent, total) {
+              if (!mounted) return;
+              final elapsed = DateTime.now().difference(startTime).inSeconds;
+              double speedMbps = 0.0;
+              if (elapsed > 0) {
+                speedMbps = (sent * 8) / (elapsed * 1024 * 1024);
+              }
+              final progressPct = sent / total;
+              
+              setState(() {
+                _uploadProgress = progressPct;
+                _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
+                if (speedMbps > 0) {
+                  final remainingBytes = total - sent;
+                  final etaSeconds = (remainingBytes * 8) / (speedMbps * 1024 * 1024);
+                  _uploadEta = '${etaSeconds.round()}s remaining';
+                } else {
+                  _uploadEta = 'calculating...';
+                }
+              });
+            },
+          );
+
+          if (response.statusCode == 200) {
+            uploadedCount++;
+            // Increment files stats
+            final prefs = await SharedPreferences.getInstance();
+            final current = prefs.getInt('files_count') ?? 0;
+            await prefs.setInt('files_count', current + 1);
+          } else {
+            _showToast('Failed to upload $filename: Status ${response.statusCode}', isError: true);
+          }
+        } catch (e) {
+          _showToast('Failed to upload $filename: $e', isError: true);
+        }
       }
+
+      if (uploadedCount > 0) {
+        _showToast('Successfully uploaded $uploadedCount of $totalFiles files!');
+        _loadFiles();
+      }
+
+      setState(() {
+        _isUploading = false;
+        _uploadProgressName = '';
+        _uploadProgress = 0.0;
+        _uploadSpeed = '';
+        _uploadEta = '';
+      });
+      _triggerHaptic();
     }
   }
 
@@ -192,14 +205,14 @@ class _FilesScreenState extends State<FilesScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.bgColor,
+          backgroundColor: context.bgColor,
           surfaceTintColor: Colors.transparent,
-          title: Text('Delete File', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: AppTheme.textMain)),
-          content: Text('Are you sure you want to remove "${file.name}" from the session?', style: TextStyle(color: AppTheme.textMain)),
+          title: Text('Delete File', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: context.textMain)),
+          content: Text('Are you sure you want to remove "${file.name}" from the session?', style: TextStyle(color: context.textMain)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+              child: Text('Cancel', style: TextStyle(color: context.textMuted)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -331,7 +344,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                 _uploadProgressName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textMain),
                               ),
                               const SizedBox(height: 12),
                               // Linear progress indicator
@@ -350,7 +363,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                 children: [
                                   Text(
                                     _uploadSpeed,
-                                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                    style: TextStyle(fontSize: 10, color: context.textMuted),
                                   ),
                                   Text(
                                     _uploadEta,
@@ -368,7 +381,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                 color: Colors.white.withOpacity(0.01),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: AppTheme.borderColor,
+                                  color: context.borderColor,
                                   style: BorderStyle.solid,
                                 ),
                               ),
@@ -378,12 +391,12 @@ class _FilesScreenState extends State<FilesScreen> {
                                   const SizedBox(height: 12),
                                   Text(
                                     'CHOOSE FILES TO SHARE',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMain, letterSpacing: 0.5),
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: context.textMain, letterSpacing: 0.5),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Supports large files (5-10 GB+)',
-                                    style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
+                                    style: TextStyle(fontSize: 9, color: context.textMuted),
                                   ),
                                 ],
                               ),
@@ -405,17 +418,17 @@ class _FilesScreenState extends State<FilesScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(LucideIcons.inbox, size: 40, color: AppTheme.textMuted),
+                                    Icon(LucideIcons.inbox, size: 40, color: context.textMuted),
                                     const SizedBox(height: 12),
                                     Text(
                                       'No shared files in this session',
-                                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                                      style: TextStyle(color: context.textMuted, fontSize: 13),
                                     ),
                                   ],
                                 ),
                               )
                             : ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 100), // padding to clear bottom navigation bar
+                                padding: const EdgeInsets.only(bottom: 140), // padding to clear bottom navigation bar
                                 itemCount: _files.length,
                                 itemBuilder: (context, index) {
                                   final file = _files[index];
@@ -444,7 +457,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                                         style: TextStyle(
                                                           fontSize: 13,
                                                           fontWeight: FontWeight.bold,
-                                                          color: AppTheme.textMain,
+                                                          color: context.textMain,
                                                         ),
                                                       ),
                                                     ),
@@ -457,7 +470,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   _formatBytes(file.size),
-                                                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                                  style: TextStyle(fontSize: 10, color: context.textMuted),
                                                 ),
                                               ],
                                             ),
@@ -532,14 +545,14 @@ class _FilesScreenState extends State<FilesScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: isSelected ? AppTheme.accentColor : AppTheme.textMuted),
+              Icon(icon, size: 14, color: isSelected ? AppTheme.accentColor : context.textMuted),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? AppTheme.textMain : AppTheme.textMuted,
+                  color: isSelected ? context.textMain : context.textMuted,
                 ),
               ),
             ],

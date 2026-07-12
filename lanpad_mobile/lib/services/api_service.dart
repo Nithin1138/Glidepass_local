@@ -190,7 +190,7 @@ class ApiService {
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'text': text,
+          'content': text,
           'title': title,
         }),
       );

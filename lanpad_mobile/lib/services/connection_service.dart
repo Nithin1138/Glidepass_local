@@ -15,6 +15,7 @@ class ConnectionService extends ChangeNotifier {
   bool _isConnecting = false;
   String? _tunnelUrl;
   String? _lanIp;
+  String? _connectedDeviceName;
   List<Map<String, String>> _devices = [];
 
   String? get serverUrl => _serverUrl;
@@ -23,6 +24,7 @@ class ConnectionService extends ChangeNotifier {
   bool get isConnecting => _isConnecting;
   String? get tunnelUrl => _tunnelUrl;
   String? get lanIp => _lanIp;
+  String? get connectedDeviceName => _connectedDeviceName;
   List<Map<String, String>> get devices => _devices;
 
   bool get isLocalConnection {
@@ -43,6 +45,7 @@ class ConnectionService extends ChangeNotifier {
     _sessionId = prefs.getString(AppConstants.keySessionId);
     _tunnelUrl = prefs.getString(AppConstants.keyTunnelUrl);
     _lanIp = prefs.getString(AppConstants.keyLanIp);
+    _connectedDeviceName = prefs.getString('connected_device_name');
     
     final String? devicesJson = prefs.getString('devices_list');
     if (devicesJson != null) {
@@ -82,41 +85,50 @@ class ConnectionService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'success') {
+          // Verify session code matches
+          final serverCode = data['session_code']?.toString();
+          if (serverCode != null && serverCode.isNotEmpty && serverCode.trim().toLowerCase() != sid.trim().toLowerCase()) {
+            debugPrint('Connection failed: Session code mismatch.');
+            _isConnecting = false;
+            notifyListeners();
+            return false;
+          }
+
           _serverUrl = targetUrl;
           _sessionId = sid;
           _isConnected = true;
           _tunnelUrl = data['tunnel_url'];
           _lanIp = data['lan_ip'];
-          
+          // Use server-provided device name
+          final serverDeviceName = data['device_name']?.toString();
+          _connectedDeviceName = serverDeviceName?.isNotEmpty == true
+              ? serverDeviceName
+              : null;
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(AppConstants.keyServerUrl, targetUrl);
           await prefs.setString(AppConstants.keySessionId, sid);
           await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
           await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
-          
-          // Automatically register device in the list
-          String name = 'Device ${_devices.length + 1}';
-          final parsedUri = Uri.tryParse(targetUrl);
-          if (parsedUri != null) {
-            name = parsedUri.host;
-            if (name == '127.0.0.1' || name == 'localhost') {
-              name = 'Local Laptop';
-            } else if (name.startsWith('192.168.')) {
-              name = 'Laptop (${name.split('.').last})';
-            }
+          if (_connectedDeviceName != null) {
+            await prefs.setString('connected_device_name', _connectedDeviceName!);
           }
+
+          // Register or update device in the list with the real server name
+          final resolvedName = _connectedDeviceName ?? 'Laptop';
           final existingIndex = _devices.indexWhere((d) => d['url'] == targetUrl);
           if (existingIndex != -1) {
             _devices[existingIndex]['sid'] = sid;
+            _devices[existingIndex]['name'] = resolvedName;
           } else {
             _devices.add({
               'url': targetUrl,
               'sid': sid,
-              'name': name,
+              'name': resolvedName,
             });
           }
           await prefs.setString('devices_list', jsonEncode(_devices));
-          
+
           _isConnecting = false;
           notifyListeners();
           return true;
@@ -137,13 +149,15 @@ class ConnectionService extends ChangeNotifier {
     _isConnected = false;
     _tunnelUrl = null;
     _lanIp = null;
-    
+    _connectedDeviceName = null;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.keyServerUrl);
     await prefs.remove(AppConstants.keySessionId);
     await prefs.remove(AppConstants.keyTunnelUrl);
     await prefs.remove(AppConstants.keyLanIp);
-    
+    await prefs.remove('connected_device_name');
+
     notifyListeners();
   }
 
@@ -160,11 +174,18 @@ class ConnectionService extends ChangeNotifier {
           _isConnected = true;
           _tunnelUrl = data['tunnel_url'];
           _lanIp = data['lan_ip'];
-          
+          final sdn = data['device_name']?.toString();
+          if (sdn != null && sdn.isNotEmpty) {
+            _connectedDeviceName = sdn;
+          }
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
           await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
-          
+          if (_connectedDeviceName != null) {
+            await prefs.setString('connected_device_name', _connectedDeviceName!);
+          }
+
           notifyListeners();
           return true;
         }
@@ -178,7 +199,7 @@ class ConnectionService extends ChangeNotifier {
   }
 
   Future<bool> switchConnection() async {
-    if (!_isConnected || _sessionId == null) {
+    if (!_isConnected || _sessionId == null || _serverUrl == null) {
       debugPrint('[Switch] Cannot switch: not connected or no session ID');
       return false;
     }
@@ -186,57 +207,77 @@ class ConnectionService extends ChangeNotifier {
     String? targetUrl;
 
     if (isLocalConnection) {
-      // Currently on LAN → switch to Tunnel (relay)
+      // LAN → try Tunnel
       if (_tunnelUrl != null && _tunnelUrl!.isNotEmpty) {
         targetUrl = _tunnelUrl;
-        debugPrint('[Switch] LAN → Relay (direct): $targetUrl');
       } else {
-        // Fallback: search devices list for any remote Cloudflare or public tunnel URL
-        final remoteDevice = _devices.firstWhere(
-          (d) {
-            final url = d['url'] ?? '';
-            return url.contains('.trycloudflare.com') || url.contains('lanpad.app') || url.contains('.locallink');
-          },
-          orElse: () => {},
-        );
-        if (remoteDevice.isNotEmpty) {
-          targetUrl = remoteDevice['url'];
-          debugPrint('[Switch] LAN → Relay (from devices list): $targetUrl');
+        final prefs = await SharedPreferences.getInstance();
+        final storedTunnel = prefs.getString(AppConstants.keyTunnelUrl);
+        if (storedTunnel != null && storedTunnel.isNotEmpty) {
+          targetUrl = storedTunnel;
         }
       }
     } else {
-      // Currently on Relay → switch to LAN Direct
-      // Try to find any LAN device URL from the devices list
-      final lanDevice = _devices.firstWhere(
-        (d) {
-          final uri = Uri.tryParse(d['url'] ?? '');
-          if (uri == null) return false;
-          final h = uri.host;
-          return h == 'localhost' || h == '127.0.0.1' ||
-              h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.');
-        },
-        orElse: () => {},
-      );
+      // Relay → try LAN direct
+      if (_lanIp != null && _lanIp!.isNotEmpty) {
+        int port = 8000;
+        final existingLan = _devices.firstWhere(
+          (d) {
+            final uri = Uri.tryParse(d['url'] ?? '');
+            if (uri == null) return false;
+            final h = uri.host;
+            return h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.') || h == 'localhost';
+          },
+          orElse: () => {},
+        );
+        if (existingLan.isNotEmpty) {
+          port = Uri.tryParse(existingLan['url'] ?? '')?.port ?? 8000;
+        }
+        targetUrl = 'http://$_lanIp:$port';
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        final storedLan = prefs.getString(AppConstants.keyLanIp);
+        if (storedLan != null && storedLan.isNotEmpty) {
+          targetUrl = 'http://$storedLan:8000';
+        }
+      }
+    }
 
-      if (lanDevice.isNotEmpty) {
-        targetUrl = lanDevice['url'];
-        debugPrint('[Switch] Relay → LAN (from devices list): $targetUrl');
-      } else if (_lanIp != null && _lanIp!.isNotEmpty) {
-        // Fallback: construct from lanIp.
-        // Try to check if the user had a previous LAN URL's port, default to 8000
-        targetUrl = 'http://$_lanIp:8000';
-        debugPrint('[Switch] Relay → LAN (constructed fallback): $targetUrl');
+    // If still null, try one quick background refresh
+    if (targetUrl == null) {
+      try {
+        final resp = await http.get(
+          Uri.parse('$_serverUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}'),
+        ).timeout(const Duration(seconds: 2));
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(resp.body);
+          if (data['status'] == 'success') {
+            _tunnelUrl = data['tunnel_url']?.toString();
+            _lanIp = data['lan_ip']?.toString();
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(AppConstants.keyTunnelUrl, _tunnelUrl ?? '');
+            await prefs.setString(AppConstants.keyLanIp, _lanIp ?? '');
+
+            if (isLocalConnection) {
+              targetUrl = _tunnelUrl;
+            } else if (_lanIp != null) {
+              targetUrl = 'http://$_lanIp:8000';
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[Switch] Quick info refresh failed: $e');
       }
     }
 
     if (targetUrl != null) {
-      debugPrint('[Switch] Connecting to switch target: $targetUrl');
-      final success = await connect(targetUrl, _sessionId!);
-      debugPrint('[Switch] Switch connection result: $success');
+      debugPrint('[Switch] Attempting connect: $targetUrl');
+      final success = await connect(targetUrl!, _sessionId!);
+      debugPrint('[Switch] Result: $success');
       return success;
     }
 
-    debugPrint('[Switch] Switch failed: No target URL found');
+    debugPrint('[Switch] No target URL found');
     return false;
   }
 

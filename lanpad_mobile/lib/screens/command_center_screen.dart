@@ -14,6 +14,8 @@ import '../config/theme.dart';
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
 
+  static final TextEditingController externalController = TextEditingController();
+
   @override
   State<CommandCenterScreen> createState() => _CommandCenterScreenState();
 }
@@ -39,12 +41,29 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     super.initState();
     _checkInitialTypingStatus();
     _startTypingStatusPolling();
+    // Copy any text shared via externalController
+    if (CommandCenterScreen.externalController.text.isNotEmpty) {
+      _textController.text = CommandCenterScreen.externalController.text;
+      CommandCenterScreen.externalController.clear();
+    }
+    // Also listen to changes while this state is active
+    CommandCenterScreen.externalController.addListener(_onExternalTextChange);
+  }
+
+  void _onExternalTextChange() {
+    if (mounted && CommandCenterScreen.externalController.text.isNotEmpty) {
+      setState(() {
+        _textController.text = CommandCenterScreen.externalController.text;
+      });
+      CommandCenterScreen.externalController.clear();
+    }
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
     _typingStatusTimer?.cancel();
+    CommandCenterScreen.externalController.removeListener(_onExternalTextChange);
     _textController.dispose();
     super.dispose();
   }
@@ -108,11 +127,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.bgColor,
+          backgroundColor: context.bgColor,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: AppTheme.borderColor),
+            side: BorderSide(color: context.borderColor),
           ),
           title: Column(
             children: [
@@ -120,14 +139,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
               const SizedBox(height: 12),
               Text(
                 'Injection Completed!',
-                style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textMain),
+                style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 18, color: context.textMain),
               ),
             ],
           ),
           content: Text(
             'Your text has been typed onto the laptop. Select what you would like to do next:',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+            style: TextStyle(color: context.textMuted, fontSize: 13),
           ),
           actionsAlignment: MainAxisAlignment.center,
           actionsOverflowButtonSpacing: 8,
@@ -151,18 +170,18 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 _clearText();
               },
               decoration: BoxDecoration(
-                color: AppTheme.cardBg,
+                color: context.cardBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderColor),
+                border: Border.all(color: context.borderColor),
               ),
-              child: Text('CLEAR AREA', style: TextStyle(color: AppTheme.textMain, fontWeight: FontWeight.bold)),
+              child: Text('CLEAR AREA', style: TextStyle(color: context.textMain, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
                 _triggerHaptic();
                 Navigator.of(context).pop();
               },
-              child: Text('Dismiss', style: TextStyle(color: AppTheme.textMuted)),
+              child: Text('Dismiss', style: TextStyle(color: context.textMuted)),
             ),
           ],
         );
@@ -275,7 +294,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       barrierColor: Colors.black54,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -300,13 +319,13 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                             fontFamily: 'Outfit',
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: AppTheme.textMain,
+                            color: context.textMain,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: AppTheme.textMuted),
+                      icon: Icon(Icons.close, color: context.textMuted),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -317,7 +336,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       ? Center(
                           child: Text(
                             'No history items found.',
-                            style: TextStyle(color: AppTheme.textMuted),
+                            style: TextStyle(color: context.textMuted),
                           ),
                         )
                       : ListView.builder(
@@ -336,8 +355,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.cardBg,
-                                    border: Border.all(color: AppTheme.borderColor),
+                                    color: context.cardBg,
+                                    border: Border.all(color: context.borderColor),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
@@ -351,14 +370,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: AppTheme.textMain,
+                                              color: context.textMain,
                                             ),
                                           ),
                                           Text(
                                             '${item.timestamp} (${item.mode})',
                                             style: TextStyle(
                                               fontSize: 10,
-                                              color: AppTheme.textMuted,
+                                              color: context.textMuted,
                                             ),
                                           ),
                                         ],
@@ -371,7 +390,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontFamily: 'monospace',
-                                          color: AppTheme.textMuted,
+                                          color: context.textMuted,
                                         ),
                                       ),
                                     ],
@@ -415,7 +434,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 110),
+              padding: const EdgeInsets.only(bottom: 140),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -474,7 +493,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                 Icon(
                                   LucideIcons.refresh_cw,
                                   size: 16,
-                                  color: _liveSync ? AppTheme.accentColor : AppTheme.textMuted,
+                                  color: _liveSync ? AppTheme.accentColor : context.textMuted,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -482,7 +501,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: _liveSync ? AppTheme.textMain : AppTheme.textMuted,
+                                    color: _liveSync ? context.textMain : context.textMuted,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -508,7 +527,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: AppTheme.textMain,
+                                    color: context.textMain,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -539,10 +558,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                               maxLines: null,
                               expands: true,
                               keyboardType: TextInputType.multiline,
-                              style: TextStyle(color: AppTheme.textMain, fontSize: 16, height: 1.5),
+                              style: TextStyle(color: context.textMain, fontSize: 16, height: 1.5),
                               decoration: InputDecoration(
                                 hintText: 'Type snippet or instructions...',
-                                hintStyle: TextStyle(color: AppTheme.textMuted.withOpacity(0.4)),
+                                hintStyle: TextStyle(color: context.textMuted.withOpacity(0.4)),
                                 border: InputBorder.none,
                               ),
                               onChanged: (text) {
@@ -589,7 +608,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                                   Text(
                                     'TYPING Snip...',
                                     style: TextStyle(
-                                      color: AppTheme.textMain,
+                                      color: context.textMain,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 1,
@@ -622,14 +641,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       Icon(
                         _liveSync ? LucideIcons.circle_check : LucideIcons.circle_pause,
                         size: 14,
-                        color: _liveSync ? const Color(0xFF00F59B) : AppTheme.textMuted,
+                        color: _liveSync ? const Color(0xFF00F59B) : context.textMuted,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         _liveSync
                             ? 'Live Sync ON: Pressing keys is synchronized.'
                             : 'Live Sync OFF: Dispatch manually with button below.',
-                        style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                        style: TextStyle(fontSize: 10, color: context.textMuted),
                       ),
                     ],
                   ),
@@ -659,7 +678,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Coding Mode (Handle IDE auto-brackets)', style: TextStyle(fontSize: 11, color: AppTheme.textMain)),
+                            Text('Coding Mode (Handle IDE auto-brackets)', style: TextStyle(fontSize: 11, color: context.textMain)),
                             Switch(
                               value: _isCoding,
                               activeColor: AppTheme.accentColor,
@@ -673,7 +692,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('TYPING SPEED', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
+                            Text('TYPING SPEED', style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.bold)),
                             Text('$_wpm WPM', style: TextStyle(fontSize: 12, color: AppTheme.accentColor, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -690,7 +709,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         Center(
                           child: Text(
                             'Expected Time: ${expectedMinutes}m',
-                            style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                            style: TextStyle(fontSize: 10, color: context.textMuted),
                           ),
                         ),
                       ],
@@ -749,17 +768,17 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           borderColor: isSelected ? AppTheme.accentColor : null,
           child: Column(
             children: [
-              Icon(icon, size: 16, color: isSelected ? AppTheme.accentColor : AppTheme.textMuted),
+              Icon(icon, size: 16, color: isSelected ? AppTheme.accentColor : context.textMuted),
               const SizedBox(height: 4),
               Text(
                 title, 
                 style: TextStyle(
                   fontSize: 12, 
                   fontWeight: FontWeight.bold, 
-                  color: isSelected ? AppTheme.accentColor : AppTheme.textMain,
+                  color: isSelected ? AppTheme.accentColor : context.textMain,
                 ),
               ),
-              Text(subtitle, style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
+              Text(subtitle, style: TextStyle(fontSize: 9, color: context.textMuted)),
             ],
           ),
         ),

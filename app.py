@@ -850,11 +850,49 @@ def _cached_file_response(filename: str):
 
 @app.get("/api/connection/info")
 async def connection_info():
+    # Generate a stable unique name based on hardware ID (adjective + animal)
+    import hashlib
+    try:
+        from platform_utils import get_hardware_id
+        hwid = get_hardware_id()
+    except Exception:
+        hwid = "UNKNOWN-HWID"
+    
+    adjectives = [
+        "Active", "Alert", "Aero", "Amber", "Aqua", "Azure", "Bold", "Brave", "Bright", "Calm",
+        "Clever", "Cool", "Cozy", "Cute", "Daring", "Dashing", "Eager", "Easy", "Elite", "Fair",
+        "Fancy", "Fast", "Fine", "Flying", "Free", "Fresh", "Friendly", "Funny", "Gentle", "Giant",
+        "Glad", "Golden", "Grand", "Great", "Green", "Happy", "Hardy", "Honest", "Humble", "Jolly",
+        "Keen", "Kind", "Light", "Lively", "Loyal", "Lucky", "Lunar", "Merry", "Mild", "Neat",
+        "Nimble", "Noble", "Orange", "Polite", "Prime", "Proud", "Purple", "Quick", "Quiet", "Rapid",
+        "Ready", "Red", "Safe", "Shadow", "Sharp", "Shiny", "Silly", "Silver", "Smart", "Soft",
+        "Solar", "Strong", "Sunny", "Sweet", "Swift", "Tiny", "Vibrant", "Warm", "Wild", "Wise",
+        "Young"
+    ]
+    animals = [
+        "Ant", "Badger", "Bear", "Beaver", "Bee", "Bird", "Buffalo", "Bunny", "Butterfly", "Camel",
+        "Cat", "Cheetah", "Crab", "Crane", "Deer", "Dog", "Dolphin", "Dove", "Duck", "Eagle",
+        "Elephant", "Falcon", "Finch", "Fish", "Flamingo", "Fox", "Frog", "Gecko", "Giraffe", "Goat",
+        "Goose", "Hawk", "Hedgehog", "Hippo", "Horse", "Jaguar", "Kangaroo", "Kitten", "Koala", "Lemur",
+        "Leopard", "Lion", "Lobster", "Lynx", "Macaw", "Monkey", "Moose", "Octopus", "Otter", "Owl",
+        "Panda", "Panther", "Parrot", "Penguin", "Puma", "Puppy", "Rabbit", "Raven", "Rhino", "Robin",
+        "Rooster", "Seal", "Shark", "Sheep", "Sloth", "Sparrow", "Squirrel", "Starfish", "Swan", "Tiger",
+        "Turtle", "Walrus", "Whale", "Wolf", "Zebra"
+    ]
+    
+    h = int(hashlib.sha256(hwid.encode("utf-8")).hexdigest()[:8], 16)
+    adj = adjectives[h % len(adjectives)]
+    animal = animals[(h // len(adjectives)) % len(animals)]
+    unique_name = f"{adj}{animal}"
+
     return {
         "status": "success",
         "lan_ip": get_local_ip(),
-        "tunnel_url": TUNNEL_URL
+        "tunnel_url": TUNNEL_URL,
+        "device_name": unique_name,
+        "session_code": SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN
     }
+
 
 
 @app.get("/logo.png")
@@ -1476,6 +1514,7 @@ async def _proxy_get(path: str, params: dict):
             url = f"{base}{path}"
             result = await asyncio.to_thread(_sync_proxy_get, url, params)
             return result
+            return result, None
         except Exception as e:
             last_err = str(e)
     return None, last_err
@@ -1510,20 +1549,148 @@ async def proxy_hubs(request: Request):
     params = dict(request.query_params)
     result = await _proxy_get("/api/hubs", params)
     print(f"[PROXY] GET /api/hubs result: {type(result)}")
-    if isinstance(result, dict):
-        return result
-    print(f"[PROXY] GET /api/hubs failed: {result}")
-    return {"success": True, "hubs": []}
+    
+    # Check if result is a valid dict representing a successful Next.js response
+    if isinstance(result, tuple):
+        result_data = result[0]
+    else:
+        result_data = result
+
+    if isinstance(result_data, dict) and result_data.get("success") == True:
+        return result_data
+    
+    # High-quality fallback mock resources when Next.js is offline
+    return {
+        "success": True,
+        "hubs": [
+            {
+                "id": "dev-essentials",
+                "title": "Developer Essentials",
+                "description": "Essential quick-start commands, configuration files, and code snippets.",
+                "visibility": "public",
+                "categories": [
+                    {
+                        "name": "Git & Version Control",
+                        "topics": [
+                            {
+                                "name": "Basic Commands",
+                                "snippets": [
+                                    {"id": "git-1", "title": "Discard Local Changes", "content": "git reset --hard HEAD\ngit clean -fd", "type": "code", "language": "bash"},
+                                    {"id": "git-2", "title": "Commit with Message", "content": "git commit -m \"feat: add connection auto-discovery\"", "type": "code", "language": "bash"}
+                                ]
+                            },
+                            {
+                                "name": "Branch Management",
+                                "snippets": [
+                                    {"id": "git-3", "title": "Delete Local Branch", "content": "git branch -d branch_name", "type": "code", "language": "bash"}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Docker & Containerization",
+                        "topics": [
+                            {
+                                "name": "Docker Clean",
+                                "snippets": [
+                                    {"id": "docker-1", "title": "Prune system", "content": "docker system prune -a --volumes", "type": "code", "language": "bash"}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "keyboard-shortcuts",
+                "title": "System Shortcuts",
+                "description": "Daily productivity shortcuts for macOS and Windows systems.",
+                "visibility": "public",
+                "categories": [
+                    {
+                        "name": "macOS navigation",
+                        "topics": [
+                            {
+                                "name": "Window management",
+                                "snippets": [
+                                    {"id": "mac-1", "title": "Show Desktop", "content": "Fn + F11 (or pinch with thumb and three fingers)", "type": "text", "language": ""}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
 
 
 @app.get("/api/resources")
 async def proxy_resources(request: Request):
     """Proxy GET /api/resources → Next.js API (dev:3000 → prod:lanpad.app)."""
     params = dict(request.query_params)
+    hub_id = params.get("hubId", "dev-essentials")
     result = await _proxy_get("/api/resources", params)
-    if isinstance(result, dict):
-        return result
-    return {"success": True, "resources": []}
+    
+    if isinstance(result, tuple):
+        result_data = result[0]
+    else:
+        result_data = result
+
+    if isinstance(result_data, dict) and result_data.get("success") == True:
+        return result_data
+
+    # Return local fallback snippets based on hub_id
+    if hub_id == "keyboard-shortcuts":
+        return {
+            "success": True,
+            "resources": [
+                {
+                    "id": "mac-1",
+                    "title": "Show Desktop",
+                    "content": "Fn + F11 (or pinch with thumb and three fingers)",
+                    "type": "text",
+                    "category": "macOS navigation",
+                    "topic": "Window management"
+                }
+            ]
+        }
+
+    return {
+        "success": True,
+        "resources": [
+            {
+                "id": "git-1",
+                "title": "Discard Local Changes",
+                "content": "git reset --hard HEAD\ngit clean -fd",
+                "type": "code",
+                "category": "Git & Version Control",
+                "topic": "Basic Commands"
+            },
+            {
+                "id": "git-2",
+                "title": "Commit with Message",
+                "content": "git commit -m \"feat: add connection auto-discovery\"",
+                "type": "code",
+                "category": "Git & Version Control",
+                "topic": "Basic Commands"
+            },
+            {
+                "id": "git-3",
+                "title": "Delete Local Branch",
+                "content": "git branch -d branch_name",
+                "type": "code",
+                "category": "Git & Version Control",
+                "topic": "Branch Management"
+            },
+            {
+                "id": "docker-1",
+                "title": "Prune system",
+                "content": "docker system prune -a --volumes",
+                "type": "code",
+                "category": "Docker & Containerization",
+                "topic": "Docker Clean"
+            }
+        ]
+    }
 
 
 @app.post("/api/resources/{resource_id}")
@@ -1534,8 +1701,14 @@ async def proxy_resource_action(resource_id: str, request: Request):
     except Exception:
         body = {}
     result = await _proxy_post(f"/api/resources/{resource_id}", body)
-    if isinstance(result, dict):
-        return result
+    
+    if isinstance(result, tuple):
+        result_data = result[0]
+    else:
+        result_data = result
+
+    if isinstance(result_data, dict):
+        return result_data
     return {"success": False, "error": "Metrics server unavailable"}
 
 

@@ -2,11 +2,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
-/// Liquid Glass Card — iOS Control Center style.
-/// Performance notes:
-///  - Plain Container (no AnimatedContainer) — no per-rebuild overhead
-///  - BackdropFilter blur at 18px sigma (balanced quality/perf)
-///  - RepaintBoundary applied by caller if needed
+/// Liquid Glass Card — Apple-style frosted glass.
+///
+/// The two things that make this read as *glass* instead of a flat
+/// tinted box:
+///   1. A gradient border that simulates light catching the rim
+///      (bright top-left, fading to near-invisible bottom-right).
+///   2. A very low-opacity fill (0.05–0.10) so the blurred content
+///      behind it stays visible — this ONLY works if there's actually
+///      something with detail behind the card (see GlassBackground).
 class LiquidGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -16,113 +20,153 @@ class LiquidGlassCard extends StatelessWidget {
   final bool hasGlow;
   final double glowIntensity;
   final bool isFlat;
+  final double blur;
 
   const LiquidGlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.borderRadius = 24,
+    this.borderRadius = 20,
     this.borderColor,
     this.liquidColor,
     this.hasGlow = false,
     this.glowIntensity = 0.3,
     this.isFlat = false,
+    this.blur = 24.0,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDark;
     final accentColor = context.accentColor;
+    final br = BorderRadius.circular(borderRadius);
 
-    // ── Shadow ──────────────────────────────────────────────────────────
     final List<BoxShadow> shadows = [
       if (hasGlow)
         BoxShadow(
-          color: accentColor.withOpacity(0.25 * glowIntensity),
-          blurRadius: 20,
-          spreadRadius: 1,
+          color: accentColor.withOpacity(0.16 * glowIntensity),
+          blurRadius: 30,
+          spreadRadius: 0,
         ),
       if (!isFlat)
         BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.30 : 0.10),
-          offset: const Offset(0, 4),
-          blurRadius: 14,
+          color: Colors.black.withOpacity(isDark ? 0.12 : 0.08),
+          offset: const Offset(0, 8),
+          blurRadius: 24,
         ),
     ];
 
-    // ── Fill ────────────────────────────────────────────────────────────
-    // Dark: translucent glass (like iOS) — white base at low opacity so
-    //       the blurred background colour shows through vibrantly.
-    // Light: white-based translucency so text stays readable.
-    final Color? customFill =
-        liquidColor != null ? liquidColor!.withOpacity(isDark ? 0.15 : 0.20) : null;
-
-    final Color darkFill = Colors.white.withOpacity(0.09);
-    final Color lightFill = Colors.white.withOpacity(0.72);
-
-    // ── Top-edge specular gradient (the "rim") ──────────────────────────
-    final Gradient glassGradient = isDark
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.18), // bright top-left specular
-              Colors.white.withOpacity(0.06), // mid
-              Colors.white.withOpacity(0.02), // dark bottom-right
-            ],
-            stops: const [0.0, 0.45, 1.0],
-          )
-        : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.95), // near-opaque top-left
-              Colors.white.withOpacity(0.70), // mid
-              Colors.white.withOpacity(0.50), // slight tint bottom-right
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          );
-
-    // ── Border ──────────────────────────────────────────────────────────
-    final BoxBorder glassBorder = borderColor != null
-        ? Border.all(color: borderColor!, width: 1.0)
-        : (isDark
-            ? Border(
-                top: BorderSide(
-                    color: Colors.white.withOpacity(0.32), width: 1.0),
-                left: BorderSide(
-                    color: Colors.white.withOpacity(0.22), width: 0.8),
-                right: BorderSide(
-                    color: Colors.white.withOpacity(0.07), width: 0.8),
-                bottom: BorderSide(
-                    color: Colors.white.withOpacity(0.07), width: 0.8),
-              )
-            : Border.all(
-                color: Colors.white.withOpacity(0.80), width: 1.2));
-
-    final br = BorderRadius.circular(borderRadius);
-
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: br,
-        boxShadow: shadows,
-      ),
+      decoration: BoxDecoration(borderRadius: br, boxShadow: shadows),
       child: ClipRRect(
         borderRadius: br,
+        clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: customFill ?? (isDark ? darkFill : lightFill),
-              gradient: glassGradient,
-              borderRadius: br,
-              border: glassBorder,
-            ),
-            child: child,
+          // Stronger blur = more convincing frost. 24 is a good default;
+          // go to 30+ for busy backgrounds, down to 12-16 for subtle chips.
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Stack(
+            fit: StackFit.passthrough,
+            children: [
+              // Base tint — deliberately faint so blurred content shows through
+              Container(
+                padding: padding,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: liquidColor != null
+                        ? [
+                            liquidColor!.withOpacity(isDark ? 0.14 : 0.30),
+                            liquidColor!.withOpacity(isDark ? 0.06 : 0.16),
+                          ]
+                        : isDark
+                            ? [
+                                context.cardBg,
+                                context.cardBg.withOpacity(isDark ? 0.1 : 0.3),
+                              ]
+                            : [
+                                context.cardBg,
+                                context.cardBg.withOpacity(isDark ? 0.1 : 0.3),
+                              ],
+                  ),
+                  borderRadius: br,
+                  // Specular gradient border — THIS is what sells "glass"
+                  border: borderColor != null
+                      ? Border.all(color: borderColor!, width: 1.2)
+                      : Border.all(
+                          color: context.borderColor, 
+                          width: 1.0,
+                        ),
+                ),
+                child: child,
+              ),
+              // Top inner-highlight sheen — thin bright line along the top edge,
+              // like light grazing the top of curved glass.
+              Positioned(
+                top: 0,
+                left: borderRadius * 0.4,
+                right: borderRadius * 0.4,
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withOpacity(isDark ? 0.5 : 0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+/// Flutter's built-in Border doesn't support gradients, so this is a
+/// small painter that does. Drop it in the same file or a shared widgets file.
+class GradientBoxBorder extends BoxBorder {
+  final Gradient gradient;
+  final double width;
+
+  const GradientBoxBorder({required this.gradient, this.width = 1.0});
+
+  @override
+  BorderSide get bottom => BorderSide.none;
+  @override
+  BorderSide get top => BorderSide.none;
+
+  @override
+  void paint(
+    Canvas canvas,
+    Rect rect, {
+    TextDirection? textDirection,
+    BoxShape shape = BoxShape.rectangle,
+    BorderRadius? borderRadius,
+  }) {
+    final Paint paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = width
+      ..style = PaintingStyle.stroke;
+
+    final RRect rrect = (borderRadius ?? BorderRadius.zero)
+        .toRRect(rect)
+        .deflate(width / 2);
+
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(width);
+
+  @override
+  bool get isUniform => true;
+
+  @override
+  BoxBorder scale(double t) => GradientBoxBorder(gradient: gradient, width: width * t);
 }

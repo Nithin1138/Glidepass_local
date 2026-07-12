@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/Users/nithin/Projects/GlidePass/main.py", line 366, in <module>
+    run_launcher()
+    ~~~~~~~~~~~~^^
+  File "/Users/nithin/Projects/GlidePass/launcher.py", line 4111, in run_launcher
+    app  = LANpadLauncher(root)
+  File "/Users/nithin/Projects/GlidePass/launcher.py", line 336, in __init__
+    self._build_files()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/Users/nithin/Projects/GlidePass/launcher.py", line 1998, in _build_files
+    list_canvas.configure(yscrollcommand=scrollbar.set)
+                                         ^^^^^^^^^
+NameError: name 'scrollbar' is not defined

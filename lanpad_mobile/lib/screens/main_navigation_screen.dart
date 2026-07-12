@@ -33,7 +33,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void setIndex(int index) {
     if (index == _currentIndex) return;
-    
+
     // Trigger haptic response
     final haptic = AppTheme.hapticLevelNotifier.value;
     if (haptic == 'light') {
@@ -48,20 +48,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isDark = context.isDark;
     final screenWidth = MediaQuery.of(context).size.width;
-    
-    // Bottom bar padding and layout calculation
-    const double barPadding = 12.0;
+
     const double barMargin = 16.0;
     final double barWidth = screenWidth - (barMargin * 2);
-    final double itemWidth = (barWidth - (barPadding * 2)) / 5;
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -78,23 +70,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 children: _pages,
               ),
               Positioned(
-                bottom: barMargin + MediaQuery.of(context).padding.bottom,
+                bottom: 8.0 + MediaQuery.of(context).padding.bottom * 0.3,
                 left: barMargin,
                 right: barMargin,
                 child: SizedBox(
                   height: 72,
                   child: LiquidGlassCard(
-                    padding: const EdgeInsets.symmetric(horizontal: barPadding),
-                    borderRadius: 24,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    borderRadius: 38, // Beautiful circular capsule bar matching image 1
                     isFlat: false,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildTabItem(context, 0, Icons.home_outlined, 'Home', itemWidth),
-                        _buildTabItem(context, 1, LucideIcons.keyboard, 'Control', itemWidth),
-                        _buildTabItem(context, 2, LucideIcons.folder_up, 'Transfer', itemWidth),
-                        _buildTabItem(context, 3, LucideIcons.book_open, 'Hubs', itemWidth),
-                        _buildTabItem(context, 4, LucideIcons.user, 'Settings', itemWidth),
+                        _buildTabItem(context, 0, Icons.home_outlined, 'Home'),
+                        _buildTabItem(context, 1, LucideIcons.keyboard, 'Control'),
+                        _buildTabItem(context, 2, LucideIcons.folder_up, 'Transfer'),
+                        _buildTabItem(context, 3, LucideIcons.book_open, 'Hubs'),
+                        _buildTabItem(context, 4, LucideIcons.user, 'Settings'),
                       ],
                     ),
                   ),
@@ -107,84 +99,89 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildTabItem(BuildContext context, int index, IconData icon, String label, double width) {
+  Widget _buildTabItem(BuildContext context, int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
     final isDark = context.isDark;
-
-    if (index == 2) {
-      // Elevated action button in the center (from 1st image design)
-      return GestureDetector(
-        onTap: () => setIndex(index),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 52,
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppTheme.accentColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.accentColor.withOpacity(isDark ? 0.4 : 0.25),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 22,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final activeColor = isDark ? Colors.white : AppTheme.accentColor;
-    final inactiveColor = isDark ? Colors.white30 : Colors.black38;
+    final double itemWidth = isSelected 
+        ? (label.length > 6 ? 104.0 : 88.0) 
+        : 40.0;
 
     return GestureDetector(
       onTap: () => setIndex(index),
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: width,
-        height: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedScale(
-              scale: isSelected ? 1.15 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isSelected ? activeColor : inactiveColor,
-              ),
-            ),
-            const SizedBox(height: 5),
-            // Glowing Active Dot Indicator below the active icon
-            AnimatedOpacity(
-              opacity: isSelected ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 150),
-              child: Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: activeColor,
-                  boxShadow: [
-                    if (isDark)
-                      BoxShadow(
-                        color: activeColor.withOpacity(0.5),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                  ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        width: itemWidth,
+        height: 44,
+        padding: EdgeInsets.symmetric(horizontal: isSelected ? 12 : 0),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark 
+                  ? context.accentColor.withOpacity(0.25) 
+                  : const Color(0xFF111111))
+              : (isDark 
+                  ? Colors.white.withOpacity(0.04) 
+                  : Colors.white),
+          borderRadius: BorderRadius.circular(22),
+          border: isDark
+              ? Border.all(
+                  color: isSelected 
+                      ? context.accentColor.withOpacity(0.4) 
+                      : Colors.white.withOpacity(0.06), 
+                  width: 0.8,
+                )
+              : Border.all(
+                  color: isSelected 
+                      ? Colors.transparent 
+                      : Colors.black.withOpacity(0.04), 
+                  width: 0.8,
                 ),
-              ),
+          boxShadow: (isSelected || isDark)
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Center(
+          child: OverflowBox(
+            maxWidth: 150,
+            minWidth: 0,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected 
+                      ? Colors.white 
+                      : (isDark ? Colors.white60 : const Color(0xFF1E293B)),
+                  size: 18,
+                ),
+                if (isSelected) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    overflow: TextOverflow.clip,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
