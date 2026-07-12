@@ -1,253 +1,129 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:shelf_router/shelf_router.dart';
-import 'package:shelf_web_socket/shelf_web_socket.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ServerService {
   static final ServerService _instance = ServerService._internal();
   factory ServerService() => _instance;
   ServerService._internal();
 
-  HttpServer? _server;
-  final List<WebSocketChannel> _wsClients = [];
-  final Map<String, String> _connectedDevices = {}; // ip -> name
+  Process? _process;
   String _sessionToken = '';
   String _deviceName = '';
-  bool _isTyping = false;
+  int _connectedCount = 0;
+  List<String> _connectedDevices = [];
 
-  static const MethodChannel _platformChannel = MethodChannel('lanpad/system');
-
+  bool get isRunning => _process != null;
   String get sessionToken => _sessionToken;
   String get sessionCode => _sessionToken.length >= 6 ? _sessionToken.substring(_sessionToken.length - 6) : _sessionToken;
   String get deviceName => _deviceName;
-  bool get isRunning => _server != null;
-  int get connectedClientsCount => _wsClients.length + _connectedDevices.length;
-  List<String> get connectedDeviceNames => _connectedDevices.values.toList();
+  int get connectedClientsCount => _connectedCount;
+  List<String> get connectedDeviceNames => _connectedDevices;
 
   final StreamController<void> _statusController = StreamController<void>.broadcast();
   Stream<void> get onStatusChanged => _statusController.stream;
 
+  Timer? _statusTimer;
+
   Future<void> startServer() async {
-    if (_server != null) return;
+    if (_process != null) return;
 
-    // Generate numeric session token
-    final random = Random();
-    _sessionToken = List.generate(32, (_) => random.nextInt(10).toString()).join();
-
-    // Fetch or generate stable device name
-    final prefs = await SharedPreferences.getInstance();
-    _deviceName = prefs.getString('device_name') ?? '';
-    if (_deviceName.isEmpty) {
-      final adjectives = ['Active', 'Bold', 'Bright', 'Calm', 'Clever', 'Cool', 'Cozy', 'Elite', 'Fresh', 'Happy'];
-      final animals = ['Bear', 'Cat', 'Dog', 'Eagle', 'Falcon', 'Fox', 'Koala', 'Lion', 'Panda', 'Tiger'];
-      _deviceName = '${adjectives[random.nextInt(adjectives.length)]}${animals[random.nextInt(animals.length)]}';
-      await prefs.setString('device_name', _deviceName);
+    // To support running from both IDE (cwd=lanpad_mobile) and build folders, let's find app.py:
+    String workingDir = Directory.current.path;
+    if (!File(p.join(workingDir, 'app.py')).existsSync()) {
+      workingDir = p.dirname(workingDir);
     }
 
-    final router = Router();
+    try {
+      // Launch background Python server (runs the exact same app.py backend)
+      _process = await Process.start(
+        'python3',
+        ['app.py'],
+        workingDirectory: workingDir,
+      );
 
-    // CORS & Auth Middleware
-    Middleware checkAuth() {
-      return (Handler innerHandler) {
-        return (Request request) async {
-          final sid = request.url.queryParameters['sid'];
-          if (sid != _sessionToken && sid != sessionCode) {
-            return Response.forbidden(jsonEncode({'status': 'error', 'message': 'Unauthorized session'}));
-          }
-          return await innerHandler(request);
-        };
-      };
+      // Stream process output for debug logging
+      _process!.stdout.transform(utf8.decoder).listen((data) {
+        print("[python stdout] $data");
+      });
+      _process!.stderr.transform(utf8.decoder).listen((data) {
+        print("[python stderr] $data");
+      });
+
+      _process!.exitCode.then((_) {
+        _stopTracking();
+      });
+
+      // Start polling the Python server for active status, tokens, and connections
+      _startTracking();
+    } catch (e) {
+      print("[ServerService] Failed to start python server: $e");
+      _stopTracking();
     }
-
-    // ── Routes ───────────────────────────────────────────────────────────
-    
-    // Connection Info (open endpoint for pairing validation)
-    router.get('/api/connection/info', (Request request) {
-      return Response.ok(
-        jsonEncode({
-          'status': 'success',
-          'session_code': sessionCode,
-          'device_name': _deviceName,
-          'lan_ip': 'localhost',
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
-    });
-
-    // Active connections count
-    router.get('/api/connections', (Request request) {
-      return Response.ok(
-        jsonEncode({
-          'count': connectedClientsCount,
-          'devices': connectedDeviceNames,
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
-    });
-
-    // Active session token for local tools
-    router.get('/api/benchmark/token', (Request request) {
-      return Response.ok(
-        jsonEncode({'session_token': _sessionToken}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    });
-
-    // List shared files
-    router.get('/api/files/list', (Request request) async {
-      final clientDevice = request.url.queryParameters['client_device'];
-      if (clientDevice != null && clientDevice.isNotEmpty) {
-        final connInfo = request.context['shelf.io.connection_info'] as HttpConnectionInfo?;
-        final ip = connInfo?.remoteAddress.address ?? 'unknown';
-        _connectedDevices[ip] = clientDevice;
-        _statusController.add(null);
-      }
-
-      final dir = await _getSharedDir();
-      final List<Map<String, dynamic>> files = [];
-      if (await dir.exists()) {
-        await for (final entity in dir.list()) {
-          if (entity is File && !p.basename(entity.path).startsWith('.')) {
-            final stat = await entity.stat();
-            files.add({
-              'name': p.basename(entity.path),
-              'size': stat.size,
-              'mtime': stat.modified.millisecondsSinceEpoch / 1000.0,
-            });
-          }
-        }
-      }
-
-      return Response.ok(
-        jsonEncode({'status': 'success', 'files': files}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    });
-
-    // File download
-    router.get('/api/files/download/<filename>', (Request request, String filename) async {
-      final dir = await _getSharedDir();
-      final file = File(p.join(dir.path, filename));
-      if (await file.exists()) {
-        return Response.ok(
-          file.openRead(),
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': 'attachment; filename="$filename"',
-          },
-        );
-      }
-      return Response.notFound('File not found');
-    });
-
-    // File upload (Supports simple streaming binary or multipart)
-    router.post('/api/files/upload', (Request request) async {
-      final filename = request.url.queryParameters['filename'] ?? 'uploaded_file';
-      final dir = await _getSharedDir();
-      final file = File(p.join(dir.path, filename));
-      
-      final sink = file.openWrite();
-      await request.read().forEach(sink.add);
-      await sink.close();
-
-      _broadcastToWebSockets(jsonEncode({'event': 'files_changed'}));
-      return Response.ok(jsonEncode({'status': 'success', 'filename': filename}));
-    });
-
-    // Remote Copy Endpoint (Write to Local System Clipboard)
-    router.post('/copy', (Request request) async {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      final text = data['text'] ?? '';
-      
-      await Clipboard.setData(ClipboardData(text: text));
-      _broadcastToWebSockets(jsonEncode({'event': 'clipboard_changed', 'text': text}));
-      
-      return Response.ok(jsonEncode({'status': 'success'}));
-    });
-
-    // Remote Paste Endpoint (Keyboard simulation)
-    router.post('/paste', (Request request) async {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      final text = data['text'] ?? '';
-
-      _isTyping = true;
-      _statusController.add(null);
-
-      // Perform typing via Platform Channel
-      try {
-        await _platformChannel.invokeMethod('simulateTyping', {'text': text});
-      } catch (e) {
-        // Fallback or ignore
-      }
-
-      _isTyping = false;
-      _statusController.add(null);
-
-      return Response.ok(jsonEncode({'status': 'success'}));
-    });
-
-    // WebSocket Handler
-    final wsHandler = webSocketHandler((webSocket, _) {
-      final channel = webSocket as WebSocketChannel;
-      _wsClients.add(channel);
-      _statusController.add(null);
-
-      channel.stream.listen(
-        (message) {
-          try {
-            final data = jsonDecode(message);
-            if (data['event'] == 'ping') {
-              channel.sink.add(jsonEncode({'event': 'pong'}));
-            }
-          } catch (_) {}
-        },
-        onDone: () {
-          _wsClients.remove(channel);
-          _statusController.add(null);
-        },
-      );
-    });
-
-    router.get('/ws', wsHandler);
-
-    final cascade = Cascade().add(router);
-    _server = await shelf_io.serve(cascade.handler, '0.0.0.0', 8000);
-    _statusController.add(null);
   }
 
   Future<void> stopServer() async {
-    if (_server == null) return;
-    await _server!.close(force: true);
-    _server = null;
-    _wsClients.clear();
+    if (_process == null) return;
+    _process!.kill(ProcessSignal.sigterm);
+    _stopTracking();
+  }
+
+  void _startTracking() {
+    _statusTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      if (_process == null) return;
+      try {
+        final client = HttpClient();
+        client.connectionTimeout = const Duration(milliseconds: 500);
+
+        // 1. Fetch Session Token
+        if (_sessionToken.isEmpty) {
+          final tokenReq = await client.getUrl(Uri.parse('http://127.0.0.1:8000/api/benchmark/token'));
+          final tokenResp = await tokenReq.close();
+          if (tokenResp.statusCode == 200) {
+            final dataStr = await tokenResp.transform(utf8.decoder).join();
+            final data = jsonDecode(dataStr);
+            _sessionToken = data['session_token'] ?? '';
+          }
+        }
+
+        // 2. Fetch Connection Info / Device Name
+        if (_deviceName.isEmpty) {
+          final infoReq = await client.getUrl(Uri.parse('http://127.0.0.1:8000/api/connection/info'));
+          final infoResp = await infoReq.close();
+          if (infoResp.statusCode == 200) {
+            final dataStr = await infoResp.transform(utf8.decoder).join();
+            final data = jsonDecode(dataStr);
+            _deviceName = data['device_name'] ?? '';
+          }
+        }
+
+        // 3. Fetch Connected Devices List & Count
+        final connReq = await client.getUrl(Uri.parse('http://127.0.0.1:8000/api/connections'));
+        final connResp = await connReq.close();
+        if (connResp.statusCode == 200) {
+          final dataStr = await connResp.transform(utf8.decoder).join();
+          final data = jsonDecode(dataStr);
+          _connectedCount = data['count'] ?? 0;
+          final List<dynamic> devs = data['devices'] ?? [];
+          _connectedDevices = devs.map((d) => d.toString()).toList();
+        }
+
+        _statusController.add(null);
+      } catch (_) {
+        // Server might not be fully started yet
+      }
+    });
+  }
+
+  void _stopTracking() {
+    _statusTimer?.cancel();
+    _statusTimer = null;
+    _process = null;
+    _sessionToken = '';
+    _deviceName = '';
+    _connectedCount = 0;
     _connectedDevices.clear();
     _statusController.add(null);
-  }
-
-  Future<Directory> _getSharedDir() async {
-    final downloads = await getDownloadsDirectory();
-    final path = p.join(downloads?.path ?? '', 'LANpad');
-    final dir = Directory(path);
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    return dir;
-  }
-
-  void _broadcastToWebSockets(String message) {
-    for (final client in _wsClients) {
-      client.sink.add(message);
-    }
   }
 }
