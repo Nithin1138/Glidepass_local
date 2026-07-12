@@ -130,7 +130,7 @@ rm -rf "$MNT_DIR"
 
 # Bypass Gatekeeper Quarantine
 echo -e "  ${DIM}Bypassing macOS security check (quarantine bypass)...${NC}"
-xattr -cr "/Applications/LANpad.app"
+xattr -cr "/Applications/LANpad.app" || sudo xattr -cr "/Applications/LANpad.app"
 
 echo -e "  ${GREEN}✓ Installed successfully${NC}"
 
