@@ -3,10 +3,12 @@ import 'config/theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/connect_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTheme.init();
+  await NotificationService().init();
   runApp(const LanpadApp());
 }
 

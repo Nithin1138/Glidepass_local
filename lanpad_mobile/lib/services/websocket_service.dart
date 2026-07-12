@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'notification_service.dart';
 
 class WebSocketService {
   static final WebSocketService _instance = WebSocketService._internal();
@@ -52,6 +53,10 @@ class WebSocketService {
         if (_onFilesChanged != null) {
           _onFilesChanged!('files_changed');
         }
+        NotificationService().showFileReceivedNotification();
+      } else if (data['event'] == 'paste_received') {
+        final preview = data['preview']?.toString() ?? '';
+        NotificationService().showPasteReceivedNotification(preview);
       }
     } catch (e) {
       debugPrint('Error handling WebSocket message: $e');

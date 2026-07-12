@@ -4,8 +4,10 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../config/theme.dart';
+import '../config/constants.dart';
 import '../widgets/liquid_glass_card.dart';
 import '../services/connection_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/aurora_background.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _latencyMs = -1;
   bool _isTestingLatency = false;
   bool _isSaving = false;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _nicknameController.text = prefs.getString('nickname') ?? 'Guest User';
       _hapticLevel = prefs.getString('haptic_level') ?? 'light';
+      _notificationsEnabled = prefs.getBool(AppConstants.keyNotificationsEnabled) ?? true;
     });
   }
 
@@ -255,6 +259,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   
 
                   
+                  // Notifications Toggle Card
+                  LiquidGlassCard(
+                    isFlat: false,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(LucideIcons.bell, color: AppTheme.accentColor, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Notifications',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textMain,
+                                ),
+                              ),
+                              Text(
+                                'File received & connection alerts',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _notificationsEnabled,
+                          activeColor: AppTheme.accentColor,
+                          onChanged: (val) async {
+                            setState(() => _notificationsEnabled = val);
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool(AppConstants.keyNotificationsEnabled, val);
+                            if (val) {
+                              await NotificationService().init();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // Haptics Card
                   LiquidGlassCard(
                     isFlat: false,

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'http_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
+import 'notification_service.dart';
 
 class ConnectionService extends ChangeNotifier {
   static final ConnectionService _instance = ConnectionService._internal();
@@ -150,6 +151,8 @@ class ConnectionService extends ChangeNotifier {
 
           _isConnecting = false;
           notifyListeners();
+          // Fire a "connected" local notification
+          NotificationService().showConnectedNotification(resolvedName);
           return null;
         } else {
           _isConnecting = false;
