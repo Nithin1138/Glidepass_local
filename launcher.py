@@ -59,9 +59,15 @@ def _enable_windows_dpi_awareness():
     except Exception:
         pass
 
+_cached_session_token = None
+
 def get_session_token():
     """Fetch the actual running session token from the FastAPI backend.
     If the backend is offline or starting, fall back to the module import."""
+    global _cached_session_token
+    if _cached_session_token:
+        return _cached_session_token
+        
     try:
         import urllib.request
         import json
@@ -74,14 +80,18 @@ def get_session_token():
                 data = json.loads(resp.read().decode("utf-8"))
                 token = data.get("session_token")
                 if token:
+                    _cached_session_token = token
                     return token
     except Exception:
         pass
     try:
         from app import SESSION_TOKEN
-        return SESSION_TOKEN
+        if SESSION_TOKEN:
+            _cached_session_token = SESSION_TOKEN
+            return SESSION_TOKEN
     except Exception:
-        return ""
+        pass
+    return ""
 
 
 
@@ -3913,6 +3923,8 @@ class LANpadLauncher:
 
     def _ui_reset(self):
         """Restore all UI elements to idle / stopped state."""
+        global _cached_session_token
+        _cached_session_token = None
         self._server_on = False
         self._dot_tick  = 0
         self._draw_main_btn(active=False)
