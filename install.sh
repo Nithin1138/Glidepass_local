@@ -12,6 +12,17 @@ DEST="$HOME/Downloads/$ASSET"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
 
+# Check if stdin is a tty (prevents breaking read/sudo prompts when piped)
+if [ ! -t 0 ]; then
+    echo -e "\033[0;31m\033[1m  ✗ Error: Please do not pipe curl directly to bash.\033[0m"
+    echo -e "  Piping breaks security password prompts (sudo) and keyboard inputs."
+    echo ""
+    echo -e "  Please run this command instead:"
+    echo -e "  \033[0;36mbash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Nithin1138/Glidepass_local/checkall/install.sh)\"\033[0m"
+    echo ""
+    exit 1
+fi
+
 clear
 echo ""
 echo -e "${CYAN}${BOLD}"
