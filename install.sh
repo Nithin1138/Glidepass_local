@@ -104,19 +104,48 @@ curl --location --progress-bar --output "$DEST" "$DOWNLOAD_URL"
 echo ""
 echo -e "  ${GREEN}✓ Saved to ${BOLD}~/Downloads/${ASSET}${NC}"
 
-# ── Open installer ───────────────────────────────────────────
+# ── Install / Copy ───────────────────────────────────────────
 echo ""
-echo -e "  ${CYAN}[4/4]${NC} Opening installer..."
-open "$DEST"
+echo -e "  ${CYAN}[4/4]${NC} Installing LANpad to Applications..."
+
+# Create mount point
+MNT_DIR="/tmp/lanpad_mount"
+mkdir -p "$MNT_DIR"
+
+# Mount DMG silently
+echo -e "  ${DIM}Mounting disk image...${NC}"
+hdiutil attach -nobrowse -readonly "$DEST" -mountpoint "$MNT_DIR" >/dev/null
+
+# Copy app to /Applications
+echo -e "  ${DIM}Copying to /Applications...${NC}"
+if [ -d "/Applications/LANpad.app" ]; then
+    rm -rf "/Applications/LANpad.app"
+fi
+cp -R "$MNT_DIR/LANpad.app" "/Applications/"
+
+# Unmount DMG
+echo -e "  ${DIM}Unmounting disk image...${NC}"
+hdiutil detach "$MNT_DIR" >/dev/null
+rm -rf "$MNT_DIR"
+
+# Bypass Gatekeeper Quarantine
+echo -e "  ${DIM}Bypassing macOS security check (quarantine bypass)...${NC}"
+xattr -cr "/Applications/LANpad.app"
+
+echo -e "  ${GREEN}✓ Installed successfully${NC}"
+
+# ── Launch LANpad ────────────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}🚀 Launching LANpad...${NC}"
+open "/Applications/LANpad.app"
 
 echo ""
 echo -e "  ${DIM}────────────────────────────────────────────────────${NC}"
 echo ""
-echo -e "  ${GREEN}${BOLD}✓ LANpad ${VERSION} is ready!${NC}"
+echo -e "  ${GREEN}${BOLD}✓ LANpad ${VERSION} is fully installed and running!${NC}"
 echo ""
-echo -e "  ${DIM}1. Drag LANpad into Applications${NC}"
-echo -e "  ${DIM}2. Open LANpad from Applications${NC}"
-echo -e "  ${DIM}3. Scan the QR code with the LANpad mobile app${NC}"
+echo -e "  ${DIM}1. Scan the QR code with your LANpad mobile app${NC}"
+echo -e "  ${DIM}2. Start sharing files and syncing clipboards!${NC}"
 echo ""
 echo -e "  ${DIM}Need help? https://github.com/${REPO}/issues${NC}"
 echo ""
