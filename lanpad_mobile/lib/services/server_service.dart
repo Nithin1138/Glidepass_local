@@ -29,19 +29,36 @@ class ServerService {
   Future<void> startServer() async {
     if (_process != null) return;
 
-    // To support running from both IDE (cwd=lanpad_mobile) and build folders, let's find app.py:
-    String workingDir = Directory.current.path;
-    if (!File(p.join(workingDir, 'app.py')).existsSync()) {
-      workingDir = p.dirname(workingDir);
+    // Free port 8000 before starting to prevent address already in use crashes
+    await _freePort();
+
+    String workingDir = '/Users/nithin/Projects/GlidePass';
+    if (!Directory(workingDir).existsSync()) {
+      workingDir = Directory.current.path;
+      if (!File(p.join(workingDir, 'app.py')).existsSync()) {
+        workingDir = p.dirname(workingDir);
+      }
     }
 
     try {
-      // Launch background Python server (runs the exact same app.py backend)
-      _process = await Process.start(
-        'python3',
-        ['app.py'],
-        workingDirectory: workingDir,
-      );
+      Process? proc;
+      try {
+        // Launch background Python server (runs the exact same app.py backend)
+        proc = await Process.start(
+          'python3',
+          ['app.py'],
+          workingDirectory: workingDir,
+        );
+      } catch (_) {
+        // Fallback to python command
+        proc = await Process.start(
+          'python',
+          ['app.py'],
+          workingDirectory: workingDir,
+        );
+      }
+      
+      _process = proc;
 
       // Stream process output for debug logging
       _process!.stdout.transform(utf8.decoder).listen((data) {
@@ -60,6 +77,26 @@ class ServerService {
     } catch (e) {
       print("[ServerService] Failed to start python server: $e");
       _stopTracking();
+    }
+  }
+
+  Future<void> _freePort() async {
+    try {
+      if (Platform.isMacOS || Platform.isLinux) {
+        final result = await Process.run('sh', [
+          '-c',
+          'lsof -t -i tcp:8000 | xargs kill -9'
+        ]);
+        print("[ServerService] Freed port 8000: ${result.exitCode}");
+      } else if (Platform.isWindows) {
+        final result = await Process.run('cmd', [
+          '/c',
+          'for /f "tokens=5" %a in (\'netstat -aon ^| findstr 8000\') do taskkill /f /pid %a'
+        ]);
+        print("[ServerService] Freed port 8000: ${result.exitCode}");
+      }
+    } catch (e) {
+      print("[ServerService] Error trying to free port 8000: $e");
     }
   }
 
