@@ -4,8 +4,6 @@
 #   https://github.com/Nithin1138/Glidepass_local
 # ============================================================
 
-set -e
-
 REPO="Nithin1138/Glidepass_local"
 ASSET="LANpad_Installer.dmg"
 DEST="$HOME/Downloads/$ASSET"
@@ -24,7 +22,7 @@ echo "  ██║     ██╔══██║██║╚██╗██║█�
 echo "  ███████╗██║  ██║██║ ╚████║██║     ██║  ██║██████╔╝"
 echo "  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚═════╝ "
 echo -e "${NC}"
-echo -e "${DIM}  The fast, local keyboard & file bridge for your devices${NC}"
+echo -e "  ${DIM}The fast, local keyboard & file bridge for your devices${NC}"
 echo ""
 echo -e "  ${DIM}────────────────────────────────────────────────────${NC}"
 echo ""
@@ -33,12 +31,11 @@ echo ""
 echo -e "${YELLOW}${BOLD}  ⚠  DISCLAIMER & TERMS${NC}"
 echo ""
 echo -e "  ${DIM}By installing LANpad, you agree to the following:${NC}"
-echo ""
-echo -e "  ${DIM}• LANpad runs a local HTTP server on your machine${NC}"
-echo -e "  ${DIM}• It may create an outbound tunnel (Cloudflare) for relay mode${NC}"
-echo -e "  ${DIM}• No data is stored or sent to external servers by default${NC}"
-echo -e "  ${DIM}• Use only on trusted networks${NC}"
-echo -e "  ${DIM}• Source code: https://github.com/${REPO}${NC}"
+echo -e "  ${DIM}  • Runs a local HTTP server on your machine${NC}"
+echo -e "  ${DIM}  • May use a Cloudflare tunnel for relay mode${NC}"
+echo -e "  ${DIM}  • No data stored externally by default${NC}"
+echo -e "  ${DIM}  • Use on trusted networks only${NC}"
+echo -e "  ${DIM}  • Source: https://github.com/${REPO}${NC}"
 echo ""
 echo -e "  ${DIM}────────────────────────────────────────────────────${NC}"
 echo ""
@@ -47,58 +44,78 @@ echo ""
 
 # ── System check ─────────────────────────────────────────────
 echo -e "  ${CYAN}[1/4]${NC} Checking system..."
-OS=$(uname -s)
-if [ "$OS" != "Darwin" ]; then
+if [ "$(uname -s)" != "Darwin" ]; then
     echo -e "  ${RED}✗ This script is for macOS only.${NC}"
-    echo -e "  ${DIM}  Windows users: see install.ps1${NC}"
     exit 1
 fi
-ARCH=$(uname -m)
-echo -e "  ${GREEN}✓ macOS detected${NC} ${DIM}(${ARCH})${NC}"
-sleep 0.3
+echo -e "  ${GREEN}✓ macOS detected${NC} ${DIM}($(uname -m))${NC}"
 
 # ── Fetch release info ───────────────────────────────────────
 echo ""
 echo -e "  ${CYAN}[2/4]${NC} Fetching latest release..."
-API_URL="https://api.github.com/repos/${REPO}/releases/latest"
-RELEASE_JSON=$(curl -fsSL "$API_URL")
-DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "$ASSET" | cut -d '"' -f 4)
-VERSION=$(echo "$RELEASE_JSON" | grep '"tag_name"' | cut -d '"' -f 4)
 
-if [ -z "$DOWNLOAD_URL" ]; then
-    echo -e "  ${RED}✗ Could not find release. Check: https://github.com/${REPO}/releases${NC}"
+API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+RELEASE_JSON=$(curl -fsSL --connect-timeout 10 "$API_URL")
+
+if [ -z "$RELEASE_JSON" ]; then
+    echo -e "  ${RED}✗ Could not reach GitHub API. Check your internet connection.${NC}"
     exit 1
 fi
 
-FILE_SIZE_BYTES=$(echo "$RELEASE_JSON" | grep -A2 "$ASSET" | grep '"size"' | head -1 | grep -o '[0-9]*')
-FILE_SIZE_MB=$(echo "scale=1; ${FILE_SIZE_BYTES:-0} / 1048576" | bc 2>/dev/null || echo "?")
-echo -e "  ${GREEN}✓ Found version ${BOLD}${VERSION}${NC} ${DIM}(${FILE_SIZE_MB} MB)${NC}"
-sleep 0.3
+# Use Python3 (always available on macOS) for reliable JSON parsing
+DOWNLOAD_URL=$(python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+for a in data.get('assets', []):
+    if a['name'] == '${ASSET}':
+        print(a['browser_download_url'])
+        break
+" <<< "$RELEASE_JSON")
+
+VERSION=$(python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+print(data.get('tag_name', 'unknown'))
+" <<< "$RELEASE_JSON")
+
+SIZE_MB=$(python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+for a in data.get('assets', []):
+    if a['name'] == '${ASSET}':
+        print(round(a['size'] / 1048576, 1))
+        break
+" <<< "$RELEASE_JSON")
+
+if [ -z "$DOWNLOAD_URL" ]; then
+    echo -e "  ${RED}✗ Release not yet available. Try: https://github.com/${REPO}/releases${NC}"
+    exit 1
+fi
+
+echo -e "  ${GREEN}✓ Found ${BOLD}${VERSION}${NC} ${DIM}(${SIZE_MB} MB)${NC}"
 
 # ── Download ─────────────────────────────────────────────────
 echo ""
 echo -e "  ${CYAN}[3/4]${NC} Downloading LANpad ${VERSION}..."
 echo ""
-curl -L --progress-bar "$DOWNLOAD_URL" -o "$DEST"
-echo ""
+# --location follows redirects, --progress-bar shows live bar
+curl --location --progress-bar --output "$DEST" "$DOWNLOAD_URL"
 
-ACTUAL_SIZE=$(du -sh "$DEST" 2>/dev/null | cut -f1)
-echo -e "  ${GREEN}✓ Downloaded successfully${NC} ${DIM}(${ACTUAL_SIZE})${NC}"
-sleep 0.3
+echo ""
+echo -e "  ${GREEN}✓ Saved to ${BOLD}~/Downloads/${ASSET}${NC}"
 
 # ── Open installer ───────────────────────────────────────────
 echo ""
 echo -e "  ${CYAN}[4/4]${NC} Opening installer..."
 open "$DEST"
-sleep 1
 
 echo ""
 echo -e "  ${DIM}────────────────────────────────────────────────────${NC}"
 echo ""
-echo -e "  ${GREEN}${BOLD}✓ LANpad ${VERSION} is ready to install!${NC}"
+echo -e "  ${GREEN}${BOLD}✓ LANpad ${VERSION} is ready!${NC}"
 echo ""
 echo -e "  ${DIM}1. Drag LANpad into Applications${NC}"
-echo -e "  ${DIM}2. Open LANpad from your Applications folder${NC}"
+echo -e "  ${DIM}2. Open LANpad from Applications${NC}"
 echo -e "  ${DIM}3. Scan the QR code with the LANpad mobile app${NC}"
 echo ""
 echo -e "  ${DIM}Need help? https://github.com/${REPO}/issues${NC}"
