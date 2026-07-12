@@ -33,14 +33,14 @@ class TunnelService {
         throw Exception('Could not obtain cloudflared binary');
       }
 
+      print("[TunnelService] Spawning cloudflared process: $binPath");
       // Launch process: cloudflared tunnel --url http://127.0.0.1:8000
       _process = await Process.start(
         binPath,
         ['tunnel', '--url', 'http://127.0.0.1:8000'],
       );
 
-      // Listen to stderr where cloudflared logs output
-      _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+      void handleLine(String line) {
         if (_tunnelUrl == null) {
           final match = RegExp(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com').firstMatch(line);
           if (match != null) {
@@ -50,7 +50,10 @@ class TunnelService {
             _notifyPythonServerOfTunnel(_tunnelUrl!);
           }
         }
-      });
+      }
+
+      _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
+      _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
 
       _process!.exitCode.then((code) {
         _process = null;
@@ -77,19 +80,46 @@ class TunnelService {
   }
 
   Future<String?> _getOrDownloadBinary() async {
+    // 1. Check if 'cloudflared' is available globally in the system PATH
+    try {
+      final checkCmd = Platform.isWindows ? 'where' : 'which';
+      final checkRes = await Process.run(checkCmd, ['cloudflared']);
+      if (checkRes.exitCode == 0) {
+        final path = checkRes.stdout.toString().trim();
+        if (path.isNotEmpty && File(path).existsSync()) {
+          print("[TunnelService] Found cloudflared globally: $path");
+          return path;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Check the standard home directory cache folder (~/.lanpad/cloudflared)
+    try {
+      final home = Platform.isWindows ? Platform.environment['USERPROFILE'] : Platform.environment['HOME'];
+      if (home != null) {
+        final homeBinName = Platform.isWindows ? 'cloudflared.exe' : 'cloudflared';
+        final homeBinPath = p.join(home, '.lanpad', homeBinName);
+        if (File(homeBinPath).existsSync()) {
+          print("[TunnelService] Found cached cloudflared in home: $homeBinPath");
+          return homeBinPath;
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback to application support directory
     final supportDir = await getApplicationSupportDirectory();
     final binName = Platform.isWindows ? 'cloudflared.exe' : 'cloudflared';
     final binPath = p.join(supportDir.path, binName);
     final file = File(binPath);
 
     if (await file.exists()) {
+      print("[TunnelService] Found cloudflared in app support: $binPath");
       return binPath;
     }
 
-    // Download Cloudflare binary dynamically
+    // Download Cloudflare binary dynamically if not found anywhere
     String url;
     if (Platform.isMacOS) {
-      // Determine if Apple Silicon or Intel
       final isAppleSilicon = await _isAppleSiliconMac();
       url = isAppleSilicon
           ? 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64'
@@ -100,6 +130,7 @@ class TunnelService {
       return null;
     }
 
+    print("[TunnelService] Downloading cloudflared from: $url");
     try {
       final client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
@@ -110,12 +141,13 @@ class TunnelService {
         await sink.close();
 
         if (!Platform.isWindows) {
-          // chmod +x on Unix
           await Process.run('chmod', ['+x', binPath]);
         }
         return binPath;
       }
-    } catch (_) {}
+    } catch (e) {
+      print("[TunnelService] Failed downloading cloudflared: $e");
+    }
     return null;
   }
 

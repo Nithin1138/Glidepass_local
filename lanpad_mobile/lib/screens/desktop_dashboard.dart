@@ -295,6 +295,14 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
     setState(() {});
   }
 
+  String get _displayDeviceName {
+    if (_serverService.deviceName.isNotEmpty) {
+      return _serverService.deviceName;
+    }
+    final host = Platform.localHostname;
+    return host.split('.').first;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = ThemeData.dark();
@@ -485,28 +493,26 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                             style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
                           ),
                           Text(
-                            isRunning ? _serverService.deviceName : '---',
+                            _displayDeviceName,
                             style: GoogleFonts.outfit(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          if (isRunning) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              'Session Code:',
-                              style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Session Code:',
+                            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                          ),
+                          Text(
+                            isRunning ? _serverService.sessionCode : 'Offline',
+                            style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isRunning ? const Color(0xFF0077C0) : const Color(0xFF8888A0),
                             ),
-                            Text(
-                              _serverService.sessionCode,
-                              style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0077C0),
-                              ),
-                            ),
-                          ]
+                          ),
                         ],
                       ),
                     ),
@@ -542,7 +548,9 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                               isRunning
                                   ? (_isDirectLan
                                       ? 'Connect using direct URL: http://$_localIp:8000'
-                                      : (_tunnelService.tunnelUrl ?? 'Establishing secure tunnel...'))
+                                      : (_tunnelService.tunnelUrl != null
+                                          ? 'Connect using tunnel: ${_tunnelService.tunnelUrl}'
+                                          : 'Establishing secure tunnel...'))
                                   : 'Start the local bridge to connect your devices.',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
