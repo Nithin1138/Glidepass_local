@@ -325,17 +325,17 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) => const MainNavigationScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              final scaleCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic);
-              final fadeCurve = CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+              final scaleCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+              final fadeCurve = CurvedAnimation(parent: animation, curve: Curves.easeOut);
               return FadeTransition(
                 opacity: Tween<double>(begin: 0.0, end: 1.0).animate(fadeCurve),
                 child: ScaleTransition(
-                  scale: Tween<double>(begin: 1.15, end: 1.0).animate(scaleCurve),
+                  scale: Tween<double>(begin: 1.05, end: 1.0).animate(scaleCurve),
                   child: child,
                 ),
               );
             },
-            transitionDuration: const Duration(milliseconds: 700),
+            transitionDuration: const Duration(milliseconds: 300),
           ),
         );
       }

@@ -45,6 +45,12 @@ dependencies:
   google_fonts: ^8.1.0
   flutter_lucide: ^1.11.0
   flutter_local_notifications: ^22.0.1
+  shelf: any
+  shelf_router: any
+  shelf_web_socket: any
+  window_manager: any
+  system_tray: any
+  path: ^1.9.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

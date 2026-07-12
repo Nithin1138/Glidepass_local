@@ -251,29 +251,6 @@ class ApiService {
     return {'status': 'error'};
   }
 
-class MultipartRequestWithProgress extends http.MultipartRequest {
-  final Function(int, int) onProgress;
-
-  MultipartRequestWithProgress(
-    String method,
-    Uri url, {
-    required this.onProgress,
-  }) : super(method, url);
-
-  @override
-  http.ByteStream finalize() {
-    final byteStream = super.finalize();
-    final totalLength = contentLength;
-    int bytesSent = 0;
-
-    return http.ByteStream(byteStream.map((chunk) {
-      bytesSent += chunk.length;
-      onProgress(bytesSent, totalLength);
-      return chunk;
-    }));
-  }
-}
-
   Future<http.StreamedResponse> uploadFileDirect({
     required File file,
     required String filename,
@@ -297,5 +274,28 @@ class MultipartRequestWithProgress extends http.MultipartRequest {
     ));
 
     return await BypassTunnelClient().send(request);
+  }
+}
+
+class MultipartRequestWithProgress extends http.MultipartRequest {
+  final Function(int, int) onProgress;
+
+  MultipartRequestWithProgress(
+    String method,
+    Uri url, {
+    required this.onProgress,
+  }) : super(method, url);
+
+  @override
+  http.ByteStream finalize() {
+    final byteStream = super.finalize();
+    final totalLength = contentLength;
+    int bytesSent = 0;
+
+    return http.ByteStream(byteStream.map((chunk) {
+      bytesSent += chunk.length;
+      onProgress(bytesSent, totalLength);
+      return chunk;
+    }));
   }
 }
