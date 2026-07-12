@@ -294,7 +294,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         final uri = Uri.tryParse(barcodeValue.trim());
         if (uri != null) {
           final sid = uri.queryParameters['sid'] ?? '';
-          final baseUrl = '${uri.scheme}://${uri.host}:${uri.port}';
+          final baseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
           await _submitConnection(baseUrl, sid);
         } else {
           TopToast.show(context, 'Invalid QR Code format', isError: true);
