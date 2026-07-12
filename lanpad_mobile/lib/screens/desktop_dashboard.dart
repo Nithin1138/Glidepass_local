@@ -355,211 +355,207 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                   right: BorderSide(color: Color(0xFF262636), width: 1),
                 ),
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 32, // account for padding
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2C2C3E),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            LucideIcons.keyboard,
-                            color: Color(0xFFFF7A45),
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'LANpad',
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isRunning)
-                          IconButton(
-                            icon: const Icon(
-                              LucideIcons.refresh_cw,
-                              color: Color(0xFFFF7A45),
-                              size: 16,
-                            ),
-                            tooltip: 'Reconnect Wi-Fi / Refresh Tunnel',
-                            onPressed: _reconnectSession,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-  
-                    // Server Master Control Button
-                    GestureDetector(
-                      onTap: _toggleServer,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          gradient: isRunning
-                              ? const LinearGradient(colors: [Color(0xFFFF4D4D), Color(0xFFFF7A45)])
-                              : const LinearGradient(colors: [Color(0xFF0077C0), Color(0xFF00B4D8)]),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isRunning ? const Color(0xFFFF4D4D) : const Color(0xFF0077C0))
-                                  .withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            isRunning ? 'Stop Server' : 'Start Server',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-  
-                    // Mode Selector Card
-                    Text(
-                      'CONNECTION MODE',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF8888A0),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildModeToggle(
-                      title: 'Direct LAN',
-                      subtitle: 'Local Wi-Fi connections',
-                      icon: LucideIcons.wifi,
-                      isActive: _isDirectLan,
-                      onTap: () {
-                        if (_isDirectLan) return;
-                        setState(() => _isDirectLan = true);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _buildModeToggle(
-                      title: 'Hybrid Relay',
-                      subtitle: 'Internet secure tunnel',
-                      icon: LucideIcons.globe,
-                      isActive: !_isDirectLan,
-                      onTap: () {
-                        if (!_isDirectLan) return;
-                        setState(() => _isDirectLan = false);
-                      },
-                    ),
-                    if (isRunning) ...[
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: QrImageView(
-                            data: _isDirectLan
-                                ? 'http://$_localIp:8000?sid=${_serverService.sessionToken}'
-                                : '${_tunnelService.tunnelUrl ?? 'https://lanpad.app'}?sid=${_serverService.sessionToken}',
-                            version: QrVersions.auto,
-                            size: 110.0,
-                            gapless: false,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    // Device Status Badge
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF20202F),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF2C2C3E)),
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Container(
-                                width: 8,
-                                height: 8,
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: isRunning ? const Color(0xFF00C853) : const Color(0xFF8888A0),
-                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF2C2C3E),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.keyboard,
+                                  color: Color(0xFFFF7A45),
+                                  size: 22,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               Text(
-                                isRunning ? 'Server Live' : 'Offline',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isRunning ? const Color(0xFF00C853) : const Color(0xFF8888A0),
+                                'LANpad',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
+                              const Spacer(),
+                              if (isRunning)
+                                IconButton(
+                                  icon: const Icon(
+                                    LucideIcons.refresh_cw,
+                                    color: Color(0xFFFF7A45),
+                                    size: 16,
+                                  ),
+                                  tooltip: 'Reconnect Wi-Fi / Refresh Tunnel',
+                                  onPressed: _reconnectSession,
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Device Name:',
-                            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                          const SizedBox(height: 20),
+        
+                          // Server Master Control Button
+                          GestureDetector(
+                            onTap: _toggleServer,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                gradient: isRunning
+                                    ? const LinearGradient(colors: [Color(0xFFFF4D4D), Color(0xFFFF7A45)])
+                                    : const LinearGradient(colors: [Color(0xFF0077C0), Color(0xFF00B4D8)]),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (isRunning ? const Color(0xFFFF4D4D) : const Color(0xFF0077C0))
+                                        .withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  isRunning ? 'Stop Server' : 'Start Server',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
+                          const SizedBox(height: 18),
+        
+                          // Mode Selector Card
                           Text(
-                            _displayDeviceName,
-                            style: GoogleFonts.outfit(
-                              fontSize: 14,
+                            'CONNECTION MODE',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: const Color(0xFF8888A0),
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Session Code:',
-                            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                          const SizedBox(height: 8),
+                          _buildModeToggle(
+                            title: 'Direct LAN',
+                            subtitle: 'Local Wi-Fi connections',
+                            icon: LucideIcons.wifi,
+                            isActive: _isDirectLan,
+                            onTap: () {
+                              if (_isDirectLan) return;
+                              setState(() => _isDirectLan = true);
+                            },
                           ),
-                          Text(
-                            isRunning ? _serverService.sessionCode : 'Offline',
-                            style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isRunning ? const Color(0xFF0077C0) : const Color(0xFF8888A0),
+                          const SizedBox(height: 8),
+                          _buildModeToggle(
+                            title: 'Hybrid Relay',
+                            subtitle: 'Internet secure tunnel',
+                            icon: LucideIcons.globe,
+                            isActive: !_isDirectLan,
+                            onTap: () {
+                              if (!_isDirectLan) return;
+                              setState(() => _isDirectLan = false);
+                            },
+                          ),
+                          if (isRunning) ...[
+                            const SizedBox(height: 16),
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: QrImageView(
+                                  data: _isDirectLan
+                                      ? 'http://$_localIp:8000?sid=${_serverService.sessionToken}'
+                                      : '${_tunnelService.tunnelUrl ?? 'https://lanpad.app'}?sid=${_serverService.sessionToken}',
+                                  version: QrVersions.auto,
+                                  size: 110.0,
+                                  gapless: false,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Device Status Badge
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF20202F),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF2C2C3E)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isRunning ? const Color(0xFF00C853) : const Color(0xFF8888A0),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isRunning ? 'Server Live' : 'Offline',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isRunning ? const Color(0xFF00C853) : const Color(0xFF8888A0),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Device Name:',
+                          style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                        ),
+                        Text(
+                          _displayDeviceName,
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Session Code:',
+                          style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888A0)),
+                        ),
+                        Text(
+                          isRunning ? _serverService.sessionCode : 'Offline',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isRunning ? const Color(0xFF0077C0) : const Color(0xFF8888A0),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
-      ),
-    ),
 
             // Main Display Pane
             Expanded(
