@@ -27,7 +27,8 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(initSettings);
+    // v22 API: all named parameters
+    await _plugin.initialize(settings: initSettings);
 
     // Request Android 13+ permissions
     await _plugin
@@ -69,7 +70,13 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    await _plugin.show(id, title, body, details);
+    // v22 API: all named parameters
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+    );
   }
 
   Future<void> showFileReceivedNotification() async {
