@@ -561,33 +561,38 @@ class _DesktopDashboardState extends State<DesktopDashboard> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Dashboard',
-                              style: GoogleFonts.outfit(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Dashboard',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isRunning
-                                  ? (_isDirectLan
-                                      ? 'Connect using direct URL: http://$_localIp:8000'
-                                      : (_tunnelService.tunnelUrl != null
-                                          ? 'Connect using tunnel: ${_tunnelService.tunnelUrl}'
-                                          : 'Establishing secure tunnel...'))
-                                  : 'Start the local bridge to connect your devices.',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF8888A0),
+                              const SizedBox(height: 4),
+                              Text(
+                                isRunning
+                                    ? (_isDirectLan
+                                        ? 'Connect using direct URL: http://$_localIp:8000'
+                                        : (_tunnelService.tunnelUrl != null
+                                            ? 'Connect using tunnel: ${_tunnelService.tunnelUrl}'
+                                            : 'Establishing secure tunnel...'))
+                                    : 'Start the local bridge to connect your devices.',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: const Color(0xFF8888A0),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 16),
                         // Connection count indicator
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
