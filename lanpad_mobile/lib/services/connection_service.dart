@@ -102,11 +102,15 @@ class ConnectionService extends ChangeNotifier {
         if (data['status'] == 'success') {
           // Verify session code matches
           final serverCode = data['session_code']?.toString();
-          if (serverCode != null && serverCode.isNotEmpty && serverCode.trim().toLowerCase() != sid.trim().toLowerCase()) {
-            debugPrint('Connection failed: Session code mismatch.');
-            _isConnecting = false;
-            notifyListeners();
-            return 'Session code mismatch.';
+          if (serverCode != null && serverCode.isNotEmpty) {
+            final expectedCode = sid.trim().toLowerCase();
+            final actualCode = serverCode.trim().toLowerCase();
+            if (expectedCode != actualCode && !expectedCode.endsWith(actualCode)) {
+              debugPrint('Connection failed: Session code mismatch.');
+              _isConnecting = false;
+              notifyListeners();
+              return 'Session code mismatch.';
+            }
           }
 
           _serverUrl = targetUrl;
