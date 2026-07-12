@@ -2815,7 +2815,9 @@ class LANpadLauncher:
                 title_row = tk.Frame(dev_card, bg=self.BG2)
                 title_row.pack(fill="x", pady=(0, 6))
                 
-                lbl_connected = tk.Label(title_row, text=f"🟢 {disp_host}", font=(FU, 9, "bold"), bg=self.BG2, fg="#00C853", anchor="w")
+                dev_name = hub.get("name")
+                display_text = f"🟢 {dev_name} ({disp_host})" if dev_name else f"🟢 {disp_host}"
+                lbl_connected = tk.Label(title_row, text=display_text, font=(FU, 9, "bold"), bg=self.BG2, fg="#00C853", anchor="w")
                 lbl_connected.pack(side="left")
                 
                 def make_disconnect_handler(target_url):
@@ -2880,7 +2882,7 @@ class LANpadLauncher:
                         try:
                             import urllib.request
                             import json
-                            list_url = f"{target_url}/api/files/list?sid={urllib.parse.quote(target_token)}"
+                            list_url = f"{target_url}/api/files/list?sid={urllib.parse.quote(target_token)}&client_device={urllib.parse.quote(self.device_name)}"
                             req = urllib.request.Request(list_url, method="GET")
                             with urllib.request.urlopen(req, timeout=5) as response:
                                 data = json.loads(response.read().decode())
