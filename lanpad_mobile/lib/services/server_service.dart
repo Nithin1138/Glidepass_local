@@ -42,22 +42,44 @@ class ServerService {
 
     try {
       Process? proc;
-      try {
-        // Launch background Python server (runs the exact same app.py backend)
-        proc = await Process.start(
-          'python3',
-          ['app.py'],
-          workingDirectory: workingDir,
-        );
-      } catch (_) {
-        // Fallback to python command
-        proc = await Process.start(
-          'python',
-          ['app.py'],
-          workingDirectory: workingDir,
-        );
+      final String appPyPath = p.join(workingDir, 'app.py');
+
+      // Try multiple known absolute Python binary paths in order of preference.
+      // macOS app bundles run with a restricted PATH, so 'python3' alone often
+      // cannot be resolved even when Python is installed.
+      final List<String> pythonCandidates = [
+        '/Library/Frameworks/Python.framework/Versions/3.14/bin/python3',
+        '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3',
+        '/Library/Frameworks/Python.framework/Versions/3.12/bin/python3',
+        '/Library/Frameworks/Python.framework/Versions/3.11/bin/python3',
+        '/opt/homebrew/bin/python3',
+        '/usr/local/bin/python3',
+        '/usr/bin/python3',
+        'python3',
+        'python',
+      ];
+
+      for (final pyBin in pythonCandidates) {
+        try {
+          proc = await Process.start(
+            pyBin,
+            [appPyPath],
+            workingDirectory: workingDir,
+          );
+          print('[ServerService] Started server with: $pyBin $appPyPath');
+          break;
+        } catch (_) {
+          proc = null;
+          continue;
+        }
       }
-      
+
+      if (proc == null) {
+        print('[ServerService] Could not find a working Python interpreter.');
+        _stopTracking();
+        return;
+      }
+
       _process = proc;
 
       // Stream process output for debug logging

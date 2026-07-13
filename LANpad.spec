@@ -47,5 +47,14 @@ app = BUNDLE(
     coll,
     name='LANpad.app',
     icon='LANpad.icns',
-    bundle_identifier=None,
+    bundle_identifier='app.lanpad.desktop',
+    version='1.1.5',
+    info_plist={
+        'CFBundleShortVersionString': '1.1.5',
+        'CFBundleVersion': '1.1.5',
+        'CFBundleName': 'LANpad',
+        'CFBundleDisplayName': 'LANpad',
+        'NSHumanReadableCopyright': '© 2025 LANpad',
+        'LSMinimumSystemVersion': '10.14.0',
+    },
 )

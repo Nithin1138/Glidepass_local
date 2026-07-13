@@ -2079,7 +2079,17 @@ class LANpadLauncher:
                     self.root.after(0, lambda: messagebox.showerror("Error", f"Copy failed: {err}"))
                 self.root.after(0, refresh_files)
 
-            copy_batch_with_progress(paths, shared_path, progress_cb, finish_cb)
+            # Resolve the temporary session upload directory path so dragged/uploaded files 
+            # are stored in the temp session folder and never pollute ~/Downloads/LANpad.
+            dest_dir = shared_path
+            try:
+                token = get_session_token()
+                if token:
+                    dest_dir = os.path.expanduser(f"~/.lanpad/sessions/{token}")
+            except Exception:
+                pass
+            os.makedirs(dest_dir, exist_ok=True)
+            copy_batch_with_progress(paths, dest_dir, progress_cb, finish_cb)
             
             def poll_progress():
                 if not progress_data["active"]:
@@ -2194,16 +2204,28 @@ class LANpadLauncher:
                     for df in reversed(self.session_deleted_files):
                         files_list.append((df["name"], False, df["size"], df.get("deleted_at")))
                 else:
-                    # Main shared folder files
-                    if os.path.exists(shared_path):
-                        for f in sorted(os.listdir(shared_path)):
-                            if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(shared_path, f)):
-                                files_list.append((f, False, os.path.getsize(os.path.join(shared_path, f)), None))
-                    # Inbox folder files
-                    if os.path.exists(inbox_path):
-                        for f in sorted(os.listdir(inbox_path)):
-                            if not f.startswith('.') and not f.endswith('.part') and os.path.isfile(os.path.join(inbox_path, f)):
-                                files_list.append((f, True, os.path.getsize(os.path.join(inbox_path, f)), None))
+                    # Fetch from FastAPI server to respect session-based file management
+                    try:
+                        token = get_session_token()
+                        req_url = f"http://127.0.0.1:8000/api/files/list?sid={urllib.parse.quote(token)}"
+                        req = urllib.request.Request(
+                            req_url,
+                            headers={"User-Agent": "LANpad Desktop Launcher"}
+                        )
+                        with urllib.request.urlopen(req, timeout=1.0) as resp:
+                            if resp.status == 200:
+                                res_data = json.loads(resp.read().decode("utf-8"))
+                                if res_data.get("status") == "success":
+                                    for item in res_data.get("files", []):
+                                        files_list.append((
+                                            item["name"],
+                                            item.get("inbox", False),
+                                            item["size"],
+                                            None
+                                        ))
+                    except Exception as e:
+                        # Fallback if server is not fully up or reachable
+                        print(f"[launcher] Failed to fetch session files: {e}")
 
                 if not files_list:
                     msg = "No files deleted this session." if show_deleted_mode[0] else "No files shared yet. Choose a file above to start!"

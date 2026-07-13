@@ -2,9 +2,10 @@
 
 # LANpad DMG Creation Script
 APP_NAME="LANpad"
+APP_VERSION="1.1.5"
 APP_BUNDLE="${APP_NAME}.app"
-DMG_NAME="${APP_NAME}_Installer.dmg"
-VOL_NAME="${APP_NAME} Installer"
+DMG_NAME="${APP_NAME}_${APP_VERSION}_macOS.dmg"
+VOL_NAME="${APP_NAME} ${APP_VERSION}"
 TMP_DMG="tmp.dmg"
 
 echo "💿 Creating DMG for ${APP_NAME}..."
@@ -69,6 +70,7 @@ echo "✅ DMG Created: ${DMG_NAME}"
 echo "🌐 Copying to website downloads..."
 mkdir -p website-v2/public/downloads
 cp "${DMG_NAME}" "website-v2/public/downloads/LANpad_macOS.dmg"
-echo "✅ Ready for website deployment at website-v2/public/downloads/LANpad_macOS.dmg"
+cp "${DMG_NAME}" "website-v2/public/downloads/${DMG_NAME}"
+echo "✅ Ready for website deployment at website-v2/public/downloads/"
 
 echo "👉 You can now share this file with your friend!"
