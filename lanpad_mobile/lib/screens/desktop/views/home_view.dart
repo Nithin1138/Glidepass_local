@@ -804,15 +804,74 @@ class _QuickStartGuide extends StatelessWidget {
 }
 
 // ─── Connected Dashboard ──────────────────────────────────────────────────────
-class _ConnectedView extends StatefulWidget {
+class _ConnectedView extends StatelessWidget {
   final DesktopState state;
   const _ConnectedView({required this.state});
 
+  void _showScannerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _ScannerDialog(state: state),
+    );
+  }
+
   @override
-  State<_ConnectedView> createState() => _ConnectedViewState();
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text('Connected', style: kHeadlineLg),
+          const SizedBox(width: 20),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimary,
+              foregroundColor: kSurfaceLowest,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            onPressed: () => _showScannerDialog(context),
+            icon: const Icon(LucideIcons.plus, size: 16),
+            label: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: () {},
+            child: Text('Clear History',
+              style: GoogleFonts.inter(color: kPrimary, fontSize: 13)),
+          ),
+        ]),
+        const SizedBox(height: 16),
+
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Left col (8/12) — hero + activity
+          Expanded(flex: 8, child: Column(children: [
+            _DeviceHeroCard(state: state),
+            const SizedBox(height: 16),
+            _ActivityFeed(state: state),
+          ])),
+          const SizedBox(width: 16),
+          // Right col (4/12) — quick actions + stats
+          Expanded(flex: 4, child: Column(children: [
+            _QuickActionsCard(state: state),
+            const SizedBox(height: 16),
+            _ConnectionStatsCard(state: state),
+          ])),
+        ]),
+      ]),
+    );
+  }
 }
 
-class _ConnectedViewState extends State<_ConnectedView> {
+class _ScannerDialog extends StatefulWidget {
+  final DesktopState state;
+  const _ScannerDialog({required this.state});
+
+  @override
+  State<_ScannerDialog> createState() => _ScannerDialogState();
+}
+
+class _ScannerDialogState extends State<_ScannerDialog> {
   bool _isScanning = false;
   List<Map<String, dynamic>> _discoveredDevices = [];
 
@@ -1015,6 +1074,7 @@ class _ConnectedViewState extends State<_ConnectedView> {
                             });
                           } else {
                             Navigator.of(context).pop();
+                            Navigator.of(this.context).pop(); // Close scanner dialog too!
                           }
                         },
                   child: isConnecting
@@ -1049,6 +1109,7 @@ class _ConnectedViewState extends State<_ConnectedView> {
         widget.state.onShowToast('Connection failed: $err', isError: true);
       } else {
         widget.state.onShowToast('Connected successfully!');
+        Navigator.of(context).pop(); // Close dialog on success!
       }
     } catch (e) {
       widget.state.onShowToast('Error: $e', isError: true);
@@ -1057,61 +1118,57 @@ class _ConnectedViewState extends State<_ConnectedView> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text('Connected', style: kHeadlineLg),
-          const Spacer(),
-          TextButton(
-            onPressed: () {},
-            child: Text('Clear History',
-              style: GoogleFonts.inter(color: kPrimary, fontSize: 13)),
-          ),
-        ]),
-        const SizedBox(height: 16),
-
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Left col (8/12) — hero + activity
-          Expanded(flex: 8, child: Column(children: [
-            _DeviceHeroCard(state: widget.state),
-            const SizedBox(height: 16),
-            _ActivityFeed(state: widget.state),
-          ])),
-          const SizedBox(width: 16),
-          // Right col (4/12) — quick actions + stats
-          Expanded(flex: 4, child: Column(children: [
-            _QuickActionsCard(state: widget.state),
-            const SizedBox(height: 16),
-            _ConnectionStatsCard(state: widget.state),
-          ])),
-        ]),
-
-        // Connect to another device / Scanner interface
-        const SizedBox(height: 32),
-        const Divider(color: kOutlineVariant),
-        const SizedBox(height: 24),
-        Text('Connect to another App',
-            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kOnSurface)),
-        const SizedBox(height: 4),
-        Text('Scan nearby network for other active clients or connect manually.',
-            style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-        const SizedBox(height: 24),
-        Row(
+    return Dialog(
+      backgroundColor: const Color(0xFF0F1216),
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: kOutlineVariant),
+      ),
+      child: Container(
+        width: 800,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildNearbyPanel()),
-            const SizedBox(width: 24),
-            Expanded(child: _buildManualPanel()),
+            Row(
+              children: [
+                Text('Connect another Device',
+                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: kOnSurface)),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(LucideIcons.x, size: 20, color: kOnSurfaceVariant),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Scan nearby network for other active clients or connect manually.',
+                style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+            const SizedBox(height: 24),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildNearbyPanel()),
+                    const SizedBox(width: 24),
+                    Expanded(child: _buildManualPanel()),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
-      ]),
+      ),
     );
   }
 
   Widget _buildNearbyPanel() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: kGlassCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,18 +1177,18 @@ class _ConnectedViewState extends State<_ConnectedView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Nearby Devices',
-                  style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600, color: kOnSurface)),
               IconButton(
                 onPressed: _isScanning ? null : _discoverLocalDevices,
                 icon: Icon(
                   _isScanning ? Icons.sync : Icons.refresh,
                   color: kPrimary,
-                  size: 18,
+                  size: 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (_isScanning && _discoveredDevices.isEmpty) ...[
             const Center(
               child: Padding(
@@ -1232,16 +1289,16 @@ class _ConnectedViewState extends State<_ConnectedView> {
 
   Widget _buildManualPanel() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: kGlassCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Manual Connection',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600, color: kOnSurface)),
           const SizedBox(height: 4),
           Text('Enter connection details of another device directly.',
-              style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+              style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
           const SizedBox(height: 16),
           _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
           const SizedBox(height: 12),

@@ -168,6 +168,13 @@ class DesktopSidebar extends StatelessWidget {
                     Text(state.localIp,
                       style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
                   ]),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(LucideIcons.key_round, color: kOnSurfaceVariant, size: 13),
+                    const SizedBox(width: 8),
+                    Text('Code: ${state.serverService.sessionCode.toUpperCase()}',
+                      style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant, fontWeight: FontWeight.bold)),
+                  ]),
                 ],
               ],
             ),
