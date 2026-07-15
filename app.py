@@ -462,7 +462,7 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html", "files.html"]:
+    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html", "files.html", "files_preview.html"]:
         success = False
         
         # 0. Try local templates directory (works in source runs and PyInstaller bundles)
@@ -552,7 +552,7 @@ except Exception as e:
 async def lifespan(app: FastAPI):
     # Copy local templates synchronously on startup to guarantee the latest templates are served
     os.makedirs(OTA_DIR, exist_ok=True)
-    for tmpl in ["index.html", "center.html", "files.html", "lucide.min.js"]:
+    for tmpl in ["index.html", "center.html", "files.html", "files_preview.html", "lucide.min.js"]:
         local_path = resource_path(os.path.join("templates", tmpl))
         if os.path.exists(local_path):
             try:
@@ -798,6 +798,11 @@ async def center():
 @app.get("/files")
 async def files_page():
     return _cached_file_response("files.html")
+
+
+@app.get("/files_preview")
+async def files_preview_page():
+    return _cached_file_response("files_preview.html")
 
 
 @app.get("/terms")
@@ -1414,7 +1419,7 @@ def perform_typing(text, wpm, is_coding=False, language=""):
 # ── WebSocket (PRD) ───────────────────────────────────────────────────────────
 
 @app.websocket("/ws/connect")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, client: str = None):
     client_ip = websocket.client[0] if websocket.client else "unknown"
     now = time.time()
     if client_ip in _ws_connect_attempts:
@@ -1457,7 +1462,8 @@ async def websocket_endpoint(websocket: WebSocket):
     else:
         dev = "Device"
         
-    active_devices[websocket] = dev
+    if client != "desktop":
+        active_devices[websocket] = dev
     
     try:
         while True:

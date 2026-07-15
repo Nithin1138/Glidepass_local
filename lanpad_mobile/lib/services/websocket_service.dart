@@ -21,7 +21,7 @@ class WebSocketService {
     
     // Normalize base URL to ws:// or wss://
     var wsUrl = baseUrl.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
-    wsUrl = '$wsUrl/ws/connect?sid=$sid';
+    wsUrl = '$wsUrl/ws/connect?sid=$sid&client=desktop';
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));

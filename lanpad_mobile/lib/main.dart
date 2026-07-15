@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'config/theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/connect_screen.dart';
 import 'screens/main_navigation_screen.dart';
-import 'screens/desktop_dashboard.dart';
+import 'screens/desktop/desktop_shell.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -28,11 +29,15 @@ void main() async {
     });
   }
 
-  runApp(const LanpadApp());
+  final prefs = await SharedPreferences.getInstance();
+  final hasAcceptedAgreement = prefs.getBool('has_accepted_agreement') ?? false;
+
+  runApp(LanpadApp(hasAcceptedAgreement: hasAcceptedAgreement));
 }
 
 class LanpadApp extends StatelessWidget {
-  const LanpadApp({super.key});
+  final bool hasAcceptedAgreement;
+  const LanpadApp({super.key, required this.hasAcceptedAgreement});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +57,7 @@ class LanpadApp extends StatelessWidget {
           themeMode: AppTheme.themeModeNotifier.value,
           initialRoute: '/',
           routes: {
-            '/': (context) => isDesktop ? const DesktopDashboard() : const SplashScreen(),
+            '/': (context) => isDesktop ? DesktopShell(hasAcceptedAgreement: hasAcceptedAgreement) : const SplashScreen(),
             '/connect': (context) => const ConnectScreen(),
             '/home': (context) => const MainNavigationScreen(),
           },
