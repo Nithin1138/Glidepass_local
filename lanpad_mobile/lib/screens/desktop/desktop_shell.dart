@@ -22,7 +22,7 @@ import '../../services/websocket_service.dart';
 import '../../models/file_model.dart';
 import '../../models/history_model.dart';
 import '../../models/resource_model.dart';
-
+import '../../config/theme.dart';
 import 'desktop_state.dart';
 import 'desktop_theme.dart';
 import 'widgets/sidebar.dart';
@@ -36,6 +36,13 @@ import 'views/setup_permissions_view.dart';
 import 'views/file_previews_view.dart';
 import 'views/onboarding_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class ActiveToast {
+  final String id;
+  final String message;
+  final bool isError;
+  ActiveToast({required this.id, required this.message, this.isError = false});
+}
 
 /// Main desktop shell — owns all state and services,
 /// delegates rendering to per-page view files.
@@ -54,6 +61,7 @@ class _DesktopShellState extends State<DesktopShell> {
   final ApiService _apiService = ApiService();
   final WebSocketService _webSocketService = WebSocketService();
   final ConnectionService _connectionService = ConnectionService();
+  final List<ActiveToast> _activeToasts = [];
 
   late StreamSubscription _serverSub;
   late StreamSubscription _tunnelSub;
@@ -551,16 +559,17 @@ class _DesktopShellState extends State<DesktopShell> {
   }
 
   void _showToast(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message, style: GoogleFonts.inter(
-        color: isError ? kError : kOnSurface, fontWeight: FontWeight.w600)),
-      backgroundColor: isError ? const Color(0xFF93000A) : kSurfaceContainer,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: isError ? kError.withValues(alpha: 0.4) : kOutlineVariant),
-      ),
-    ));
+    final id = DateTime.now().millisecondsSinceEpoch.toString() + message;
+    setState(() {
+      _activeToasts.add(ActiveToast(id: id, message: message, isError: isError));
+    });
+    Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _activeToasts.removeWhere((t) => t.id == id);
+        });
+      }
+    });
   }
 
   String _formatBytes(int bytes) {
@@ -676,22 +685,102 @@ class _DesktopShellState extends State<DesktopShell> {
 
     return Scaffold(
       backgroundColor: kSurface,
-      body: Row(children: [
-        // ── Sidebar ─────────────────────────────────────────────────
-        DesktopSidebar(
-          currentView: _currentView,
-          onNavigate: (view) => setState(() => _currentView = view),
-          state: state,
-        ),
+      body: Stack(
+        children: [
+          Row(
+            children: [
+              // ── Sidebar ─────────────────────────────────────────────────
+              DesktopSidebar(
+                currentView: _currentView,
+                onNavigate: (view) => setState(() => _currentView = view),
+                state: state,
+              ),
 
-        // ── Main content ─────────────────────────────────────────────
-        Expanded(
-          child: Column(children: [
-            DesktopTopBar(state: state),
-            Expanded(child: _buildView(state)),
-          ]),
-        ),
-      ]),
+              // ── Main content ─────────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  children: [
+                    DesktopTopBar(state: state),
+                    Expanded(child: _buildView(state)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_activeToasts.isNotEmpty)
+            Positioned(
+              top: 24,
+              right: 24,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: _activeToasts.map((toast) {
+                  final isDark = AppTheme.isDark;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: 320,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: toast.isError
+                              ? (isDark ? const Color(0xFF5A000A) : const Color(0xFFFFDAD6))
+                              : kSurfaceContainer,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: toast.isError
+                                ? kError.withOpacity(0.5)
+                                : kOutlineVariant,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              toast.isError ? Icons.error_outline : Icons.check_circle_outline,
+                              color: toast.isError ? kError : Colors.green,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                toast.message,
+                                style: GoogleFonts.inter(
+                                  color: toast.isError
+                                      ? (isDark ? const Color(0xFFFFDAD6) : const Color(0xFF410002))
+                                      : kOnSurface,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 16),
+                              onPressed: () {
+                                setState(() {
+                                  _activeToasts.removeWhere((t) => t.id == toast.id);
+                                });
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              splashRadius: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
