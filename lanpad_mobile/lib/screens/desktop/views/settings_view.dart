@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../config/theme.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
@@ -20,6 +23,34 @@ class _SettingsViewState extends State<SettingsView> {
   bool _nativeNotifications = true;
   bool _autoPaste = false;
   bool _globalHook = true;
+  double _typingDelay = 0.2; // simulation delay fraction
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _launchAtStartup = prefs.getBool('launch_at_startup') ?? true;
+      _nativeNotifications = prefs.getBool('native_notifications') ?? true;
+      _autoPaste = prefs.getBool('auto_paste') ?? false;
+      _globalHook = prefs.getBool('global_hook') ?? true;
+      _typingDelay = prefs.getDouble('typing_delay') ?? 0.2;
+    });
+  }
+
+  Future<void> _saveBoolSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  Future<void> _saveDoubleSetting(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,10 +117,16 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(width: 16),
                 Expanded(child: _GlassCard(child: Column(children: [
                   _Toggle('Launch at Startup', 'Start LANpad when you log in.',
-                    _launchAtStartup, (v) => setState(() => _launchAtStartup = v)),
+                    _launchAtStartup, (v) {
+                      setState(() => _launchAtStartup = v);
+                      _saveBoolSetting('launch_at_startup', v);
+                    }),
                   const Divider(color: kOutlineVariant, height: 24),
                   _Toggle('Native Notifications', 'Show desktop alerts for new events.',
-                    _nativeNotifications, (v) => setState(() => _nativeNotifications = v)),
+                    _nativeNotifications, (v) {
+                      setState(() => _nativeNotifications = v);
+                      _saveBoolSetting('native_notifications', v);
+                    }),
                 ]))),
               ]),
               const SizedBox(height: 28),
@@ -180,11 +217,19 @@ class _SettingsViewState extends State<SettingsView> {
                       activeTrackColor: kPrimary, inactiveTrackColor: kSurfaceVariant,
                       thumbColor: kPrimary, overlayColor: kPrimary.withValues(alpha: 0.1),
                     ),
-                    child: Slider(value: 0.2, onChanged: (_) {}),
+                    child: Slider(
+                      value: _typingDelay,
+                      min: 0.05,
+                      max: 1.0,
+                      onChanged: (v) {
+                        setState(() => _typingDelay = v);
+                        _saveDoubleSetting('typing_delay', v);
+                      },
+                    ),
                   ),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text('Fast', style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
-                    Text('20ms', style: GoogleFonts.inter(
+                    Text('${(_typingDelay * 100).round()}ms', style: GoogleFonts.inter(
                       fontSize: 11, color: kPrimary, fontWeight: FontWeight.bold)),
                     Text('Slow', style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
                   ]),
@@ -193,12 +238,18 @@ class _SettingsViewState extends State<SettingsView> {
                 Expanded(child: _GlassCard(child:
                   _Toggle('Auto-Paste',
                     'Paste clipboard contents automatically on connection.',
-                    _autoPaste, (v) => setState(() => _autoPaste = v)))),
+                    _autoPaste, (v) {
+                      setState(() => _autoPaste = v);
+                      _saveBoolSetting('auto_paste', v);
+                    }))),
                 const SizedBox(width: 16),
                 Expanded(child: _GlassCard(child:
                   _Toggle('Global Hook',
                     'Allow LANpad to intercept global media keys.',
-                    _globalHook, (v) => setState(() => _globalHook = v)))),
+                    _globalHook, (v) {
+                      setState(() => _globalHook = v);
+                      _saveBoolSetting('global_hook', v);
+                    }))),
               ]),
               const SizedBox(height: 36),
 
@@ -241,7 +292,14 @@ class _SettingsViewState extends State<SettingsView> {
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        onPressed: () {},
+                        onPressed: () async {
+                          final uri = Uri.parse('https://lanpad.app/docs');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          } else {
+                            s.onShowToast('Could not launch documentation URL', isError: true);
+                          }
+                        },
                         child: Text('Documentation & API',
                           style: GoogleFonts.inter(fontSize: 13)),
                       ),
@@ -325,41 +383,48 @@ class _Toggle extends StatelessWidget {
   ]);
 }
 
-class _ThemeToggle extends StatefulWidget {
-  @override
-  State<_ThemeToggle> createState() => _ThemeToggleState();
-}
-class _ThemeToggleState extends State<_ThemeToggle> {
-  int _selected = 0;
-
+class _ThemeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: kSurfaceLowest,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kOutlineVariant),
-      ),
-      child: Row(children: ['Dark', 'Light', 'Auto'].asMap().entries.map((e) {
-        final isActive = e.key == _selected;
-        return Expanded(child: GestureDetector(
-          onTap: () => setState(() => _selected = e.key),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: isActive ? kSurfaceVariant : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(child: Text(e.value, style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? kPrimary : kOnSurfaceVariant,
-            ))),
+    return AnimatedBuilder(
+      animation: AppTheme.themeModeNotifier,
+      builder: (context, _) {
+        final mode = AppTheme.themeModeNotifier.value;
+        final selectedIndex = mode == ThemeMode.dark ? 0 : 1; // 0 for Dark, 1 for Light
+
+        return Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: kSurfaceLowest,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: kOutlineVariant),
           ),
-        ));
-      }).toList()),
+          child: Row(children: ['Dark', 'Light'].asMap().entries.map((e) {
+            final isActive = e.key == selectedIndex;
+            return Expanded(child: GestureDetector(
+              onTap: () async {
+                final targetMode = e.key == 0 ? ThemeMode.dark : ThemeMode.light;
+                AppTheme.themeModeNotifier.value = targetMode;
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('theme_mode', e.key == 0 ? 1 : 0);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? kSurfaceVariant : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(child: Text(e.value, style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  color: isActive ? kPrimary : kOnSurfaceVariant,
+                ))),
+              ),
+            ));
+          }).toList()),
+        );
+      }
     );
   }
 }
