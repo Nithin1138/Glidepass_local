@@ -245,7 +245,7 @@ class _DesktopShellState extends State<DesktopShell> {
         backgroundColor: kSurfaceContainer,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: kOutlineVariant),
+          side: BorderSide(color: kOutlineVariant),
         ),
         child: Container(
           width: 480,
@@ -255,7 +255,7 @@ class _DesktopShellState extends State<DesktopShell> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                const Icon(LucideIcons.shield_alert, color: kPrimary, size: 32),
+                Icon(LucideIcons.shield_alert, color: kPrimary, size: 32),
                 const SizedBox(width: 16),
                 Expanded(child: Text('Accessibility Permission Needed',
                   style: GoogleFonts.outfit(

@@ -25,7 +25,7 @@ class ResourcesView extends StatelessWidget {
       // ── Top bar ─────────────────────────────────────────────────
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
         ),
         child: Row(children: [
@@ -63,7 +63,7 @@ class _HubsContent extends StatelessWidget {
       // Left: Hub list sidebar
       Container(
         width: 240,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(right: BorderSide(color: kOutlineVariant)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -74,7 +74,7 @@ class _HubsContent extends StatelessWidget {
               color: kOnSurfaceVariant, letterSpacing: 1.2)),
           ),
           Expanded(child: state.loadingHubs
-              ? const Center(child: CircularProgressIndicator(color: kPrimary))
+              ? Center(child: CircularProgressIndicator(color: kPrimary))
               : state.hubs.isEmpty
                   ? _Empty(icon: LucideIcons.book, message: 'No hubs available')
                   : ListView.builder(
@@ -114,13 +114,13 @@ class _HubsContent extends StatelessWidget {
       // Right: Resources grid
       Expanded(child: state.selectedHub == null
           ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.layers, color: kOnSurfaceVariant, size: 40),
+              Icon(LucideIcons.layers, color: kOnSurfaceVariant, size: 40),
               const SizedBox(height: 12),
               Text('Select a hub to view resources',
                 style: GoogleFonts.inter(fontSize: 14, color: kOnSurfaceVariant)),
             ]))
           : state.loadingHubs
-              ? const Center(child: CircularProgressIndicator(color: kPrimary))
+              ? Center(child: CircularProgressIndicator(color: kPrimary))
               : state.filteredResources.isEmpty
                   ? _Empty(icon: LucideIcons.folder_open, message: 'No resources in this hub')
                   : GridView.builder(
@@ -152,7 +152,7 @@ class _ResourceCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(LucideIcons.file_code, color: kPrimary, size: 20),
+          Icon(LucideIcons.file_code, color: kPrimary, size: 20),
           const Spacer(),
           if (resource.language != null)
             Container(
@@ -211,7 +211,7 @@ class _OfflinePrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
+      Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
       const SizedBox(height: 16),
       Text('Server is offline', style: GoogleFonts.outfit(
         fontSize: 22, fontWeight: FontWeight.w600, color: kOnSurface)),

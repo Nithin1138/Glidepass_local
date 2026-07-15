@@ -24,7 +24,7 @@ class DesktopSidebar extends StatelessWidget {
 
     return Container(
       width: 280,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: kSurfaceContainer,
         border: Border(right: BorderSide(color: kOutlineVariant, width: 1)),
       ),
@@ -64,7 +64,7 @@ class DesktopSidebar extends StatelessWidget {
                           kErrorContainer.withValues(alpha: 0.5),
                           kErrorContainer.withValues(alpha: 0.3),
                         ])
-                      : const LinearGradient(colors: [kPrimary, kSecondary]),
+                      : LinearGradient(colors: [kPrimary, kSecondary]),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isRunning
@@ -147,7 +147,7 @@ class DesktopSidebar extends StatelessWidget {
                 ]),
                 const SizedBox(height: 8),
                 Row(children: [
-                  const Icon(LucideIcons.monitor, color: kOnSurfaceVariant, size: 14),
+                  Icon(LucideIcons.monitor, color: kOnSurfaceVariant, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -163,7 +163,7 @@ class DesktopSidebar extends StatelessWidget {
                 if (isRunning) ...[
                   const SizedBox(height: 4),
                   Row(children: [
-                    const Icon(LucideIcons.network, color: kOnSurfaceVariant, size: 13),
+                    Icon(LucideIcons.network, color: kOnSurfaceVariant, size: 13),
                     const SizedBox(width: 8),
                     Text(state.localIp,
                       style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),

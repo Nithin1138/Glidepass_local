@@ -45,7 +45,7 @@ class _FilesTopBar extends StatelessWidget {
     final isRunning = state.serverService.isRunning;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
       ),
       child: Row(children: [
@@ -82,7 +82,7 @@ class _FilesTopBar extends StatelessWidget {
           child: InkWell(
             onTap: () => state.onShowToast('Refreshing files...'),
             borderRadius: BorderRadius.circular(8),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.all(8),
               child: Icon(LucideIcons.refresh_cw, color: kPrimary, size: 18),
             ),
@@ -113,7 +113,7 @@ class _FilesContent extends StatelessWidget {
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: kOutlineVariant),
+                side: BorderSide(color: kOutlineVariant),
               ),
               title: Text('Confirm Delete All',
                   style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
@@ -147,15 +147,15 @@ class _FilesContent extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kPrimary),
+                        borderSide: BorderSide(color: kPrimary),
                       ),
                     ),
                   ),
@@ -220,7 +220,7 @@ class _FilesContent extends StatelessWidget {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () => _showDeleteAllDialog(context),
-                    icon: const Icon(LucideIcons.trash_2, size: 14, color: kError),
+                    icon: Icon(LucideIcons.trash_2, size: 14, color: kError),
                     label: Text('Delete All',
                       style: GoogleFonts.inter(color: kError, fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
@@ -228,7 +228,7 @@ class _FilesContent extends StatelessWidget {
               ]),
               const SizedBox(height: 12),
               if (state.loadingFiles)
-                const Center(child: CircularProgressIndicator(color: kPrimary))
+                Center(child: CircularProgressIndicator(color: kPrimary))
               else if (filtered.isEmpty)
                 _Empty(icon: LucideIcons.folder_open, message: 'No files shared yet')
               else
@@ -254,9 +254,9 @@ class _FilesContent extends StatelessWidget {
                   fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
                 const SizedBox(height: 16),
                 _Stat('Files Shared', '${state.files.length}'),
-                const Divider(color: kOutlineVariant, height: 20),
+                Divider(color: kOutlineVariant, height: 20),
                 _Stat('Downloaded', '${state.downloadedFileNames.length}'),
-                const Divider(color: kOutlineVariant, height: 20),
+                Divider(color: kOutlineVariant, height: 20),
                 _Stat('Total Size', state.files.isEmpty ? '0 B'
                   : state.formatBytes(state.files.fold<int>(0, (s, f) => s + f.size))),
               ]),
@@ -286,7 +286,7 @@ class _DropZone extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.sync_rounded, color: kSecondary, size: 18),
+            Icon(Icons.sync_rounded, color: kSecondary, size: 18),
             const SizedBox(width: 10),
             Text('TRANSFERRING...', style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.bold,
@@ -301,7 +301,7 @@ class _DropZone extends StatelessWidget {
             child: LinearProgressIndicator(
               value: state.uploadProgress, minHeight: 6,
               backgroundColor: kSurfaceVariant,
-              valueColor: const AlwaysStoppedAnimation<Color>(kPrimary),
+              valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
             ),
           ),
           const SizedBox(height: 8),
@@ -330,7 +330,7 @@ class _DropZone extends StatelessWidget {
             width: 64, height: 64,
             decoration: BoxDecoration(
               color: kPrimary.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(LucideIcons.cloud_upload, color: kPrimary, size: 28),
+            child: Icon(LucideIcons.cloud_upload, color: kPrimary, size: 28),
           ),
           const SizedBox(height: 16),
           Text('Drop files to send', style: GoogleFonts.outfit(
@@ -353,7 +353,7 @@ class _DropZone extends StatelessWidget {
             const SizedBox(width: 12),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: kOutlineVariant),
+                side: BorderSide(color: kOutlineVariant),
                 foregroundColor: kOnSurface,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -418,12 +418,12 @@ class _FileRow extends StatelessWidget {
             style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
         ])),
         if (isDownloaded) ...[
-          const Icon(LucideIcons.circle_check, color: kSuccess, size: 15),
+          Icon(LucideIcons.circle_check, color: kSuccess, size: 15),
           const SizedBox(width: 6),
         ],
-        IconButton(icon: const Icon(LucideIcons.download, color: kPrimary, size: 16),
+        IconButton(icon: Icon(LucideIcons.download, color: kPrimary, size: 16),
           onPressed: onDownload, tooltip: 'Download'),
-        IconButton(icon: const Icon(LucideIcons.trash_2, color: kOnSurfaceVariant, size: 16),
+        IconButton(icon: Icon(LucideIcons.trash_2, color: kOnSurfaceVariant, size: 16),
           onPressed: onDelete, tooltip: 'Delete'),
       ]),
     );
@@ -482,7 +482,7 @@ class _OfflinePrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
+      Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
       const SizedBox(height: 16),
       Text('Server is offline', style: GoogleFonts.outfit(
         fontSize: 22, fontWeight: FontWeight.w600, color: kOnSurface)),

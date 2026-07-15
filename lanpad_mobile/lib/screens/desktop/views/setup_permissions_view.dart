@@ -83,18 +83,18 @@ class SetupPermissionsView extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.network_check, color: kPrimary),
+                            Icon(Icons.network_check, color: kPrimary),
                             const SizedBox(width: 8),
                             Text('Connection Check', style: kBodyLg.copyWith(fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 24),
                         _buildStatRow('Local Latency', '0.42ms', valueColor: kPrimary),
-                        const Divider(color: kOutlineVariant),
+                        Divider(color: kOutlineVariant),
                         _buildStatRow('Gateway Hub', '192.168.1.1'),
-                        const Divider(color: kOutlineVariant),
+                        Divider(color: kOutlineVariant),
                         _buildStatRow('mDNS Service', 'Active', valueColor: Colors.green),
-                        const Divider(color: kOutlineVariant),
+                        Divider(color: kOutlineVariant),
                         _buildStatRow('Encryption', 'AES-256', valueColor: Colors.green),
                         const SizedBox(height: 24),
                         Container(
@@ -112,7 +112,7 @@ class SetupPermissionsView extends StatelessWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Icon(Icons.laptop_mac, color: kPrimary),
+                                  Icon(Icons.laptop_mac, color: kPrimary),
                                   Expanded(
                                     child: Container(
                                       height: 2,
@@ -120,7 +120,7 @@ class SetupPermissionsView extends StatelessWidget {
                                       color: kOutlineVariant,
                                     ),
                                   ),
-                                  const Icon(Icons.desktop_windows, color: kSecondary),
+                                  Icon(Icons.desktop_windows, color: kSecondary),
                                 ],
                               ),
                             ],
@@ -134,14 +134,14 @@ class SetupPermissionsView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Divider(color: kOutlineVariant),
+          Divider(color: kOutlineVariant),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.help_outline, color: kOnSurfaceVariant, size: 20),
+                  Icon(Icons.help_outline, color: kOnSurfaceVariant, size: 20),
                   const SizedBox(width: 8),
                   Text('Having trouble? ', style: kBodyMd.copyWith(color: kOnSurfaceVariant)),
                   Text('Read the docs', style: kBodyMd.copyWith(color: kPrimary)),

@@ -48,7 +48,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: kSecondary,
                           shape: BoxShape.circle,
                         ),
@@ -172,7 +172,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                           onPressed: () => exit(0),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: kOnSurface,
-                            side: const BorderSide(color: kOutlineVariant),
+                            side: BorderSide(color: kOutlineVariant),
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -215,7 +215,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                 return kSurfaceVariant;
               }),
               checkColor: kSurfaceLowest,
-              side: const BorderSide(color: kOutlineVariant),
+              side: BorderSide(color: kOutlineVariant),
             ),
           ),
           const SizedBox(width: 12),

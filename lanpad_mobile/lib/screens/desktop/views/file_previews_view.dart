@@ -46,7 +46,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
               // Filter Row
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: kOutlineVariant)),
                 ),
                 child: Row(
@@ -114,7 +114,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
         // Right Column: Detail Panel
         Container(
           width: 400,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(left: BorderSide(color: kOutlineVariant)),
             color: kSurfaceLow,
           ),
@@ -146,7 +146,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: kOutlineVariant),
+                      Divider(height: 1, color: kOutlineVariant),
                       Container(
                         height: 256,
                         color: kSurfaceVariant,
@@ -161,7 +161,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.insert_drive_file, size: 48, color: kPrimary),
+                                Icon(Icons.insert_drive_file, size: 48, color: kPrimary),
                                 const SizedBox(height: 8),
                                 Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist'), textAlign: TextAlign.center),
                                 Text('Size: ${(_selectedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
@@ -189,7 +189,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                                   Expanded(
                                     child: Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist', color: kSecondary)),
                                   ),
-                                  const Icon(Icons.copy, size: 18, color: kOnSurfaceVariant),
+                                  Icon(Icons.copy, size: 18, color: kOnSurfaceVariant),
                                 ],
                               ),
                             ),
@@ -260,7 +260,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.storage, color: kSecondary),
+                            Icon(Icons.storage, color: kSecondary),
                             const SizedBox(width: 8),
                             Text('Storage Health', style: kHeadlineMd.copyWith(fontSize: 16)),
                           ],
@@ -275,7 +275,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.info, size: 14, color: kTertiary),
+                        Icon(Icons.info, size: 14, color: kTertiary),
                         const SizedBox(width: 8),
                         Expanded(child: Text('Cache automatically clears files older than 48h.', style: kLabelMd.copyWith(color: kOnSurfaceVariant))),
                       ],
@@ -319,7 +319,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
   }
 
   Widget _buildTableRowHeader() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
@@ -383,7 +383,7 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                   child: Text(file.inbox ? 'Mobile Device' : 'Desktop', style: kBodyMd, overflow: TextOverflow.ellipsis),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 16, color: kOutlineVariant),
+                Icon(Icons.arrow_forward, size: 16, color: kOutlineVariant),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('Hub', style: kBodyMd, overflow: TextOverflow.ellipsis),
@@ -406,14 +406,14 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(color: kSecondary, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: kSecondary, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 6),
                 Text('SUCCESS', style: kLabelMd.copyWith(color: kSecondary)),
               ],
             ),
           ),
-          const SizedBox(width: 40, child: Icon(Icons.more_vert, color: kOnSurfaceVariant)),
+          SizedBox(width: 40, child: Icon(Icons.more_vert, color: kOnSurfaceVariant)),
         ],
       ),
     );

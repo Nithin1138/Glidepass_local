@@ -93,7 +93,7 @@ class _SettingsViewState extends State<SettingsView> {
       // ── Top bar ─────────────────────────────────────────────────
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
         ),
         child: Row(children: [
@@ -134,15 +134,26 @@ class _SettingsViewState extends State<SettingsView> {
               _SectionHeader(LucideIcons.settings_2, 'General'),
               const SizedBox(height: 12),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: _GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('VISUAL IDENTITY', style: GoogleFonts.inter(
+                    fontSize: 10, color: kPrimary, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  const SizedBox(height: 6),
+                  Text('Theme Preference', style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
+                  const SizedBox(height: 4),
+                  Text('Choose between technical dark mode or high-contrast light.',
+                    style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+                  const SizedBox(height: 20),
+                  _ThemeToggle(),
+                ]))),
+                const SizedBox(width: 16),
                 Expanded(child: _GlassCard(child: Column(children: [
                   _Toggle('Launch at Startup', 'Start LANpad when you log in.',
                     _launchAtStartup, (v) {
                       setState(() => _launchAtStartup = v);
                       _saveBoolSetting('launch_at_startup', v);
                     }),
-                ]))),
-                const SizedBox(width: 16),
-                Expanded(child: _GlassCard(child: Column(children: [
+                  Divider(color: kOutlineVariant, height: 24),
                   _Toggle('Native Notifications', 'Show desktop alerts for new events.',
                     _nativeNotifications, (v) {
                       setState(() => _nativeNotifications = v);
@@ -161,7 +172,7 @@ class _SettingsViewState extends State<SettingsView> {
                     width: 44, height: 44,
                     decoration: BoxDecoration(
                       color: kPrimary.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.laptop, color: kPrimary, size: 22),
+                    child: Icon(LucideIcons.laptop, color: kPrimary, size: 22),
                   ),
                   const SizedBox(width: 16),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -171,7 +182,7 @@ class _SettingsViewState extends State<SettingsView> {
                       style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
                   ])),
                 ]),
-                const Divider(color: kOutlineVariant, height: 28),
+                Divider(color: kOutlineVariant, height: 28),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Network Interface', style: GoogleFonts.inter(
@@ -191,7 +202,7 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ]),
                 if (Platform.isMacOS) ...[
-                  const Divider(color: kOutlineVariant, height: 28),
+                  Divider(color: kOutlineVariant, height: 28),
                   Row(children: [
                     Container(width: 8, height: 8, decoration: BoxDecoration(
                       color: s.hasAccessibilityPermission ? kSuccess : const Color(0xFFFFB300),
@@ -277,7 +288,7 @@ class _SettingsViewState extends State<SettingsView> {
               // ── About ─────────────────────────────────────────────
               Container(
                 padding: const EdgeInsets.only(top: 24),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: kOutlineVariant)),
                 ),
                 child: Column(children: [
@@ -308,7 +319,7 @@ class _SettingsViewState extends State<SettingsView> {
                       const SizedBox(height: 10),
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: kOutlineVariant),
+                          side: BorderSide(color: kOutlineVariant),
                           foregroundColor: kOnSurface,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -351,14 +362,14 @@ class _SettingsViewState extends State<SettingsView> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _policies.length,
-                  separatorBuilder: (context, index) => const Divider(color: kOutlineVariant, height: 1),
+                  separatorBuilder: (context, index) => Divider(color: kOutlineVariant, height: 1),
                   itemBuilder: (context, index) {
                     final policy = _policies[index];
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(policy.title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
                       subtitle: Text(policy.desc, style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-                      trailing: const Icon(LucideIcons.chevron_right, size: 16, color: kOnSurfaceVariant),
+                      trailing: Icon(LucideIcons.chevron_right, size: 16, color: kOnSurfaceVariant),
                       onTap: () async {
                         final serverUrl = s.serverService.isRunning ? 'http://localhost:8000' : 'https://lanpad.app';
                         final uri = Uri.parse('$serverUrl${policy.path}');
@@ -463,4 +474,50 @@ class _InfoBento extends StatelessWidget {
         color: valueColor ?? kOnSurface)),
     ]),
   );
+}
+
+class _ThemeToggle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: AppTheme.themeModeNotifier,
+      builder: (context, _) {
+        final mode = AppTheme.themeModeNotifier.value;
+        final selectedIndex = mode == ThemeMode.dark ? 0 : 1; // 0 for Dark, 1 for Light
+
+        return Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: kSurfaceLowest,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: kOutlineVariant),
+          ),
+          child: Row(children: ['Dark', 'Light'].asMap().entries.map((e) {
+            final isActive = e.key == selectedIndex;
+            return Expanded(child: GestureDetector(
+              onTap: () async {
+                final targetMode = e.key == 0 ? ThemeMode.dark : ThemeMode.light;
+                AppTheme.themeModeNotifier.value = targetMode;
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('theme_mode', e.key == 0 ? 1 : 0);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? kSurfaceVariant : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(child: Text(e.value, style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  color: isActive ? kPrimary : kOnSurfaceVariant,
+                ))),
+              ),
+            ));
+          }).toList()),
+        );
+      }
+    );
+  }
 }

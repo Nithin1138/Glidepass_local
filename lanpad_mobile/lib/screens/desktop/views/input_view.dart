@@ -174,7 +174,7 @@ class _InputViewState extends State<InputView> {
                         // Editor Header
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(bottom: BorderSide(color: kOutlineVariant)),
                           ),
                           child: Row(
@@ -195,14 +195,14 @@ class _InputViewState extends State<InputView> {
                                   Clipboard.setData(ClipboardData(text: _controller.text));
                                   widget.state.onShowToast('Copied to clipboard');
                                 },
-                                icon: const Icon(LucideIcons.copy, size: 16, color: kOnSurfaceVariant),
+                                icon: Icon(LucideIcons.copy, size: 16, color: kOnSurfaceVariant),
                                 tooltip: 'Copy Buffer',
                               ),
                               IconButton(
                                 onPressed: () {
                                   _controller.clear();
                                 },
-                                icon: const Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
+                                icon: Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
                                 tooltip: 'Clear Buffer',
                               ),
                             ],
@@ -235,7 +235,7 @@ class _InputViewState extends State<InputView> {
                         // Editor Footer
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(top: BorderSide(color: kOutlineVariant)),
                           ),
                           child: Row(
@@ -344,7 +344,7 @@ class _InputViewState extends State<InputView> {
                                 },
                               ),
                             ),
-                            const Divider(color: kOutlineVariant, height: 24),
+                            Divider(color: kOutlineVariant, height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -384,7 +384,7 @@ class _InputViewState extends State<InputView> {
         // ── Right Column: Recent Snippets & Tips (Flex 3) ───────────────────────
         Container(
           width: 320,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(left: BorderSide(color: kOutlineVariant)),
             color: kSurfaceLow,
           ),
@@ -470,7 +470,7 @@ class _InputViewState extends State<InputView> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(LucideIcons.info, size: 16, color: kPrimary),
+                    Icon(LucideIcons.info, size: 16, color: kPrimary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(

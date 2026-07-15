@@ -1,22 +1,22 @@
-// Design tokens — matches Stitch LANpad Desktop Blueprint exactly
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../config/theme.dart';
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
-const Color kSurface = Color(0xFF111318);
-const Color kSurfaceContainer = Color(0xFF1E2024);
-const Color kSurfaceVariant = Color(0xFF333539);
-const Color kSurfaceLow = Color(0xFF1A1C20);
-const Color kSurfaceLowest = Color(0xFF0C0E12);
-const Color kOutlineVariant = Color(0xFF424754);
-const Color kOnSurface = Color(0xFFE2E2E8);
-const Color kOnSurfaceVariant = Color(0xFFC2C6D6);
-const Color kPrimary = Color(0xFFADC6FF);
-const Color kSecondary = Color(0xFF5DE6FF);
-const Color kTertiary = Color(0xFFFFB786);
-const Color kSuccess = Color(0xFF10B981);
-const Color kError = Color(0xFFFFB4AB);
-const Color kErrorContainer = Color(0xFF93000A);
+Color get kSurface => AppTheme.isDark ? const Color(0xFF111318) : const Color(0xFFF5F8FF);
+Color get kSurfaceContainer => AppTheme.isDark ? const Color(0xFF1E2024) : const Color(0xFFFFFFFF);
+Color get kSurfaceVariant => AppTheme.isDark ? const Color(0xFF333539) : const Color(0xFFE2E8F0);
+Color get kSurfaceLow => AppTheme.isDark ? const Color(0xFF1A1C20) : const Color(0xFFF1F5F9);
+Color get kSurfaceLowest => AppTheme.isDark ? const Color(0xFF0C0E12) : const Color(0xFFE2E8F0);
+Color get kOutlineVariant => AppTheme.isDark ? const Color(0xFF424754) : const Color(0xFFCBD5E1);
+Color get kOnSurface => AppTheme.isDark ? const Color(0xFFE2E2E8) : const Color(0xFF0F172A);
+Color get kOnSurfaceVariant => AppTheme.isDark ? const Color(0xFFC2C6D6) : const Color(0xFF475569);
+Color get kPrimary => AppTheme.isDark ? const Color(0xFFADC6FF) : const Color(0xFF2563EB);
+Color get kSecondary => AppTheme.isDark ? const Color(0xFF5DE6FF) : const Color(0xFF0EA5E9);
+Color get kTertiary => AppTheme.isDark ? const Color(0xFFFFB786) : const Color(0xFFEA580C);
+Color get kSuccess => const Color(0xFF10B981);
+Color get kError => AppTheme.isDark ? const Color(0xFFFFB4AB) : const Color(0xFFDC2626);
+Color get kErrorContainer => AppTheme.isDark ? const Color(0xFF93000A) : const Color(0xFFFFDAD6);
 
 // ─── Text Styles ─────────────────────────────────────────────────────────────
 TextStyle kHeadlineLg = GoogleFonts.outfit(
@@ -65,20 +65,20 @@ BoxDecoration kSurfaceCard = BoxDecoration(
 InputDecoration kSearchDecoration(String hint) => InputDecoration(
   hintText: hint,
   hintStyle: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant),
-  prefixIcon: const Icon(Icons.search_rounded, size: 16, color: kOnSurfaceVariant),
+  prefixIcon: Icon(Icons.search_rounded, size: 16, color: kOnSurfaceVariant),
   filled: true,
   fillColor: kSurfaceContainer,
   contentPadding: const EdgeInsets.symmetric(vertical: 8),
   border: OutlineInputBorder(
     borderRadius: BorderRadius.circular(30),
-    borderSide: const BorderSide(color: kOutlineVariant),
+    borderSide: BorderSide(color: kOutlineVariant),
   ),
   enabledBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(30),
-    borderSide: const BorderSide(color: kOutlineVariant),
+    borderSide: BorderSide(color: kOutlineVariant),
   ),
   focusedBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(30),
-    borderSide: const BorderSide(color: kPrimary),
+    borderSide: BorderSide(color: kPrimary),
   ),
 );

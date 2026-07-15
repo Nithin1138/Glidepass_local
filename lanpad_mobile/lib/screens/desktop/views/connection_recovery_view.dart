@@ -88,7 +88,7 @@ class ConnectionRecoveryView extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.analytics, color: kPrimary),
+                                  Icon(Icons.analytics, color: kPrimary),
                                   const SizedBox(width: 8),
                                   Text('System Diagnostics', style: kHeadlineMd.copyWith(fontSize: 18)),
                                 ],
@@ -98,9 +98,9 @@ class ConnectionRecoveryView extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           _buildDiagnosticRow('Device Status', 'Device timed out', kError),
-                          const Divider(color: kOutlineVariant),
+                          Divider(color: kOutlineVariant),
                           _buildDiagnosticRow('Local Network', 'Reachable', kSecondary),
-                          const Divider(color: kOutlineVariant),
+                          Divider(color: kOutlineVariant),
                           _buildDiagnosticRow('Handshake Protocol', 'Suspended', kOutlineVariant),
                         ],
                       ),
@@ -132,7 +132,7 @@ class ConnectionRecoveryView extends StatelessWidget {
                                 color: kPrimary.withOpacity(0.1),
                                 border: Border.all(color: kPrimary.withOpacity(0.2)),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(Icons.leak_add, color: kPrimary, size: 32),
                               ),
                             ),
@@ -155,16 +155,16 @@ class ConnectionRecoveryView extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 border: Border(bottom: BorderSide(color: kOutlineVariant)),
                                 color: kSurfaceVariant,
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('TECHNICAL LOG', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
-                                  const Icon(Icons.terminal, size: 14, color: kOutlineVariant),
+                                  Icon(Icons.terminal, size: 14, color: kOutlineVariant),
                                 ],
                               ),
                             ),
@@ -187,15 +187,15 @@ class ConnectionRecoveryView extends StatelessWidget {
                               onTap: () {},
                               child: Container(
                                 padding: const EdgeInsets.all(12),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   border: Border(top: BorderSide(color: kOutlineVariant)),
                                   color: kSurfaceVariant,
-                                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.copy, size: 16, color: kOnSurfaceVariant),
+                                    Icon(Icons.copy, size: 16, color: kOnSurfaceVariant),
                                     const SizedBox(width: 8),
                                     Text('Copy Log for Support', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
                                   ],
@@ -206,12 +206,12 @@ class ConnectionRecoveryView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     // Settings Shortcut
                     InkWell(
                       onTap: () {},
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
                           color: kSurfaceContainer,
                           borderRadius: BorderRadius.circular(12),
@@ -222,12 +222,12 @@ class ConnectionRecoveryView extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.settings_input_antenna, color: kOutlineVariant),
+                                Icon(Icons.settings_input_antenna, color: kOutlineVariant),
                                 const SizedBox(width: 12),
                                 Text('Connection Settings', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
                               ],
                             ),
-                            const Icon(Icons.chevron_right, size: 18, color: kOutlineVariant),
+                            Icon(Icons.chevron_right, size: 18, color: kOutlineVariant),
                           ],
                         ),
                       ),
@@ -272,7 +272,7 @@ class ConnectionRecoveryView extends StatelessWidget {
         text: TextSpan(
           style: kBodyMd.copyWith(fontFamily: 'Geist', color: color),
           children: [
-            TextSpan(text: '$time ', style: const TextStyle(color: kOutlineVariant)),
+            TextSpan(text: '$time ', style: TextStyle(color: kOutlineVariant)),
             TextSpan(text: message),
           ],
         ),

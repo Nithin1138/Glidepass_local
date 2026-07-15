@@ -165,7 +165,7 @@ class _WaitingViewState extends State<_WaitingView> {
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: kOutlineVariant),
+                side: BorderSide(color: kOutlineVariant),
               ),
               title: Text('Connect to ${device['device_name']}',
                   style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
@@ -190,15 +190,15 @@ class _WaitingViewState extends State<_WaitingView> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kPrimary),
+                        borderSide: BorderSide(color: kPrimary),
                       ),
                       counterText: '',
                     ),
@@ -413,7 +413,7 @@ class _WaitingViewState extends State<_WaitingView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kSurfaceContainer,
                           foregroundColor: kPrimary,
-                          side: const BorderSide(color: kOutlineVariant),
+                          side: BorderSide(color: kOutlineVariant),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         ),
@@ -455,15 +455,15 @@ class _WaitingViewState extends State<_WaitingView> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kOutlineVariant),
+              borderSide: BorderSide(color: kOutlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kOutlineVariant),
+              borderSide: BorderSide(color: kOutlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kPrimary),
+              borderSide: BorderSide(color: kPrimary),
             ),
             counterText: '',
           ),
@@ -666,7 +666,7 @@ class _QrPanel extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
+                      Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
                       const SizedBox(height: 16),
                       Text('Start the server\nto show QR code',
                         style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 14),
@@ -758,7 +758,7 @@ class _QuickStartGuide extends StatelessWidget {
             const SizedBox(width: 10),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: kOutlineVariant),
+                side: BorderSide(color: kOutlineVariant),
                 foregroundColor: kOnSurface,
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -968,7 +968,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: kOutlineVariant),
+                side: BorderSide(color: kOutlineVariant),
               ),
               title: Text('Connect to ${device['device_name']}',
                   style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
@@ -993,15 +993,15 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kOutlineVariant),
+                        borderSide: BorderSide(color: kOutlineVariant),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: kPrimary),
+                        borderSide: BorderSide(color: kPrimary),
                       ),
                       counterText: '',
                     ),
@@ -1097,7 +1097,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: kOutlineVariant),
+        side: BorderSide(color: kOutlineVariant),
       ),
       child: Container(
         width: 800,
@@ -1124,7 +1124,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(LucideIcons.x, size: 20, color: kOnSurfaceVariant),
+                  icon: Icon(LucideIcons.x, size: 20, color: kOnSurfaceVariant),
                 ),
               ],
             ),
@@ -1204,15 +1204,15 @@ class _ScannerDialogState extends State<_ScannerDialog> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kOutlineVariant),
+              borderSide: BorderSide(color: kOutlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kOutlineVariant),
+              borderSide: BorderSide(color: kOutlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kPrimary),
+              borderSide: BorderSide(color: kPrimary),
             ),
             counterText: '',
           ),
@@ -1671,9 +1671,9 @@ class _ConnectionStatsCard extends StatelessWidget {
               style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
           const SizedBox(height: 16),
           _StatRow(label: 'Pairing Mode', value: state.isDirectLan ? 'Direct LAN' : 'Hybrid Relay'),
-          const Divider(color: kOutlineVariant, height: 24),
+          Divider(color: kOutlineVariant, height: 24),
           _StatRow(label: 'Tunnel Status', value: 'Connected'),
-          const Divider(color: kOutlineVariant, height: 24),
+          Divider(color: kOutlineVariant, height: 24),
           _StatRow(label: 'Tunnel IP', value: state.localIp),
         ],
       ),
@@ -1785,36 +1785,38 @@ class _ActionBtn extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isPrimary;
-  final Color accentColor;
+  final Color? accentColor;
   final VoidCallback onTap;
 
   const _ActionBtn({
     required this.icon, required this.title, required this.subtitle,
     required this.isPrimary, required this.onTap,
-    this.accentColor = kPrimary,
+    this.accentColor,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isPrimary ? kPrimary : kSurfaceVariant,
-        borderRadius: BorderRadius.circular(14),
-        border: isPrimary ? null : Border.all(color: kOutlineVariant),
-      ),
-      child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: isPrimary
-                ? kSurfaceLowest.withValues(alpha: 0.15)
-                : accentColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: isPrimary ? kSurfaceLowest : accentColor, size: 18),
+  Widget build(BuildContext context) {
+    final activeAccent = accentColor ?? kPrimary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isPrimary ? activeAccent : kSurfaceVariant,
+          borderRadius: BorderRadius.circular(14),
+          border: isPrimary ? null : Border.all(color: kOutlineVariant),
         ),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: isPrimary
+                  ? kSurfaceLowest.withValues(alpha: 0.15)
+                  : activeAccent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: isPrimary ? kSurfaceLowest : activeAccent, size: 18),
+          ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: GoogleFonts.inter(
@@ -1828,6 +1830,7 @@ class _ActionBtn extends StatelessWidget {
           color: isPrimary ? kSurfaceLowest.withValues(alpha: 0.5) : kOnSurfaceVariant,
           size: 16),
       ]),
-    ),
-  );
+      ),
+    );
+  }
 }

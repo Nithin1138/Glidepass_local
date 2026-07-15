@@ -19,7 +19,7 @@ class DesktopTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: kSurface.withValues(alpha: 0.95),
-        border: const Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
+        border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
       ),
       child: Row(children: [
         // Node status pill
@@ -44,7 +44,7 @@ class DesktopTopBar extends StatelessWidget {
             color: kPrimary.withValues(alpha: 0.08),
             borderColor: kPrimary.withValues(alpha: 0.2),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(LucideIcons.wifi, color: kPrimary, size: 12),
+              Icon(LucideIcons.wifi, color: kPrimary, size: 12),
               const SizedBox(width: 6),
               Text('SECURE LINK ESTABLISHED',
                 style: GoogleFonts.inter(
@@ -60,7 +60,7 @@ class DesktopTopBar extends StatelessWidget {
         // Connected devices chip
         if (connectedCount > 0) ...[
           _StatusPill(child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.users, color: kPrimary, size: 13),
+            Icon(LucideIcons.users, color: kPrimary, size: 13),
             const SizedBox(width: 6),
             Text('$connectedCount device${connectedCount > 1 ? 's' : ''}',
               style: GoogleFonts.inter(
