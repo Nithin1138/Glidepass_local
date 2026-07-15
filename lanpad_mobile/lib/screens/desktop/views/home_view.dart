@@ -29,9 +29,14 @@ class _WaitingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRunning = state.serverService.isRunning;
+    final tunnelUrl = state.tunnelService.tunnelUrl;
+    final isConnectingTunnel = !state.isDirectLan && state.tunnelService.isConnecting;
+
     final qrData = state.isDirectLan
         ? 'http://${state.localIp}:8000?sid=${state.serverService.sessionToken}'
-        : '${state.serverService.sessionToken}';
+        : (tunnelUrl != null
+            ? '$tunnelUrl?sid=${state.serverService.sessionToken}'
+            : 'https://lanpad.app?sid=${state.serverService.sessionToken}');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
@@ -52,7 +57,12 @@ class _WaitingView extends StatelessWidget {
 
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 // Left: QR code + mode toggle
-                Expanded(child: _QrPanel(state: state, isRunning: isRunning, qrData: qrData)),
+                Expanded(child: _QrPanel(
+                  state: state, 
+                  isRunning: isRunning && !isConnectingTunnel, 
+                  qrData: qrData,
+                  showConnecting: isConnectingTunnel,
+                )),
                 const SizedBox(width: 40),
                 // Right: Quick start guide
                 Expanded(child: _QuickStartGuide(state: state)),
@@ -69,7 +79,14 @@ class _QrPanel extends StatelessWidget {
   final DesktopState state;
   final bool isRunning;
   final String qrData;
-  const _QrPanel({required this.state, required this.isRunning, required this.qrData});
+  final bool showConnecting;
+
+  const _QrPanel({
+    required this.state, 
+    required this.isRunning, 
+    required this.qrData,
+    required this.showConnecting,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,29 +111,60 @@ class _QrPanel extends StatelessWidget {
           border: Border.all(color: kOutlineVariant),
           boxShadow: [BoxShadow(color: kPrimary.withValues(alpha: 0.06), blurRadius: 40)],
         ),
-        child: isRunning
+        child: showConnecting
             ? Container(
-                width: 200, height: 200, color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: QrImageView(data: qrData, version: QrVersions.auto, size: 184),
-                ),
-              )
-            : Container(
                 width: 200, height: 200,
                 decoration: BoxDecoration(
                   color: kSurfaceLow,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 40),
-                  const SizedBox(height: 12),
-                  Text('Start the server\nto show QR code',
-                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text('Generating secure link...',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 12),
                     textAlign: TextAlign.center),
                 ]),
-              ),
+              )
+            : (isRunning
+                ? Container(
+                    width: 200, height: 200, color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: QrImageView(data: qrData, version: QrVersions.auto, size: 184),
+                    ),
+                  )
+                : Container(
+                    width: 200, height: 200,
+                    decoration: BoxDecoration(
+                      color: kSurfaceLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 40),
+                      const SizedBox(height: 12),
+                      Text('Start the server\nto show QR code',
+                        style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13),
+                        textAlign: TextAlign.center),
+                    ]),
+                  )),
       ),
+      if (isRunning && !showConnecting) ...[
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: kSurfaceLow,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: kOutlineVariant),
+          ),
+          child: SelectableText(
+            qrData,
+            style: GoogleFonts.inter(fontSize: 12, color: kPrimary, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
       const SizedBox(height: 24),
 
       // LAN / Relay toggle

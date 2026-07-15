@@ -1495,7 +1495,7 @@ async def get_connections():
     devices = list(set(devices))
     
     return {
-        "count": len(active_connections) + len(_registered_clients),
+        "count": len(active_devices) + len(_registered_clients),
         "devices": devices
     }
 
