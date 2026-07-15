@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../desktop_theme.dart';
 import '../desktop_state.dart';
@@ -17,8 +19,51 @@ class SetupPermissionsView extends StatefulWidget {
 class _SetupPermissionsViewState extends State<SetupPermissionsView> {
   bool _inputMonitoringGranted = false;
   bool _fullDiskAccessGranted = false;
+  Timer? _latencyTimer;
+  double _currentLatencyMs = 0.42;
 
   @override
+  void initState() {
+    super.initState();
+    _startLatencyPing();
+  }
+
+  @override
+  void dispose() {
+    _latencyTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startLatencyPing() {
+    _latencyTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final url = widget.state.connectionService.serverUrl;
+      if (url != null && mounted) {
+        try {
+          final stopwatch = Stopwatch()..start();
+          final response = await http.get(Uri.parse('$url/api/connections')).timeout(const Duration(milliseconds: 1000));
+          stopwatch.stop();
+          if (response.statusCode == 200 && mounted) {
+            setState(() {
+              final rtt = stopwatch.elapsedMicroseconds / 1000.0;
+              _currentLatencyMs = rtt > 0 ? rtt : 0.42;
+            });
+          }
+        } catch (_) {}
+      }
+    });
+  }
+
+  String get _gatewayIp {
+    final ip = widget.state.localIp;
+    if (ip.isEmpty || ip == '127.0.0.1' || ip == 'localhost') {
+      return '192.168.1.1';
+    }
+    final parts = ip.split('.');
+    if (parts.length == 4) {
+      return '${parts[0]}.${parts[1]}.${parts[2]}.1';
+    }
+    return '192.168.1.1';
+  }
   Widget build(BuildContext context) {
     final s = widget.state;
     final isAccessGranted = s.hasAccessibilityPermission;
@@ -181,13 +226,25 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      _buildStatRow('Local Latency', '0.42ms', valueColor: kPrimary),
+                      _buildStatRow(
+                        'Local Latency', 
+                        '${_currentLatencyMs.toStringAsFixed(2)}ms', 
+                        valueColor: _currentLatencyMs < 5.0 ? kPrimary : Colors.orange,
+                      ),
                       Divider(color: kOutlineVariant),
-                      _buildStatRow('Gateway Hub', '192.168.1.1'),
+                      _buildStatRow('Gateway Hub', _gatewayIp),
                       Divider(color: kOutlineVariant),
-                      _buildStatRow('mDNS Service', 'Active', valueColor: Colors.green),
+                      _buildStatRow(
+                        'mDNS Service', 
+                        s.serverService.isRunning ? 'Active' : 'Inactive', 
+                        valueColor: s.serverService.isRunning ? Colors.green : Colors.red,
+                      ),
                       Divider(color: kOutlineVariant),
-                      _buildStatRow('Encryption', 'AES-256', valueColor: Colors.green),
+                      _buildStatRow(
+                        'Encryption', 
+                        s.apiService.encryptionEnabled ? 'AES-256-GCM' : 'DISABLED', 
+                        valueColor: s.apiService.encryptionEnabled ? Colors.green : Colors.red,
+                      ),
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -204,12 +261,15 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Icon(Icons.laptop_mac, color: kPrimary),
+                                Icon(
+                                  Icons.laptop_mac, 
+                                  color: s.connectionService.isConnected ? kPrimary : kOnSurfaceVariant.withOpacity(0.5),
+                                ),
                                 Expanded(
                                   child: Container(
                                     height: 2,
                                     margin: const EdgeInsets.symmetric(horizontal: 16),
-                                    color: kOutlineVariant,
+                                    color: s.connectionService.isConnected ? kPrimary : kOutlineVariant,
                                   ),
                                 ),
                                 Icon(Icons.desktop_windows, color: kSecondary),
