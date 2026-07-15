@@ -101,6 +101,15 @@ class _WaitingViewState extends State<_WaitingView> {
                   final bodyStr = await res.transform(utf8.decoder).join();
                   final data = jsonDecode(bodyStr);
                   if (data['status'] == 'success') {
+                    final serverCode = data['session_code']?.toString() ?? '';
+                    final myToken = widget.state.serverService.sessionToken;
+                    final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
+                    
+                    // Skip if it is our own server
+                    if (serverCode.toLowerCase() == myCode.toLowerCase()) {
+                      return;
+                    }
+
                     if (mounted) {
                       setState(() {
                         // Check if already discovered
@@ -463,6 +472,11 @@ class _WaitingViewState extends State<_WaitingView> {
               itemCount: _discoveredDevices.length,
               itemBuilder: (context, index) {
                 final d = _discoveredDevices[index];
+                final rawCode = d['session_code']?.toString() ?? '';
+                final formattedCode = rawCode.length == 6
+                    ? '${rawCode.substring(0, 3).toUpperCase()}-${rawCode.substring(3).toUpperCase()}'
+                    : rawCode.toUpperCase();
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: InkWell(
@@ -483,9 +497,37 @@ class _WaitingViewState extends State<_WaitingView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(d['device_name'],
-                                    style: GoogleFonts.inter(
-                                        fontSize: 14, fontWeight: FontWeight.w600, color: kOnSurface)),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(d['device_name'],
+                                          style: GoogleFonts.inter(
+                                              fontSize: 14, fontWeight: FontWeight.w600, color: kOnSurface),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    if (formattedCode.isNotEmpty) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: kPrimary.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: kPrimary.withOpacity(0.2)),
+                                        ),
+                                        child: Text(
+                                          formattedCode,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: kPrimary,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                                 const SizedBox(height: 2),
                                 Text(d['url'],
                                     style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
@@ -598,6 +640,11 @@ class _QrPanel extends StatelessWidget {
         ? state.serverService.sessionToken.substring(state.serverService.sessionToken.length - 6).toUpperCase()
         : state.serverService.sessionToken;
 
+    final tunnelUrl = state.tunnelService.tunnelUrl;
+    final displayLink = state.isDirectLan
+        ? 'http://${state.localIp}:8000'
+        : (tunnelUrl ?? 'https://lanpad.app');
+
     return Column(children: [
       Text('Waiting for connection',
         style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600, color: kOnSurface),
@@ -662,7 +709,7 @@ class _QrPanel extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SelectableText(
-            qrData,
+            displayLink,
             style: GoogleFonts.inter(fontSize: 12, color: kPrimary, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
