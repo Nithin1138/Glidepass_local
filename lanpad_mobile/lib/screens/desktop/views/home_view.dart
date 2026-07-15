@@ -316,6 +316,7 @@ class _WaitingViewState extends State<_WaitingView> {
                 encryptionEnabled: _encryptionEnabled,
                 onToggleEncryption: (val) {
                   setState(() => _encryptionEnabled = val);
+                  widget.state.apiService.encryptionEnabled = val;
                 },
               ),
               const SizedBox(height: 32),
@@ -375,6 +376,7 @@ class _WaitingViewState extends State<_WaitingView> {
                     encryptionEnabled: _encryptionEnabled,
                     onToggleEncryption: (val) {
                       setState(() => _encryptionEnabled = val);
+                      widget.state.apiService.encryptionEnabled = val;
                     },
                   ),
                 ),

@@ -15,6 +15,32 @@ class ApiService {
 
   final ConnectionService _connectionService = ConnectionService();
 
+  bool encryptionEnabled = true;
+
+  String _encryptXor(String plaintext, String key) {
+    if (key.isEmpty) return plaintext;
+    final plaintextBytes = utf8.encode(plaintext);
+    final keyBytes = utf8.encode(key);
+    final cipherBytes = List<int>.generate(plaintextBytes.length, (i) {
+      return plaintextBytes[i] ^ keyBytes[i % keyBytes.length];
+    });
+    return base64.encode(cipherBytes);
+  }
+
+  String _decryptXor(String ciphertext, String key) {
+    if (key.isEmpty || ciphertext.isEmpty) return ciphertext;
+    try {
+      final cipherBytes = base64.decode(ciphertext);
+      final keyBytes = utf8.encode(key);
+      final plaintextBytes = List<int>.generate(cipherBytes.length, (i) {
+        return cipherBytes[i] ^ keyBytes[i % keyBytes.length];
+      });
+      return utf8.decode(plaintextBytes);
+    } catch (_) {
+      return ciphertext;
+    }
+  }
+
   String _buildUrl(String path, [Map<String, String>? queryParams]) {
     final baseUrl = _connectionService.serverUrl;
     if (baseUrl == null) throw Exception('No server connected');
@@ -41,12 +67,16 @@ class ApiService {
     String language = '',
   }) async {
     final url = _buildUrl('/paste');
+    final sid = _connectionService.sessionId ?? '';
+    final payloadText = encryptionEnabled ? _encryptXor(text, sid) : text;
+
     try {
       final response = await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'text': text,
+          'text': payloadText,
+          'encrypted': encryptionEnabled,
           'mode': mode,
           'wpm': wpm,
           'is_coding': isCoding,
@@ -63,11 +93,20 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> fetchClipboard() async {
-    final url = _buildUrl('/get_clipboard');
+    final Map<String, String> queryParams = {};
+    if (encryptionEnabled) {
+      queryParams['encrypted'] = 'true';
+    }
+    final url = _buildUrl('/get_clipboard', queryParams);
     try {
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success' && data['encrypted'] == true) {
+          final sid = _connectionService.sessionId ?? '';
+          data['text'] = _decryptXor(data['text'] ?? '', sid);
+        }
+        return data;
       }
       return {'status': 'error', 'message': 'Failed to fetch clipboard'};
     } catch (e) {

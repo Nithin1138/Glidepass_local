@@ -75,6 +75,27 @@ IS_WINDOWS = is_windows()
 IS_LINUX   = is_linux()
 CMD_KEY    = cmd_key()
 
+def encrypt_xor(plaintext: str, key: str) -> str:
+    if not key:
+        return plaintext
+    plaintext_bytes = plaintext.encode('utf-8')
+    key_bytes = key.encode('utf-8')
+    cipher_bytes = bytes(p ^ key_bytes[i % len(key_bytes)] for i, p in enumerate(plaintext_bytes))
+    import base64
+    return base64.b64encode(cipher_bytes).decode('utf-8')
+
+def decrypt_xor(ciphertext: str, key: str) -> str:
+    if not key or not ciphertext:
+        return ciphertext
+    try:
+        import base64
+        cipher_bytes = base64.b64decode(ciphertext.encode('utf-8'))
+        key_bytes = key.encode('utf-8')
+        plaintext_bytes = bytes(c ^ key_bytes[i % len(key_bytes)] for i, c in enumerate(cipher_bytes))
+        return plaintext_bytes.decode('utf-8')
+    except Exception:
+        return ciphertext
+
 # Simple queue to store the last paste for the browser listener
 pending_paste = {"text": "", "id": 0, "mode": ""}
 stop_typing = False
@@ -1160,7 +1181,14 @@ async def get_clipboard(request: Request):
         text = pyperclip.paste()
         if text and len(text) > 10 * 1024 * 1024:
             return {"status": "error", "message": "Clipboard exceeds 10MB limit"}
-        return {"status": "success", "text": text}
+        
+        is_encrypted = request.query_params.get("encrypted") == "true"
+        if is_encrypted:
+            sid = request.query_params.get("sid", "")
+            if sid and text:
+                text = encrypt_xor(text, sid)
+                
+        return {"status": "success", "text": text, "encrypted": is_encrypted}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -1800,6 +1828,11 @@ async def paste(request: Request, data: dict):
     stop_typing = False
     try:
         text = data.get("content") or data.get("text", "")
+        is_encrypted = data.get("encrypted", False)
+        if is_encrypted:
+            sid = request.query_params.get("sid", "")
+            if sid:
+                text = decrypt_xor(text, sid)
         mode = data.get("mode", "flash")
         try:
             wpm = int(data.get("wpm", 40))
