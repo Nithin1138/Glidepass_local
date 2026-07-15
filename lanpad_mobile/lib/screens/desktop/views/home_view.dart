@@ -288,6 +288,10 @@ class _WaitingViewState extends State<_WaitingView> {
     final tunnelUrl = widget.state.tunnelService.tunnelUrl;
     final isConnectingTunnel = !widget.state.isDirectLan && widget.state.tunnelService.isConnecting;
 
+    final sessionCode = widget.state.serverService.sessionToken.length >= 6 
+        ? widget.state.serverService.sessionToken.substring(widget.state.serverService.sessionToken.length - 6).toUpperCase()
+        : widget.state.serverService.sessionToken;
+
     final qrData = widget.state.isDirectLan
         ? 'http://${widget.state.localIp}:8000?sid=${widget.state.serverService.sessionToken}'
         : (tunnelUrl != null
@@ -314,57 +318,59 @@ class _WaitingViewState extends State<_WaitingView> {
             ],
           );
         } else {
-          content = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _showManual
-                    ? Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: kGlassCard,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Manual Connection',
-                                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-                            const SizedBox(height: 4),
-                            Text('Enter connection details of another device directly.',
-                                style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-                            const SizedBox(height: 24),
-                            _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
-                            const SizedBox(height: 16),
-                            _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
-                            const SizedBox(height: 16),
-                            _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
-                            const SizedBox(height: 28),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kPrimary,
-                                  foregroundColor: kSurfaceLowest,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content = IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _showManual
+                      ? Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: kGlassCard,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Manual Connection',
+                                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+                              const SizedBox(height: 4),
+                              Text('Enter connection details of another device directly.',
+                                  style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+                              const SizedBox(height: 24),
+                              _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+                              const SizedBox(height: 16),
+                              _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
+                              const SizedBox(height: 16),
+                              _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+                              const SizedBox(height: 28),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: kPrimary,
+                                    foregroundColor: kSurfaceLowest,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  onPressed: _connectManual,
+                                  child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                                 ),
-                                onPressed: _connectManual,
-                                child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _buildNearbyPanel(),
-              ),
-              const SizedBox(width: 40),
-              Expanded(
-                child: _QrPanel(
-                  state: widget.state,
-                  isRunning: isRunning && !isConnectingTunnel,
-                  qrData: qrData,
-                  showConnecting: isConnectingTunnel,
+                            ],
+                          ),
+                        )
+                      : _buildNearbyPanel(),
                 ),
-              ),
-            ],
+                const SizedBox(width: 40),
+                Expanded(
+                  child: _QrPanel(
+                    state: widget.state,
+                    isRunning: isRunning && !isConnectingTunnel,
+                    qrData: qrData,
+                    showConnecting: isConnectingTunnel,
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -374,24 +380,35 @@ class _WaitingViewState extends State<_WaitingView> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 960),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_showManual ? 'Manual Connection' : 'Discovery Mode', style: kHeadlineLg),
-                          const SizedBox(height: 4),
-                          Text(
-                            _showManual
-                                ? 'Pair and connect with another active command node directly.'
-                                : 'Waiting for your mobile device or another laptop to connect.',
-                            style: kBodyLg.copyWith(color: kOnSurfaceVariant),
-                          ),
-                        ],
+                      const SizedBox(width: 140), // Balanced spacing to center the title text
+                      Expanded(
+                        child: _showManual
+                            ? Column(
+                                children: [
+                                  Text('Manual Connection', style: kHeadlineLg),
+                                  const SizedBox(height: 4),
+                                  Text('Pair and connect with another active command node directly.',
+                                      style: kBodyLg.copyWith(color: kOnSurfaceVariant),
+                                      textAlign: TextAlign.center),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  Text('Waiting for connection', style: kHeadlineLg),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Connect your mobile device or another desktop client. Pairing Code: $sessionCode',
+                                    style: kBodyLg.copyWith(color: kOnSurfaceVariant),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                       ),
-                      const Spacer(),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kSurfaceContainer,
@@ -609,16 +626,6 @@ class _QrPanel extends StatelessWidget {
         : (tunnelUrl ?? 'https://lanpad.app');
 
     return Column(children: [
-      Text('Waiting for connection',
-        style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600, color: kOnSurface),
-        textAlign: TextAlign.center),
-      const SizedBox(height: 12),
-      Text(
-        'Connect your mobile device or another desktop client. Pairing Code: $sessionCode',
-        style: GoogleFonts.inter(fontSize: 15, color: kOnSurfaceVariant, height: 1.5),
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 36),
 
       // QR Container
       Container(

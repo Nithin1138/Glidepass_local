@@ -153,7 +153,9 @@ class DesktopSidebar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      state.displayDeviceName,
+                      isRunning
+                          ? '${state.displayDeviceName} - ${state.serverService.sessionCode.toUpperCase()}'
+                          : state.displayDeviceName,
                       style: GoogleFonts.outfit(
                         fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface),
                       overflow: TextOverflow.ellipsis,
@@ -167,13 +169,6 @@ class DesktopSidebar extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(state.localIp,
                       style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
-                  ]),
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    const Icon(LucideIcons.key_round, color: kOnSurfaceVariant, size: 13),
-                    const SizedBox(width: 8),
-                    Text('Code: ${state.serverService.sessionCode.toUpperCase()}',
-                      style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant, fontWeight: FontWeight.bold)),
                   ]),
                 ],
               ],
