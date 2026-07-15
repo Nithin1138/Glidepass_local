@@ -33,7 +33,6 @@ import 'views/resources_view.dart';
 import 'views/history_view.dart';
 import 'views/settings_view.dart';
 import 'views/input_view.dart';
-import 'views/terms_view.dart';
 import 'views/setup_permissions_view.dart';
 import 'views/connection_recovery_view.dart';
 import 'views/file_previews_view.dart';
@@ -713,7 +712,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case DesktopView.input:
         return InputView(state: state);
       case DesktopView.terms:
-        return TermsView(state: state);
+        return SettingsView(state: state);
       case DesktopView.setupPermissions:
         return SetupPermissionsView(state: state);
       case DesktopView.connectionRecovery:

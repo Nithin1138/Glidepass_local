@@ -8,8 +8,7 @@ import '../../../config/theme.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
-/// Settings view — matches the Stitch "Settings" screen.
-/// Sections: General / Theme | Connection | Input Behavior | About
+/// Settings view — matches the Stitch "Settings" screen with merged Legal/Compliance policies.
 class SettingsView extends StatefulWidget {
   final DesktopState state;
   const SettingsView({super.key, required this.state});
@@ -24,6 +23,39 @@ class _SettingsViewState extends State<SettingsView> {
   bool _autoPaste = false;
   bool _globalHook = true;
   double _typingDelay = 0.2; // simulation delay fraction
+
+  final List<({String title, String desc, String path, String fallbackUrl})> _policies = const [
+    (
+      title: 'Terms of Service',
+      desc: 'Terms of using the bridge services',
+      path: '/terms_of_service.html',
+      fallbackUrl: 'https://lanpad.app/terms'
+    ),
+    (
+      title: 'Privacy Policy',
+      desc: 'Data transmission & privacy standards',
+      path: '/privacy_policy.html',
+      fallbackUrl: 'https://lanpad.app/privacy'
+    ),
+    (
+      title: 'Content Policy',
+      desc: 'Transfer guidelines and restrictions',
+      path: '/content_policy.html',
+      fallbackUrl: 'https://lanpad.app/content'
+    ),
+    (
+      title: 'Copyright Takedown',
+      desc: 'DMCA / Intellectual property claims',
+      path: '/copyright_takedown.html',
+      fallbackUrl: 'https://lanpad.app/dmca'
+    ),
+    (
+      title: 'Refund Policy',
+      desc: 'Relay & license monetization guidelines',
+      path: '/refund_policy.html',
+      fallbackUrl: 'https://lanpad.app/refund'
+    ),
+  ];
 
   @override
   void initState() {
@@ -102,26 +134,15 @@ class _SettingsViewState extends State<SettingsView> {
               _SectionHeader(LucideIcons.settings_2, 'General'),
               const SizedBox(height: 12),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: _GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('VISUAL IDENTITY', style: GoogleFonts.inter(
-                    fontSize: 10, color: kPrimary, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  const SizedBox(height: 6),
-                  Text('Theme Preference', style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-                  const SizedBox(height: 4),
-                  Text('Choose between technical dark mode or high-contrast light.',
-                    style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-                  const SizedBox(height: 20),
-                  _ThemeToggle(),
-                ]))),
-                const SizedBox(width: 16),
                 Expanded(child: _GlassCard(child: Column(children: [
                   _Toggle('Launch at Startup', 'Start LANpad when you log in.',
                     _launchAtStartup, (v) {
                       setState(() => _launchAtStartup = v);
                       _saveBoolSetting('launch_at_startup', v);
                     }),
-                  const Divider(color: kOutlineVariant, height: 24),
+                ]))),
+                const SizedBox(width: 16),
+                Expanded(child: _GlassCard(child: Column(children: [
                   _Toggle('Native Notifications', 'Show desktop alerts for new events.',
                     _nativeNotifications, (v) {
                       setState(() => _nativeNotifications = v);
@@ -320,6 +341,42 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ]),
               ),
+              const SizedBox(height: 36),
+
+              // ── Compliance & Legal Policies ───────────────────────
+              _SectionHeader(LucideIcons.file_text, 'Compliance & Legal Policies'),
+              const SizedBox(height: 12),
+              _GlassCard(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _policies.length,
+                  separatorBuilder: (context, index) => const Divider(color: kOutlineVariant, height: 1),
+                  itemBuilder: (context, index) {
+                    final policy = _policies[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(policy.title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
+                      subtitle: Text(policy.desc, style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+                      trailing: const Icon(LucideIcons.chevron_right, size: 16, color: kOnSurfaceVariant),
+                      onTap: () async {
+                        final serverUrl = s.serverService.isRunning ? 'http://localhost:8000' : 'https://lanpad.app';
+                        final uri = Uri.parse('$serverUrl${policy.path}');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        } else {
+                          final fallback = Uri.parse(policy.fallbackUrl);
+                          if (await canLaunchUrl(fallback)) {
+                            await launchUrl(fallback);
+                          } else {
+                            s.onShowToast('Could not launch policy URL', isError: true);
+                          }
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 40),
             ]),
           ),
@@ -381,52 +438,6 @@ class _Toggle extends StatelessWidget {
       inactiveTrackColor: kSurfaceVariant,
     ),
   ]);
-}
-
-class _ThemeToggle extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: AppTheme.themeModeNotifier,
-      builder: (context, _) {
-        final mode = AppTheme.themeModeNotifier.value;
-        final selectedIndex = mode == ThemeMode.dark ? 0 : 1; // 0 for Dark, 1 for Light
-
-        return Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: kSurfaceLowest,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kOutlineVariant),
-          ),
-          child: Row(children: ['Dark', 'Light'].asMap().entries.map((e) {
-            final isActive = e.key == selectedIndex;
-            return Expanded(child: GestureDetector(
-              onTap: () async {
-                final targetMode = e.key == 0 ? ThemeMode.dark : ThemeMode.light;
-                AppTheme.themeModeNotifier.value = targetMode;
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setInt('theme_mode', e.key == 0 ? 1 : 0);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isActive ? kSurfaceVariant : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(child: Text(e.value, style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  color: isActive ? kPrimary : kOnSurfaceVariant,
-                ))),
-              ),
-            ));
-          }).toList()),
-        );
-      }
-    );
-  }
 }
 
 class _InfoBento extends StatelessWidget {

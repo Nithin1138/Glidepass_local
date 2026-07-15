@@ -103,8 +103,6 @@ class DesktopSidebar extends StatelessWidget {
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.settings, label: 'Settings', view: DesktopView.settings,
                   current: currentView, onTap: onNavigate),
-                _NavItem(icon: LucideIcons.file_text, label: 'Legal', view: DesktopView.terms,
-                  current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.shield_check, label: 'Permissions', view: DesktopView.setupPermissions,
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.link_2_off, label: 'Recovery', view: DesktopView.connectionRecovery,
