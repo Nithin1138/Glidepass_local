@@ -99,6 +99,96 @@ class _FilesContent extends StatelessWidget {
   final List<SharedFile> filtered;
   const _FilesContent({required this.state, required this.filtered});
 
+  void _showDeleteAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final textController = TextEditingController();
+        bool canDelete = false;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F1216),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: kOutlineVariant),
+              ),
+              title: Text('Confirm Delete All',
+                  style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This action will permanently delete all shared files from the session. This cannot be undone.',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13, height: 1.5),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'To verify, please type the word DELETE below:',
+                    style: GoogleFonts.inter(color: kOnSurface, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: textController,
+                    onChanged: (val) {
+                      setModalState(() {
+                        canDelete = val.trim().toUpperCase() == 'DELETE';
+                      });
+                    },
+                    style: GoogleFonts.inter(color: kOnSurface, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'DELETE',
+                      hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+                      filled: true,
+                      fillColor: kSurfaceContainer,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kPrimary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kError,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: canDelete
+                      ? () {
+                          Navigator.of(context).pop();
+                          state.onDeleteAllFiles();
+                        }
+                      : null,
+                  child: Text('Delete All',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -117,15 +207,24 @@ class _FilesContent extends StatelessWidget {
                 Text('Shared Files', style: GoogleFonts.outfit(
                   fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
                 const SizedBox(width: 10),
-                if (state.files.isNotEmpty) Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: kSurfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
+                if (state.files.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: kSurfaceVariant,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text('${state.files.length}', style: GoogleFonts.inter(
+                      fontSize: 11, color: kOnSurface, fontWeight: FontWeight.bold)),
                   ),
-                  child: Text('${state.files.length}', style: GoogleFonts.inter(
-                    fontSize: 11, color: kOnSurface, fontWeight: FontWeight.bold)),
-                ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => _showDeleteAllDialog(context),
+                    icon: const Icon(LucideIcons.trash_2, size: 14, color: kError),
+                    label: Text('Delete All',
+                      style: GoogleFonts.inter(color: kError, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ],
               ]),
               const SizedBox(height: 12),
               if (state.loadingFiles)
@@ -286,6 +385,9 @@ class _FileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isFolder = file.name.endsWith('.dir.zip');
+    final displayName = isFolder ? file.name.replaceAll('.dir.zip', '') : file.name;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -301,11 +403,15 @@ class _FileRow extends StatelessWidget {
             color: kSurfaceLow, borderRadius: BorderRadius.circular(10),
             border: Border.all(color: kOutlineVariant),
           ),
-          child: Icon(_fileIcon(file.name), color: kOnSurfaceVariant, size: 18),
+          child: Icon(
+            isFolder ? LucideIcons.folder : _fileIcon(file.name),
+            color: isFolder ? const Color(0xFFF97316) : kOnSurfaceVariant,
+            size: 18,
+          ),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(file.name, style: GoogleFonts.inter(
+          Text(displayName, style: GoogleFonts.inter(
             fontSize: 13, fontWeight: FontWeight.w600, color: kOnSurface),
             maxLines: 1, overflow: TextOverflow.ellipsis),
           Text(formatBytes(file.size),

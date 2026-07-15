@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import '../../services/server_service.dart';
@@ -418,51 +419,61 @@ class _DesktopShellState extends State<DesktopShell> {
       final String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
       if (selectedDirectory != null) {
         final dir = Directory(selectedDirectory);
-        final List<FileSystemEntity> entities = dir.listSync(recursive: true);
-        final List<File> filesToUpload = [];
-        for (final entity in entities) {
-          if (entity is File) {
-            filesToUpload.add(entity);
-          }
+        final folderName = p.basename(selectedDirectory);
+        final tempDir = await getTemporaryDirectory();
+        final zipFilePath = p.join(tempDir.path, '$folderName.dir.zip');
+        final zipFile = File(zipFilePath);
+        if (zipFile.existsSync()) {
+          zipFile.deleteSync();
         }
-        if (filesToUpload.isNotEmpty) {
-          int uploadedCount = 0;
-          for (int i = 0; i < filesToUpload.length; i++) {
-            final file = filesToUpload[i];
-            final filename = p.basename(file.path);
-            setState(() {
-              _isUploading = true;
-              _uploadProgressName = '(${i + 1}/${filesToUpload.length}) $filename';
-              _uploadProgress = 0.0;
-            });
-            final startTime = DateTime.now();
-            try {
-              final response = await _apiService.uploadFileDirect(
-                file: file, filename: filename, mode: 'parallel',
-                onProgress: (sent, total) {
-                  final elapsed = DateTime.now().difference(startTime).inSeconds;
-                  final speedMbps = elapsed > 0 ? (sent * 8) / (elapsed * 1024 * 1024) : 0.0;
-                  setState(() {
-                    _uploadProgress = sent / total;
-                    _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
-                    _uploadEta = speedMbps > 0
-                        ? '${((total - sent) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
-                        : 'calculating...';
-                  });
-                },
-              );
-              if (response.statusCode == 200) uploadedCount++;
-              else _showToast('Failed to upload $filename', isError: true);
-            } catch (e) {
-              _showToast('Failed: $e', isError: true);
+        
+        setState(() {
+          _isUploading = true;
+          _uploadProgressName = 'Compressing folder: $folderName...';
+          _uploadProgress = 0.0;
+        });
+
+        final parentPath = dir.parent.path;
+        final result = await Process.run(
+          '/usr/bin/zip',
+          ['-r', zipFilePath, folderName],
+          workingDirectory: parentPath,
+        );
+
+        if (result.exitCode == 0 && zipFile.existsSync()) {
+          setState(() {
+            _uploadProgressName = '$folderName (Folder)';
+            _uploadProgress = 0.0;
+          });
+          final startTime = DateTime.now();
+          try {
+            final response = await _apiService.uploadFileDirect(
+              file: zipFile, filename: '$folderName.dir.zip', mode: 'parallel',
+              onProgress: (sent, total) {
+                final elapsed = DateTime.now().difference(startTime).inSeconds;
+                final speedMbps = elapsed > 0 ? (sent * 8) / (elapsed * 1024 * 1024) : 0.0;
+                setState(() {
+                  _uploadProgress = sent / total;
+                  _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
+                  _uploadEta = speedMbps > 0
+                      ? '${((total - sent) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
+                      : 'calculating...';
+                });
+              },
+            );
+            if (response.statusCode == 200) {
+              _showToast('Uploaded folder "$folderName" successfully!');
+              _loadFiles();
+            } else {
+              _showToast('Failed to upload folder', isError: true);
             }
-          }
-          if (uploadedCount > 0) {
-            _showToast('Uploaded $uploadedCount files successfully!');
-            _loadFiles();
+          } catch (e) {
+            _showToast('Failed to upload: $e', isError: true);
+          } finally {
+            try { zipFile.deleteSync(); } catch (_) {}
           }
         } else {
-          _showToast('Selected folder is empty', isError: true);
+          _showToast('Folder compression failed', isError: true);
         }
       }
     } catch (e) {
@@ -470,6 +481,22 @@ class _DesktopShellState extends State<DesktopShell> {
     } finally {
       setState(() { _isUploading = false; _uploadProgressName = ''; _uploadProgress = 0.0; });
     }
+  }
+
+  Future<void> _deleteAllFiles() async {
+    final filesCopy = List<SharedFile>.from(_files);
+    if (filesCopy.isEmpty) return;
+    int deletedCount = 0;
+    for (final file in filesCopy) {
+      try {
+        final success = await _apiService.deleteFile(file.name);
+        if (success) deletedCount++;
+      } catch (e) {
+        debugPrint('Error deleting ${file.name}: $e');
+      }
+    }
+    _showToast('Deleted $deletedCount files successfully!');
+    _loadFiles();
   }
 
   Future<void> _downloadFile(SharedFile file) async {
@@ -609,6 +636,7 @@ class _DesktopShellState extends State<DesktopShell> {
     onToggleLanMode: (val) => setState(() => _isDirectLan = val),
     onDownloadFile: _downloadFile,
     onDeleteFile: _deleteFile,
+    onDeleteAllFiles: _deleteAllFiles,
     onSelectHub: _selectHub,
     onFilterHubResources: _filterHubResources,
     onRequestAccessibility: _requestAccessibility,

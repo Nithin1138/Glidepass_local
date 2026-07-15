@@ -57,6 +57,7 @@ class DesktopState {
   final ValueChanged<bool> onToggleLanMode;
   final Future<void> Function(SharedFile) onDownloadFile;
   final Future<void> Function(SharedFile) onDeleteFile;
+  final VoidCallback onDeleteAllFiles;
   final Future<void> Function(Hub) onSelectHub;
   final ValueChanged<String> onFilterHubResources;
   final VoidCallback onRequestAccessibility;
@@ -97,6 +98,7 @@ class DesktopState {
     required this.onToggleLanMode,
     required this.onDownloadFile,
     required this.onDeleteFile,
+    required this.onDeleteAllFiles,
     required this.onSelectHub,
     required this.onFilterHubResources,
     required this.onRequestAccessibility,
