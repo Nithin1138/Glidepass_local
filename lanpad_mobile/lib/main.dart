@@ -9,10 +9,13 @@ import 'screens/main_navigation_screen.dart';
 import 'screens/desktop/desktop_shell.dart';
 import 'services/notification_service.dart';
 
+import 'services/mobile_server_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTheme.init();
   await NotificationService().init();
+  await MobileServerService().start();
 
   if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();

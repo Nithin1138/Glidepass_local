@@ -873,6 +873,7 @@ class _ScannerDialog extends StatefulWidget {
 
 class _ScannerDialogState extends State<_ScannerDialog> {
   bool _isScanning = false;
+  bool _showManual = false;
   List<Map<String, dynamic>> _discoveredDevices = [];
 
   final _manualUrlController = TextEditingController();
@@ -1118,6 +1119,8 @@ class _ScannerDialogState extends State<_ScannerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final qrData = 'http://${widget.state.localIp}:8000?sid=${widget.state.serverService.sessionToken}';
+
     return Dialog(
       backgroundColor: const Color(0xFF0F1216),
       surfaceTintColor: Colors.transparent,
@@ -1135,8 +1138,19 @@ class _ScannerDialogState extends State<_ScannerDialog> {
           children: [
             Row(
               children: [
-                Text('Connect another Device',
-                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: kOnSurface)),
+                Text(
+                  _showManual ? 'Manual Relay Setup' : 'Connect another Device',
+                  style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: kOnSurface),
+                ),
+                const SizedBox(width: 16),
+                TextButton.icon(
+                  onPressed: () => setState(() => _showManual = !_showManual),
+                  icon: Icon(_showManual ? LucideIcons.scan : LucideIcons.settings, size: 14),
+                  label: Text(
+                    _showManual ? 'Back to Scanner' : 'Manual Relay Connection',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: kPrimary),
+                  ),
+                ),
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -1145,24 +1159,95 @@ class _ScannerDialogState extends State<_ScannerDialog> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Scan nearby network for other active clients or connect manually.',
-                style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-            const SizedBox(height: 24),
-            Flexible(
-              child: SingleChildScrollView(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildNearbyPanel()),
-                    const SizedBox(width: 24),
-                    Expanded(child: _buildManualPanel()),
-                  ],
-                ),
-              ),
+            Text(
+              _showManual
+                  ? 'Enter connection credentials of another device directly to pair over relay/subnet.'
+                  : 'Scan nearby network for active laptop/mobile app clients, or scan the QR code to connect mobile/web.',
+              style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant),
             ),
+            const SizedBox(height: 24),
+            _showManual
+                ? Center(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(24),
+                      decoration: kGlassCard,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+                          const SizedBox(height: 12),
+                          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Device'),
+                          const SizedBox(height: 12),
+                          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimary,
+                                foregroundColor: kSurfaceLowest,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: _connectManual,
+                              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Flexible(
+                    child: SingleChildScrollView(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildNearbyPanel()),
+                          const SizedBox(width: 24),
+                          Expanded(child: _buildQrPanel(qrData)),
+                        ],
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: kOnSurface)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: ctrl,
+          maxLength: maxLength,
+          style: GoogleFonts.inter(fontSize: 12, color: kOnSurface),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+            filled: true,
+            fillColor: kSurfaceLow,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kPrimary),
+            ),
+            counterText: '',
+          ),
+        ),
+      ],
     );
   }
 
@@ -1211,6 +1296,13 @@ class _ScannerDialogState extends State<_ScannerDialog> {
               itemCount: _discoveredDevices.length,
               itemBuilder: (context, index) {
                 final d = _discoveredDevices[index];
+                final nameLower = d['device_name'].toString().toLowerCase();
+                final isMobile = nameLower.contains('android') || 
+                                 nameLower.contains('ios') || 
+                                 nameLower.contains('phone') || 
+                                 nameLower.contains('mobile');
+                final icon = isMobile ? LucideIcons.smartphone : LucideIcons.laptop;
+
                 final rawCode = d['session_code']?.toString() ?? '';
                 final formattedCode = rawCode.length == 6
                     ? '${rawCode.substring(0, 3).toUpperCase()}-${rawCode.substring(3).toUpperCase()}'
@@ -1230,7 +1322,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.laptop, color: kPrimary, size: 18),
+                          Icon(icon, color: kPrimary, size: 18),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -1287,75 +1379,47 @@ class _ScannerDialogState extends State<_ScannerDialog> {
     );
   }
 
-  Widget _buildManualPanel() {
+  Widget _buildQrPanel(String qrData) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: kGlassCard,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('Manual Connection',
-              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600, color: kOnSurface)),
-          const SizedBox(height: 4),
-          Text('Enter connection details of another device directly.',
-              style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
-          const SizedBox(height: 16),
-          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
-          const SizedBox(height: 12),
-          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
-          const SizedBox(height: 12),
-          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimary,
-                foregroundColor: kSurfaceLowest,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: _connectManual,
-              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Scan to Connect',
+                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600, color: kOnSurface)),
+                const SizedBox(height: 4),
+                Text('Open LANpad on your phone or web browser to scan and link.',
+                    style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+              ],
             ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 160,
+              gapless: false,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Session Code: ${widget.state.serverService.sessionCode.toUpperCase()}',
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: kPrimary),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: kOnSurface)),
-        const SizedBox(height: 4),
-        TextField(
-          controller: ctrl,
-          maxLength: maxLength,
-          style: GoogleFonts.inter(fontSize: 12, color: kOnSurface),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
-            filled: true,
-            fillColor: kSurfaceLow,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kOutlineVariant),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kOutlineVariant),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kPrimary),
-            ),
-            counterText: '',
-          ),
-        ),
-      ],
     );
   }
 }
