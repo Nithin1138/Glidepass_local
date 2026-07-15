@@ -30,7 +30,6 @@ import 'widgets/top_bar.dart';
 import 'views/home_view.dart';
 import 'views/files_view.dart';
 import 'views/resources_view.dart';
-import 'views/history_view.dart';
 import 'views/settings_view.dart';
 import 'views/input_view.dart';
 import 'views/setup_permissions_view.dart';
@@ -706,7 +705,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case DesktopView.resources:
         return ResourcesView(state: state, searchController: _hubSearchController);
       case DesktopView.history:
-        return HistoryView(state: state);
+        return HomeView(state: state);
       case DesktopView.settings:
         return SettingsView(state: state);
       case DesktopView.input:

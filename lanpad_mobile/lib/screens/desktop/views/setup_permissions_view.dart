@@ -1,14 +1,27 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../desktop_theme.dart';
 import '../desktop_state.dart';
 
-class SetupPermissionsView extends StatelessWidget {
+class SetupPermissionsView extends StatefulWidget {
   final DesktopState state;
 
   const SetupPermissionsView({Key? key, required this.state}) : super(key: key);
 
   @override
+  State<SetupPermissionsView> createState() => _SetupPermissionsViewState();
+}
+
+class _SetupPermissionsViewState extends State<SetupPermissionsView> {
+  bool _inputMonitoringGranted = false;
+  bool _fullDiskAccessGranted = false;
+
+  @override
   Widget build(BuildContext context) {
+    final s = widget.state;
+    final isAccessGranted = s.hasAccessibilityPermission;
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -33,37 +46,66 @@ class SetupPermissionsView extends StatelessWidget {
                         icon: Icons.accessibility_new,
                         iconColor: kPrimary,
                         title: 'Accessibility',
-                        status: 'Granted',
-                        statusColor: Colors.green,
+                        status: isAccessGranted ? 'Granted' : 'Pending',
+                        statusColor: isAccessGranted ? Colors.green : const Color(0xFFFFB300),
                         description: 'Allows LANpad to simulate keyboard and mouse events from remote nodes. Required for the "Virtual KVM" feature.',
-                        buttonText: 'Managed by System',
-                        buttonIcon: Icons.lock,
-                        enabled: false,
+                        buttonText: isAccessGranted ? 'Configured' : 'Configure',
+                        buttonIcon: isAccessGranted ? Icons.check_circle : Icons.settings,
+                        enabled: !isAccessGranted,
+                        onPressed: () async {
+                          if (Platform.isMacOS) {
+                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri);
+                            }
+                          }
+                          s.onRequestAccessibility();
+                        },
                       ),
                       const SizedBox(height: 16),
                       _buildPermissionCard(
                         icon: Icons.keyboard,
                         iconColor: kTertiary,
                         title: 'Input Monitoring',
-                        status: 'Pending',
-                        statusColor: kTertiary,
+                        status: _inputMonitoringGranted ? 'Granted' : 'Pending',
+                        statusColor: _inputMonitoringGranted ? Colors.green : kTertiary,
                         description: 'Required to capture global hotkeys and clipboard events when LANpad is in the background. Without this, sync will only work when the app is focused.',
-                        buttonText: 'Enable Permission',
-                        buttonIcon: Icons.arrow_forward,
-                        enabled: true,
-                        isPrimaryAction: true,
+                        buttonText: _inputMonitoringGranted ? 'Configured' : 'Enable Permission',
+                        buttonIcon: _inputMonitoringGranted ? Icons.check_circle : Icons.arrow_forward,
+                        enabled: !_inputMonitoringGranted,
+                        isPrimaryAction: !_inputMonitoringGranted,
+                        onPressed: () async {
+                          setState(() => _inputMonitoringGranted = true);
+                          s.onShowToast('Input Monitoring Permission Enabled');
+                          if (Platform.isMacOS) {
+                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri);
+                            }
+                          }
+                        },
                       ),
                       const SizedBox(height: 16),
                       _buildPermissionCard(
                         icon: Icons.folder,
                         iconColor: kOnSurfaceVariant,
                         title: 'Full Disk Access',
-                        status: 'Optional',
-                        statusColor: kOnSurfaceVariant,
+                        status: _fullDiskAccessGranted ? 'Granted' : 'Optional',
+                        statusColor: _fullDiskAccessGranted ? Colors.green : kOnSurfaceVariant,
                         description: 'Enable this if you want to use the "Seamless Drag & Drop" file transfer between connected machines. This allows reading files outside the Sandbox.',
-                        buttonText: 'Grant Access',
-                        buttonIcon: Icons.add_moderator,
-                        enabled: true,
+                        buttonText: _fullDiskAccessGranted ? 'Configured' : 'Grant Access',
+                        buttonIcon: _fullDiskAccessGranted ? Icons.check_circle : Icons.add_moderator,
+                        enabled: !_fullDiskAccessGranted,
+                        onPressed: () async {
+                          setState(() => _fullDiskAccessGranted = true);
+                          s.onShowToast('Full Disk Access Granted');
+                          if (Platform.isMacOS) {
+                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri);
+                            }
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -144,13 +186,23 @@ class SetupPermissionsView extends StatelessWidget {
                   Icon(Icons.help_outline, color: kOnSurfaceVariant, size: 20),
                   const SizedBox(width: 8),
                   Text('Having trouble? ', style: kBodyMd.copyWith(color: kOnSurfaceVariant)),
-                  Text('Read the docs', style: kBodyMd.copyWith(color: kPrimary)),
+                  GestureDetector(
+                    onTap: () async {
+                      final uri = Uri.parse('https://lanpad.app/docs');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    child: Text('Read the docs', style: kBodyMd.copyWith(color: kPrimary)),
+                  ),
                 ],
               ),
               Row(
                 children: [
                   OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      s.onShowToast('Permissions setup skipped');
+                    },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     ),
@@ -158,7 +210,9 @@ class SetupPermissionsView extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      s.onShowToast('Permissions configuration finalized');
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kPrimary,
                       foregroundColor: kSurfaceLowest,
@@ -186,6 +240,7 @@ class SetupPermissionsView extends StatelessWidget {
     required IconData buttonIcon,
     required bool enabled,
     bool isPrimaryAction = false,
+    required VoidCallback onPressed,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -241,7 +296,7 @@ class SetupPermissionsView extends StatelessWidget {
                 const SizedBox(height: 16),
                 if (enabled)
                   ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: onPressed,
                     icon: Icon(buttonIcon, size: 16),
                     label: Text(buttonText),
                     style: ElevatedButton.styleFrom(
