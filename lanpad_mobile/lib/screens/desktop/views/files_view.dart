@@ -7,14 +7,18 @@ import '../../../models/file_model.dart';
 
 /// File Transfer Hub — Stitch blueprint "Resources / File Transfer Hub" screen.
 /// Drop zone at top, active file list below, session stats sidebar.
+import '../widgets/sidebar.dart';
+
 class FilesView extends StatelessWidget {
   final DesktopState state;
   final TextEditingController searchController;
+  final ValueChanged<DesktopView>? onNavigate;
 
   const FilesView({
     super.key,
     required this.state,
     required this.searchController,
+    this.onNavigate,
   });
 
   @override
@@ -26,7 +30,7 @@ class FilesView extends StatelessWidget {
         .toList();
 
     return Column(children: [
-      _FilesTopBar(state: state, searchController: searchController),
+      _FilesTopBar(state: state, searchController: searchController, onNavigate: onNavigate),
       Expanded(child: isRunning
           ? _FilesContent(state: state, filtered: filtered)
           : _OfflinePrompt(onStart: state.onToggleServer)),
@@ -38,7 +42,8 @@ class FilesView extends StatelessWidget {
 class _FilesTopBar extends StatelessWidget {
   final DesktopState state;
   final TextEditingController searchController;
-  const _FilesTopBar({required this.state, required this.searchController});
+  final ValueChanged<DesktopView>? onNavigate;
+  const _FilesTopBar({required this.state, required this.searchController, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +93,20 @@ class _FilesTopBar extends StatelessWidget {
             ),
           ),
         ),
+        if (onNavigate != null) ...[
+          const SizedBox(width: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: kPrimary,
+              side: BorderSide(color: kOutlineVariant),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            ),
+            icon: const Icon(LucideIcons.file_search, size: 14),
+            label: Text('Transfer Previews', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+            onPressed: () => onNavigate!(DesktopView.filePreviews),
+          ),
+        ],
       ]),
     );
   }

@@ -33,7 +33,6 @@ import 'views/resources_view.dart';
 import 'views/settings_view.dart';
 import 'views/input_view.dart';
 import 'views/setup_permissions_view.dart';
-import 'views/connection_recovery_view.dart';
 import 'views/file_previews_view.dart';
 import 'views/onboarding_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -701,7 +700,11 @@ class _DesktopShellState extends State<DesktopShell> {
       case DesktopView.home:
         return HomeView(state: state);
       case DesktopView.files:
-        return FilesView(state: state, searchController: _fileSearchController);
+        return FilesView(
+          state: state, 
+          searchController: _fileSearchController,
+          onNavigate: (view) => setState(() => _currentView = view),
+        );
       case DesktopView.resources:
         return ResourcesView(state: state, searchController: _hubSearchController);
       case DesktopView.history:
@@ -715,7 +718,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case DesktopView.setupPermissions:
         return SetupPermissionsView(state: state);
       case DesktopView.connectionRecovery:
-        return ConnectionRecoveryView(state: state);
+        return HomeView(state: state);
       case DesktopView.filePreviews:
         return FilePreviewsView(state: state);
     }
