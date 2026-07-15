@@ -281,17 +281,22 @@ def get_license_tier():
 
 CLOUD_LIMITS_CACHE = None
 
-def get_cloud_limits(tier):
+def get_cloud_limits(tier, force=False):
     global CLOUD_LIMITS_CACHE
     import time
     
-    # Refresh cache every 60 seconds
-    if CLOUD_LIMITS_CACHE is None or time.time() - CLOUD_LIMITS_CACHE.get("timestamp", 0) > 60:
+    # Refresh cache every 60 seconds (or immediately if force=True)
+    if force or CLOUD_LIMITS_CACHE is None or time.time() - CLOUD_LIMITS_CACHE.get("timestamp", 0) > 60:
         try:
             import urllib.request
             import json
+            import ssl
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
             req = urllib.request.Request("https://lanpad.app/api/monetization/status", headers={"User-Agent": "LANpad App"})
-            with urllib.request.urlopen(req, timeout=2) as resp:
+            with urllib.request.urlopen(req, context=ctx, timeout=2) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 CLOUD_LIMITS_CACHE = {
                     "timestamp": time.time(),
@@ -1166,9 +1171,15 @@ async def copy_from_laptop(request: Request):
 
 
 @app.get("/api/license/status")
-async def license_status():
+async def license_status(force: bool = False):
     import json
     from datetime import datetime
+    
+    # If force is requested, clear the cache to ensure fresh monetization check
+    if force:
+        global CLOUD_LIMITS_CACHE
+        CLOUD_LIMITS_CACHE = None
+        
     license_path = os.path.expanduser("~/.lanpad_license.json")
     tier = "FREE"
     key = ""
@@ -1266,7 +1277,7 @@ async def license_activate(data: dict):
 
 
 @app.get("/api/admin/status")
-async def admin_status():
+async def admin_status(force: bool = False):
     """Returns a bundled status including tier, monetization state, feature limits, and version."""
     import json
     from datetime import datetime
@@ -1274,7 +1285,7 @@ async def admin_status():
     tier = get_license_tier() or "FREE"
     
     # Get cloud limits
-    limits = get_cloud_limits(tier)
+    limits = get_cloud_limits(tier, force=force)
     
     # Check monetization status from cache
     monetization_enabled = bool(CLOUD_LIMITS_CACHE and CLOUD_LIMITS_CACHE.get("monetization_enabled", False))
@@ -1306,11 +1317,16 @@ async def update_check():
         local_version = "0.0.0"
     
     try:
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
         req = urllib.request.Request(
             "https://lanpad.app/downloads/version.json",
             headers={"User-Agent": "LANpad Flutter App"}
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         
         online_version = data.get("version", local_version)
