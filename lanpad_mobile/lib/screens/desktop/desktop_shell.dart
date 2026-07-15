@@ -720,7 +720,10 @@ class _DesktopShellState extends State<DesktopShell> {
       case DesktopView.connectionRecovery:
         return HomeView(state: state);
       case DesktopView.filePreviews:
-        return FilePreviewsView(state: state);
+        return FilePreviewsView(
+          state: state,
+          onNavigate: (view) => setState(() => _currentView = view),
+        );
     }
   }
 }

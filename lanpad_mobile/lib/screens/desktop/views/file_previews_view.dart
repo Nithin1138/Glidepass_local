@@ -5,10 +5,14 @@ import '../desktop_state.dart';
 import '../../../models/file_model.dart';
 import 'package:intl/intl.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+import '../widgets/sidebar.dart';
+
 class FilePreviewsView extends StatefulWidget {
   final DesktopState state;
+  final ValueChanged<DesktopView>? onNavigate;
 
-  const FilePreviewsView({super.key, required this.state});
+  const FilePreviewsView({super.key, required this.state, this.onNavigate});
 
   @override
   State<FilePreviewsView> createState() => _FilePreviewsViewState();
@@ -35,8 +39,39 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
+          ),
+          child: Row(
+            children: [
+              if (widget.onNavigate != null) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, size: 16),
+                  onPressed: () => widget.onNavigate!(DesktopView.files),
+                  tooltip: 'Back to Transfer Hub',
+                  style: IconButton.styleFrom(
+                    foregroundColor: kPrimary,
+                    padding: const EdgeInsets.all(8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: kOutlineVariant),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Text('Transfer Previews', style: GoogleFonts.outfit(
+                fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+            ],
+          ),
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 900;
 
         final leftColumn = Column(
@@ -318,8 +353,11 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
           );
         }
       },
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   Widget _buildFilterButton(String text, bool active) {
     return Padding(

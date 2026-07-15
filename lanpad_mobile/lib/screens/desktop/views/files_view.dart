@@ -70,6 +70,20 @@ class _FilesTopBar extends StatelessWidget {
           ),
         ],
         const Spacer(),
+        if (onNavigate != null) ...[
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: kPrimary,
+              side: BorderSide(color: kOutlineVariant),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            ),
+            icon: const Icon(LucideIcons.file_search, size: 14),
+            label: Text('Transfer Previews', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+            onPressed: () => onNavigate!(DesktopView.filePreviews),
+          ),
+          const SizedBox(width: 12),
+        ],
         SizedBox(
           width: 260,
           child: StatefulBuilder(
@@ -93,20 +107,6 @@ class _FilesTopBar extends StatelessWidget {
             ),
           ),
         ),
-        if (onNavigate != null) ...[
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: kPrimary,
-              side: BorderSide(color: kOutlineVariant),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            ),
-            icon: const Icon(LucideIcons.file_search, size: 14),
-            label: Text('Transfer Previews', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
-            onPressed: () => onNavigate!(DesktopView.filePreviews),
-          ),
-        ],
       ]),
     );
   }
