@@ -154,11 +154,21 @@ class DesktopSidebar extends StatelessWidget {
                   const Icon(LucideIcons.monitor, color: kOnSurfaceVariant, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      state.displayDeviceName,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface),
-                      overflow: TextOverflow.ellipsis,
+                    child: Builder(
+                      builder: (context) {
+                        final token = state.serverService.sessionToken;
+                        final code = token.length >= 6 
+                            ? token.substring(token.length - 6).toUpperCase()
+                            : token;
+                        final name = state.displayDeviceName;
+                        final displayText = (isRunning && code.isNotEmpty) ? '$name - $code' : name;
+                        return Text(
+                          displayText,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                   ),
                 ]),
