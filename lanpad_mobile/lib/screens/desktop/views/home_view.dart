@@ -804,9 +804,256 @@ class _QuickStartGuide extends StatelessWidget {
 }
 
 // ─── Connected Dashboard ──────────────────────────────────────────────────────
-class _ConnectedView extends StatelessWidget {
+class _ConnectedView extends StatefulWidget {
   final DesktopState state;
   const _ConnectedView({required this.state});
+
+  @override
+  State<_ConnectedView> createState() => _ConnectedViewState();
+}
+
+class _ConnectedViewState extends State<_ConnectedView> {
+  bool _isScanning = false;
+  List<Map<String, dynamic>> _discoveredDevices = [];
+
+  final _manualUrlController = TextEditingController();
+  final _manualNameController = TextEditingController();
+  final _manualCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _discoverLocalDevices();
+  }
+
+  @override
+  void dispose() {
+    _manualUrlController.dispose();
+    _manualNameController.dispose();
+    _manualCodeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _discoverLocalDevices() async {
+    if (_isScanning) return;
+    setState(() {
+      _isScanning = true;
+      _discoveredDevices.clear();
+    });
+
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+
+      final localIps = interfaces.expand((i) => i.addresses).map((a) => a.address).toList();
+      localIps.add('127.0.0.1');
+      localIps.add('localhost');
+
+      String? localIp;
+      for (var interface in interfaces) {
+        for (var addr in interface.addresses) {
+          if (!addr.isLoopback) {
+            localIp = addr.address;
+            break;
+          }
+        }
+        if (localIp != null) break;
+      }
+
+      if (localIp != null) {
+        final parts = localIp.split('.');
+        if (parts.length == 4) {
+          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
+          final List<Future<void>> tasks = [];
+
+          final client = HttpClient();
+          client.connectionTimeout = const Duration(milliseconds: 1000);
+
+          for (int i = 1; i <= 254; i++) {
+            final ip = '$subnet.$i';
+            if (localIps.contains(ip)) continue;
+            final url = 'http://$ip:8000';
+
+            tasks.add(
+              client.getUrl(Uri.parse('$url/api/connection/info'))
+                  .then((req) => req.close())
+                  .then((res) async {
+                if (res.statusCode == 200) {
+                  final bodyStr = await res.transform(utf8.decoder).join();
+                  final data = jsonDecode(bodyStr);
+                  if (data['status'] == 'success') {
+                    final serverCode = data['session_code']?.toString() ?? '';
+                    final myToken = widget.state.serverService.sessionToken;
+                    final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
+                    
+                    if (serverCode.toLowerCase() == myCode.toLowerCase()) {
+                      return;
+                    }
+
+                    if (mounted) {
+                      setState(() {
+                        if (!_discoveredDevices.any((d) => d['url'] == url)) {
+                          _discoveredDevices.add({
+                            'url': url,
+                            'device_name': data['device_name'] ?? 'LANpad Device',
+                            'session_code': data['session_code'] ?? '',
+                            'ip': ip,
+                          });
+                        }
+                      });
+                    }
+                  }
+                }
+              }).catchError((_) {}),
+            );
+          }
+          await Future.wait(tasks);
+        }
+      }
+    } catch (e) {
+      debugPrint('Local discovery error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
+  }
+
+  void _showPairingDialog(Map<String, dynamic> device) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final codeController = TextEditingController();
+        bool isConnecting = false;
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F1216),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: kOutlineVariant),
+              ),
+              title: Text('Connect to ${device['device_name']}',
+                  style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Please enter the 6-digit session pairing code shown on target device home screen.',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: codeController,
+                    style: GoogleFonts.inter(color: kOnSurface, fontSize: 14),
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      hintText: 'Enter 6-digit code',
+                      hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+                      filled: true,
+                      fillColor: kSurfaceContainer,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kPrimary),
+                      ),
+                      counterText: '',
+                    ),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(errorText!, style: GoogleFonts.inter(color: kError, fontSize: 12)),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isConnecting ? null : () => Navigator.of(context).pop(),
+                  child: Text('Cancel', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimary,
+                    foregroundColor: kSurfaceLowest,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: isConnecting
+                      ? null
+                      : () async {
+                          final code = codeController.text.trim();
+                          if (code.length != 6) {
+                            setModalState(() {
+                              errorText = 'Code must be 6 digits.';
+                            });
+                            return;
+                          }
+                          setModalState(() {
+                            isConnecting = true;
+                            errorText = null;
+                          });
+                          final err = await widget.state.connectionService.connect(device['url'], code);
+                          if (err != null) {
+                            setModalState(() {
+                              isConnecting = false;
+                              errorText = err;
+                            });
+                          } else {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                  child: isConnecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text('Connect', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _connectManual() async {
+    final url = _manualUrlController.text.trim();
+    final code = _manualCodeController.text.trim();
+
+    if (url.isEmpty || code.isEmpty) {
+      widget.state.onShowToast('URL and pairing code are required', isError: true);
+      return;
+    }
+
+    try {
+      widget.state.onShowToast('Connecting manually...');
+      final err = await widget.state.connectionService.connect(url, code);
+      if (err != null) {
+        widget.state.onShowToast('Connection failed: $err', isError: true);
+      } else {
+        widget.state.onShowToast('Connected successfully!');
+      }
+    } catch (e) {
+      widget.state.onShowToast('Error: $e', isError: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -827,19 +1074,231 @@ class _ConnectedView extends StatelessWidget {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Left col (8/12) — hero + activity
           Expanded(flex: 8, child: Column(children: [
-            _DeviceHeroCard(state: state),
+            _DeviceHeroCard(state: widget.state),
             const SizedBox(height: 16),
-            _ActivityFeed(state: state),
+            _ActivityFeed(state: widget.state),
           ])),
           const SizedBox(width: 16),
           // Right col (4/12) — quick actions + stats
           Expanded(flex: 4, child: Column(children: [
-            _QuickActionsCard(state: state),
+            _QuickActionsCard(state: widget.state),
             const SizedBox(height: 16),
-            _ConnectionStatsCard(state: state),
+            _ConnectionStatsCard(state: widget.state),
           ])),
         ]),
+
+        // Connect to another device / Scanner interface
+        const SizedBox(height: 32),
+        const Divider(color: kOutlineVariant),
+        const SizedBox(height: 24),
+        Text('Connect to another App',
+            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kOnSurface)),
+        const SizedBox(height: 4),
+        Text('Scan nearby network for other active clients or connect manually.',
+            style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+        const SizedBox(height: 24),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildNearbyPanel()),
+            const SizedBox(width: 24),
+            Expanded(child: _buildManualPanel()),
+          ],
+        ),
       ]),
+    );
+  }
+
+  Widget _buildNearbyPanel() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: kGlassCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Nearby Devices',
+                  style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+              IconButton(
+                onPressed: _isScanning ? null : _discoverLocalDevices,
+                icon: Icon(
+                  _isScanning ? Icons.sync : Icons.refresh,
+                  color: kPrimary,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_isScanning && _discoveredDevices.isEmpty) ...[
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 30),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ] else if (_discoveredDevices.isEmpty) ...[
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 30.0),
+                child: Text('No nearby desktop apps found',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+              ),
+            ),
+          ] else ...[
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _discoveredDevices.length,
+              itemBuilder: (context, index) {
+                final d = _discoveredDevices[index];
+                final rawCode = d['session_code']?.toString() ?? '';
+                final formattedCode = rawCode.length == 6
+                    ? '${rawCode.substring(0, 3).toUpperCase()}-${rawCode.substring(3).toUpperCase()}'
+                    : rawCode.toUpperCase();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: InkWell(
+                    onTap: () => _showPairingDialog(d),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: kSurfaceLow,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: kOutlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(LucideIcons.laptop, color: kPrimary, size: 18),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(d['device_name'],
+                                          style: GoogleFonts.inter(
+                                              fontSize: 13, fontWeight: FontWeight.w600, color: kOnSurface),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    if (formattedCode.isNotEmpty) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: kPrimary.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: kPrimary.withOpacity(0.2)),
+                                        ),
+                                        child: Text(
+                                          formattedCode,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: kPrimary,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(d['url'],
+                                    style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                          Icon(LucideIcons.chevron_right, size: 14, color: kOnSurfaceVariant.withOpacity(0.5)),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManualPanel() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: kGlassCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Manual Connection',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+          const SizedBox(height: 4),
+          Text('Enter connection details of another device directly.',
+              style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+          const SizedBox(height: 16),
+          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+          const SizedBox(height: 12),
+          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
+          const SizedBox(height: 12),
+          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary,
+                foregroundColor: kSurfaceLowest,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: _connectManual,
+              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: kOnSurface)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: ctrl,
+          maxLength: maxLength,
+          style: GoogleFonts.inter(fontSize: 12, color: kOnSurface),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+            filled: true,
+            fillColor: kSurfaceLow,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kPrimary),
+            ),
+            counterText: '',
+          ),
+        ),
+      ],
     );
   }
 }
@@ -853,88 +1312,41 @@ class _DeviceHeroCard extends StatelessWidget {
     final serverDeviceNames = state.serverService.connectedDeviceNames;
     final isClient = state.connectionService.isConnected && !state.connectionService.isLocalConnection;
 
+    final rawCode = state.serverService.sessionToken;
+    final formattedCode = rawCode.length >= 6
+        ? '${rawCode.substring(rawCode.length - 6, rawCode.length - 3).toUpperCase()}-${rawCode.substring(rawCode.length - 3).toUpperCase()}'
+        : rawCode.toUpperCase();
+
     if (isClient) {
       final name = state.connectionService.connectedDeviceName ?? 'Connected Server';
-      return _buildSingleDeviceCard(context, name);
+      return _buildSingleDeviceCard(context, name, isServer: false);
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: kSurfaceContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: kOutlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                '${serverDeviceNames.length} Connected ${serverDeviceNames.length == 1 ? 'Device' : 'Devices'}',
-                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kOnSurface),
-              ),
-              const Spacer(),
-              const Icon(LucideIcons.users, color: kPrimary, size: 20),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (serverDeviceNames.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
-              child: Center(
-                child: Text('No devices connected yet',
-                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
-              ),
-            ),
-          ] else ...[
-            ...serverDeviceNames.map((deviceName) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: kSurfaceLow,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: kOutlineVariant),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(LucideIcons.smartphone, color: kPrimary, size: 18),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            deviceName,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: kOnSurface,
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kError.withOpacity(0.1),
-                            foregroundColor: kError,
-                            elevation: 0,
-                            side: BorderSide(color: kError.withOpacity(0.2)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          ),
-                          onPressed: () => state.onDisconnectRemoteDevice(deviceName),
-                          child: Text('Disconnect', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 11)),
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
-          ],
-        ],
-      ),
+    if (serverDeviceNames.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: kSurfaceContainer,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kOutlineVariant),
+        ),
+        child: Center(
+          child: Text('No devices connected yet',
+              style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+        ),
+      );
+    }
+
+    return Column(
+      children: serverDeviceNames.map((deviceName) => Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
+        child: _buildSingleDeviceCard(context, deviceName, isServer: true, code: formattedCode),
+      )).toList(),
     );
   }
 
-  Widget _buildSingleDeviceCard(BuildContext context, String name) {
+  Widget _buildSingleDeviceCard(BuildContext context, String name, {required bool isServer, String? code}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -964,7 +1376,7 @@ class _DeviceHeroCard extends StatelessWidget {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.laptop, color: Colors.white, size: 24),
+                child: Icon(isServer ? LucideIcons.smartphone : LucideIcons.laptop, color: Colors.white, size: 24),
               ),
               const Spacer(),
               ElevatedButton(
@@ -974,15 +1386,46 @@ class _DeviceHeroCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
-                onPressed: state.connectionService.disconnect,
+                onPressed: () {
+                  if (isServer) {
+                    state.onDisconnectRemoteDevice(name);
+                  } else {
+                    state.connectionService.disconnect();
+                  }
+                },
                 child: Text('Disconnect', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Text(
-            name,
-            style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                name,
+                style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              if (code != null && code.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    code,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 4),
           Text(
