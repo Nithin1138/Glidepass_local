@@ -87,6 +87,69 @@ class _InputViewState extends State<InputView> {
   @override
   Widget build(BuildContext context) {
     final isRunning = widget.state.serverService.isRunning;
+    final isConnected = widget.state.connectionService.isConnected;
+    final connectedName = widget.state.connectionService.connectedDeviceName ?? '';
+    final isMobile = connectedName.toLowerCase().contains('android') ||
+                     connectedName.toLowerCase().contains('ios') ||
+                     connectedName.toLowerCase().contains('phone') ||
+                     connectedName.toLowerCase().contains('mobile');
+
+    if (isConnected && isMobile) {
+      return Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 480),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13171C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF262D35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFB4AB).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.keyboard_off,
+                  color: Color(0xFFFFB4AB),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Input Control Not Supported',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Keyboard input injection is only available when controlling another Desktop node. File transfers and Clipboard sync are fully supported for Mobile nodes.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFFC4C7C5),
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
