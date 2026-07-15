@@ -17,6 +17,8 @@ class InputView extends StatefulWidget {
 class _InputViewState extends State<InputView> {
   final _controller = TextEditingController();
   String _selectedMode = 'Flash'; // 'Flash', 'Type', 'Inject', 'Live Sync'
+  int _wpm = 120;
+  bool _isCoding = false;
 
   int _line = 1;
   int _col = 1;
@@ -64,16 +66,16 @@ class _InputViewState extends State<InputView> {
     if (text.isEmpty) return;
     try {
       // Mapping GUI mode selection to API mode parameters
-      String apiMode = 'instant';
-      if (_selectedMode == 'Type') apiMode = 'type';
+      String apiMode = 'flash';
+      if (_selectedMode == 'Type') apiMode = 'typing';
       else if (_selectedMode == 'Inject') apiMode = 'inject';
       else if (_selectedMode == 'Live Sync') apiMode = 'sync';
 
       await widget.state.apiService.sendPaste(
         text: text,
         mode: apiMode,
-        wpm: 240,
-        isCoding: true,
+        wpm: _selectedMode == 'Type' ? _wpm : 240,
+        isCoding: _selectedMode == 'Type' ? _isCoding : false,
       );
       widget.state.onShowToast('Text sent successfully');
       _controller.clear();
@@ -195,42 +197,120 @@ class _InputViewState extends State<InputView> {
                 ),
                 const SizedBox(height: 20),
 
-                // Controls Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Controls Row & Expandable Settings Panel
+                Column(
                   children: [
-                    // Mode selector pill
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: kSurfaceContainer,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: kOutlineVariant),
-                      ),
-                      child: Row(
-                        children: [
-                          _buildModeBtn('Flash'),
-                          _buildModeBtn('Type'),
-                          _buildModeBtn('Inject'),
-                          _buildModeBtn('Live Sync', hasDot: true),
-                        ],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Mode selector pill
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: kSurfaceContainer,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: kOutlineVariant),
+                          ),
+                          child: Row(
+                            children: [
+                              _buildModeBtn('Flash'),
+                              _buildModeBtn('Type'),
+                              _buildModeBtn('Inject'),
+                              _buildModeBtn('Live Sync', hasDot: true),
+                            ],
+                          ),
+                        ),
+
+                        // Send Button
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
+                            foregroundColor: const Color(0xFF38BDF8),
+                            side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: isRunning ? _sendText : null,
+                          icon: const Icon(LucideIcons.rocket, size: 16),
+                          label: Text('Send to Active App',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ],
                     ),
 
-                    // Send Button
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
-                        foregroundColor: const Color(0xFF38BDF8),
-                        side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    // Expandable typing speed & mode options if 'Type' is selected
+                    if (_selectedMode == 'Type') ...[
+                      const SizedBox(height: 16),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F1216),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: kOutlineVariant),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Typing Speed (WPM)',
+                                    style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
+                                Text('$_wpm WPM',
+                                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: const Color(0xFF38BDF8),
+                                inactiveTrackColor: kOutlineVariant,
+                                thumbColor: const Color(0xFF38BDF8),
+                                overlayColor: const Color(0xFF38BDF8).withOpacity(0.12),
+                              ),
+                              child: Slider(
+                                value: _wpm.toDouble(),
+                                min: 10,
+                                max: 300,
+                                divisions: 29,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _wpm = val.round();
+                                  });
+                                },
+                              ),
+                            ),
+                            const Divider(color: kOutlineVariant, height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Coding / IDE Mode',
+                                        style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
+                                    const SizedBox(height: 2),
+                                    Text('Optimizes character pauses for developer IDEs',
+                                        style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+                                  ],
+                                ),
+                                Switch(
+                                  value: _isCoding,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _isCoding = val;
+                                    });
+                                  },
+                                  activeColor: const Color(0xFF38BDF8),
+                                  activeTrackColor: const Color(0xFF38BDF8).withOpacity(0.3),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      onPressed: isRunning ? _sendText : null,
-                      icon: const Icon(LucideIcons.rocket, size: 16),
-                      label: Text('Send to Active App',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
+                    ],
                   ],
                 ),
               ],
@@ -362,8 +442,11 @@ class _InputViewState extends State<InputView> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1B2028) : Colors.transparent,
+          color: isSelected ? const Color(0xFF38BDF8).withOpacity(0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF38BDF8).withOpacity(0.3) : Colors.transparent,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -381,7 +464,7 @@ class _InputViewState extends State<InputView> {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? kOnSurface : kOnSurfaceVariant,
+                color: isSelected ? const Color(0xFF38BDF8) : kOnSurfaceVariant,
               ),
             ),
           ],
