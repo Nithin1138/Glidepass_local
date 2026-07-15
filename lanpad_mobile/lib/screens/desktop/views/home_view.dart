@@ -38,39 +38,63 @@ class _WaitingView extends StatelessWidget {
             ? '$tunnelUrl?sid=${state.serverService.sessionToken}'
             : 'https://lanpad.app?sid=${state.serverService.sessionToken}');
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Page header
-              Text('Discovery Mode', style: kHeadlineLg),
-              const SizedBox(height: 4),
-              Text(
-                'Waiting for your mobile device to connect.',
-                style: kBodyLg.copyWith(color: kOnSurfaceVariant),
-              ),
-              const SizedBox(height: 36),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 768;
+        final content = isNarrow
+            ? Column(
+                children: [
+                  _QrPanel(
+                    state: state, 
+                    isRunning: isRunning && !isConnectingTunnel, 
+                    qrData: qrData,
+                    showConnecting: isConnectingTunnel,
+                  ),
+                  const SizedBox(height: 32),
+                  _QuickStartGuide(state: state),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _QrPanel(
+                      state: state, 
+                      isRunning: isRunning && !isConnectingTunnel, 
+                      qrData: qrData,
+                      showConnecting: isConnectingTunnel,
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: _QuickStartGuide(state: state),
+                  ),
+                ],
+              );
 
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Left: QR code + mode toggle
-                Expanded(child: _QrPanel(
-                  state: state, 
-                  isRunning: isRunning && !isConnectingTunnel, 
-                  qrData: qrData,
-                  showConnecting: isConnectingTunnel,
-                )),
-                const SizedBox(width: 40),
-                // Right: Quick start guide
-                Expanded(child: _QuickStartGuide(state: state)),
-              ]),
-            ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Page header
+                  Text('Discovery Mode', style: kHeadlineLg),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Waiting for your mobile device to connect.',
+                    style: kBodyLg.copyWith(color: kOnSurfaceVariant),
+                  ),
+                  const SizedBox(height: 36),
+                  content,
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -151,13 +175,8 @@ class _QrPanel extends StatelessWidget {
       ),
       if (isRunning && !showConnecting) ...[
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: kSurfaceLow,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kOutlineVariant),
-          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SelectableText(
             qrData,
             style: GoogleFonts.inter(fontSize: 12, color: kPrimary, fontWeight: FontWeight.w500),
