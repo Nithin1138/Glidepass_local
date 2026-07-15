@@ -42,6 +42,7 @@ class _WaitingViewState extends State<_WaitingView> {
   bool _isScanning = false;
   bool _showManual = false;
   List<Map<String, dynamic>> _discoveredDevices = [];
+  bool _encryptionEnabled = true;
 
   final _manualUrlController = TextEditingController();
   final _manualNameController = TextEditingController();
@@ -312,6 +313,10 @@ class _WaitingViewState extends State<_WaitingView> {
                 isRunning: isRunning && !isConnectingTunnel,
                 qrData: qrData,
                 showConnecting: isConnectingTunnel,
+                encryptionEnabled: _encryptionEnabled,
+                onToggleEncryption: (val) {
+                  setState(() => _encryptionEnabled = val);
+                },
               ),
               const SizedBox(height: 32),
               _buildNearbyPanel(),
@@ -367,6 +372,10 @@ class _WaitingViewState extends State<_WaitingView> {
                     isRunning: isRunning && !isConnectingTunnel,
                     qrData: qrData,
                     showConnecting: isConnectingTunnel,
+                    encryptionEnabled: _encryptionEnabled,
+                    onToggleEncryption: (val) {
+                      setState(() => _encryptionEnabled = val);
+                    },
                   ),
                 ),
               ],
@@ -607,11 +616,16 @@ class _QrPanel extends StatelessWidget {
   final String qrData;
   final bool showConnecting;
 
+  final bool encryptionEnabled;
+  final ValueChanged<bool> onToggleEncryption;
+
   const _QrPanel({
     required this.state, 
     required this.isRunning, 
     required this.qrData,
     required this.showConnecting,
+    required this.encryptionEnabled,
+    required this.onToggleEncryption,
   });
 
   @override
@@ -692,21 +706,75 @@ class _QrPanel extends StatelessWidget {
         _ModeChip(
           label: 'Direct LAN',
           isActive: state.isDirectLan,
-          onTap: () => state.onToggleLanMode(true),
+          onTap: () {
+            state.onToggleLanMode(true);
+          },
         ),
         const SizedBox(width: 8),
         _ModeChip(
           label: 'Hybrid Relay',
           isActive: !state.isDirectLan,
-          onTap: () => state.onToggleLanMode(false),
+          onTap: () {
+            state.onToggleLanMode(false);
+            onToggleEncryption(true);
+          },
         ),
       ]),
+      const SizedBox(height: 16),
+
+      // Encryption Toggle Row
+      Container(
+        width: 240,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: kSurfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kOutlineVariant),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  encryptionEnabled ? LucideIcons.shield : LucideIcons.shield_off,
+                  size: 16,
+                  color: encryptionEnabled ? Colors.green : kOnSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Encryption',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: kOnSurface,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 24,
+              child: Switch(
+                value: encryptionEnabled,
+                onChanged: onToggleEncryption,
+                activeTrackColor: Colors.green.withOpacity(0.3),
+                activeColor: Colors.green,
+              ),
+            ),
+          ],
+        ),
+      ),
       const SizedBox(height: 24),
 
       // Network stat pills
       Wrap(alignment: WrapAlignment.center, spacing: 10, children: [
         _StatPill(Icons.lan_rounded, 'INTERFACE', 'en0 (${state.localIp})'),
-        _StatPill(Icons.shield_rounded, 'ENCRYPTION', 'AES-256-GCM'),
+        _StatPill(
+          Icons.shield_rounded, 
+          'ENCRYPTION', 
+          encryptionEnabled ? 'AES-256-GCM' : 'DISABLED',
+          valueColor: encryptionEnabled ? Colors.green : Colors.red,
+        ),
       ]),
     ]);
   }
@@ -1729,7 +1797,8 @@ class _StatPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _StatPill(this.icon, this.label, this.value);
+  final Color? valueColor;
+  const _StatPill(this.icon, this.label, this.value, {this.valueColor});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1744,7 +1813,7 @@ class _StatPill extends StatelessWidget {
       const SizedBox(width: 8),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: GoogleFonts.inter(fontSize: 9, color: kOnSurfaceVariant, letterSpacing: 1.1)),
-        Text(value, style: GoogleFonts.inter(fontSize: 11, color: kOnSurface, fontWeight: FontWeight.w500)),
+        Text(value, style: GoogleFonts.inter(fontSize: 11, color: valueColor ?? kOnSurface, fontWeight: FontWeight.w500)),
       ]),
     ]),
   );
