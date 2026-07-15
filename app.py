@@ -1264,6 +1264,94 @@ async def license_activate(data: dict):
         return {"status": "error", "message": error_msg}
 
 
+
+@app.get("/api/admin/status")
+async def admin_status():
+    """Returns a bundled status including tier, monetization state, feature limits, and version."""
+    import json
+    from datetime import datetime
+    
+    tier = get_license_tier() or "FREE"
+    
+    # Get cloud limits
+    limits = get_cloud_limits(tier)
+    
+    # Check monetization status from cache
+    monetization_enabled = bool(CLOUD_LIMITS_CACHE and CLOUD_LIMITS_CACHE.get("monetization_enabled", False))
+    
+    # Get version
+    try:
+        from platform_utils import VERSION as app_version
+    except Exception:
+        app_version = "1.0.0"
+    
+    return {
+        "status": "success",
+        "tier": tier,
+        "monetization_enabled": monetization_enabled,
+        "feature_limits": limits,
+        "version": app_version
+    }
+
+
+@app.get("/api/update/check")
+async def update_check():
+    """Compares local version with latest published version.json."""
+    import urllib.request
+    import json
+    
+    try:
+        from platform_utils import VERSION as local_version
+    except Exception:
+        local_version = "0.0.0"
+    
+    try:
+        req = urllib.request.Request(
+            "https://lanpad.app/downloads/version.json",
+            headers={"User-Agent": "LANpad Flutter App"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        
+        online_version = data.get("version", local_version)
+        
+        def v_tuple(v):
+            clean = v.lower().lstrip("v")
+            return tuple(map(int, clean.split(".")))
+        
+        try:
+            update_available = v_tuple(online_version) > v_tuple(local_version)
+        except Exception:
+            update_available = False
+        
+        return {
+            "status": "success",
+            "update_available": update_available,
+            "latest_version": online_version,
+            "local_version": local_version,
+            "force_update": data.get("force_update", False),
+            "mac_url": data.get("mac_url", ""),
+            "windows_url": data.get("windows_url", ""),
+            "release_notes": data.get("release_notes", "")
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "update_available": False,
+            "message": str(e)
+        }
+
+
+@app.post("/api/telemetry/event")
+async def telemetry_event(data: dict):
+    """Accepts a telemetry event and fires it asynchronously to the cloud."""
+    event = data.get("event", "").strip()
+    if not event:
+        return {"status": "error", "message": "Event name required"}
+    log_telemetry_event_async(event)
+    return {"status": "success"}
+
+
 @app.get("/get_clipboard")
 async def get_clipboard(request: Request):
     # Rate limit check
