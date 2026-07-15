@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../desktop_theme.dart';
 import '../desktop_state.dart';
@@ -40,74 +41,129 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: Column(
-                    children: [
-                      _buildPermissionCard(
-                        icon: Icons.accessibility_new,
-                        iconColor: kPrimary,
-                        title: 'Accessibility',
-                        status: isAccessGranted ? 'Granted' : 'Pending',
-                        statusColor: isAccessGranted ? Colors.green : const Color(0xFFFFB300),
-                        description: 'Allows LANpad to simulate keyboard and mouse events from remote nodes. Required for the "Virtual KVM" feature.',
-                        buttonText: isAccessGranted ? 'Configured' : 'Configure',
-                        buttonIcon: isAccessGranted ? Icons.check_circle : Icons.settings,
-                        enabled: !isAccessGranted,
-                        onPressed: () async {
-                          if (Platform.isMacOS) {
-                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildPermissionCard(
+                          icon: Icons.accessibility_new,
+                          iconColor: kPrimary,
+                          title: 'Accessibility',
+                          status: isAccessGranted ? 'Granted' : 'Pending',
+                          statusColor: isAccessGranted ? Colors.green : const Color(0xFFFFB300),
+                          description: 'Allows simulated typing and keyboard events from remote devices.',
+                          buttonText: isAccessGranted ? 'Change in Settings' : 'Configure',
+                          buttonIcon: isAccessGranted ? Icons.settings : Icons.settings,
+                          enabled: true,
+                          onPressed: () async {
+                            if (Platform.isMacOS) {
+                              final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
                             }
-                          }
-                          s.onRequestAccessibility();
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPermissionCard(
-                        icon: Icons.keyboard,
-                        iconColor: kTertiary,
-                        title: 'Input Monitoring',
-                        status: _inputMonitoringGranted ? 'Granted' : 'Pending',
-                        statusColor: _inputMonitoringGranted ? Colors.green : kTertiary,
-                        description: 'Required to capture global hotkeys and clipboard events when LANpad is in the background. Without this, sync will only work when the app is focused.',
-                        buttonText: _inputMonitoringGranted ? 'Configured' : 'Enable Permission',
-                        buttonIcon: _inputMonitoringGranted ? Icons.check_circle : Icons.arrow_forward,
-                        enabled: !_inputMonitoringGranted,
-                        isPrimaryAction: !_inputMonitoringGranted,
-                        onPressed: () async {
-                          setState(() => _inputMonitoringGranted = true);
-                          s.onShowToast('Input Monitoring Permission Enabled');
-                          if (Platform.isMacOS) {
-                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
+                            s.onRequestAccessibility();
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPermissionCard(
+                          icon: Icons.keyboard,
+                          iconColor: kTertiary,
+                          title: 'Input Monitoring',
+                          status: _inputMonitoringGranted ? 'Granted' : 'Pending',
+                          statusColor: _inputMonitoringGranted ? Colors.green : kTertiary,
+                          description: 'Allows hotkeys and clipboard synchronization when the app runs in the background.',
+                          buttonText: _inputMonitoringGranted ? 'Revoke/Change' : 'Enable Permission',
+                          buttonIcon: _inputMonitoringGranted ? Icons.remove_circle_outline : Icons.arrow_forward,
+                          enabled: true,
+                          isPrimaryAction: !_inputMonitoringGranted,
+                          onPressed: () async {
+                            if (_inputMonitoringGranted) {
+                              setState(() => _inputMonitoringGranted = false);
+                              s.onShowToast('Input Monitoring Permission Revoked');
+                            } else {
+                              if (Platform.isMacOS) {
+                                final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              }
+                              final granted = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: kSurfaceContainer,
+                                  title: Text('Confirm Input Monitoring', style: GoogleFonts.outfit(color: kOnSurface)),
+                                  content: Text('Please verify if you have checked the LANpad option under Input Monitoring in System Settings.', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: Text('Not yet', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(backgroundColor: kPrimary, foregroundColor: kSurfaceLowest),
+                                      child: Text('Yes, I granted it', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (granted == true) {
+                                setState(() => _inputMonitoringGranted = true);
+                                s.onShowToast('Input Monitoring Permission Enabled');
+                              }
                             }
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPermissionCard(
-                        icon: Icons.folder,
-                        iconColor: kOnSurfaceVariant,
-                        title: 'Full Disk Access',
-                        status: _fullDiskAccessGranted ? 'Granted' : 'Optional',
-                        statusColor: _fullDiskAccessGranted ? Colors.green : kOnSurfaceVariant,
-                        description: 'Enable this if you want to use the "Seamless Drag & Drop" file transfer between connected machines. This allows reading files outside the Sandbox.',
-                        buttonText: _fullDiskAccessGranted ? 'Configured' : 'Grant Access',
-                        buttonIcon: _fullDiskAccessGranted ? Icons.check_circle : Icons.add_moderator,
-                        enabled: !_fullDiskAccessGranted,
-                        onPressed: () async {
-                          setState(() => _fullDiskAccessGranted = true);
-                          s.onShowToast('Full Disk Access Granted');
-                          if (Platform.isMacOS) {
-                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPermissionCard(
+                          icon: Icons.folder,
+                          iconColor: kOnSurfaceVariant,
+                          title: 'Full Disk Access',
+                          status: _fullDiskAccessGranted ? 'Granted' : 'Optional',
+                          statusColor: _fullDiskAccessGranted ? Colors.green : kOnSurfaceVariant,
+                          description: 'Allows seamless drag-and-drop file transfers outside the app sandbox.',
+                          buttonText: _fullDiskAccessGranted ? 'Revoke/Change' : 'Grant Access',
+                          buttonIcon: _fullDiskAccessGranted ? Icons.remove_circle_outline : Icons.add_moderator,
+                          enabled: true,
+                          isPrimaryAction: false,
+                          onPressed: () async {
+                            if (_fullDiskAccessGranted) {
+                              setState(() => _fullDiskAccessGranted = false);
+                              s.onShowToast('Full Disk Access Revoked');
+                            } else {
+                              if (Platform.isMacOS) {
+                                final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              }
+                              final granted = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: kSurfaceContainer,
+                                  title: Text('Confirm Full Disk Access', style: GoogleFonts.outfit(color: kOnSurface)),
+                                  content: Text('Please verify if you have enabled Full Disk Access for LANpad in System Settings.', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: Text('Not yet', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(backgroundColor: kPrimary, foregroundColor: kSurfaceLowest),
+                                      child: Text('Yes, I granted it', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (granted == true) {
+                                setState(() => _fullDiskAccessGranted = true);
+                                s.onShowToast('Full Disk Access Granted');
+                              }
                             }
-                          }
-                        },
-                      ),
-                    ],
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -174,55 +230,6 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
-          Divider(color: kOutlineVariant),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.help_outline, color: kOnSurfaceVariant, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Having trouble? ', style: kBodyMd.copyWith(color: kOnSurfaceVariant)),
-                  GestureDetector(
-                    onTap: () async {
-                      final uri = Uri.parse('https://lanpad.app/docs');
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
-                    },
-                    child: Text('Read the docs', style: kBodyMd.copyWith(color: kPrimary)),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      s.onShowToast('Permissions setup skipped');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    ),
-                    child: const Text('Skip for now'),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      s.onShowToast('Permissions configuration finalized');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimary,
-                      foregroundColor: kSurfaceLowest,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    ),
-                    child: const Text('Finalize Setup'),
-                  ),
-                ],
-              ),
-            ],
           ),
         ],
       ),
