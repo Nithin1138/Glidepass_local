@@ -1165,6 +1165,105 @@ async def copy_from_laptop(request: Request):
         return {"status": "error", "message": str(e)}
 
 
+@app.get("/api/license/status")
+async def license_status():
+    import json
+    from datetime import datetime
+    license_path = os.path.expanduser("~/.lanpad_license.json")
+    tier = "FREE"
+    key = ""
+    expires_at = ""
+    days_left = 0
+    if os.path.exists(license_path):
+        try:
+            with open(license_path, "r", encoding="utf-8") as f:
+                lic = json.load(f)
+            key = lic.get("key", "")
+            tier = lic.get("tier", "Basic").upper()
+            expires_at = lic.get("expires_at", "")
+            if expires_at:
+                try:
+                    exp = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                    days_left = max(0, (exp.replace(tzinfo=None) - datetime.utcnow()).days)
+                except Exception:
+                    days_left = 365
+        except Exception:
+            pass
+    else:
+        tier = get_license_tier() or "FREE"
+        
+    return {
+        "status": "success",
+        "tier": tier,
+        "key": key,
+        "expires_at": expires_at,
+        "days_left": days_left
+    }
+
+@app.post("/api/license/activate")
+async def license_activate(data: dict):
+    key = data.get("key", "").strip()
+    if not key:
+        return {"status": "error", "message": "Key cannot be empty"}
+    
+    import httpx
+    from platform_utils import get_hardware_id
+    hwid = get_hardware_id()
+    
+    urls = [
+        "https://lanpad.app/api/monetization/verify",
+        "http://127.0.0.1:3000/api/monetization/verify"
+    ]
+    
+    success = False
+    tier = "Basic"
+    expires_at = "2099-12-31T23:59:59Z"
+    error_msg = "Invalid activation key"
+    
+    for url in urls:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(url, json={"key": key, "hwid": hwid}, timeout=5.0)
+                if resp.status_code == 200:
+                    res = resp.json()
+                    if res.get("valid", False):
+                        success = True
+                        tier = res.get("tier", "Basic")
+                        expires_at = res.get("expires_at", "2099-12-31T23:59:59Z")
+                        break
+                    else:
+                        error_msg = res.get("error", error_msg)
+        except Exception as e:
+            print(f"[monetization] Verify error on {url}: {e}")
+            
+    if success:
+        license_path = os.path.expanduser("~/.lanpad_license.json")
+        try:
+            with open(license_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "key": key,
+                    "tier": tier,
+                    "expires_at": expires_at,
+                    "last_checked": time.time(),
+                    "hwid": hwid
+                }, f)
+            global _license_tier_cache
+            _license_tier_cache = {"tier": tier.upper(), "ts": time.time()}
+            
+            from datetime import datetime
+            days_left = 365
+            try:
+                exp = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                days_left = max(0, (exp.replace(tzinfo=None) - datetime.utcnow()).days)
+            except Exception:
+                pass
+            return {"status": "success", "tier": tier, "expires_at": expires_at, "days_left": days_left}
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to save license: {str(e)}"}
+    else:
+        return {"status": "error", "message": error_msg}
+
+
 @app.get("/get_clipboard")
 async def get_clipboard(request: Request):
     # Rate limit check

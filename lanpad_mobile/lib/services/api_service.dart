@@ -332,6 +332,36 @@ class ApiService {
 
     return await BypassTunnelClient().send(request);
   }
+
+  Future<Map<String, dynamic>> fetchLicenseStatus() async {
+    final url = _buildUrl('/api/license/status');
+    try {
+      final response = await httpClient.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch license status: $e');
+    }
+    return {'status': 'error', 'message': 'Connection error'};
+  }
+
+  Future<Map<String, dynamic>> activateLicenseKey(String key) async {
+    final url = _buildUrl('/api/license/activate');
+    try {
+      final response = await httpClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'key': key}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('Failed to activate license: $e');
+    }
+    return {'status': 'error', 'message': 'Connection error'};
+  }
 }
 
 class MultipartRequestWithProgress extends http.MultipartRequest {
