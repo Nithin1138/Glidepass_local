@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
@@ -16,61 +20,321 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDevices = state.serverService.connectedDeviceNames.isNotEmpty;
     final isRunning = state.serverService.isRunning;
-    if (isRunning && hasDevices) return _ConnectedView(state: state);
+    final isConnectedClient = state.connectionService.isConnected;
+
+    if ((isRunning && hasDevices) || isConnectedClient) {
+      return _ConnectedView(state: state);
+    }
     return _WaitingView(state: state);
   }
 }
 
 // ─── Waiting / QR Pairing Screen ─────────────────────────────────────────────
-class _WaitingView extends StatelessWidget {
+class _WaitingView extends StatefulWidget {
   final DesktopState state;
   const _WaitingView({required this.state});
 
   @override
-  Widget build(BuildContext context) {
-    final isRunning = state.serverService.isRunning;
-    final tunnelUrl = state.tunnelService.tunnelUrl;
-    final isConnectingTunnel = !state.isDirectLan && state.tunnelService.isConnecting;
+  State<_WaitingView> createState() => _WaitingViewState();
+}
 
-    final qrData = state.isDirectLan
-        ? 'http://${state.localIp}:8000?sid=${state.serverService.sessionToken}'
+class _WaitingViewState extends State<_WaitingView> {
+  bool _isConnectMode = false;
+  List<Map<String, dynamic>> _discoveredDevices = [];
+  bool _isScanning = false;
+
+  final _manualUrlController = TextEditingController();
+  final _manualNameController = TextEditingController();
+  final _manualCodeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _manualUrlController.dispose();
+    _manualNameController.dispose();
+    _manualCodeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _discoverLocalDevices() async {
+    if (_isScanning) return;
+    setState(() {
+      _isScanning = true;
+      _discoveredDevices.clear();
+    });
+
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+
+      String? localIp;
+      for (var interface in interfaces) {
+        for (var addr in interface.addresses) {
+          if (!addr.isLoopback) {
+            localIp = addr.address;
+            break;
+          }
+        }
+        if (localIp != null) break;
+      }
+
+      if (localIp != null) {
+        final parts = localIp.split('.');
+        if (parts.length == 4) {
+          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
+          final List<Future<void>> tasks = [];
+
+          final client = HttpClient();
+          client.connectionTimeout = const Duration(milliseconds: 1000);
+
+          for (int i = 1; i <= 254; i++) {
+            final ip = '$subnet.$i';
+            if (ip == widget.state.localIp) continue;
+            final url = 'http://$ip:8000';
+
+            tasks.add(
+              client.getUrl(Uri.parse('$url/api/connection/info'))
+                  .then((req) => req.close())
+                  .then((res) async {
+                if (res.statusCode == 200) {
+                  final bodyStr = await res.transform(utf8.decoder).join();
+                  final data = jsonDecode(bodyStr);
+                  if (data['status'] == 'success') {
+                    if (mounted) {
+                      setState(() {
+                        // Check if already discovered
+                        if (!_discoveredDevices.any((d) => d['url'] == url)) {
+                          _discoveredDevices.add({
+                            'url': url,
+                            'device_name': data['device_name'] ?? 'LANpad Device',
+                            'session_code': data['session_code'] ?? '',
+                            'ip': ip,
+                          });
+                        }
+                      });
+                    }
+                  }
+                }
+              }).catchError((_) {}),
+            );
+          }
+          await Future.wait(tasks);
+        }
+      }
+    } catch (e) {
+      debugPrint('Local discovery error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
+  }
+
+  void _showPairingDialog(Map<String, dynamic> device) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final codeController = TextEditingController();
+        bool isConnecting = false;
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F1216),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: kOutlineVariant),
+              ),
+              title: Text('Connect to ${device['device_name']}',
+                  style: GoogleFonts.outfit(color: kOnSurface, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Please enter the 6-digit session pairing code shown on target device home screen.',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: codeController,
+                    style: GoogleFonts.inter(color: kOnSurface, fontSize: 14),
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      hintText: 'Enter 6-digit code',
+                      hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+                      filled: true,
+                      fillColor: kSurfaceContainer,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kOutlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: kPrimary),
+                      ),
+                      counterText: '',
+                    ),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(errorText!, style: GoogleFonts.inter(color: kError, fontSize: 12)),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isConnecting ? null : () => Navigator.of(context).pop(),
+                  child: Text('Cancel', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimary,
+                    foregroundColor: kSurfaceLowest,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: isConnecting
+                      ? null
+                      : () async {
+                          final code = codeController.text.trim();
+                          if (code.length != 6) {
+                            setModalState(() {
+                              errorText = 'Code must be 6 digits.';
+                            });
+                            return;
+                          }
+                          setModalState(() {
+                            isConnecting = true;
+                            errorText = null;
+                          });
+                          final err = await widget.state.connectionService.connect(device['url'], code);
+                          if (err != null) {
+                            setModalState(() {
+                              isConnecting = false;
+                              errorText = err;
+                            });
+                          } else {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                  child: isConnecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text('Connect', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _connectManual() async {
+    final url = _manualUrlController.text.trim();
+    final name = _manualNameController.text.trim();
+    final code = _manualCodeController.text.trim();
+
+    if (url.isEmpty || code.isEmpty) {
+      widget.state.onShowToast('URL and pairing code are required', isError: true);
+      return;
+    }
+
+    try {
+      widget.state.onShowToast('Connecting manually...');
+      final err = await widget.state.connectionService.connect(url, code);
+      if (err != null) {
+        widget.state.onShowToast('Connection failed: $err', isError: true);
+      } else {
+        widget.state.onShowToast('Connected successfully!');
+      }
+    } catch (e) {
+      widget.state.onShowToast('Error: $e', isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRunning = widget.state.serverService.isRunning;
+    final tunnelUrl = widget.state.tunnelService.tunnelUrl;
+    final isConnectingTunnel = !widget.state.isDirectLan && widget.state.tunnelService.isConnecting;
+
+    final qrData = widget.state.isDirectLan
+        ? 'http://${widget.state.localIp}:8000?sid=${widget.state.serverService.sessionToken}'
         : (tunnelUrl != null
-            ? '$tunnelUrl?sid=${state.serverService.sessionToken}'
-            : 'https://lanpad.app?sid=${state.serverService.sessionToken}');
+            ? '$tunnelUrl?sid=${widget.state.serverService.sessionToken}'
+            : 'https://lanpad.app?sid=${widget.state.serverService.sessionToken}');
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 768;
-        final content = isNarrow
-            ? Column(
-                children: [
-                  _QrPanel(
-                    state: state, 
-                    isRunning: isRunning && !isConnectingTunnel, 
-                    qrData: qrData,
-                    showConnecting: isConnectingTunnel,
-                  ),
-                  const SizedBox(height: 32),
-                  _QuickStartGuide(state: state),
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _QrPanel(
-                      state: state, 
-                      isRunning: isRunning && !isConnectingTunnel, 
+
+        Widget content;
+
+        if (_isConnectMode) {
+          // Connect to another App view
+          content = isNarrow
+              ? Column(
+                  children: [
+                    _buildNearbyPanel(),
+                    const SizedBox(height: 32),
+                    _buildManualPanel(),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildNearbyPanel()),
+                    const SizedBox(width: 40),
+                    Expanded(child: _buildManualPanel()),
+                  ],
+                );
+        } else {
+          // Standard Discovery View
+          content = isNarrow
+              ? Column(
+                  children: [
+                    _QrPanel(
+                      state: widget.state,
+                      isRunning: isRunning && !isConnectingTunnel,
                       qrData: qrData,
                       showConnecting: isConnectingTunnel,
                     ),
-                  ),
-                  const SizedBox(width: 40),
-                  Expanded(
-                    child: _QuickStartGuide(state: state),
-                  ),
-                ],
-              );
+                    const SizedBox(height: 32),
+                    _QuickStartGuide(state: widget.state),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _QrPanel(
+                        state: widget.state,
+                        isRunning: isRunning && !isConnectingTunnel,
+                        qrData: qrData,
+                        showConnecting: isConnectingTunnel,
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                    Expanded(
+                      child: _QuickStartGuide(state: widget.state),
+                    ),
+                  ],
+                );
+        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(28),
@@ -80,12 +344,39 @@ class _WaitingView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Page header
-                  Text('Discovery Mode', style: kHeadlineLg),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Waiting for your mobile device to connect.',
-                    style: kBodyLg.copyWith(color: kOnSurfaceVariant),
+                  // Page header & Switcher
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_isConnectMode ? 'Connect to App' : 'Discovery Mode', style: kHeadlineLg),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isConnectMode
+                                ? 'Pair and synchronize with another desktop app.'
+                                : 'Waiting for your mobile device to connect.',
+                            style: kBodyLg.copyWith(color: kOnSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      // Tab mode toggle
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: kSurfaceContainer,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: kOutlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildHeaderToggleBtn('Discovery', !_isConnectMode),
+                            _buildHeaderToggleBtn('Connect App', _isConnectMode),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 36),
                   content,
@@ -95,6 +386,195 @@ class _WaitingView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeaderToggleBtn(String text, bool active) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isConnectMode = text == 'Connect App';
+          if (_isConnectMode) {
+            _discoverLocalDevices();
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? kSurfaceVariant : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: active ? FontWeight.bold : FontWeight.w500,
+            color: active ? kPrimary : kOnSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNearbyPanel() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: kGlassCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Nearby Devices',
+                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+              IconButton(
+                onPressed: _isScanning ? null : _discoverLocalDevices,
+                icon: Icon(
+                  _isScanning ? Icons.sync : Icons.refresh,
+                  color: kPrimary,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_isScanning && _discoveredDevices.isEmpty) ...[
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ] else if (_discoveredDevices.isEmpty) ...[
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40.0),
+                child: Text('No nearby desktop apps found',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+              ),
+            ),
+          ] else ...[
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _discoveredDevices.length,
+              itemBuilder: (context, index) {
+                final d = _discoveredDevices[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: InkWell(
+                    onTap: () => _showPairingDialog(d),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kSurfaceLow,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: kOutlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(LucideIcons.laptop, color: kPrimary, size: 20),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(d['device_name'],
+                                    style: GoogleFonts.inter(
+                                        fontSize: 14, fontWeight: FontWeight.w600, color: kOnSurface)),
+                                const SizedBox(height: 2),
+                                Text(d['url'],
+                                    style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                          Icon(LucideIcons.chevron_right, size: 16, color: kOnSurfaceVariant.withOpacity(0.5)),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManualPanel() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: kGlassCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Manual Connection',
+              style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+          const SizedBox(height: 4),
+          Text('Enter connection details of another device directly.',
+              style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+          const SizedBox(height: 24),
+          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+          const SizedBox(height: 16),
+          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
+          const SizedBox(height: 16),
+          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary,
+                foregroundColor: kSurfaceLowest,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: _connectManual,
+              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: kOnSurface)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          maxLength: maxLength,
+          style: GoogleFonts.inter(fontSize: 13, color: kOnSurface),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+            filled: true,
+            fillColor: kSurfaceLow,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kPrimary),
+            ),
+            counterText: '',
+          ),
+        ),
+      ],
     );
   }
 }
@@ -114,13 +594,17 @@ class _QrPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sessionCode = state.serverService.sessionToken.length >= 6 
+        ? state.serverService.sessionToken.substring(state.serverService.sessionToken.length - 6).toUpperCase()
+        : state.serverService.sessionToken;
+
     return Column(children: [
       Text('Waiting for connection',
         style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600, color: kOnSurface),
         textAlign: TextAlign.center),
       const SizedBox(height: 12),
       Text(
-        'Connect your mobile device to start sharing resources, managing inputs, and orchestrating your local environment.',
+        'Connect your mobile device or another desktop client. Pairing Code: $sessionCode',
         style: GoogleFonts.inter(fontSize: 15, color: kOnSurfaceVariant, height: 1.5),
         textAlign: TextAlign.center,
       ),
@@ -280,7 +764,9 @@ class _ConnectedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deviceNames = state.serverService.connectedDeviceNames;
-    final firstDevice = deviceNames.isNotEmpty ? deviceNames.first : 'Mobile Device';
+    final firstDevice = deviceNames.isNotEmpty 
+        ? deviceNames.first 
+        : (state.connectionService.connectedDeviceName ?? 'Connected Server');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -324,68 +810,61 @@ class _DeviceHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: kGlassCard,
-      child: Row(children: [
-        Stack(children: [
-          Container(
-            width: 72, height: 72,
-            decoration: BoxDecoration(
-              color: kSurfaceContainer,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kOutlineVariant),
-            ),
-            child: const Icon(LucideIcons.smartphone, color: kPrimary, size: 32),
-          ),
-          Positioned(bottom: 0, right: 0, child: Container(
-            width: 18, height: 18,
-            decoration: BoxDecoration(
-              color: kSuccess, shape: BoxShape.circle,
-              border: Border.all(color: kSurface, width: 3),
-            ),
-          )),
-        ]),
-        const SizedBox(width: 20),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Text(deviceName, style: GoogleFonts.outfit(
-              fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: kPrimary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('Active Session', style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.bold, color: kPrimary, letterSpacing: 0.8)),
-            ),
-          ]),
-          const SizedBox(height: 6),
-          Row(children: [
-            const Icon(LucideIcons.clock, color: kOnSurfaceVariant, size: 13),
-            const SizedBox(width: 6),
-            Text(state.sessionTimeFormatted,
-              style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-            const SizedBox(width: 16),
-            const Icon(LucideIcons.wifi, color: kOnSurfaceVariant, size: 13),
-            const SizedBox(width: 6),
-            Text('Strong Signal',
-              style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-          ]),
-        ])),
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: kError.withValues(alpha: 0.3)),
-            foregroundColor: kError,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          onPressed: state.onToggleServer,
-          child: Text('Disconnect',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kPrimary, kPrimary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ]),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: kPrimary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.laptop, color: Colors.white, size: 24),
+              ),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: kPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                onPressed: state.connectionService.disconnect,
+                child: Text('Disconnect', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            deviceName,
+            style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Secure Peer-to-Peer Tunnel Active',
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.white.withOpacity(0.8)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -397,96 +876,85 @@ class _ActivityFeed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: kGlassCard,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Activity Feed', style: GoogleFonts.outfit(
-          fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-        const SizedBox(height: 16),
-        // Table header
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: kOutlineVariant)),
-          ),
-          child: Row(children: [
-            Expanded(flex: 6, child: Text('ACTION', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.bold,
-              color: kOnSurfaceVariant, letterSpacing: 1.2))),
-            Expanded(flex: 3, child: Text('TARGET', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.bold,
-              color: kOnSurfaceVariant, letterSpacing: 1.2))),
-            Expanded(flex: 3, child: Text('TIME', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.bold,
-              color: kOnSurfaceVariant, letterSpacing: 1.2),
-              textAlign: TextAlign.right)),
-          ]),
-        ),
-        const SizedBox(height: 4),
-        if (state.loadingHistory)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (state.history.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: Text('No activity yet', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
-            ),
-          )
-        else
-          ...List.generate(state.history.length > 4 ? 4 : state.history.length, (i) {
-            final item = state.history[i];
-            
-            IconData icon = LucideIcons.file;
-            Color color = kOnSurfaceVariant;
-            if (item.mode == 'copy' || item.mode == 'paste') {
-              icon = LucideIcons.clipboard_copy;
-              color = kPrimary;
-            } else if (item.mode == 'link') {
-              icon = LucideIcons.link;
-              color = kSecondary;
-            } else if (item.mode == 'text' || item.mode == 'type') {
-              icon = LucideIcons.keyboard;
-              color = kTertiary;
-            }
-
-            return _actRow(icon, color, item.title, item.content, state.displayDeviceName, item.timestamp, isLast: i == (state.history.length > 4 ? 3 : state.history.length - 1));
-          }),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Activity Feed',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+          const SizedBox(height: 16),
+          state.loadingHistory
+              ? const Center(child: CircularProgressIndicator())
+              : state.history.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24.0),
+                        child: Text('No activity yet',
+                            style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: state.history.length > 5 ? 5 : state.history.length,
+                      itemBuilder: (context, index) {
+                        final item = state.history[index];
+                        return _FeedRow(
+                          title: item.content,
+                          subtitle: '${item.mode.toUpperCase()}  ·  ${item.timestamp}',
+                          icon: item.mode == 'typing' ? LucideIcons.keyboard : LucideIcons.file,
+                        );
+                      },
+                    ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _actRow(IconData icon, Color color, String action, String detail,
-      String target, String time, {bool isLast = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        border: isLast ? null
-            : const Border(bottom: BorderSide(color: kOutlineVariant, width: 0.5)),
+class _FeedRow extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _FeedRow({required this.title, required this.subtitle, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kSurfaceVariant,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: kPrimary, size: 16),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: kOnSurface),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      child: Row(children: [
-        Expanded(flex: 6, child: Row(children: [
-          Icon(icon, color: color, size: 17),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(action, style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: kOnSurface)),
-            Text(detail, style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-          ])),
-        ])),
-        Expanded(flex: 3, child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: kSurfaceVariant, borderRadius: BorderRadius.circular(6)),
-          child: Text(target, style: GoogleFonts.inter(fontSize: 11, color: kOnSurface),
-            maxLines: 1, overflow: TextOverflow.ellipsis),
-        )),
-        Expanded(flex: 3, child: Text(time, style: GoogleFonts.inter(
-          fontSize: 11, color: kOnSurfaceVariant), textAlign: TextAlign.right)),
-      ]),
     );
   }
 }
@@ -498,28 +966,31 @@ class _QuickActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: kGlassCard,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Quick Actions', style: GoogleFonts.outfit(
-          fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-        const SizedBox(height: 16),
-        _ActionBtn(icon: LucideIcons.send, title: 'Send Clipboard',
-          subtitle: 'Push text to phone', isPrimary: true, onTap: () {
-          state.onShowToast('Clipboard sent!');
-        }),
-        const SizedBox(height: 10),
-        _ActionBtn(icon: LucideIcons.clipboard_paste, title: 'Paste Here',
-          subtitle: 'Pull from phone', isPrimary: false, onTap: () {
-          state.onShowToast('Paste request sent');
-        }),
-        const SizedBox(height: 10),
-        _ActionBtn(icon: LucideIcons.keyboard, title: 'Enter Type Mode',
-          subtitle: 'PC Keyboard to Mobile', isPrimary: false,
-          accentColor: kSecondary, onTap: () {
-          state.onShowToast('Type mode activated');
-        }),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quick Actions',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+          const SizedBox(height: 16),
+          _ActionBtn(
+            icon: LucideIcons.folder_sync,
+            title: 'Share Files',
+            subtitle: 'Upload files/directories',
+            isPrimary: true,
+            onTap: state.onPickAndUpload,
+          ),
+          const SizedBox(height: 12),
+          _ActionBtn(
+            icon: LucideIcons.keyboard,
+            title: 'Send Paste',
+            subtitle: 'Inject or simulate input',
+            isPrimary: false,
+            onTap: () {},
+          ),
+        ],
+      ),
     );
   }
 }
@@ -531,70 +1002,40 @@ class _ConnectionStatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: kGlassCard,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Connection Stats', style: GoogleFonts.outfit(
-          fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-        const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('LATENCY', style: GoogleFonts.inter(
-              fontSize: 9, color: kOnSurfaceVariant, letterSpacing: 1.2,
-              fontWeight: FontWeight.bold)),
-            Text('12ms', style: GoogleFonts.outfit(
-              fontSize: 24, fontWeight: FontWeight.bold, color: kPrimary)),
-          ]),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            for (final h in [12, 18, 8, 22, 28, 14])
-              Container(
-                margin: const EdgeInsets.only(left: 2),
-                width: 4, height: h.toDouble(),
-                decoration: BoxDecoration(
-                  color: kPrimary, borderRadius: BorderRadius.circular(2)),
-              ),
-          ]),
-        ]),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: kSurfaceContainer,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kOutlineVariant),
-          ),
-          child: Row(children: [
-            const Icon(LucideIcons.shield_check, color: kSuccess, size: 17),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text('WPA3 - AES 256 Encrypted',
-                style: GoogleFonts.inter(fontSize: 12, color: kOnSurface),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 14),
-        const Divider(color: kOutlineVariant, height: 1),
-        const SizedBox(height: 12),
-        Text('IP ADDRESSES', style: GoogleFonts.inter(
-          fontSize: 9, color: kOnSurfaceVariant, letterSpacing: 1.2, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _ipRow('Desktop', state.localIp),
-        const SizedBox(height: 6),
-        if (state.serverService.connectedDeviceNames.isNotEmpty)
-          _ipRow('Mobile', '192.168.x.x'),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Connection Stats',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: kOnSurface)),
+          const SizedBox(height: 16),
+          _StatRow(label: 'Pairing Mode', value: state.isDirectLan ? 'Direct LAN' : 'Hybrid Relay'),
+          const Divider(color: kOutlineVariant, height: 24),
+          _StatRow(label: 'Tunnel Status', value: 'Connected'),
+          const Divider(color: kOutlineVariant, height: 24),
+          _StatRow(label: 'Tunnel IP', value: state.localIp),
+        ],
+      ),
     );
   }
+}
 
-  Widget _ipRow(String label, String ip) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label, style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-      Text(ip, style: GoogleFonts.inter(fontSize: 12, color: kOnSurface, fontWeight: FontWeight.w500)),
-    ],
-  );
+class _StatRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+        Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface)),
+      ],
+    );
+  }
 }
 
 // ─── Shared Helpers ───────────────────────────────────────────────────────────
