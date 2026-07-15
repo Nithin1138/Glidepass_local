@@ -35,6 +35,7 @@ import 'views/input_view.dart';
 import 'views/setup_permissions_view.dart';
 import 'views/file_previews_view.dart';
 import 'views/onboarding_view.dart';
+import 'views/licenses_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ActiveToast {
@@ -813,6 +814,8 @@ class _DesktopShellState extends State<DesktopShell> {
           state: state,
           onNavigate: (view) => setState(() => _currentView = view),
         );
+      case DesktopView.licenses:
+        return LicensesView(state: state);
     }
   }
 }
