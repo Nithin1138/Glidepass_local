@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
-/// Input Composer view — matches Stitch "Input Composer" blueprint.
-/// Large text compose area + quick phrases + typing settings.
+/// Premium Input Composer view matching the user's uploaded mock design.
 class InputView extends StatefulWidget {
   final DesktopState state;
   const InputView({super.key, required this.state});
@@ -16,52 +16,69 @@ class InputView extends StatefulWidget {
 
 class _InputViewState extends State<InputView> {
   final _controller = TextEditingController();
-  bool _instantMode = false;
-  bool _autoReturn = true;
+  String _selectedMode = 'Flash'; // 'Flash', 'Type', 'Inject', 'Live Sync'
 
-  static const _quickPhrases = [
-    'Yes, I can handle that.',
-    'On my way!',
-    'Let me check and get back.',
-    'Done ✓',
-    'Sounds good!',
-    'One moment please...',
-  ];
+  int _line = 1;
+  int _col = 1;
+  int _chars = 0;
+  int _lines = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_updateEditorStats);
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_updateEditorStats);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _updateEditorStats() {
+    final text = _controller.text;
+    final selection = _controller.selection;
+
+    int line = 1;
+    int col = 1;
+    if (selection.isValid && selection.baseOffset >= 0 && selection.baseOffset <= text.length) {
+      final beforeSelection = text.substring(0, selection.baseOffset);
+      final lines = beforeSelection.split('\n');
+      line = lines.length;
+      col = lines.last.length + 1;
+    }
+
+    final totalLines = text.isEmpty ? 1 : text.split('\n').length;
+
+    setState(() {
+      _line = line;
+      _col = col;
+      _chars = text.length;
+      _lines = totalLines;
+    });
   }
 
   Future<void> _sendText() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     try {
+      // Mapping GUI mode selection to API mode parameters
+      String apiMode = 'instant';
+      if (_selectedMode == 'Type') apiMode = 'type';
+      else if (_selectedMode == 'Inject') apiMode = 'inject';
+      else if (_selectedMode == 'Live Sync') apiMode = 'sync';
+
       await widget.state.apiService.sendPaste(
         text: text,
-        mode: _instantMode ? 'instant' : 'type',
+        mode: apiMode,
         wpm: 240,
-        isCoding: false,
+        isCoding: true,
       );
-      widget.state.onShowToast('Text sent to device');
+      widget.state.onShowToast('Text sent successfully');
       _controller.clear();
     } catch (e) {
-      widget.state.onShowToast('Failed to send text: $e', isError: true);
-    }
-  }
-
-  Future<void> _sendPhrase(String phrase) async {
-    try {
-      await widget.state.apiService.sendPaste(
-        text: phrase,
-        mode: 'instant',
-        wpm: 240,
-        isCoding: false,
-      );
-      widget.state.onShowToast('"$phrase" sent to device');
-    } catch (e) {
-      widget.state.onShowToast('Failed to send phrase: $e', isError: true);
+      widget.state.onShowToast('Failed to send: $e', isError: true);
     }
   }
 
@@ -69,212 +86,307 @@ class _InputViewState extends State<InputView> {
   Widget build(BuildContext context) {
     final isRunning = widget.state.serverService.isRunning;
 
-    return Column(children: [
-      // ── Top bar ─────────────────────────────────────────────────
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
-        ),
-        child: Row(children: [
-          Text('Input Composer', style: GoogleFonts.outfit(
-            fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: isRunning ? kSuccess.withValues(alpha: 0.12) : kSurfaceContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isRunning ? kSuccess.withValues(alpha: 0.3) : kOutlineVariant),
-            ),
-            child: Text(isRunning ? 'READY' : 'SERVER OFFLINE',
-              style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.bold,
-                color: isRunning ? kSuccess : kOnSurfaceVariant,
-                letterSpacing: 0.8)),
-          ),
-        ]),
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Left Column: Editor and Mode Controls (Flex 8) ──────────────────────
+        Expanded(
+          flex: 8,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                // Editor Container
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F1216),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: kOutlineVariant),
+                    ),
+                    child: Column(
+                      children: [
+                        // Editor Header
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: const BoxDecoration(
+                            border: Border(bottom: BorderSide(color: kOutlineVariant)),
+                          ),
+                          child: Row(
+                            children: [
+                              Text('buffer: snippet_alpha.sh',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: kOnSurface)),
+                              const SizedBox(width: 8),
+                              Text('UTF-8',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: kOnSurfaceVariant.withOpacity(0.5))),
+                              const Spacer(),
+                              IconButton(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: _controller.text));
+                                  widget.state.onShowToast('Copied to clipboard');
+                                },
+                                icon: const Icon(LucideIcons.copy, size: 16, color: kOnSurfaceVariant),
+                                tooltip: 'Copy Buffer',
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  _controller.clear();
+                                },
+                                icon: const Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
+                                tooltip: 'Clear Buffer',
+                              ),
+                            ],
+                          ),
+                        ),
 
-      // ── Content ─────────────────────────────────────────────────
-      Expanded(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(children: [
-            // Compose card
-            _GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Compose & Send', style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.bold, color: kOnSurface)),
-              const SizedBox(height: 4),
-              Text(
-                'Type text here to send to your connected mobile device as keyboard input.',
-                style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: kSurfaceLowest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kOutlineVariant),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  maxLines: 6, minLines: 6,
-                  style: GoogleFonts.inter(fontSize: 14, color: kOnSurface),
-                  decoration: InputDecoration(
-                    hintText: 'Type your message or paste content here...',
-                    hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(children: [
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kPrimary, foregroundColor: kSurfaceLowest,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: isRunning ? _sendText : null,
-                  icon: const Icon(LucideIcons.send, size: 16),
-                  label: Text('Send to Device',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: kOutlineVariant),
-                    foregroundColor: kOnSurface,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () {},
-                  icon: const Icon(LucideIcons.clipboard, size: 15),
-                  label: Text('Paste Clipboard', style: GoogleFonts.inter(fontSize: 13)),
-                ),
-                const Spacer(),
-                // Character count
-                ValueListenableBuilder(
-                  valueListenable: _controller,
-                  builder: (_, val, __) => Text(
-                    '${val.text.length} chars',
-                    style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant),
-                  ),
-                ),
-              ]),
-            ])),
-            const SizedBox(height: 20),
+                        // Editor Text Field
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            maxLines: null,
+                            expands: true,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: kOnSurface,
+                              height: 1.6,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Enter commands, notes, or raw text to transfer...',
+                              hintStyle: GoogleFonts.inter(
+                                  color: kOnSurfaceVariant.withOpacity(0.5),
+                                  fontSize: 14),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(20),
+                            ),
+                          ),
+                        ),
 
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Quick phrases
-              Expanded(child: _GlassCard(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Quick Phrases', style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-                  const SizedBox(height: 4),
-                  Text('Tap to send instantly',
-                    style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-                  const SizedBox(height: 14),
-                  ..._quickPhrases.map((phrase) => GestureDetector(
-                    onTap: () => _sendPhrase(phrase),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        // Editor Footer
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: const BoxDecoration(
+                            border: Border(top: BorderSide(color: kOutlineVariant)),
+                          ),
+                          child: Row(
+                            children: [
+                              Text('Ln $_line, Col $_col',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11, color: kOnSurfaceVariant)),
+                              const Spacer(),
+                              Text('CHARS: $_chars',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11, color: kOnSurfaceVariant)),
+                              const SizedBox(width: 16),
+                              Text('LINES: $_lines',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11, color: kOnSurfaceVariant)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Controls Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Mode selector pill
+                    Container(
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: kSurfaceLowest,
+                        color: kSurfaceContainer,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: kOutlineVariant),
                       ),
-                      child: Row(children: [
-                        Expanded(child: Text(phrase,
-                          style: GoogleFonts.inter(fontSize: 13, color: kOnSurface))),
-                        const Icon(LucideIcons.send, size: 13, color: kOnSurfaceVariant),
-                      ]),
+                      child: Row(
+                        children: [
+                          _buildModeBtn('Flash'),
+                          _buildModeBtn('Type'),
+                          _buildModeBtn('Inject'),
+                          _buildModeBtn('Live Sync', hasDot: true),
+                        ],
+                      ),
                     ),
-                  )),
-                ],
-              ))),
-              const SizedBox(width: 16),
 
-              // Settings panel
-              Expanded(child: _GlassCard(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Typing Settings', style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
-                  const SizedBox(height: 16),
-                  _SettingToggle('Instant Mode', 'Type directly without compose step.',
-                    _instantMode, (v) => setState(() => _instantMode = v)),
-                  const Divider(color: kOutlineVariant, height: 24),
-                  _SettingToggle('Auto Return', 'Press Enter after sending text.',
-                    _autoReturn, (v) => setState(() => _autoReturn = v)),
-                  const Divider(color: kOutlineVariant, height: 24),
-                  // Keyboard shortcut hint
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: kSurfaceLowest,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: kOutlineVariant),
+                    // Send Button
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
+                        foregroundColor: const Color(0xFF38BDF8),
+                        side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: isRunning ? _sendText : null,
+                      icon: const Icon(LucideIcons.rocket, size: 16),
+                      label: Text('Send to Active App',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
-                    child: Row(children: [
-                      const Icon(LucideIcons.command, color: kPrimary, size: 16),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Keyboard Shortcut', style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.bold, color: kOnSurface)),
-                        Text('⌘⇧V — Quick paste & send',
-                          style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
-                      ])),
-                    ]),
-                  ),
-                ],
-              ))),
-            ]),
-          ]),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Right Column: Recent Snippets & Tips (Flex 3) ───────────────────────
+        Container(
+          width: 320,
+          decoration: const BoxDecoration(
+            border: Border(left: BorderSide(color: kOutlineVariant)),
+            color: kSurfaceLow,
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('RECENT SNIPPETS',
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: kOnSurfaceVariant,
+                      letterSpacing: 1.2)),
+              const SizedBox(height: 16),
+
+              // Snippet List
+              Expanded(
+                child: widget.state.loadingHistory
+                    ? const Center(child: CircularProgressIndicator())
+                    : widget.state.history.isEmpty
+                        ? Center(
+                            child: Text('No snippets yet',
+                                style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+                          )
+                        : ListView.builder(
+                            itemCount: widget.state.history.length > 5 ? 5 : widget.state.history.length,
+                            itemBuilder: (context, i) {
+                              final item = widget.state.history[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: InkWell(
+                                  onTap: () {
+                                    _controller.text = item.content;
+                                  },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F1216),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: kOutlineVariant),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(item.mode.toUpperCase(),
+                                                style: GoogleFonts.inter(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: kSecondary)),
+                                            Text(item.timestamp,
+                                                style: GoogleFonts.inter(
+                                                    fontSize: 10, color: kOnSurfaceVariant)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          item.content,
+                                          style: GoogleFonts.inter(fontSize: 12, color: kOnSurface, height: 1.4),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+
+              // Pro Tip Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: kSurfaceContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kOutlineVariant),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.info, size: 16, color: kPrimary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('PRO TIP',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, fontWeight: FontWeight.bold, color: kOnSurface)),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Use Cmd+Enter to quickly dispatch the current buffer using the selected mode.',
+                            style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModeBtn(String mode, {bool hasDot = false}) {
+    final isSelected = _selectedMode == mode;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMode = mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1B2028) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasDot) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              mode,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? kOnSurface : kOnSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
-    ]);
+    );
   }
-}
-
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  const _GlassCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: kGlassCard,
-    child: child,
-  );
-}
-
-class _SettingToggle extends StatelessWidget {
-  final String title;
-  final String desc;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingToggle(this.title, this.desc, this.value, this.onChanged);
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: GoogleFonts.inter(
-        fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
-      Text(desc, style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-    ])),
-    Switch(
-      value: value, onChanged: onChanged,
-      activeThumbColor: kPrimary,
-      activeTrackColor: kPrimary.withValues(alpha: 0.3),
-      inactiveThumbColor: kOnSurfaceVariant,
-      inactiveTrackColor: kSurfaceVariant,
-    ),
-  ]);
 }
