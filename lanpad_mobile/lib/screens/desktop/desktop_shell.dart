@@ -23,6 +23,7 @@ import '../../models/file_model.dart';
 import '../../models/history_model.dart';
 import '../../models/resource_model.dart';
 import '../../config/theme.dart';
+import '../../services/admin_service.dart';
 import 'desktop_state.dart';
 import 'desktop_theme.dart';
 import 'widgets/sidebar.dart';
@@ -36,7 +37,6 @@ import 'views/setup_permissions_view.dart';
 import 'views/file_previews_view.dart';
 import 'views/onboarding_view.dart';
 import 'views/licenses_view.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ActiveToast {
   final String id;
@@ -62,6 +62,7 @@ class _DesktopShellState extends State<DesktopShell> {
   final ApiService _apiService = ApiService();
   final WebSocketService _webSocketService = WebSocketService();
   final ConnectionService _connectionService = ConnectionService();
+  final AdminService _adminService = AdminService();
   final List<ActiveToast> _activeToasts = [];
 
   late StreamSubscription _serverSub;
@@ -145,9 +146,23 @@ class _DesktopShellState extends State<DesktopShell> {
       _startSessionTimer();
     }
 
+    // ── Admin service: poll status + check updates ─────────────────
+    _adminService.init(_apiService);
+    _adminService.updateInfo.addListener(_onUpdateInfoChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAccessibility();
     });
+  }
+
+  void _onUpdateInfoChanged() {
+    final info = _adminService.updateInfo.value;
+    if (info != null && info.updateAvailable && info.forceUpdate) {
+      _showToast(
+        'Critical update required: v${info.latestVersion}. Please download now.',
+        isError: true,
+      );
+    }
   }
 
   @override
@@ -157,6 +172,8 @@ class _DesktopShellState extends State<DesktopShell> {
     _sessionTimer?.cancel();
     _fileSearchController.dispose();
     _hubSearchController.dispose();
+    _adminService.updateInfo.removeListener(_onUpdateInfoChanged);
+    _adminService.dispose();
     super.dispose();
   }
 

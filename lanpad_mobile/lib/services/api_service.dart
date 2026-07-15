@@ -362,6 +362,45 @@ class ApiService {
     }
     return {'status': 'error', 'message': 'Connection error'};
   }
+
+  Future<Map<String, dynamic>> fetchAdminStatus() async {
+    final url = _buildUrl('/api/admin/status');
+    try {
+      final response = await httpClient.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch admin status: $e');
+    }
+    return {'status': 'error', 'message': 'Connection error'};
+  }
+
+  Future<Map<String, dynamic>> checkForUpdates() async {
+    final url = _buildUrl('/api/update/check');
+    try {
+      final response = await httpClient.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('Failed to check for updates: $e');
+    }
+    return {'status': 'error', 'update_available': false};
+  }
+
+  Future<void> logTelemetryEvent(String event) async {
+    final url = _buildUrl('/api/telemetry/event');
+    try {
+      await httpClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'event': event}),
+      );
+    } catch (e) {
+      debugPrint('Failed to log telemetry event: $e');
+    }
+  }
 }
 
 class MultipartRequestWithProgress extends http.MultipartRequest {
