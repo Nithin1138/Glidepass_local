@@ -20,7 +20,7 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDevices = state.serverService.connectedDeviceNames.isNotEmpty;
     final isRunning = state.serverService.isRunning;
-    final isConnectedClient = state.connectionService.isConnected;
+    final isConnectedClient = state.connectionService.isConnected && !state.connectionService.isLocalConnection;
 
     if ((isRunning && hasDevices) || isConnectedClient) {
       return _ConnectedView(state: state);
