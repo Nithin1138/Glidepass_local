@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
-enum DesktopView { home, files, resources, history, settings, input, terms, welcome, setupPermissions, connectionRecovery, filePreviews }
+enum DesktopView { home, files, resources, history, settings, input, terms, setupPermissions, connectionRecovery, filePreviews }
 
 class DesktopSidebar extends StatelessWidget {
   final DesktopView currentView;
@@ -105,8 +105,6 @@ class DesktopSidebar extends StatelessWidget {
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.file_text, label: 'Legal', view: DesktopView.terms,
                   current: currentView, onTap: onNavigate),
-                _NavItem(icon: LucideIcons.log_in, label: 'Welcome', view: DesktopView.welcome,
-                  current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.shield_check, label: 'Permissions', view: DesktopView.setupPermissions,
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.link_2_off, label: 'Recovery', view: DesktopView.connectionRecovery,
@@ -154,21 +152,11 @@ class DesktopSidebar extends StatelessWidget {
                   const Icon(LucideIcons.monitor, color: kOnSurfaceVariant, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        final token = state.serverService.sessionToken;
-                        final code = token.length >= 6 
-                            ? token.substring(token.length - 6).toUpperCase()
-                            : token;
-                        final name = state.displayDeviceName;
-                        final displayText = (isRunning && code.isNotEmpty) ? '$name - $code' : name;
-                        return Text(
-                          displayText,
-                          style: GoogleFonts.outfit(
-                            fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                    child: Text(
+                      state.displayDeviceName,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ]),
