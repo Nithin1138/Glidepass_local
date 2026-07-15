@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../config/theme.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
@@ -165,7 +166,7 @@ class _InputViewState extends State<InputView> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F1216),
+                      color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: kOutlineVariant),
                     ),
@@ -326,7 +327,7 @@ class _InputViewState extends State<InputView> {
                         duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F1216),
+                          color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: kOutlineVariant),
                         ),
@@ -441,7 +442,7 @@ class _InputViewState extends State<InputView> {
                                   child: Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF0F1216),
+                                      color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(color: kOutlineVariant),
                                     ),
