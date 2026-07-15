@@ -498,6 +498,21 @@ class _DesktopShellState extends State<DesktopShell> {
     _loadFiles();
   }
 
+  Future<void> _disconnectRemoteDevice(String deviceName) async {
+    try {
+      final success = await _apiService.disconnectDevice(deviceName);
+      if (success) {
+        _showToast('Disconnected device: $deviceName');
+        await _serverService.refreshConnections();
+        setState(() {});
+      } else {
+        _showToast('Failed to disconnect device', isError: true);
+      }
+    } catch (e) {
+      _showToast('Error: $e', isError: true);
+    }
+  }
+
   Future<void> _downloadFile(SharedFile file) async {
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
@@ -640,6 +655,7 @@ class _DesktopShellState extends State<DesktopShell> {
     onFilterHubResources: _filterHubResources,
     onRequestAccessibility: _requestAccessibility,
     onShowToast: _showToast,
+    onDisconnectRemoteDevice: _disconnectRemoteDevice,
     formatBytes: _formatBytes,
   );
 

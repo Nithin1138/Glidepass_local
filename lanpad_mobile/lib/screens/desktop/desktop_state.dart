@@ -62,6 +62,7 @@ class DesktopState {
   final ValueChanged<String> onFilterHubResources;
   final VoidCallback onRequestAccessibility;
   final void Function(String, {bool isError}) onShowToast;
+  final ValueChanged<String> onDisconnectRemoteDevice;
 
   // ── Formatters ────────────────────────────────────────────────────
   final String Function(int bytes) formatBytes;
@@ -103,6 +104,7 @@ class DesktopState {
     required this.onFilterHubResources,
     required this.onRequestAccessibility,
     required this.onShowToast,
+    required this.onDisconnectRemoteDevice,
     required this.formatBytes,
   });
 

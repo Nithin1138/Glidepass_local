@@ -251,6 +251,24 @@ class ApiService {
     return {'status': 'error'};
   }
 
+  Future<bool> disconnectDevice(String deviceName) async {
+    final url = _buildUrl('/api/connections/disconnect');
+    try {
+      final response = await httpClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'device_name': deviceName}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+    } catch (e) {
+      debugPrint('Failed to disconnect device $deviceName: $e');
+    }
+    return false;
+  }
+
   Future<http.StreamedResponse> uploadFileDirect({
     required File file,
     required String filename,

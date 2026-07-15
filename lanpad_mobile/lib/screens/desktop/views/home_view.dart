@@ -810,11 +810,6 @@ class _ConnectedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final deviceNames = state.serverService.connectedDeviceNames;
-    final firstDevice = deviceNames.isNotEmpty 
-        ? deviceNames.first 
-        : (state.connectionService.connectedDeviceName ?? 'Connected Server');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -832,7 +827,7 @@ class _ConnectedView extends StatelessWidget {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Left col (8/12) — hero + activity
           Expanded(flex: 8, child: Column(children: [
-            _DeviceHeroCard(deviceName: firstDevice, state: state),
+            _DeviceHeroCard(state: state),
             const SizedBox(height: 16),
             _ActivityFeed(state: state),
           ])),
@@ -850,12 +845,96 @@ class _ConnectedView extends StatelessWidget {
 }
 
 class _DeviceHeroCard extends StatelessWidget {
-  final String deviceName;
   final DesktopState state;
-  const _DeviceHeroCard({required this.deviceName, required this.state});
+  const _DeviceHeroCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final serverDeviceNames = state.serverService.connectedDeviceNames;
+    final isClient = state.connectionService.isConnected && !state.connectionService.isLocalConnection;
+
+    if (isClient) {
+      final name = state.connectionService.connectedDeviceName ?? 'Connected Server';
+      return _buildSingleDeviceCard(context, name);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: kSurfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kOutlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '${serverDeviceNames.length} Connected ${serverDeviceNames.length == 1 ? 'Device' : 'Devices'}',
+                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kOnSurface),
+              ),
+              const Spacer(),
+              const Icon(LucideIcons.users, color: kPrimary, size: 20),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (serverDeviceNames.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              child: Center(
+                child: Text('No devices connected yet',
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
+              ),
+            ),
+          ] else ...[
+            ...serverDeviceNames.map((deviceName) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: kSurfaceLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: kOutlineVariant),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.smartphone, color: kPrimary, size: 18),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            deviceName,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: kOnSurface,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kError.withOpacity(0.1),
+                            foregroundColor: kError,
+                            elevation: 0,
+                            side: BorderSide(color: kError.withOpacity(0.2)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          ),
+                          onPressed: () => state.onDisconnectRemoteDevice(deviceName),
+                          child: Text('Disconnect', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 11)),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSingleDeviceCard(BuildContext context, String name) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -902,7 +981,7 @@ class _DeviceHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            deviceName,
+            name,
             style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 4),

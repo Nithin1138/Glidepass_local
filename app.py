@@ -1500,6 +1500,31 @@ async def get_connections():
     }
 
 
+@app.post("/api/connections/disconnect")
+async def disconnect_device(data: dict):
+    target_name = data.get("device_name")
+    if not target_name:
+        return {"status": "error", "message": "device_name required"}
+    
+    _registered_clients.pop(target_name, None)
+    
+    to_disconnect = []
+    for ws, name in list(active_devices.items()):
+        if name == target_name:
+            to_disconnect.append(ws)
+            
+    for ws in to_disconnect:
+        try:
+            await ws.close()
+        except Exception:
+            pass
+        active_devices.pop(ws, None)
+        if ws in active_connections:
+            active_connections.remove(ws)
+            
+    return {"status": "success", "message": f"Disconnected {target_name}"}
+
+
 # ── Cloud resource catalog proxy ──────────────────────────────────────────────
 # The mobile resources.html page runs on the LOCAL server (localhost:8000).
 # The actual hub/resource data lives on the Next.js server.

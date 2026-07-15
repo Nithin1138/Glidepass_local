@@ -185,4 +185,21 @@ class ServerService {
     _connectedDevices.clear();
     _statusController.add(null);
   }
+
+  Future<void> refreshConnections() async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 500);
+      final connReq = await client.getUrl(Uri.parse('http://127.0.0.1:8000/api/connections'));
+      final connResp = await connReq.close();
+      if (connResp.statusCode == 200) {
+        final dataStr = await connResp.transform(utf8.decoder).join();
+        final data = jsonDecode(dataStr);
+        _connectedCount = data['count'] ?? 0;
+        final List<dynamic> devs = data['devices'] ?? [];
+        _connectedDevices = devs.map((d) => d.toString()).toList();
+        _statusController.add(null);
+      }
+    } catch (_) {}
+  }
 }
