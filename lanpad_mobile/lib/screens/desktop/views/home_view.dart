@@ -39,13 +39,19 @@ class _WaitingView extends StatefulWidget {
 }
 
 class _WaitingViewState extends State<_WaitingView> {
-  bool _isConnectMode = false;
-  List<Map<String, dynamic>> _discoveredDevices = [];
   bool _isScanning = false;
+  bool _showManual = false;
+  List<Map<String, dynamic>> _discoveredDevices = [];
 
   final _manualUrlController = TextEditingController();
   final _manualNameController = TextEditingController();
   final _manualCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _discoverLocalDevices();
+  }
 
   @override
   void dispose() {
@@ -67,6 +73,10 @@ class _WaitingViewState extends State<_WaitingView> {
         includeLinkLocal: false,
         type: InternetAddressType.IPv4,
       );
+
+      final localIps = interfaces.expand((i) => i.addresses).map((a) => a.address).toList();
+      localIps.add('127.0.0.1');
+      localIps.add('localhost');
 
       String? localIp;
       for (var interface in interfaces) {
@@ -90,7 +100,7 @@ class _WaitingViewState extends State<_WaitingView> {
 
           for (int i = 1; i <= 254; i++) {
             final ip = '$subnet.$i';
-            if (ip == widget.state.localIp) continue;
+            if (localIps.contains(ip)) continue;
             final url = 'http://$ip:8000';
 
             tasks.add(
@@ -105,14 +115,12 @@ class _WaitingViewState extends State<_WaitingView> {
                     final myToken = widget.state.serverService.sessionToken;
                     final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
                     
-                    // Skip if it is our own server
                     if (serverCode.toLowerCase() == myCode.toLowerCase()) {
                       return;
                     }
 
                     if (mounted) {
                       setState(() {
-                        // Check if already discovered
                         if (!_discoveredDevices.any((d) => d['url'] == url)) {
                           _discoveredDevices.add({
                             'url': url,
@@ -254,7 +262,6 @@ class _WaitingViewState extends State<_WaitingView> {
 
   Future<void> _connectManual() async {
     final url = _manualUrlController.text.trim();
-    final name = _manualNameController.text.trim();
     final code = _manualCodeController.text.trim();
 
     if (url.isEmpty || code.isEmpty) {
@@ -293,56 +300,72 @@ class _WaitingViewState extends State<_WaitingView> {
 
         Widget content;
 
-        if (_isConnectMode) {
-          // Connect to another App view
-          content = isNarrow
-              ? Column(
-                  children: [
-                    _buildNearbyPanel(),
-                    const SizedBox(height: 32),
-                    _buildManualPanel(),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildNearbyPanel()),
-                    const SizedBox(width: 40),
-                    Expanded(child: _buildManualPanel()),
-                  ],
-                );
+        if (isNarrow) {
+          content = Column(
+            children: [
+              _buildNearbyPanel(),
+              const SizedBox(height: 32),
+              _QrPanel(
+                state: widget.state,
+                isRunning: isRunning && !isConnectingTunnel,
+                qrData: qrData,
+                showConnecting: isConnectingTunnel,
+              ),
+            ],
+          );
         } else {
-          // Standard Discovery View
-          content = isNarrow
-              ? Column(
-                  children: [
-                    _QrPanel(
-                      state: widget.state,
-                      isRunning: isRunning && !isConnectingTunnel,
-                      qrData: qrData,
-                      showConnecting: isConnectingTunnel,
-                    ),
-                    const SizedBox(height: 32),
-                    _QuickStartGuide(state: widget.state),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _QrPanel(
-                        state: widget.state,
-                        isRunning: isRunning && !isConnectingTunnel,
-                        qrData: qrData,
-                        showConnecting: isConnectingTunnel,
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                    Expanded(
-                      child: _QuickStartGuide(state: widget.state),
-                    ),
-                  ],
-                );
+          content = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _showManual
+                    ? Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: kGlassCard,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Manual Connection',
+                                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+                            const SizedBox(height: 4),
+                            Text('Enter connection details of another device directly.',
+                                style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+                            const SizedBox(height: 24),
+                            _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+                            const SizedBox(height: 16),
+                            _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
+                            const SizedBox(height: 16),
+                            _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+                            const SizedBox(height: 28),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: kPrimary,
+                                  foregroundColor: kSurfaceLowest,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: _connectManual,
+                                child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _buildNearbyPanel(),
+              ),
+              const SizedBox(width: 40),
+              Expanded(
+                child: _QrPanel(
+                  state: widget.state,
+                  isRunning: isRunning && !isConnectingTunnel,
+                  qrData: qrData,
+                  showConnecting: isConnectingTunnel,
+                ),
+              ),
+            ],
+          );
         }
 
         return SingleChildScrollView(
@@ -353,36 +376,35 @@ class _WaitingViewState extends State<_WaitingView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Page header & Switcher
                   Row(
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_isConnectMode ? 'Connect to App' : 'Discovery Mode', style: kHeadlineLg),
+                          Text(_showManual ? 'Manual Connection' : 'Discovery Mode', style: kHeadlineLg),
                           const SizedBox(height: 4),
                           Text(
-                            _isConnectMode
-                                ? 'Pair and synchronize with another desktop app.'
-                                : 'Waiting for your mobile device to connect.',
+                            _showManual
+                                ? 'Pair and connect with another active command node directly.'
+                                : 'Waiting for your mobile device or another laptop to connect.',
                             style: kBodyLg.copyWith(color: kOnSurfaceVariant),
                           ),
                         ],
                       ),
                       const Spacer(),
-                      // Tab mode toggle
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: kSurfaceContainer,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: kOutlineVariant),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kSurfaceContainer,
+                          foregroundColor: kPrimary,
+                          side: const BorderSide(color: kOutlineVariant),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         ),
-                        child: Row(
-                          children: [
-                            _buildHeaderToggleBtn('Discovery', !_isConnectMode),
-                            _buildHeaderToggleBtn('Connect App', _isConnectMode),
-                          ],
+                        onPressed: () => setState(() => _showManual = !_showManual),
+                        icon: Icon(_showManual ? LucideIcons.scan : LucideIcons.settings, size: 16),
+                        label: Text(
+                          _showManual ? 'Back to Scanner' : 'Manual Setup',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
                     ],
@@ -398,32 +420,38 @@ class _WaitingViewState extends State<_WaitingView> {
     );
   }
 
-  Widget _buildHeaderToggleBtn(String text, bool active) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isConnectMode = text == 'Connect App';
-          if (_isConnectMode) {
-            _discoverLocalDevices();
-          }
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? kSurfaceVariant : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: active ? FontWeight.bold : FontWeight.w500,
-            color: active ? kPrimary : kOnSurfaceVariant,
+  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: kOnSurface)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          maxLength: maxLength,
+          style: GoogleFonts.inter(fontSize: 13, color: kOnSurface),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
+            filled: true,
+            fillColor: kSurfaceLow,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kOutlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kPrimary),
+            ),
+            counterText: '',
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -461,7 +489,7 @@ class _WaitingViewState extends State<_WaitingView> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40.0),
-                child: Text('No nearby desktop apps found',
+                child: Text('No nearby desktop or mobile apps found',
                     style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
               ),
             ),
@@ -472,6 +500,13 @@ class _WaitingViewState extends State<_WaitingView> {
               itemCount: _discoveredDevices.length,
               itemBuilder: (context, index) {
                 final d = _discoveredDevices[index];
+                final nameLower = d['device_name'].toString().toLowerCase();
+                final isMobile = nameLower.contains('android') || 
+                                 nameLower.contains('ios') || 
+                                 nameLower.contains('phone') || 
+                                 nameLower.contains('mobile');
+                final icon = isMobile ? LucideIcons.smartphone : LucideIcons.laptop;
+
                 final rawCode = d['session_code']?.toString() ?? '';
                 final formattedCode = rawCode.length == 6
                     ? '${rawCode.substring(0, 3).toUpperCase()}-${rawCode.substring(3).toUpperCase()}'
@@ -491,7 +526,7 @@ class _WaitingViewState extends State<_WaitingView> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.laptop, color: kPrimary, size: 20),
+                          Icon(icon, color: kPrimary, size: 20),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(
@@ -545,78 +580,6 @@ class _WaitingViewState extends State<_WaitingView> {
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildManualPanel() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: kGlassCard,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Manual Connection',
-              style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-          const SizedBox(height: 4),
-          Text('Enter connection details of another device directly.',
-              style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-          const SizedBox(height: 24),
-          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
-          const SizedBox(height: 16),
-          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
-          const SizedBox(height: 16),
-          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimary,
-                foregroundColor: kSurfaceLowest,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: _connectManual,
-              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController ctrl, String hint, {int? maxLength}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: kOnSurface)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
-          maxLength: maxLength,
-          style: GoogleFonts.inter(fontSize: 13, color: kOnSurface),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(color: kOnSurfaceVariant.withOpacity(0.4)),
-            filled: true,
-            fillColor: kSurfaceLow,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kOutlineVariant),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kOutlineVariant),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: kPrimary),
-            ),
-            counterText: '',
-          ),
-        ),
-      ],
     );
   }
 }
