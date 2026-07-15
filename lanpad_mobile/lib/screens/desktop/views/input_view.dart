@@ -263,11 +263,10 @@ class _InputViewState extends State<InputView> {
                 // Controls Row & Expandable Settings Panel
                 Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Mode selector pill
-                        Container(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isNarrow = constraints.maxWidth < 620;
+                        final modeSelector = Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             color: kSurfaceContainer,
@@ -275,6 +274,7 @@ class _InputViewState extends State<InputView> {
                             border: Border.all(color: kOutlineVariant),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               _buildModeBtn('Flash'),
                               _buildModeBtn('Type'),
@@ -282,10 +282,9 @@ class _InputViewState extends State<InputView> {
                               _buildModeBtn('Live Sync', hasDot: true),
                             ],
                           ),
-                        ),
+                        );
 
-                        // Send Button
-                        ElevatedButton.icon(
+                        final sendBtn = ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
                             foregroundColor: const Color(0xFF38BDF8),
@@ -297,8 +296,27 @@ class _InputViewState extends State<InputView> {
                           icon: const Icon(LucideIcons.rocket, size: 16),
                           label: Text('Send to Active App',
                               style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                        ),
-                      ],
+                        );
+
+                        if (isNarrow) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              modeSelector,
+                              const SizedBox(height: 12),
+                              sendBtn,
+                            ],
+                          );
+                        } else {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              modeSelector,
+                              sendBtn,
+                            ],
+                          );
+                        }
+                      },
                     ),
 
                     // Expandable typing speed & mode options if 'Type' is selected

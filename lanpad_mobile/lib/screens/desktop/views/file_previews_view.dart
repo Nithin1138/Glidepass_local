@@ -35,271 +35,289 @@ class _FilePreviewsViewState extends State<FilePreviewsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left Column: History & Filters
-        Expanded(
-          flex: 2,
-          child: Column(
-            children: [
-              // Filter Row
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: kOutlineVariant)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: kSurfaceLow,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          _buildFilterButton('All', true),
-                          _buildFilterButton('Sent', false),
-                          _buildFilterButton('Received', false),
-                          _buildFilterButton('Large Files', false),
-                        ],
-                      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 900;
+
+        final leftColumn = Column(
+          children: [
+            // Filter Row
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: kOutlineVariant)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: kSurfaceLow,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    Row(
+                    child: Row(
                       children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.filter_list),
-                          tooltip: 'Filter',
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.delete_sweep),
-                          tooltip: 'Clear',
-                        ),
+                        _buildFilterButton('All', true),
+                        _buildFilterButton('Sent', false),
+                        _buildFilterButton('Received', false),
+                        _buildFilterButton('Large Files', false),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              // Transfer List
-              Expanded(
-                child: widget.state.loadingFiles
-                    ? const Center(child: CircularProgressIndicator())
-                    : widget.state.files.isEmpty
-                        ? Center(child: Text('No files available', style: kBodyMd.copyWith(color: kOnSurfaceVariant)))
-                        : ListView(
-                            padding: const EdgeInsets.all(24),
-                            children: [
-                              _buildTableRowHeader(),
-                              const SizedBox(height: 8),
-                              ...widget.state.files.map((file) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: InkWell(
-                                    onTap: () => setState(() => _selectedFile = file),
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: _buildTableRow(file, _selectedFile?.name == file.name),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-              ),
-            ],
-          ),
-        ),
-        // Right Column: Detail Panel
-        Container(
-          width: 400,
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: kOutlineVariant)),
-            color: kSurfaceLow,
-          ),
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-              // Preview Card
-              if (_selectedFile != null)
-                Container(
-                  decoration: BoxDecoration(
-                    color: kSurfaceContainer,
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Column(
+                  Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('File Preview', style: kHeadlineMd.copyWith(fontSize: 18)),
-                            const Icon(Icons.close, size: 18),
-                          ],
-                        ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.filter_list),
+                        tooltip: 'Filter',
                       ),
-                      Divider(height: 1, color: kOutlineVariant),
-                      Container(
-                        height: 256,
-                        color: kSurfaceVariant,
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: kSurfaceLowest.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: kOutlineVariant),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.insert_drive_file, size: 48, color: kPrimary),
-                                const SizedBox(height: 8),
-                                Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist'), textAlign: TextAlign.center),
-                                Text('Size: ${(_selectedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('FILE NAME', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: kSurfaceLowest,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: kOutlineVariant),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist', color: kSecondary)),
-                                  ),
-                                  Icon(Icons.copy, size: 18, color: kOnSurfaceVariant),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildDetailBox('MIME TYPE', 'application/octet-stream'),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildDetailBox('UPLOADER', _selectedFile!.inbox ? 'Mobile Device' : 'Desktop'),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      widget.state.onDownloadFile(_selectedFile!);
-                                    },
-                                    icon: const Icon(Icons.download),
-                                    label: const Text('Download'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: kPrimary,
-                                      foregroundColor: kSurfaceLowest,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                OutlinedButton(
-                                  onPressed: () {},
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.all(16),
-                                  ),
-                                  child: const Icon(Icons.share),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.delete_sweep),
+                        tooltip: 'Clear',
                       ),
                     ],
                   ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: Text('Select a file to view details', style: kBodyMd.copyWith(color: kOnSurfaceVariant)),
-                  ),
-                ),
-              const Spacer(),
-              // Storage Health Card
+                ],
+              ),
+            ),
+            // Transfer List
+            Expanded(
+              child: widget.state.loadingFiles
+                  ? const Center(child: CircularProgressIndicator())
+                  : widget.state.files.isEmpty
+                      ? Center(child: Text('No files available', style: kBodyMd.copyWith(color: kOnSurfaceVariant)))
+                      : ListView(
+                          padding: const EdgeInsets.all(24),
+                          children: [
+                            _buildTableRowHeader(),
+                            const SizedBox(height: 8),
+                            ...widget.state.files.map((file) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: InkWell(
+                                  onTap: () => setState(() => _selectedFile = file),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: _buildTableRow(file, _selectedFile?.name == file.name),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+            ),
+          ],
+        );
+
+        final rightColumn = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Preview Card
+            if (_selectedFile != null)
               Container(
-                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: kSurfaceContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.storage, color: kSecondary),
-                            const SizedBox(width: 8),
-                            Text('Storage Health', style: kHeadlineMd.copyWith(fontSize: 16)),
-                          ],
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('File Preview', style: kHeadlineMd.copyWith(fontSize: 18)),
+                          const Icon(Icons.close, size: 18),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, color: kOutlineVariant),
+                    Container(
+                      height: 256,
+                      color: kSurfaceVariant,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: kSurfaceLowest.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: kOutlineVariant),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.insert_drive_file, size: 48, color: kPrimary),
+                              const SizedBox(height: 8),
+                              Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist'), textAlign: TextAlign.center),
+                              Text('Size: ${(_selectedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
+                            ],
+                          ),
                         ),
-                        Text('92% Health', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildProgressBar('Local Drive (NVMe)', '742 GB / 1 TB', 0.742, kPrimary),
-                    const SizedBox(height: 12),
-                    _buildProgressBar('LANpad Cache', '4.2 GB / 10 GB', 0.42, kSecondary),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.info, size: 14, color: kTertiary),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text('Cache automatically clears files older than 48h.', style: kLabelMd.copyWith(color: kOnSurfaceVariant))),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        child: const Text('Clean Cache'),
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('FILE NAME', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: kSurfaceLowest,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: kOutlineVariant),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(_selectedFile!.name, style: kBodyMd.copyWith(fontFamily: 'Geist', color: kSecondary)),
+                                ),
+                                Icon(Icons.copy, size: 18, color: kOnSurfaceVariant),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDetailBox('MIME TYPE', 'application/octet-stream'),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildDetailBox('UPLOADER', _selectedFile!.inbox ? 'Mobile Device' : 'Desktop'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    widget.state.onDownloadFile(_selectedFile!);
+                                  },
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Download'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: kPrimary,
+                                    foregroundColor: kSurfaceLowest,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              OutlinedButton(
+                                onPressed: () {},
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.all(16),
+                                ),
+                                child: const Icon(Icons.share),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-                    ],
-                  ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text('Select a file to view details', style: kBodyMd.copyWith(color: kOnSurfaceVariant)),
                 ),
               ),
-            );
-          },
-        ),
-        ),
-      ],
+            const SizedBox(height: 24),
+            // Storage Health Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: kSurfaceContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.storage, color: kSecondary),
+                          const SizedBox(width: 8),
+                          Text('Storage Health', style: kHeadlineMd.copyWith(fontSize: 16)),
+                        ],
+                      ),
+                      Text('92% Health', style: kLabelMd.copyWith(color: kOnSurfaceVariant)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildProgressBar('Local Drive (NVMe)', '742 GB / 1 TB', 0.742, kPrimary),
+                  const SizedBox(height: 12),
+                  _buildProgressBar('LANpad Cache', '4.2 GB / 10 GB', 0.42, kSecondary),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.info, size: 14, color: kTertiary),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text('Cache automatically clears files older than 48h.', style: kLabelMd.copyWith(color: kOnSurfaceVariant))),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {},
+                      child: const Text('Clean Cache'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        if (isNarrow) {
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: 380,
+                  child: leftColumn,
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: rightColumn,
+                ),
+              ],
+            ),
+          );
+        } else {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left Column
+              Expanded(child: leftColumn),
+              // Right Column
+              Container(
+                width: 320,
+                decoration: BoxDecoration(
+                  border: Border(left: BorderSide(color: kOutlineVariant)),
+                  color: kSurfaceLow,
+                ),
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: rightColumn,
+                ),
+              ),
+            ],
+          );
+        }
+      },
     );
   }
 
