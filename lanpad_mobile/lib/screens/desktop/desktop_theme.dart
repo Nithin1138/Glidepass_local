@@ -49,14 +49,15 @@ TextStyle kMonoSm = GoogleFonts.robotoMono(
   color: kOnSurface, letterSpacing: 0,
 );
 
-// ─── Decorations ─────────────────────────────────────────────────────────────
-BoxDecoration kGlassCard = BoxDecoration(
-  color: const Color(0xFF161B22).withValues(alpha: 0.85),
+BoxDecoration get kGlassCard => BoxDecoration(
+  color: AppTheme.isDark
+      ? const Color(0xFF161B22).withValues(alpha: 0.85)
+      : const Color(0xFFFFFFFF).withValues(alpha: 0.9),
   borderRadius: BorderRadius.circular(16),
   border: Border.all(color: kOutlineVariant),
 );
 
-BoxDecoration kSurfaceCard = BoxDecoration(
+BoxDecoration get kSurfaceCard => BoxDecoration(
   color: kSurfaceContainer,
   borderRadius: BorderRadius.circular(16),
   border: Border.all(color: kOutlineVariant),
