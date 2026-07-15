@@ -19,32 +19,32 @@ Color get kError => AppTheme.isDark ? const Color(0xFFFFB4AB) : const Color(0xFF
 Color get kErrorContainer => AppTheme.isDark ? const Color(0xFF93000A) : const Color(0xFFFFDAD6);
 
 // ─── Text Styles ─────────────────────────────────────────────────────────────
-TextStyle kHeadlineLg = GoogleFonts.outfit(
+TextStyle get kHeadlineLg => GoogleFonts.outfit(
   fontSize: 32, fontWeight: FontWeight.w600,
   color: kOnSurface, letterSpacing: -0.64,
 );
 
-TextStyle kHeadlineMd = GoogleFonts.outfit(
+TextStyle get kHeadlineMd => GoogleFonts.outfit(
   fontSize: 24, fontWeight: FontWeight.w600,
   color: kOnSurface, letterSpacing: -0.48,
 );
 
-TextStyle kBodyLg = GoogleFonts.inter(
+TextStyle get kBodyLg => GoogleFonts.inter(
   fontSize: 16, fontWeight: FontWeight.w400,
   color: kOnSurface, letterSpacing: -0.16,
 );
 
-TextStyle kBodyMd = GoogleFonts.inter(
+TextStyle get kBodyMd => GoogleFonts.inter(
   fontSize: 14, fontWeight: FontWeight.w400,
   color: kOnSurface, letterSpacing: -0.14,
 );
 
-TextStyle kLabelMd = GoogleFonts.inter(
+TextStyle get kLabelMd => GoogleFonts.inter(
   fontSize: 12, fontWeight: FontWeight.w500,
   color: kOnSurface, letterSpacing: 0.24,
 );
 
-TextStyle kMonoSm = GoogleFonts.robotoMono(
+TextStyle get kMonoSm => GoogleFonts.robotoMono(
   fontSize: 12, fontWeight: FontWeight.w400,
   color: kOnSurface, letterSpacing: 0,
 );
