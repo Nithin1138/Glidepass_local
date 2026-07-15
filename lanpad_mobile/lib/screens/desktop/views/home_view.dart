@@ -307,14 +307,14 @@ class _WaitingViewState extends State<_WaitingView> {
         if (isNarrow) {
           content = Column(
             children: [
-              _buildNearbyPanel(),
-              const SizedBox(height: 32),
               _QrPanel(
                 state: widget.state,
                 isRunning: isRunning && !isConnectingTunnel,
                 qrData: qrData,
                 showConnecting: isConnectingTunnel,
               ),
+              const SizedBox(height: 32),
+              _buildNearbyPanel(),
             ],
           );
         } else {
