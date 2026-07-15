@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:archive/archive_io.dart';
 
 import '../../services/server_service.dart';
 import '../../services/tunnel_service.dart';
@@ -433,14 +434,13 @@ class _DesktopShellState extends State<DesktopShell> {
           _uploadProgress = 0.0;
         });
 
-        final parentPath = dir.parent.path;
-        final result = await Process.run(
-          '/usr/bin/zip',
-          ['-r', zipFilePath, folderName],
-          workingDirectory: parentPath,
-        );
+        // Pure Dart folder compression
+        final encoder = ZipFileEncoder();
+        encoder.create(zipFilePath);
+        await encoder.addDirectory(dir);
+        encoder.close();
 
-        if (result.exitCode == 0 && zipFile.existsSync()) {
+        if (zipFile.existsSync()) {
           setState(() {
             _uploadProgressName = '$folderName (Folder)';
             _uploadProgress = 0.0;
