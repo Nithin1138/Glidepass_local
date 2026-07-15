@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 import '../../services/server_service.dart';
 import '../../services/tunnel_service.dart';
@@ -412,6 +413,65 @@ class _DesktopShellState extends State<DesktopShell> {
     }
   }
 
+  Future<void> _pickFolder() async {
+    try {
+      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory != null) {
+        final dir = Directory(selectedDirectory);
+        final List<FileSystemEntity> entities = dir.listSync(recursive: true);
+        final List<File> filesToUpload = [];
+        for (final entity in entities) {
+          if (entity is File) {
+            filesToUpload.add(entity);
+          }
+        }
+        if (filesToUpload.isNotEmpty) {
+          int uploadedCount = 0;
+          for (int i = 0; i < filesToUpload.length; i++) {
+            final file = filesToUpload[i];
+            final filename = p.basename(file.path);
+            setState(() {
+              _isUploading = true;
+              _uploadProgressName = '(${i + 1}/${filesToUpload.length}) $filename';
+              _uploadProgress = 0.0;
+            });
+            final startTime = DateTime.now();
+            try {
+              final response = await _apiService.uploadFileDirect(
+                file: file, filename: filename, mode: 'parallel',
+                onProgress: (sent, total) {
+                  final elapsed = DateTime.now().difference(startTime).inSeconds;
+                  final speedMbps = elapsed > 0 ? (sent * 8) / (elapsed * 1024 * 1024) : 0.0;
+                  setState(() {
+                    _uploadProgress = sent / total;
+                    _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
+                    _uploadEta = speedMbps > 0
+                        ? '${((total - sent) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
+                        : 'calculating...';
+                  });
+                },
+              );
+              if (response.statusCode == 200) uploadedCount++;
+              else _showToast('Failed to upload $filename', isError: true);
+            } catch (e) {
+              _showToast('Failed: $e', isError: true);
+            }
+          }
+          if (uploadedCount > 0) {
+            _showToast('Uploaded $uploadedCount files successfully!');
+            _loadFiles();
+          }
+        } else {
+          _showToast('Selected folder is empty', isError: true);
+        }
+      }
+    } catch (e) {
+      _showToast('Folder picker error: $e', isError: true);
+    } finally {
+      setState(() { _isUploading = false; _uploadProgressName = ''; _uploadProgress = 0.0; });
+    }
+  }
+
   Future<void> _downloadFile(SharedFile file) async {
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
@@ -545,6 +605,7 @@ class _DesktopShellState extends State<DesktopShell> {
     onToggleServer: _toggleServer,
     onReconnect: _reconnectSession,
     onPickAndUpload: _pickAndUploadFile,
+    onPickFolder: _pickFolder,
     onToggleLanMode: (val) => setState(() => _isDirectLan = val),
     onDownloadFile: _downloadFile,
     onDeleteFile: _deleteFile,

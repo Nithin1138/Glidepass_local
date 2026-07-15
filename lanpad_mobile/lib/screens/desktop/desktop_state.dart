@@ -53,6 +53,7 @@ class DesktopState {
   final VoidCallback onToggleServer;
   final VoidCallback onReconnect;
   final VoidCallback onPickAndUpload;
+  final VoidCallback onPickFolder;
   final ValueChanged<bool> onToggleLanMode;
   final Future<void> Function(SharedFile) onDownloadFile;
   final Future<void> Function(SharedFile) onDeleteFile;
@@ -92,6 +93,7 @@ class DesktopState {
     required this.onToggleServer,
     required this.onReconnect,
     required this.onPickAndUpload,
+    required this.onPickFolder,
     required this.onToggleLanMode,
     required this.onDownloadFile,
     required this.onDeleteFile,

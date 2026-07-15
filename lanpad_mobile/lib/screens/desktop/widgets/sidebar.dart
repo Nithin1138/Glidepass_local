@@ -93,11 +93,11 @@ class DesktopSidebar extends StatelessWidget {
               children: [
                 _NavItem(icon: LucideIcons.house, label: 'Home', view: DesktopView.home,
                   current: currentView, onTap: onNavigate),
-                _NavItem(icon: LucideIcons.folder_open, label: 'Resources', view: DesktopView.files,
+                _NavItem(icon: LucideIcons.folder_sync, label: 'Transfer', view: DesktopView.files,
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.keyboard, label: 'Input', view: DesktopView.input,
                   current: currentView, onTap: onNavigate),
-                _NavItem(icon: LucideIcons.book_open, label: 'Hubs', view: DesktopView.resources,
+                _NavItem(icon: LucideIcons.book_open, label: 'Resources', view: DesktopView.resources,
                   current: currentView, onTap: onNavigate),
                 _NavItem(icon: LucideIcons.history, label: 'History', view: DesktopView.history,
                   current: currentView, onTap: onNavigate),

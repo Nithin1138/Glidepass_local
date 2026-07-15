@@ -259,7 +259,7 @@ class _DropZone extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              onPressed: state.onPickAndUpload,
+              onPressed: state.onPickFolder,
               child: Text('Select Folder', style: GoogleFonts.inter(fontSize: 14)),
             ),
           ]),

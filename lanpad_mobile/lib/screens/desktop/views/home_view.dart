@@ -116,19 +116,19 @@ class _QrPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(children: [
       Text('Waiting for connection',
-        style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600, color: kOnSurface),
+        style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600, color: kOnSurface),
         textAlign: TextAlign.center),
-      const SizedBox(height: 8),
+      const SizedBox(height: 12),
       Text(
         'Connect your mobile device to start sharing resources, managing inputs, and orchestrating your local environment.',
-        style: GoogleFonts.inter(fontSize: 14, color: kOnSurfaceVariant, height: 1.5),
+        style: GoogleFonts.inter(fontSize: 15, color: kOnSurfaceVariant, height: 1.5),
         textAlign: TextAlign.center,
       ),
-      const SizedBox(height: 28),
+      const SizedBox(height: 36),
 
       // QR Container
       Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: kSurfaceContainer,
           borderRadius: BorderRadius.circular(24),
@@ -137,44 +137,44 @@ class _QrPanel extends StatelessWidget {
         ),
         child: showConnecting
             ? Container(
-                width: 200, height: 200,
+                width: 260, height: 260,
                 decoration: BoxDecoration(
                   color: kSurfaceLow,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text('Generating secure link...',
-                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 12),
+                    style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13),
                     textAlign: TextAlign.center),
                 ]),
               )
             : (isRunning
                 ? Container(
-                    width: 200, height: 200, color: Colors.white,
+                    width: 260, height: 260, color: Colors.white,
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: QrImageView(data: qrData, version: QrVersions.auto, size: 184),
+                      padding: const EdgeInsets.all(12),
+                      child: QrImageView(data: qrData, version: QrVersions.auto, size: 236),
                     ),
                   )
                 : Container(
-                    width: 200, height: 200,
+                    width: 260, height: 260,
                     decoration: BoxDecoration(
                       color: kSurfaceLow,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 40),
-                      const SizedBox(height: 12),
+                      const Icon(LucideIcons.server_off, color: kOnSurfaceVariant, size: 48),
+                      const SizedBox(height: 16),
                       Text('Start the server\nto show QR code',
-                        style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13),
+                        style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 14),
                         textAlign: TextAlign.center),
                     ]),
                   )),
       ),
       if (isRunning && !showConnecting) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SelectableText(
@@ -184,7 +184,7 @@ class _QrPanel extends StatelessWidget {
           ),
         ),
       ],
-      const SizedBox(height: 24),
+      const SizedBox(height: 28),
 
       // LAN / Relay toggle
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -200,7 +200,7 @@ class _QrPanel extends StatelessWidget {
           onTap: () => state.onToggleLanMode(false),
         ),
       ]),
-      const SizedBox(height: 20),
+      const SizedBox(height: 24),
 
       // Network stat pills
       Wrap(alignment: WrapAlignment.center, spacing: 10, children: [
@@ -218,50 +218,56 @@ class _QuickStartGuide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
       decoration: kGlassCard,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Quick Start Guide',
-          style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600, color: kOnSurface)),
-        const SizedBox(height: 4),
-        Text('Get up and running in under 30 seconds.',
-          style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-        const SizedBox(height: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Quick Start Guide',
+              style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600, color: kOnSurface)),
+            const SizedBox(height: 6),
+            Text('Get up and running in under 30 seconds.',
+              style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+            const SizedBox(height: 36),
 
-        _StartStep(1, 'Open LANpad on phone',
-          'Ensure both devices are on the same local area network for optimal discovery.'),
-        const SizedBox(height: 16),
-        _StartStep(2, 'Scan QR Code',
-          'Point your mobile camera at the code. Pairing is handled via secure local TLS.'),
-        const SizedBox(height: 16),
-        _StartStep(3, 'Share instantly',
-          'Once connected, drag and drop files or use your phone as a precision input device.'),
-        const SizedBox(height: 28),
+            _StartStep(1, 'Open LANpad on phone',
+              'Ensure both devices are on the same local area network for optimal discovery.'),
+            const SizedBox(height: 24),
+            _StartStep(2, 'Scan QR Code',
+              'Point your mobile camera at the code. Pairing is handled via secure local TLS.'),
+            const SizedBox(height: 24),
+            _StartStep(3, 'Share instantly',
+              'Once connected, drag and drop files or use your phone as a precision input device.'),
+          ]),
+          const SizedBox(height: 40),
 
-        Row(children: [
-          Expanded(child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimary, foregroundColor: kSurfaceLowest,
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Row(children: [
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary, foregroundColor: kSurfaceLowest,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => launchUrl(Uri.parse('https://lanpad.app')),
+              child: Text('Download Mobile App',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            )),
+            const SizedBox(width: 10),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: kOutlineVariant),
+                foregroundColor: kOnSurface,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => launchUrl(Uri.parse('https://lanpad.app/help')),
+              child: Text('Help Center', style: GoogleFonts.inter(fontSize: 13)),
             ),
-            onPressed: () => launchUrl(Uri.parse('https://lanpad.app')),
-            child: Text('Download Mobile App',
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-          )),
-          const SizedBox(width: 10),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: kOutlineVariant),
-              foregroundColor: kOnSurface,
-              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => launchUrl(Uri.parse('https://lanpad.app/help')),
-            child: Text('Help Center', style: GoogleFonts.inter(fontSize: 13)),
-          ),
-        ]),
-      ]),
+          ]),
+        ],
+      ),
     );
   }
 }
