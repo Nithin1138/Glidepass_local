@@ -1,0 +1,301 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#37393e",
+                      "on-primary-container": "#00285d",
+                      "tertiary": "#ffb786",
+                      "outline": "#8c909f",
+                      "on-tertiary-fixed": "#311400",
+                      "on-secondary-container": "#00515d",
+                      "secondary": "#5de6ff",
+                      "surface-container": "#1e2024",
+                      "on-surface": "#e2e2e8",
+                      "on-surface-variant": "#c2c6d6",
+                      "on-tertiary": "#502400",
+                      "background": "#111318",
+                      "inverse-on-surface": "#2f3035",
+                      "surface": "#111318",
+                      "on-secondary-fixed-variant": "#004e5a",
+                      "tertiary-fixed": "#ffdcc6",
+                      "primary": "#adc6ff",
+                      "on-secondary": "#00363e",
+                      "surface-dim": "#111318",
+                      "on-background": "#e2e2e8",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "secondary-fixed-dim": "#2fd9f4",
+                      "surface-container-lowest": "#0c0e12",
+                      "on-error": "#690005",
+                      "secondary-container": "#00cbe6",
+                      "surface-tint": "#adc6ff",
+                      "on-primary-fixed-variant": "#004395",
+                      "primary-container": "#4d8eff",
+                      "on-primary": "#002e6a",
+                      "surface-variant": "#333539",
+                      "secondary-fixed": "#a2eeff",
+                      "outline-variant": "#424754",
+                      "inverse-primary": "#005ac2",
+                      "surface-container-high": "#282a2e",
+                      "tertiary-container": "#df7412",
+                      "primary-fixed": "#d8e2ff",
+                      "on-primary-fixed": "#001a42",
+                      "surface-container-highest": "#333539",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "primary-fixed-dim": "#adc6ff",
+                      "inverse-surface": "#e2e2e8",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-fixed": "#001f25",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "surface-container-low": "#1a1c20",
+                      "on-tertiary-container": "#461f00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "gutter": "16px",
+                      "component-padding-x": "12px",
+                      "container-margin": "24px",
+                      "component-padding-y": "8px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "mono-sm": ["Geist"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Geist"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+              }
+            },
+          },
+        }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-background text-on-surface font-body-md selection:bg-primary/30 overflow-hidden">
+<!-- Global Layout Wrapper -->
+<div class="flex h-screen w-full">
+<!-- SideNavBar (JSON Component Mapping) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-container-margin w-[280px] h-screen flex-shrink-0 bg-surface-container border-r border-outline-variant z-50">
+<div class="mb-10">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">LANpad</h1>
+<p class="text-on-surface-variant text-label-md opacity-60">Local-First Utility</p>
+</div>
+<nav class="flex-1 space-y-2"><!-- Home -->
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-body-md">Home</span>
+</a>
+<!-- Connect -->
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-body-md">Connect</span>
+</a>
+<!-- Input (Active) -->
+<a class="flex items-center gap-3 px-4 py-2 text-primary font-bold bg-surface-variant rounded-xl transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">keyboard</span>
+<span class="font-body-md">Input</span>
+</a>
+<!-- Resources -->
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">folder_shared</span>
+<span class="font-body-md">Resources</span>
+</a>
+<!-- History -->
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-md">History</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a></nav>
+<!-- User Context -->
+<div class="mt-auto pt-6 border-t border-outline-variant flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a software engineer in a dark studio setting. High-contrast lighting with a cool blue rim light. The subject is wearing a technical black hoodie. The overall aesthetic is sharp, digital, and premium, consistent with a high-end utility app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0GH3N7ZNCM80r7VEyVyaxnVlC8OVZHiqyPQ1o9Ozjs8ct9eWHcdPGD9F0GngbBCam2nukcuxeXY8Mr7JSYXU-3yPKZ74ACJBmkGAZaQqckBJ_FwtOVQe3zX0bTn8Wyt4jRxSrLcZ5nvDwagTq7Sfx6m0tHteC32XR4v2KoBle0IZ1fLKv95FyOt7VwjIuDF0K3lwYqpQQUqoVENOs54HYdL6HOSf67PiyTjjDpirFVl89UQp9pqQ-AbSjGT-NWS6byXNfh1TbTgQ">
+</div>
+<div>
+<p class="font-bold text-sm">admin_node_01</p>
+<p class="text-xs text-on-surface-variant opacity-70">192.168.1.14</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[280px] flex-1 flex flex-col relative bg-background">
+<!-- TopNavBar (JSON Component Mapping) -->
+<header class="flex justify-between items-center w-full h-14 px-gutter bg-surface/80 backdrop-blur-xl border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-body-lg font-bold text-on-surface">Input Composer</span>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#10B981] status-pulse shadow-[0_0_8px_#10B981]"></div>
+<span class="text-xs font-mono-sm text-[#10B981]">REMOTE_V_STATION_04</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Main Editor Section -->
+<section class="flex-1 flex flex-col p-container-margin gap-4 relative">
+<!-- Code/Note Area -->
+<div class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden composer-focus transition-all duration-300">
+<!-- Toolbar -->
+<div class="h-10 px-4 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-sm text-on-surface-variant">buffer: snippet_alpha.sh</span>
+<span class="text-xs font-mono-sm text-outline">UTF-8</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">content_copy</span></button>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<!-- Textarea-->
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 p-6 font-mono-sm text-body-md text-on-surface resize-none placeholder:text-outline/40 leading-relaxed" placeholder="Enter commands, notes, or raw text to transfer..."></textarea>
+<!-- Status Bar -->
+<div class="h-8 px-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between text-[10px] font-mono-sm text-outline">
+<div class="">Ln 1, Col 1</div>
+<div class="flex gap-4">
+<span class="">CHARS: 0</span>
+<span class="">LINES: 1</span>
+</div>
+</div>
+</div>
+<!-- Mode Selector & Action -->
+<div class="flex items-center justify-between gap-4 mt-2">
+<!-- Segmented Control -->
+<div class="flex bg-surface-container-high p-1 rounded-xl border border-outline-variant">
+<button class="px-4 py-2 text-xs font-medium rounded-lg mode-button-active transition-all">Flash</button>
+<button class="px-4 py-2 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all">Type</button>
+<button class="px-4 py-2 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all">Inject</button>
+<button class="px-4 py-2 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed"></span>
+                                Live Sync
+                            </button>
+</div>
+<!-- Primary Action -->
+<button class="bg-primary text-on-primary-container px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="">Send to Active App</span>
+</button>
+</div>
+</section>
+<!-- Sidebar: Recent Snippets -->
+<aside class="w-[280px] border-l border-outline-variant bg-surface-container-low p-gutter flex flex-col gap-6">
+<div>
+<h3 class="text-label-md uppercase tracking-widest text-outline mb-4">Recent Snippets</h3>
+<div class="space-y-3">
+<!-- Snippet Item -->
+<div class="group p-3 bg-surface-container rounded-lg border border-outline-variant hover:border-primary/50 cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-sm text-primary uppercase">Shell</span>
+<span class="text-[10px] font-mono-sm text-outline">2m ago</span>
+</div>
+<p class="text-xs font-mono-sm text-on-surface-variant line-clamp-2">docker-compose up -d --build --force-recreate</p>
+</div>
+<!-- Snippet Item -->
+<div class="group p-3 bg-surface-container rounded-lg border border-outline-variant hover:border-primary/50 cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-sm text-tertiary uppercase">Auth</span>
+<span class="text-[10px] font-mono-sm text-outline">15m ago</span>
+</div>
+<p class="text-xs font-mono-sm text-on-surface-variant line-clamp-2">ssh-keygen -t ed25519 -C "admin@lanpad.local"</p>
+</div>
+<!-- Snippet Item -->
+<div class="group p-3 bg-surface-container rounded-lg border border-outline-variant hover:border-primary/50 cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-sm text-secondary uppercase">Config</span>
+<span class="text-[10px] font-mono-sm text-outline">1h ago</span>
+</div>
+<p class="text-xs font-mono-sm text-on-surface-variant line-clamp-2">interface eth0 ip address 10.0.0.5/24</p>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="bg-surface-variant/30 rounded-xl p-4 border border-outline-variant/50">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-sm">info</span>
+<span class="text-[10px] font-bold text-on-surface uppercase">Pro Tip</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+                                Use <kbd class="px-1 bg-surface-container rounded border border-outline-variant font-mono-sm">Cmd+Enter</kbd> to quickly dispatch the current buffer using the selected mode.
+                            </p>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<!-- Background Atmospheric Effect -->
+<div class="fixed inset-0 pointer-events-none -z-10 opacity-20">
+
+</div>
+<script>
+        // Micro-interactions for Mode Selector
+        const modeButtons = document.querySelectorAll('.mode-button-active, .mode-button-active + button, .mode-button-active + button + button');
+        
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.innerText === 'Flash' || btn.innerText === 'Type' || btn.innerText === 'Inject' || btn.innerText.includes('Live Sync')) {
+                btn.addEventListener('click', function() {
+                    btn.parentElement.querySelectorAll('button').forEach(b => {
+                        b.classList.remove('mode-button-active');
+                        b.classList.remove('text-on-surface');
+                        b.classList.add('text-on-surface-variant');
+                    });
+                    this.classList.add('mode-button-active');
+                    this.classList.remove('text-on-surface-variant');
+                    this.classList.add('text-on-surface');
+                });
+            }
+        });
+
+        // Typing simulation for Live Sync indicator
+        const textarea = document.querySelector('textarea');
+        const charCountDisplay = document.querySelector('div:contains("CHARS:")'); // Not quite valid selector but illustrative
+        
+        textarea.addEventListener('input', (e) => {
+            const count = e.target.value.length;
+            const lines = e.target.value.split('\n').length;
+            // Update UI manually for demo purposes
+            document.querySelector('.h-8.px-4 div:last-child span:first-child').innerText = `CHARS: ${count}`;
+            document.querySelector('.h-8.px-4 div:last-child span:last-child').innerText = `LINES: ${lines}`;
+        });
+
+        // Search text node for updates
+        function updateStats() {
+            const val = textarea.value;
+            const stats = document.querySelectorAll('.font-mono-sm.text-outline span');
+            if (stats.length >= 2) {
+                stats[0].innerText = `CHARS: ${val.length}`;
+                stats[1].innerText = `LINES: ${val.split('\n').length}`;
+            }
+        }
+        textarea.addEventListener('input', updateStats);
+    </script>
+
+</body></html>

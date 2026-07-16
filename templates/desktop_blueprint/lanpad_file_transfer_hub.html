@@ -1,0 +1,413 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#df7412",
+                    "on-primary": "#002e6a",
+                    "surface-tint": "#adc6ff",
+                    "outline": "#8c909f",
+                    "surface": "#111318",
+                    "secondary": "#5de6ff",
+                    "inverse-primary": "#005ac2",
+                    "surface-bright": "#37393e",
+                    "on-surface": "#e2e2e8",
+                    "on-secondary-fixed": "#001f25",
+                    "surface-container-high": "#282a2e",
+                    "on-primary-container": "#00285d",
+                    "inverse-on-surface": "#2f3035",
+                    "tertiary-fixed": "#ffdcc6",
+                    "surface-dim": "#111318",
+                    "on-secondary": "#00363e",
+                    "surface-container-highest": "#333539",
+                    "on-tertiary": "#502400",
+                    "on-surface-variant": "#c2c6d6",
+                    "primary-fixed": "#d8e2ff",
+                    "on-primary-fixed-variant": "#004395",
+                    "on-primary-fixed": "#001a42",
+                    "secondary-fixed-dim": "#2fd9f4",
+                    "secondary-container": "#00cbe6",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container-lowest": "#0c0e12",
+                    "tertiary": "#ffb786",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "surface-variant": "#333539",
+                    "secondary-fixed": "#a2eeff",
+                    "on-background": "#e2e2e8",
+                    "primary-fixed-dim": "#adc6ff",
+                    "surface-container": "#1e2024",
+                    "outline-variant": "#424754",
+                    "on-tertiary-container": "#461f00",
+                    "primary": "#adc6ff",
+                    "surface-container-low": "#1a1c20",
+                    "on-secondary-container": "#00515d",
+                    "background": "#111318",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e2e2e8",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004e5a",
+                    "on-tertiary-fixed": "#311400",
+                    "primary-container": "#4d8eff",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "container-margin": "24px",
+                    "gutter": "16px",
+                    "component-padding-y": "8px",
+                    "component-padding-x": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono-sm": ["Geist"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Geist"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="font-body-md text-body-md overflow-hidden">
+<!-- Sidebar Navigation Shell -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface-container-lowest border-r border-outline-variant flex flex-col py-container-margin px-component-padding-x z-50">
+<div class="mb-10 px-component-padding-x">
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">TransferNode</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Local Instance: Active</p>
+</div>
+<nav class="flex-1 space-y-1"><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 group" href="#"><span class="material-symbols-outlined">home</span><span class="font-body-md">Home</span></a><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined">settings_input_antenna</span><span class="font-body-md">Connect</span></a><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined">input</span><span class="font-body-md">Input</span></a><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-primary bg-primary-container/10 border-r-2 border-primary transition-colors duration-200 scale-[0.98]" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">folder_open</span><span class="font-body-md font-semibold">Resources</span></a><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined">history</span><span class="font-body-md">History</span></a><a class="flex items-center gap-3 px-component-padding-x py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined">settings</span><span class="font-body-md">Settings</span></a></nav>
+<div class="mt-auto px-component-padding-x pt-6 border-t border-outline-variant/30">
+<button class="w-full py-2.5 bg-primary text-on-primary rounded font-semibold text-label-md flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Connect Peer
+            </button>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A futuristic digital avatar portrait of a technical operator, minimalist vector style, glowing cyan highlights on a dark carbon fiber helmet, stark contrast lighting, professional dev-ops aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr2VrgLOETmeZkdimqbHwx-sfbI-uPssneXRrk-OBtGXR9J8AFSpw3C0mVws8vDY_igCBQshEzSWWTFu1aYN3U9qIEorGl5u5Ak_a6cPgOxEn8Kln1a6SKMGJmQkNWx95mI_t4l7G4i0XK1lhVQu0QKuAz03d3F7vlklfoCxhRKGmLAuH3w9K5X9mR9iVILmllyUdmL91zEY2lir4_rhLa5Q5VJiv4iu22Qvre9czqkUQrS5LZ8pEVw3NRN8fWUOW90XLc7y9wABs">
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface font-semibold text-label-md">System Operator</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest">Administrator</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-[260px] h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant flex justify-between items-center px-container-margin z-40">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded border border-outline-variant">
+<div class="w-2 h-2 rounded-full bg-[#10B981] status-pulse"></div>
+<span class="font-label-md text-on-surface text-[11px] uppercase tracking-wider">Active Node: 192.168.1.42</span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[14px] text-secondary">lock</span>
+<span class="font-label-md text-on-surface text-[11px] uppercase tracking-wider">Encryption: AES-256</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[18px]">search</span>
+<input class="bg-surface-container-lowest border border-outline-variant rounded-full pl-10 pr-4 py-1.5 text-body-md w-64 focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none transition-all" placeholder="Search files or nodes..." type="text">
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors focus:ring-1 focus:ring-primary/30 rounded p-1">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="hover:text-primary transition-colors focus:ring-1 focus:ring-primary/30 rounded p-1">
+<span class="material-symbols-outlined">lan</span>
+</button>
+<button class="hover:text-primary transition-colors focus:ring-1 focus:ring-primary/30 rounded p-1">
+<span class="material-symbols-outlined">account_tree</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[260px] pt-16 h-screen overflow-y-auto custom-scrollbar bg-surface text-on-surface">
+<div class="p-container-margin space-y-gutter">
+<!-- Send File Zone (Hero Area) -->
+<section class="relative group">
+<div class="w-full min-h-[240px] rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-lowest flex flex-col items-center justify-center gap-6 transition-all duration-300 hover:border-primary/50 group-hover:bg-surface-container-low/30" id="drop-zone">
+<div class="flex flex-col items-center gap-3">
+<div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary text-[32px]">upload_file</span>
+</div>
+<div class="text-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Drop files to send to <span class="text-primary">iPhone 15 Pro</span></h2>
+<p class="text-on-surface-variant mt-1">Maximum file size: 10GB per transfer</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2.5 bg-primary text-on-primary rounded font-semibold text-label-md hover:brightness-110 transition-all">
+                            Browse Files
+                        </button>
+<span class="text-on-surface-variant font-label-md">OR</span>
+<button class="px-6 py-2.5 bg-surface-container-highest text-on-surface rounded font-semibold text-label-md border border-outline-variant hover:bg-surface-container-high transition-all">
+                            Select Folder
+                        </button>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Incoming & Progress (2 Columns) -->
+<div class="lg:col-span-2 space-y-gutter">
+<!-- Active Transfer Progress -->
+<section class="glass-panel rounded-xl p-component-padding-x py-container-margin">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-[18px] flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">sync</span>
+                                Active Transfers
+                            </h3>
+<span class="font-mono-sm text-secondary bg-secondary/10 px-2 py-0.5 rounded text-[10px] uppercase tracking-widest">High Speed Link</span>
+</div>
+<div class="space-y-6">
+<!-- Item 1 -->
+<div class="space-y-2">
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container-high rounded flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">video_file</span>
+</div>
+<div>
+<p class="font-semibold text-on-surface">RAW_Production_Footage_01.mp4</p>
+<p class="text-mono-sm text-on-surface-variant">Sending to <span class="text-on-surface">iPad Pro M2</span> • 2.4 GB / 4.8 GB</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono-sm text-on-surface">14.2 MB/s</p>
+<p class="text-mono-sm text-on-surface-variant">02:45 remaining</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(173,198,255,0.4)]" style="width: 50%;"></div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="space-y-2">
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container-high rounded flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">image</span>
+</div>
+<div>
+<p class="font-semibold text-on-surface">Asset_Bundle_V4.zip</p>
+<p class="text-mono-sm text-on-surface-variant">Receiving from <span class="text-on-surface">Studio_Workstation</span> • 118 MB / 850 MB</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono-sm text-on-surface">22.8 MB/s</p>
+<p class="text-mono-sm text-on-surface-variant">00:32 remaining</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(93,230,255,0.4)]" style="width: 14%;"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Incoming Transfers -->
+<section class="glass-panel rounded-xl overflow-hidden">
+<div class="px-component-padding-x py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
+<h3 class="font-headline-md text-[18px]">Incoming Requests</h3>
+<span class="bg-tertiary-container/20 text-tertiary px-2 py-0.5 rounded text-[10px] font-bold uppercase">2 Pending</span>
+</div>
+<div class="divide-y divide-outline-variant/30">
+<!-- Request 1 -->
+<div class="p-component-padding-x py-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center relative overflow-hidden">
+<img class="w-full h-full object-cover opacity-60" data-alt="A macro close-up of high-speed fiber optic cables glowing with blue and violet light, blurred bokeh background, technical photography style, shallow depth of field, cool color palette, representing data transfer and speed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWE9Uou7w9KIqEayYYo2966UlW1CTOaNf_qE408r1ztzia5yUtJI9za4WAxzytIv7h09bDPCZOny2BgvKHkqPWrs4vU3MzIheF3dC4LZNAcoU_240G_C0v9iajmHUoEWc58uUvHurh1jEZX31fnozm_QcN9ChJrFb-a8ckKHdyfgj7DLTo_PYSQMXRXdpCSwZoX_GZZdnAgWZ3Qxg8B2QeSKDsvY03tqtYUHjptZH54DFMo2HUOI_j2Nwh0YSwhIPDTjZwFUt8U6g">
+<span class="material-symbols-outlined absolute text-on-surface">photo_library</span>
+</div>
+<div>
+<p class="font-semibold text-on-surface">Event_Photography_Batch.tar</p>
+<p class="text-label-md text-on-surface-variant">1.2 GB • From <span class="text-on-surface">iPhone 15 Pro</span></p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-4 py-1.5 bg-surface-container-highest text-on-surface rounded font-semibold text-label-md hover:bg-error-container/20 hover:text-error transition-all border border-outline-variant">
+                                        Decline
+                                    </button>
+<button class="px-4 py-1.5 bg-primary text-on-primary rounded font-semibold text-label-md hover:brightness-110 transition-all">
+                                        Accept
+                                    </button>
+</div>
+</div>
+<!-- Request 2 -->
+<div class="p-component-padding-x py-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+</div>
+<div>
+<p class="font-semibold text-on-surface">Financial_Report_Q3_Draft.pdf</p>
+<p class="text-label-md text-on-surface-variant">4.2 MB • From <span class="text-on-surface">MacBook Air</span></p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-4 py-1.5 bg-surface-container-highest text-on-surface rounded font-semibold text-label-md hover:bg-error-container/20 hover:text-error transition-all border border-outline-variant">
+                                        Decline
+                                    </button>
+<button class="px-4 py-1.5 bg-primary text-on-primary rounded font-semibold text-label-md hover:brightness-110 transition-all">
+                                        Accept
+                                    </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Recent Transfers & Nodes (1 Column) -->
+<div class="space-y-gutter">
+<!-- Recent Transfers Panel -->
+<section class="glass-panel rounded-xl flex flex-col h-full max-h-[600px]">
+<div class="px-component-padding-x py-4 border-b border-outline-variant bg-surface-container-low/50">
+<h3 class="font-headline-md text-[18px]">Recent Activity</h3>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<div class="divide-y divide-outline-variant/20">
+<!-- Recent Item 1 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">folder_zip</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-semibold text-on-surface truncate text-label-md">Archive_2023.zip</p>
+<p class="text-[11px] text-on-surface-variant">Sent to MacBook Pro • 2m ago</p>
+<div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-primary text-[11px] font-bold uppercase hover:underline">Open</button>
+<button class="text-on-surface-variant text-[11px] font-bold uppercase hover:underline">Resend</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Item 2 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">image</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-semibold text-on-surface truncate text-label-md">Screenshot_2024-05.png</p>
+<p class="text-[11px] text-on-surface-variant">Received from iPhone • 15m ago</p>
+<div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-primary text-[11px] font-bold uppercase hover:underline">Open</button>
+<button class="text-on-surface-variant text-[11px] font-bold uppercase hover:underline">Resend</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Item 3 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">audio_file</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-semibold text-on-surface truncate text-label-md">Meeting_Recording.mp3</p>
+<p class="text-[11px] text-on-surface-variant">Sent to Cloud • 1h ago</p>
+<div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-primary text-[11px] font-bold uppercase hover:underline">Open</button>
+<button class="text-on-surface-variant text-[11px] font-bold uppercase hover:underline">Resend</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Item 4 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-semibold text-on-surface truncate text-label-md">Project_Scope_V2.pdf</p>
+<p class="text-[11px] text-on-surface-variant">Received from Studio • 3h ago</p>
+<div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-primary text-[11px] font-bold uppercase hover:underline">Open</button>
+<button class="text-on-surface-variant text-[11px] font-bold uppercase hover:underline">Resend</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="p-4 border-t border-outline-variant text-center font-label-md text-primary hover:bg-surface-container-low transition-all">
+                            View All History
+                        </button>
+</section>
+<!-- Connected Nodes Status -->
+<section class="glass-panel rounded-xl p-4 space-y-4">
+<div class="flex items-center justify-between">
+<h4 class="text-label-md font-bold text-on-surface-variant uppercase tracking-widest">Active Peers</h4>
+<span class="text-[10px] bg-secondary/10 text-secondary px-2 py-0.5 rounded">3 Devices</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-[#10B981]"></div>
+<span class="text-label-md text-on-surface">iPhone 15 Pro</span>
+<span class="ml-auto text-mono-sm text-on-surface-variant">5G</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-[#10B981]"></div>
+<span class="text-label-md text-on-surface">iPad Pro M2</span>
+<span class="ml-auto text-mono-sm text-on-surface-variant">WiFi 6</span>
+</div>
+<div class="flex items-center gap-3 opacity-50">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+<span class="text-label-md text-on-surface">Home-Server-01</span>
+<span class="ml-auto text-mono-sm text-on-surface-variant">OFFLINE</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<!-- Interactive Layer for Micro-interactions -->
+<script>
+        const dropZone = document.getElementById('drop-zone');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drop-zone-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drop-zone-active');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            console.log('Files dropped:', files);
+            alert(`${files.length} files prepared for transfer to iPhone 15 Pro.`);
+        });
+    </script>
+</body></html>

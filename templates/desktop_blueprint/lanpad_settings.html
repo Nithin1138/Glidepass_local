@@ -1,0 +1,367 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#0c0e12",
+                      "surface-container-highest": "#333539",
+                      "background": "#111318",
+                      "primary-fixed-dim": "#adc6ff",
+                      "on-primary-fixed-variant": "#004395",
+                      "secondary-fixed-dim": "#2fd9f4",
+                      "on-error-container": "#ffdad6",
+                      "secondary-container": "#00cbe6",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "surface-dim": "#111318",
+                      "outline-variant": "#424754",
+                      "on-surface": "#e2e2e8",
+                      "secondary": "#5de6ff",
+                      "primary-fixed": "#d8e2ff",
+                      "on-secondary-fixed": "#001f25",
+                      "surface-tint": "#adc6ff",
+                      "primary": "#adc6ff",
+                      "on-tertiary-fixed": "#311400",
+                      "on-surface-variant": "#c2c6d6",
+                      "tertiary": "#ffb786",
+                      "primary-container": "#4d8eff",
+                      "on-secondary-container": "#00515d",
+                      "on-tertiary": "#502400",
+                      "on-error": "#690005",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "tertiary-fixed": "#ffdcc6",
+                      "outline": "#8c909f",
+                      "surface-variant": "#333539",
+                      "on-primary": "#002e6a",
+                      "surface-container": "#1e2024",
+                      "on-primary-container": "#00285d",
+                      "on-background": "#e2e2e8",
+                      "surface-container-high": "#282a2e",
+                      "inverse-surface": "#e2e2e8",
+                      "surface-bright": "#37393e",
+                      "on-secondary": "#00363e",
+                      "tertiary-container": "#df7412",
+                      "on-tertiary-container": "#461f00",
+                      "surface": "#111318",
+                      "error": "#ffb4ab",
+                      "on-secondary-fixed-variant": "#004e5a",
+                      "secondary-fixed": "#a2eeff",
+                      "error-container": "#93000a",
+                      "surface-container-low": "#1a1c20",
+                      "on-primary-fixed": "#001a42",
+                      "inverse-on-surface": "#2f3035",
+                      "inverse-primary": "#005ac2"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "component-padding-x": "12px",
+                      "component-padding-y": "8px",
+                      "gutter": "16px",
+                      "container-margin": "24px"
+              },
+              "fontFamily": {
+                      "mono-sm": ["Geist"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-md": ["Geist"],
+                      "headline-lg": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      }catch(_e){}</script><meta charset="utf-8"></head><body class="flex min-h-screen bg-background">
+<!-- SIDE NAVIGATION BAR -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-container-margin w-[280px] h-screen flex-shrink-0 bg-surface-container border-r border-outline-variant z-50">
+<div class="mb-8 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">LANpad</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Local-First Utility</p>
+</div>
+<nav class="flex-grow space-y-1"><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">home</span><span class="font-body-md text-body-md">Home</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">sensors</span><span class="font-body-md text-body-md">Connect</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">keyboard</span><span class="font-body-md text-body-md">Input</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">folder_shared</span><span class="font-body-md text-body-md">Resources</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">history</span><span class="font-body-md text-body-md">History</span></a><a class="flex items-center gap-3 px-4 py-2 text-primary font-bold bg-surface-variant rounded-xl transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">settings</span><span class="font-body-md text-body-md">Settings</span></a></nav>
+<div class="mt-auto pt-6 border-t border-outline-variant px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="A futuristic professional portrait of a tech-savvy developer with short dark hair, wearing a sleek black minimalist sweatshirt. The lighting is moody with soft cyan and deep blue glows, suggesting a high-end workstation environment. The overall aesthetic is clean, technical, and high-performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0WXFvYwxxUlymtDz5kdA7xKBLly1gvKel9y4Ss567l5miSC2HTcodmauanTmg4QPezXrHMv9guZOO5rLB_U4f2D6XlzBqKDmcm3frjxDRencgsyHEdnS6xaDgWXcQU6-8NLR6kryjepksTijFuw0I5s7lsI7lB6UP2VwYX2pThpeVdNpJStHv-90ddDNB3t8BL43vCTjxanpQl5vje2OMybznviRK_s2F9P0YoxjdKRyScmGJ9ERQbwpznofF0XSeOkWkvdva-cE">
+</div>
+<div class="flex-grow">
+<p class="font-label-md text-label-md text-on-surface font-bold">Admin User</p>
+<p class="text-[10px] font-mono-sm text-on-surface-variant uppercase tracking-widest">Local Node 0x1</p>
+</div>
+</div>
+</aside>
+<!-- MAIN CONTENT -->
+<main class="ml-[280px] flex-grow flex flex-col min-h-screen">
+<!-- TOP NAVBAR-->
+<header class="flex justify-between items-center w-full h-14 px-gutter bg-surface/80 backdrop-blur-xl border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">Settings</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></span>
+<span class="font-mono-sm text-mono-sm text-on-surface-variant">NODE: 192.168.1.45</span>
+</div>
+<div class="flex gap-2">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">wifi_tethering</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">account_circle</button>
+</div>
+</div>
+</header>
+<!-- SETTINGS CANVAS -->
+<div class="flex-grow p-container-margin custom-scrollbar overflow-y-auto max-w-5xl mx-auto w-full">
+<div class="space-y-8 pb-12">
+<!-- GENERAL SECTION -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">General</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Card: Theme -->
+<div class="glass-panel p-6 rounded-xl flex flex-col justify-between">
+<div>
+<label class="font-label-md text-label-md text-primary uppercase tracking-tighter mb-2 block">Visual Identity</label>
+<h3 class="font-body-lg text-body-lg font-bold mb-1">Theme Preference</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Choose between technical dark mode or high-contrast light mode.</p>
+</div>
+<div class="flex gap-2 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
+<button class="flex-grow py-2 px-4 bg-surface-variant text-primary font-bold rounded-md transition-all">Dark</button>
+<button class="flex-grow py-2 px-4 hover:bg-surface-variant text-on-surface-variant rounded-md transition-all">Light</button>
+<button class="flex-grow py-2 px-4 hover:bg-surface-variant text-on-surface-variant rounded-md transition-all">Auto</button>
+</div>
+</div>
+<!-- Card: Launch & Notifications -->
+<div class="glass-panel p-6 rounded-xl space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-body-lg text-body-lg font-bold">Launch at Startup</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Start LANpad when you log in.</p>
+</div>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-on-surface-variant border-4 appearance-none cursor-pointer checked:right-0 right-4 transition-all duration-200" id="toggle-startup" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer" for="toggle-startup"></label>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-body-lg text-body-lg font-bold">Native Notifications</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Show desktop alerts for new events.</p>
+</div>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-on-surface-variant border-4 appearance-none cursor-pointer checked:right-0 right-4 transition-all duration-200" id="toggle-notif" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer" for="toggle-notif"></label>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CONNECTION SECTION -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">router</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Connection</h2>
+</div>
+<div class="glass-panel p-0 rounded-xl overflow-hidden">
+<!-- Network Interface Row -->
+<div class="p-6 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="max-w-md">
+<h3 class="font-body-lg text-body-lg font-bold">Network Interface</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Select the primary network adapter for local discovery and data transfer.</p>
+</div>
+<div class="relative">
+<select class="bg-surface-container-lowest border border-outline-variant text-on-surface rounded-lg py-2 px-4 pr-10 focus:outline-none focus:border-primary appearance-none font-mono-sm w-full md:w-64">
+<option>en0 (Wi-Fi) - 192.168.1.45</option>
+<option>en1 (Thunderbolt Bridge)</option>
+<option>lo0 (Loopback)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<!-- Port Config-->
+<div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="max-w-md">
+<h3 class="font-body-lg text-body-lg font-bold">Port Configuration</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Advanced control over the listening ports for the bridge service.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex flex-col">
+<label class="text-[10px] font-label-md text-on-surface-variant uppercase mb-1">Bridge Port</label>
+<input class="bg-surface-container-lowest border border-outline-variant text-on-surface rounded-lg py-2 px-4 focus:outline-none focus:border-primary font-mono-sm w-24" type="text" value="8080">
+</div>
+<div class="flex flex-col">
+<label class="text-[10px] font-label-md text-on-surface-variant uppercase mb-1">Peer Port</label>
+<input class="bg-surface-container-lowest border border-outline-variant text-on-surface rounded-lg py-2 px-4 focus:outline-none focus:border-primary font-mono-sm w-24" type="text" value="8081">
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- INPUT SECTION -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">keyboard_command_key</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Input Behavior</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Typing Speed -->
+<div class="glass-panel p-6 rounded-xl flex flex-col">
+<h3 class="font-body-lg text-body-lg font-bold mb-2">Typing Speed</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Simulation delay (ms).</p>
+<div class="mt-auto">
+<input class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="100" min="0" type="range" value="20">
+<div class="flex justify-between mt-2 font-mono-sm text-mono-sm text-on-surface-variant">
+<span class="">Fast</span>
+<span class="text-primary font-bold">20ms</span>
+<span class="">Slow</span>
+</div>
+</div>
+</div>
+<!-- Auto-Paste -->
+<div class="glass-panel p-6 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-body-lg text-body-lg font-bold mb-1">Auto-Paste</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Paste clipboard contents automatically on connection.</p>
+</div>
+<div class="relative inline-block w-full h-8 align-middle select-none mt-4">
+<div class="flex items-center justify-between p-2 bg-surface-container-lowest border border-outline-variant rounded-lg">
+<span class="font-body-md text-body-md text-on-surface-variant">Disabled</span>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-on-surface-variant border-2 appearance-none cursor-pointer checked:right-0 right-4 transition-all duration-200" id="toggle-autopaste" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-4 rounded-full bg-surface-container-highest cursor-pointer" for="toggle-autopaste"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Keyboard Hook -->
+<div class="glass-panel p-6 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-body-lg text-body-lg font-bold mb-1">Global Hook</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Allow LANpad to intercept global media keys.</p>
+</div>
+<div class="relative inline-block w-full h-8 align-middle select-none mt-4">
+<div class="flex items-center justify-between p-2 bg-surface-container-lowest border border-outline-variant rounded-lg">
+<span class="font-body-md text-body-md text-on-surface-variant">Enabled</span>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-on-surface-variant border-2 appearance-none cursor-pointer checked:right-0 right-4 transition-all duration-200" id="toggle-hook" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-4 rounded-full bg-surface-container-highest cursor-pointer" for="toggle-hook"></label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- UPDATES & ABOUT -->
+<section class="border-t border-outline-variant pt-8">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">About LANpad</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-lg">
+                                LANpad Version 2.4.1 (Stable Build)<br>
+                                Architected for ultra-low latency local-first communication. Licensed under the Technical Utility Agreement.
+                            </p>
+</div>
+<div class="flex flex-col gap-3 w-full md:w-auto">
+<button class="bg-primary text-on-primary font-bold px-6 py-2.5 rounded-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">system_update</span>
+                                Check for Updates
+                            </button>
+<button class="border border-outline-variant text-on-surface font-medium px-6 py-2.5 rounded-lg hover:bg-surface-variant active:scale-95 transition-all flex items-center justify-center gap-2">
+                                Documentation &amp; API
+                            </button>
+</div>
+</div>
+<!-- App Info Bento -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg text-center">
+<span class="block text-[10px] font-mono-sm text-on-surface-variant uppercase mb-1">Architecture</span>
+<span class="font-body-md text-body-md font-bold">x86_64 / arm64</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg text-center">
+<span class="block text-[10px] font-mono-sm text-on-surface-variant uppercase mb-1">Kernel Hash</span>
+<span class="font-body-md text-body-md font-bold">8f2a...19d4</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg text-center">
+<span class="block text-[10px] font-mono-sm text-on-surface-variant uppercase mb-1">Uptime</span>
+<span class="font-body-md text-body-md font-bold">14d 2h 45m</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg text-center">
+<span class="block text-[10px] font-mono-sm text-on-surface-variant uppercase mb-1">Telemetry</span>
+<span class="font-body-md text-body-md font-bold text-error">Opted Out</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- FOOTER BAR -->
+<footer class="h-10 border-t border-outline-variant bg-surface-container-lowest flex items-center justify-between px-6">
+<div class="flex items-center gap-4">
+<span class="font-mono-sm text-mono-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+                    CLI Status: Operational
+                </span>
+<span class="font-mono-sm text-mono-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">database</span>
+                    Sync: Encrypted
+                </span>
+</div>
+<div class="text-[10px] font-mono-sm text-on-surface-variant/50 uppercase">
+                © 2024 LANpad Systems. All Rights Reserved.
+            </div>
+</footer>
+</main>
+<script>
+        // Simple micro-interaction for the "Check for Updates" button
+        const updateBtn = document.querySelector('button:has(span:contains("system_update"))');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                const icon = updateBtn.querySelector('.material-symbols-outlined');
+                const originalText = updateBtn.childNodes[2].textContent;
+                
+                icon.style.animation = 'spin 1s linear infinite';
+                updateBtn.childNodes[2].textContent = 'Checking...';
+                updateBtn.disabled = true;
+                updateBtn.style.opacity = '0.7';
+
+                setTimeout(() => {
+                    icon.style.animation = 'none';
+                    updateBtn.childNodes[2].textContent = 'Up to Date';
+                    updateBtn.classList.replace('bg-primary', 'bg-secondary-container');
+                    updateBtn.classList.replace('text-on-primary', 'text-on-secondary-container');
+                    
+                    setTimeout(() => {
+                        updateBtn.childNodes[2].textContent = originalText;
+                        updateBtn.classList.replace('bg-secondary-container', 'bg-primary');
+                        updateBtn.classList.replace('text-on-secondary-container', 'text-on-primary');
+                        updateBtn.disabled = false;
+                        updateBtn.style.opacity = '1';
+                    }, 3000);
+                }, 2000);
+            });
+        }
+
+        // Custom spin animation for icon
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+
+</body></html>

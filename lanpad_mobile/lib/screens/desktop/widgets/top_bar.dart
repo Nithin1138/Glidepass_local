@@ -19,7 +19,7 @@ class DesktopTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: kSurface.withValues(alpha: 0.95),
-        border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
+        border: Border(bottom: BorderSide(color: kOutlineVariant.withOpacity(0.35), width: 1)),
       ),
       child: Row(children: [
         // Node status pill

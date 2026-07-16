@@ -1,0 +1,256 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#37393e",
+                    "on-primary-container": "#00285d",
+                    "tertiary": "#ffb786",
+                    "outline": "#8c909f",
+                    "on-tertiary-fixed": "#311400",
+                    "on-secondary-container": "#00515d",
+                    "secondary": "#5de6ff",
+                    "surface-container": "#1e2024",
+                    "on-surface": "#e2e2e8",
+                    "on-surface-variant": "#c2c6d6",
+                    "on-tertiary": "#502400",
+                    "background": "#111318",
+                    "inverse-on-surface": "#2f3035",
+                    "surface": "#111318",
+                    "on-secondary-fixed-variant": "#004e5a",
+                    "tertiary-fixed": "#ffdcc6",
+                    "primary": "#adc6ff",
+                    "on-secondary": "#00363e",
+                    "surface-dim": "#111318",
+                    "on-background": "#e2e2e8",
+                    "error-container": "#93000a",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#2fd9f4",
+                    "surface-container-lowest": "#0c0e12",
+                    "on-error": "#690005",
+                    "secondary-container": "#00cbe6",
+                    "surface-tint": "#adc6ff",
+                    "on-primary-fixed-variant": "#004395",
+                    "primary-container": "#4d8eff",
+                    "on-primary": "#002e6a",
+                    "surface-variant": "#333539",
+                    "secondary-fixed": "#a2eeff",
+                    "outline-variant": "#424754",
+                    "inverse-primary": "#005ac2",
+                    "surface-container-high": "#282a2e",
+                    "tertiary-container": "#df7412",
+                    "primary-fixed": "#d8e2ff",
+                    "on-primary-fixed": "#001a42",
+                    "surface-container-highest": "#333539",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "primary-fixed-dim": "#adc6ff",
+                    "inverse-surface": "#e2e2e8",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed": "#001f25",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container-low": "#1a1c20",
+                    "on-tertiary-container": "#461f00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "16px",
+                    "component-padding-x": "12px",
+                    "container-margin": "24px",
+                    "component-padding-y": "8px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "mono-sm": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Geist"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="font-body-md text-body-md overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-container-margin w-[280px] bg-surface-container border-r border-outline-variant z-50">
+<div class="mb-10">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">LANpad</h1>
+<p class="text-on-surface-variant text-label-md">Local-First Utility</p>
+</div>
+<nav class="flex-1 space-y-2"><a class="flex items-center gap-3 px-4 py-2 text-primary font-bold bg-surface-variant rounded-xl transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="">Connect</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">keyboard</span>
+<span class="">Input</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">folder_shared</span>
+<span class="">Resources</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="">History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="">Settings</span>
+</a></nav>
+<div class="mt-auto pt-6 border-t border-outline-variant">
+
+<div class="flex items-center gap-3 px-4 py-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A high-end professional avatar of a software developer with sharp features, wearing minimalist dark clothing, against a soft-focus studio background with cool blue and deep charcoal tones. The image has a crisp, professional lighting style consistent with a technical SaaS platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZnNu291zF6GqA0I0q_dPMiS-taE3Of2pV2Qsp_ut1541bo51QEkUYsow7T7YJvMGYxseTjwOCK2XBNjEE2uzwyWGckRFVZN_EJ38xRdxuThwEVgb3JXfjETbEebIxaXLIJo2cgLeBHqso_6abyx-worRc2lbXQO0K9e5vOG3Kq130w_RYHBpnv-qdy21y3YC7bEe5vZuCmTXdO9EeJsTdi6rZiisaasKH58RbAPmgf8wsYGVVB2J9sM6UMaYwHzErbp3G1iZZe00">
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface font-bold text-label-md">User profile</span>
+<span class="text-on-surface-variant text-[10px]">Developer Mode</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center h-14 px-gutter fixed top-0 right-0 left-0 ml-[280px] bg-surface/80 backdrop-blur-xl border-b border-outline-variant z-40">
+<div class="flex items-center gap-4">
+<span class="text-on-surface font-bold">Discovery Mode</span>
+<div class="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
+<div class="w-2 h-2 rounded-full bg-[#10B981] pulse-dot shadow-[0_0_8px_#10B981]"></div>
+<span class="text-[11px] font-medium text-primary uppercase tracking-wider">Status: Discovery Active</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[280px] pt-14 h-screen overflow-y-auto bg-background">
+<div class="max-w-6xl mx-auto p-container-margin h-full flex flex-col items-center justify-center">
+<!-- Connection State / QR Section -->
+<div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<!-- Left: Waiting State & QR -->
+<div class="flex flex-col items-center lg:items-start text-center lg:text-left">
+<div class="mb-8 space-y-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Waiting for connection</h2>
+<p class="text-body-lg text-on-surface-variant max-w-md">Connect your mobile device to start sharing resources, managing inputs, and orchestrating your local environment.</p>
+</div>
+<div class="relative group">
+<!-- QR Code Container -->
+<div class="qr-glow p-8 glass-panel rounded-full relative z-10">
+<div class="w-64 h-64 bg-white p-4 rounded-lg flex items-center justify-center">
+<img class="w-full h-full grayscale" data-alt="A clean, minimalist high-resolution QR code rendered with technical precision. The design features sharp black modules on a crisp white background with subtle rounded corners. The context is a high-end tech dashboard, and the QR code is the focal point for device pairing, surrounded by a subtle electric blue glow." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiO8DhZIDYrNfsHRNruA8mTYS0FUHm6w7a1wSffyiBunmDptZz6F4WqWAYuh3knVOlXOVb6MAtAYqXbhlwPzwKI00MynSaYHXxiwkHMbCNc7gCrhmlUfftt3lnQPKcruiQnPcKIRNWTMSGFfXwpIXZpN3csSHtZdUngxjLqDUapV_0xSyKVwf1syEa2QKWzm5Mzqas6u5YFyxRtHFtlt9Oz4SHURi0dTRMYwpmMv9rC3xi13haTwaPiBblgRtoMFns4zd7MwiOUZE">
+</div>
+</div>
+<!-- Ambient Atmosphere -->
+<div class="absolute -inset-10 bg-primary/5 blur-3xl rounded-full -z-10 transition-opacity group-hover:opacity-100"></div>
+</div>
+</div>
+<!-- Right: Quick Start Guide -->
+<div class="space-y-6">
+<div class="glass-panel p-8 rounded-xl space-y-8">
+<div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-2">Quick Start Guide</h3>
+<p class="text-on-surface-variant text-body-md">Get up and running in under 30 seconds.</p>
+</div>
+<div class="space-y-6">
+<!-- Step 1 -->
+<div class="flex gap-4 items-start">
+<div class="w-8 h-8 rounded-full border border-primary flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">1</div>
+<div class="space-y-1">
+<h4 class="text-on-surface font-bold text-body-lg">Open LANpad on phone</h4>
+<p class="text-on-surface-variant text-body-md leading-relaxed">Ensure both devices are on the same local area network for optimal discovery.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex gap-4 items-start">
+<div class="w-8 h-8 rounded-full border border-primary flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">2</div>
+<div class="space-y-1">
+<h4 class="text-on-surface font-bold text-body-lg">Scan QR</h4>
+<p class="text-on-surface-variant text-body-md leading-relaxed">Point your mobile camera at the code. Pairing is handled via secure local TLS.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex gap-4 items-start">
+<div class="w-8 h-8 rounded-full border border-primary flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">3</div>
+<div class="space-y-1">
+<h4 class="text-on-surface font-bold text-body-lg">Share instantly</h4>
+<p class="text-on-surface-variant text-body-md leading-relaxed">Once connected, drag and drop files or use your phone as a precision input device.</p>
+</div>
+</div>
+</div>
+<div class="pt-4 flex gap-4">
+<button class="bg-primary text-on-primary-container px-6 py-2.5 rounded-lg font-bold text-body-md hover:brightness-110 transition-all active:scale-95">
+                                Download Mobile App
+                            </button>
+<button class="border border-outline-variant text-on-surface px-6 py-2.5 rounded-lg font-bold text-body-md hover:bg-surface-variant transition-all active:scale-95">
+                                Help Center
+                            </button>
+</div>
+</div>
+<!-- Network Stats (Micro bento) -->
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-panel p-4 rounded-xl flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">lan</span>
+<div>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant">Interface</p>
+<p class="font-mono-sm text-label-md text-on-surface">en0 (192.168.1.12)</p>
+</div>
+</div>
+<div class="glass-panel p-4 rounded-xl flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary">shield</span>
+<div>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant">Encryption</p>
+<p class="font-mono-sm text-label-md text-on-surface">AES-256-GCM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Background Decoration / Atmospheric Shader (Simulated via CSS for focus) -->
+<div class="fixed inset-0 -z-50 opacity-20 pointer-events-none">
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/10 blur-[120px] rounded-full"></div>
+</div>
+<script>
+        // Simple micro-interaction for the QR code hover effect
+        const qrContainer = document.querySelector('.qr-glow');
+        if (qrContainer) {
+            qrContainer.addEventListener('mousemove', (e) => {
+                const rect = qrContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                qrContainer.style.setProperty('--mouse-x', `${x}px`);
+                qrContainer.style.setProperty('--mouse-y', `${y}px`);
+            });
+        }
+    </script>
+
+</body></html>

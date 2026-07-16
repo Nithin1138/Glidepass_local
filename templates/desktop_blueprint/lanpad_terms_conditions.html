@@ -1,0 +1,274 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container": "#1e2024",
+                    "on-secondary-fixed": "#001f25",
+                    "on-secondary-container": "#00515d",
+                    "secondary-fixed": "#a2eeff",
+                    "on-background": "#e2e2e8",
+                    "on-tertiary-fixed": "#311400",
+                    "surface-bright": "#37393e",
+                    "primary-container": "#4d8eff",
+                    "on-secondary": "#00363e",
+                    "surface-container-high": "#282a2e",
+                    "tertiary-fixed": "#ffdcc6",
+                    "on-primary-fixed-variant": "#004395",
+                    "error-container": "#93000a",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e2e2e8",
+                    "surface-container-highest": "#333539",
+                    "secondary": "#5de6ff",
+                    "on-secondary-fixed-variant": "#004e5a",
+                    "secondary-container": "#00cbe6",
+                    "surface": "#111318",
+                    "outline-variant": "#424754",
+                    "surface-variant": "#333539",
+                    "surface-dim": "#111318",
+                    "on-error-container": "#ffdad6",
+                    "surface-tint": "#adc6ff",
+                    "outline": "#8c909f",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "on-tertiary": "#502400",
+                    "on-surface": "#e2e2e8",
+                    "surface-container-low": "#1a1c20",
+                    "on-primary-fixed": "#001a42",
+                    "primary-fixed": "#d8e2ff",
+                    "secondary-fixed-dim": "#2fd9f4",
+                    "on-tertiary-container": "#461f00",
+                    "tertiary": "#ffb786",
+                    "background": "#111318",
+                    "on-primary": "#002e6a",
+                    "primary-fixed-dim": "#adc6ff",
+                    "primary": "#adc6ff",
+                    "on-surface-variant": "#c2c6d6",
+                    "inverse-primary": "#005ac2",
+                    "on-primary-container": "#00285d",
+                    "error": "#ffb4ab",
+                    "tertiary-container": "#df7412",
+                    "inverse-on-surface": "#2f3035",
+                    "surface-container-lowest": "#0c0e12"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "16px",
+                    "container-margin": "24px",
+                    "component-padding-y": "8px",
+                    "component-padding-x": "12px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono-sm": ["Geist"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Geist"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script></head><body class="bg-background text-on-surface font-body-md text-body-md overflow-hidden h-screen flex">
+
+    <!-- SideNavBar (Disabled State for Onboarding) -->
+    <aside class="fixed h-full w-[240px] left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-gutter px-component-padding-x z-40 opacity-40 pointer-events-none">
+        <div class="mb-8">
+            <h1 class="font-headline-md text-headline-md font-bold text-primary">LANpad</h1>
+            <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Local Network Active</p>
+        </div>
+        
+        <nav class="flex-1 space-y-2"><a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="home">home</span>
+  <span class="font-body-md text-body-md">Home</span>
+</a>
+<a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+  <span class="font-body-md text-body-md">Connect</span>
+</a>
+<a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="keyboard">keyboard</span>
+  <span class="font-body-md text-body-md">Input</span>
+</a>
+<a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="folder_shared">folder_shared</span>
+  <span class="font-body-md text-body-md">Resources</span>
+</a>
+<a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="history">history</span>
+  <span class="font-body-md text-body-md">History</span>
+</a>
+<a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+  <span class="material-symbols-outlined" data-icon="settings">settings</span>
+  <span class="font-body-md text-body-md">Settings</span>
+</a></nav>
+
+        <div class="mt-auto border-t border-outline-variant pt-4"><div class="flex items-center gap-3 px-3 py-2 rounded bg-surface-container-high border border-outline-variant">
+  <div class="w-8 h-8 rounded-full bg-outline-variant flex items-center justify-center">
+    <span class="material-symbols-outlined text-on-surface-variant" style="font-size: 20px;">person</span>
+  </div>
+  <div class="flex flex-col">
+    <span class="font-label-md text-label-md text-on-surface">New User</span>
+    <span class="text-[10px] text-on-surface-variant">Initial Setup</span>
+  </div>
+</div></div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 ml-[240px] relative h-full flex flex-col">
+        <!-- TopAppBar -->
+        <header class="fixed top-0 right-0 w-[calc(100%-240px)] z-50 flex justify-between items-center h-14 px-container-margin bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+            <div class="flex items-center gap-4">
+                <span class="font-headline-md text-headline-md font-bold text-primary">LANpad</span>
+                <div class="h-4 w-[1px] bg-outline-variant"></div>
+                <span class="font-label-md text-label-md text-on-surface-variant">V1.0.4-STABLE</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="material-symbols-outlined text-on-surface-variant" data-icon="wifi_tethering">wifi_tethering</span>
+                <span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+            </div>
+        </header>
+
+        <!-- Onboarding Canvas -->
+        <section class="flex-1 mt-14 p-container-margin overflow-y-auto bg-surface-container-lowest relative flex items-center justify-center">
+            <div class="scanline"></div>
+            
+            <!-- Terms Modal -->
+            <div class="max-w-2xl w-full glass-effect rounded-xl shadow-2xl p-8 flex flex-col gap-6 relative z-10">
+                <header class="space-y-1">
+                    <h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Welcome to LANpad</h2>
+                    <p class="text-secondary font-medium tracking-wide flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-secondary status-pulse"></span>
+                        Local-first. Private. Fast.
+                    </p>
+                </header>
+
+                <!---->
+                <div id="terms-container" class="h-64 overflow-y-auto rounded bg-surface-container-low border border-outline-variant p-5 font-mono-sm text-mono-sm text-on-surface-variant leading-relaxed">
+                    <h3 class="text-on-surface font-bold mb-4 uppercase tracking-tighter">Local-First Utility Agreement</h3>
+                    <p class="mb-4">
+                        By using LANpad, you agree to the following technical and privacy frameworks designed for high-performance local networking. Unlike traditional cloud-based utilities, LANpad operates entirely within your local area network (LAN).
+                    </p>
+                    
+                    <h4 class="text-on-surface font-semibold mb-2">1. No Cloud Dependence</h4>
+                    <p class="mb-4">
+                        Your data never leaves your network. LANpad does not utilize external relay servers or cloud storage for your primary workflows. You are the sole custodian of your transmitted data, session logs, and configuration files.
+                    </p>
+
+                    <h4 class="text-on-surface font-semibold mb-2">2. End-to-End Local Encryption</h4>
+                    <p class="mb-4">
+                        All local traffic is encapsulated in an encrypted tunnel using AES-256-GCM. Authentication keys are generated locally and stored in your system's secure keychain. LANpad developers cannot access your keys or data.
+                    </p>
+
+                    <h4 class="text-on-surface font-semibold mb-2">3. Network Discovery &amp; Permissions</h4>
+                    <p class="mb-4">
+                        LANpad requires explicit permission to scan your local network for compatible nodes. It will bind to specific ports (default 8080, 8081) to facilitate high-speed file transfer and input synchronization.
+                    </p>
+
+                    <h4 class="text-on-surface font-semibold mb-2">4. Anonymous Performance Metrics</h4>
+                    <p class="mb-4">
+                        If opted-in, LANpad sends minimal, non-identifying technical data (e.g., local ping times, crash reports) to help us optimize the engine. IP addresses and filenames are never collected.
+                    </p>
+
+                    <p class="italic border-t border-outline-variant pt-4 mt-4">
+                        Scroll to the end to acknowledge the technical disclaimer.
+                    </p>
+                </div>
+
+                <!-- Form Controls -->
+                <div class="space-y-4">
+                    <label class="flex items-start gap-3 group cursor-pointer">
+                        <div class="relative flex items-center justify-center mt-1">
+                            <input type="checkbox" id="check-terms" class="peer h-4 w-4 rounded border-outline-variant bg-surface-container text-primary focus:ring-primary focus:ring-offset-0">
+                        </div>
+                        <span class="font-body-md text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">
+                            I agree to the <span class="text-primary font-medium">Terms of Service</span> and <span class="text-primary font-medium">Privacy Policy</span>.
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-3 group cursor-pointer">
+                        <div class="relative flex items-center justify-center mt-1">
+                            <input type="checkbox" id="check-stats" class="peer h-4 w-4 rounded border-outline-variant bg-surface-container text-primary focus:ring-primary focus:ring-offset-0">
+                        </div>
+                        <span class="font-body-md text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">
+                            Help improve LANpad by sending anonymous usage statistics (Optional).
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Footer Disclaimer -->
+                <div class="p-3 bg-tertiary-container/10 border border-tertiary-container/30 rounded text-[11px] text-tertiary-fixed-dim font-mono-sm">
+                    <span class="font-bold uppercase mr-1">Technical Disclaimer:</span> 
+                    Local-first architecture requires your system firewall to allow inbound/outbound traffic on ports 8080-8090. Failure to provide network permissions will result in synchronization degradation.
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-4 pt-2">
+                    <button id="btn-accept" disabled="" class="flex-1 bg-primary text-on-primary py-3 px-6 rounded font-semibold text-body-md hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:grayscale">
+                        Accept &amp; Continue
+                    </button>
+                    <button class="px-6 py-3 border border-outline-variant text-on-surface-variant font-medium text-body-md hover:bg-surface-variant hover:text-on-surface transition-colors rounded">
+                        Quit LANpad
+                    </button>
+                </div>
+            </div>
+
+            <!-- Background Aesthetic -->
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none overflow-hidden">
+                <div class="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] bg-primary rounded-full blur-[160px]"></div>
+                <div class="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] bg-secondary rounded-full blur-[140px]"></div>
+                
+                <!-- Animated Grid Pattern -->
+                <div class="absolute inset-0" style="background-image: linear-gradient(#30363D 1px, transparent 1px), linear-gradient(90deg, #30363D 1px, transparent 1px); background-size: 40px 40px;"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const termsContainer = document.getElementById('terms-container');
+        const checkTerms = document.getElementById('check-terms');
+        const btnAccept = document.getElementById('btn-accept');
+        let hasScrolledToEnd = false;
+
+        // Simulate "must scroll to end" logic
+        termsContainer.addEventListener('scroll', () => {
+            const scrollPercent = (termsContainer.scrollTop + termsContainer.clientHeight) / termsContainer.scrollHeight;
+            if (scrollPercent > 0.95) {
+                hasScrolledToEnd = true;
+                updateButtonState();
+            }
+        });
+
+        checkTerms.addEventListener('change', updateButtonState);
+
+        function updateButtonState() {
+            // Requirement: Both scrolled and checked
+            if (hasScrolledToEnd && checkTerms.checked) {
+                btnAccept.disabled = false;
+            } else {
+                btnAccept.disabled = true;
+            }
+        }
+
+        // Action Handlers
+        btnAccept.addEventListener('click', () => {
+            btnAccept.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span> Initializing Local Node...</span>';
+            btnAccept.classList.add('bg-secondary', 'text-on-secondary');
+            
+            setTimeout(() => {
+                alert("Protocol Initial</script></body></html>

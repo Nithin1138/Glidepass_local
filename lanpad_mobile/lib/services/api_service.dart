@@ -15,7 +15,7 @@ class ApiService {
 
   final ConnectionService _connectionService = ConnectionService();
 
-  bool encryptionEnabled = true;
+  bool encryptionEnabled = false;
 
   String _encryptXor(String plaintext, String key) {
     if (key.isEmpty) return plaintext;
@@ -42,9 +42,7 @@ class ApiService {
   }
 
   String _buildUrl(String path, [Map<String, String>? queryParams]) {
-    final baseUrl = _connectionService.serverUrl;
-    if (baseUrl == null) throw Exception('No server connected');
-
+    final baseUrl = _connectionService.serverUrl ?? 'http://127.0.0.1:8000';
     final sid = _connectionService.sessionId ?? '';
     final uri = Uri.parse('$baseUrl$path');
     
@@ -205,6 +203,49 @@ class ApiService {
     return [];
   }
 
+  Future<Map<String, dynamic>> setSetting(String key, dynamic value) async {
+    final url = _buildUrl('/api/settings');
+    try {
+      final response = await httpClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'key': key, 'value': value}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'status': 'error', 'message': 'Failed to save setting'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchUploadProgress() async {
+    final url = _buildUrl('/api/benchmark/upload_progress');
+    try {
+      final response = await httpClient.get(Uri.parse(url)).timeout(const Duration(milliseconds: 500));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'status': 'error', 'message': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  Future<void> sendTelemetry(String event) async {
+    final url = _buildUrl('/api/telemetry/event');
+    try {
+      await httpClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'event': event}),
+      );
+    } catch (e) {
+      debugPrint('Failed to send telemetry: $e');
+    }
+  }
+
   Future<bool> sendResource(String resourceId) async {
     final url = _buildUrl('/api/resources/$resourceId');
     try {
@@ -246,8 +287,8 @@ class ApiService {
 
   // --- File Sharing ---
 
-  Future<List<SharedFile>> fetchFiles() async {
-    final url = _buildUrl('/api/files/list');
+  Future<List<SharedFile>> fetchFiles({bool showAll = false}) async {
+    final url = _buildUrl('/api/files/list', {'show_all': showAll ? 'true' : 'false'});
     try {
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -263,6 +304,66 @@ class ApiService {
     return [];
   }
 
+  Future<Map<String, dynamic>> fetchStorageHealth() async {
+    try {
+      final res = await http.get(Uri.parse(_buildUrl('/api/system/storage'))).timeout(const Duration(seconds: 3));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+      return {};
+    } catch (e) {
+      debugPrint('[ApiService] fetchStorageHealth error: $e');
+      return {};
+    }
+  }
+
+  Future<Map<String, dynamic>> cleanCache() async {
+    try {
+      final res = await http.post(Uri.parse(_buildUrl('/api/system/clean_cache'))).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+      return {};
+    } catch (e) {
+      debugPrint('[ApiService] cleanCache error: $e');
+      return {};
+    }
+  }
+
+  Future<String> fetchFileTextPreview(String filename) async {
+    try {
+      final url = _buildUrl('/api/files/preview_text/${Uri.encodeComponent(filename)}');
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['status'] == 'success') {
+          return data['content'] ?? '';
+        }
+      }
+      return 'Failed to load preview.';
+    } catch (e) {
+      debugPrint('[ApiService] fetchFileTextPreview error: $e');
+      return 'Error loading preview: $e';
+    }
+  }
+
+  Future<int> fetchPdfInfo(String filename) async {
+    try {
+      final url = _buildUrl('/api/files/pdf_info/${Uri.encodeComponent(filename)}');
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['status'] == 'success') {
+          return data['page_count'] ?? 0;
+        }
+      }
+      return 0;
+    } catch (e) {
+      debugPrint('[ApiService] fetchPdfInfo error: $e');
+      return 0;
+    }
+  }
+
   Future<bool> deleteFile(String filename) async {
     final url = _buildUrl('/api/files/delete/${Uri.encodeComponent(filename)}');
     try {
@@ -273,6 +374,20 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('Failed to delete file: $e');
+    }
+    return false;
+  }
+
+  Future<bool> shareFile(String filename) async {
+    final url = _buildUrl('/api/files/share/${Uri.encodeComponent(filename)}');
+    try {
+      final response = await httpClient.post(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+    } catch (e) {
+      debugPrint('Failed to share file: $e');
     }
     return false;
   }
@@ -312,11 +427,15 @@ class ApiService {
     required File file,
     required String filename,
     required String mode,
+    String? uploader,
     required Function(int sent, int total) onProgress,
   }) async {
     final baseUrl = _connectionService.serverUrl;
     final sid = _connectionService.sessionId ?? '';
-    final url = '$baseUrl/api/files/upload?mode=$mode&sid=$sid';
+    var url = '$baseUrl/api/files/upload?mode=$mode&sid=$sid';
+    if (uploader != null) {
+      url += '&uploader=${Uri.encodeComponent(uploader)}';
+    }
 
     final request = MultipartRequestWithProgress(
       'POST',
@@ -333,9 +452,12 @@ class ApiService {
     return await BypassTunnelClient().send(request);
   }
 
-  Future<Map<String, dynamic>> fetchLicenseStatus() async {
-    final url = _buildUrl('/api/license/status');
+  Future<Map<String, dynamic>> fetchLicenseStatus({bool force = false}) async {
+    if (_connectionService.serverUrl == null) {
+      return {'status': 'error', 'message': 'No server connected'};
+    }
     try {
+      final url = _buildUrl('/api/license/status', force ? {'force': 'true'} : null);
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -347,25 +469,59 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> activateLicenseKey(String key) async {
-    final url = _buildUrl('/api/license/activate');
+    // 1. Get HWID via python3
+    String hwid = '';
     try {
+      String pythonExecutable = 'python3';
+      if (Platform.isWindows) {
+        pythonExecutable = 'python';
+      }
+      // Assuming platform_utils.py is available in the current working directory of the process
+      final result = await Process.run(pythonExecutable, ['-c', 'from platform_utils import get_hardware_id; print(get_hardware_id())']);
+      hwid = result.stdout.toString().trim();
+    } catch (e) {
+      debugPrint('Failed to get HWID: $e');
+    }
+
+    // 2. Fetch remotely
+    try {
+      final url = 'https://lanpad.app/api/monetization/verify';
       final response = await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'key': key}),
-      );
+        body: jsonEncode({'key': key, 'hwid': hwid}),
+      ).timeout(const Duration(seconds: 10));
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final res = jsonDecode(response.body);
+        if (res['valid'] == true) {
+          // Write to ~/.lanpad_license.json
+          String homeDir = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+          final file = File('$homeDir/.lanpad_license.json');
+          await file.writeAsString(jsonEncode({
+            "key": key,
+            "tier": res['tier'] ?? 'Basic',
+            "expires_at": res['expires_at'] ?? '2099-12-31T23:59:59Z',
+            "hwid": hwid,
+            "last_checked": DateTime.now().millisecondsSinceEpoch / 1000,
+          }));
+          return {'status': 'success', 'message': 'Activated successfully'};
+        } else {
+          return {'status': 'error', 'message': res['error'] ?? 'Invalid activation key'};
+        }
       }
     } catch (e) {
-      debugPrint('Failed to activate license: $e');
+      debugPrint('Failed to activate license remotely: $e');
     }
     return {'status': 'error', 'message': 'Connection error'};
   }
 
-  Future<Map<String, dynamic>> fetchAdminStatus() async {
-    final url = _buildUrl('/api/admin/status');
+  Future<Map<String, dynamic>> fetchAdminStatus({bool force = false}) async {
+    if (_connectionService.serverUrl == null) {
+      return {'status': 'error', 'message': 'No server connected'};
+    }
     try {
+      final url = _buildUrl('/api/admin/status', force ? {'force': 'true'} : null);
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -377,8 +533,11 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> checkForUpdates() async {
-    final url = _buildUrl('/api/update/check');
+    if (_connectionService.serverUrl == null) {
+      return {'status': 'error', 'update_available': false, 'message': 'No server connected'};
+    }
     try {
+      final url = _buildUrl('/api/update/check');
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -390,8 +549,9 @@ class ApiService {
   }
 
   Future<void> logTelemetryEvent(String event) async {
-    final url = _buildUrl('/api/telemetry/event');
+    if (_connectionService.serverUrl == null) return;
     try {
+      final url = _buildUrl('/api/telemetry/event');
       await httpClient.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},

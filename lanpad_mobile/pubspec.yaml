@@ -118,5 +118,11 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
+  macos:
+    generate: true
+    image_path: "assets/logo_final_square.png"
+  windows:
+    generate: true
+    image_path: "assets/logo_final_square.png"
   image_path: "assets/logo_final_square.png"
   min_sdk_android: 21

@@ -1,0 +1,292 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0c0e12",
+                        "surface-container-highest": "#333539",
+                        "background": "#111318",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-primary-fixed-variant": "#004395",
+                        "secondary-fixed-dim": "#2fd9f4",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#00cbe6",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "surface-dim": "#111318",
+                        "outline-variant": "#424754",
+                        "on-surface": "#e2e2e8",
+                        "secondary": "#5de6ff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed": "#001f25",
+                        "surface-tint": "#adc6ff",
+                        "primary": "#adc6ff",
+                        "on-tertiary-fixed": "#311400",
+                        "on-surface-variant": "#c2c6d6",
+                        "tertiary": "#ffb786",
+                        "primary-container": "#4d8eff",
+                        "on-secondary-container": "#00515d",
+                        "on-tertiary": "#502400",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "tertiary-fixed": "#ffdcc6",
+                        "outline": "#8c909f",
+                        "surface-variant": "#333539",
+                        "on-primary": "#002e6a",
+                        "surface-container": "#1e2024",
+                        "on-primary-container": "#00285d",
+                        "on-background": "#e2e2e8",
+                        "surface-container-high": "#282a2e",
+                        "inverse-surface": "#e2e2e8",
+                        "surface-bright": "#37393e",
+                        "on-secondary": "#00363e",
+                        "tertiary-container": "#df7412",
+                        "on-tertiary-container": "#461f00",
+                        "surface": "#111318",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#004e5a",
+                        "secondary-fixed": "#a2eeff",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#1a1c20",
+                        "on-primary-fixed": "#001a42",
+                        "inverse-on-surface": "#2f3035",
+                        "inverse-primary": "#005ac2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "component-padding-x": "12px",
+                        "component-padding-y": "8px",
+                        "gutter": "16px",
+                        "container-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "mono-sm": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Geist"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-background font-body-md text-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar (Execution from JSON) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-container-margin w-[280px] h-screen flex-shrink-0 bg-surface-container dark:bg-surface-container border-r border-outline-variant dark:border-outline-variant">
+<div class="mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface dark:text-on-surface">LANpad</h1>
+<p class="text-on-surface-variant opacity-70">Local-First Utility</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1"><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="home">home</span><span class="">Home</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="sensors">sensors</span><span class="">Connect</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="keyboard">keyboard</span><span class="">Input</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="folder_shared">folder_shared</span><span class="">Resources</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="history">history</span><span class="">History</span></a><a class="flex items-center gap-3 px-4 py-2 text-primary dark:text-primary font-bold bg-surface-variant dark:bg-surface-variant rounded-xl transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" data-icon="settings">settings</span><span class="">Settings</span></a></nav>
+<div class="mt-auto flex items-center gap-3 p-2 bg-surface-container-high rounded-full border border-outline-variant">
+<img class="w-8 h-8 rounded-full border border-primary/20" data-alt="A clean, professional user avatar portrait with a soft gradient background in shades of electric blue and slate gray, maintaining the high-tech minimalist aesthetic of the LANpad interface. The person is represented by a stylized, abstract circular icon that glows slightly at the edges, suggesting a high-status developer or power user." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiCkPbtuA7veMkBJowmovn8Wpbhj0zYqzCHqy7IU38I1AdCybek2G4ymALhmZ4-EI4Cfyj-84jE2qngnUmHW8bsZ9tBQkCyd7OZfw0_4kQEBP_nJJCXx63ClYLPqqTzWj_sZ9_GAgIi-OEFcTITp6oFQkqx5AEdwhWr1u91EZ9AwE1jvDq9o2qFqtlES9ZiZRzCD93MyRpiAQsTYR5n2_FR1RLxHBi7gopzE_96P60aUWnVgHjDhjyiSKxK3idZVaPJFZefB424xU">
+<div class="flex-1 overflow-hidden">
+<p class="text-on-surface font-bold truncate">Admin Node</p>
+<p class="text-[10px] text-on-surface-variant truncate font-mono-sm">192.168.1.104</p>
+</div>
+<span class="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></span>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-[280px] flex-1 h-full overflow-y-auto relative">
+<!-- TopNavBar (Execution from JSON) -->
+<header class="flex justify-between items-center w-full h-14 px-gutter sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-on-surface dark:text-on-surface">System Setup</span>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<span class="text-on-surface-variant font-label-md">v2.4.0-stable</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="wifi_tethering">wifi_tethering</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="account_circle">account_circle</button>
+</div>
+</header>
+<div class="max-w-5xl mx-auto p-container-margin space-y-gutter">
+<!-- Hero Header -->
+<section class="mb-12">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Permissions &amp; Environment</h2>
+<p class="text-on-surface-variant max-w-2xl font-body-lg">To provide low-latency input sharing and clipboard sync, LANpad requires specific system permissions. These are stored locally and never leave your network.</p>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Permissions List -->
+<div class="lg:col-span-2 space-y-4">
+<!-- Accessibility Permission -->
+<div class="glass-panel p-6 rounded-xl flex items-start gap-5 group hover:border-primary/50 transition-colors">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+<span class="material-symbols-outlined text-[28px]" data-icon="accessibility_new">accessibility_new</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface">Accessibility</h3>
+<span class="px-2 py-0.5 rounded-full bg-[#10B981]/10 text-[#10B981] font-label-md border border-[#10B981]/20 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> Granted
+                                </span>
+</div>
+<p class="text-on-surface-variant text-body-md mb-4 leading-relaxed">Allows LANpad to simulate keyboard and mouse events from remote nodes. Required for the "Virtual KVM" feature.</p>
+<button class="text-on-surface-variant/50 cursor-not-allowed font-label-md flex items-center gap-2" disabled="">
+<span class="material-symbols-outlined text-sm" data-icon="lock">lock</span> Managed by System
+                            </button>
+</div>
+</div>
+<!-- Input Monitoring Permission -->
+<div class="glass-panel p-6 rounded-xl flex items-start gap-5 group hover:border-primary/50 transition-colors">
+<div class="w-12 h-12 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary border border-tertiary/20">
+<span class="material-symbols-outlined text-[28px]" data-icon="keyboard">keyboard</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface">Input Monitoring</h3>
+<span class="px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-md border border-tertiary/20 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary status-pulse"></span> Pending
+                                </span>
+</div>
+<p class="text-on-surface-variant text-body-md mb-4 leading-relaxed">Required to capture global hotkeys and clipboard events when LANpad is in the background. Without this, sync will only work when the app is focused.</p>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-lg font-bold text-body-md transition-all active:scale-95 hover:brightness-110 flex items-center gap-2" onclick="simulateEnable(this)">
+                                Enable Permission <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Full Disk Access -->
+<div class="glass-panel p-6 rounded-xl flex items-start gap-5 group hover:border-primary/50 transition-colors">
+<div class="w-12 h-12 rounded-lg bg-on-surface-variant/10 flex items-center justify-center text-on-surface-variant border border-outline-variant">
+<span class="material-symbols-outlined text-[28px]" data-icon="folder_managed">folder_managed</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface">Full Disk Access</h3>
+<span class="px-2 py-0.5 rounded-full bg-on-surface-variant/10 text-on-surface-variant font-label-md border border-outline-variant flex items-center gap-1.5">
+                                    Optional
+                                </span>
+</div>
+<p class="text-on-surface-variant text-body-md mb-4 leading-relaxed">Enable this if you want to use the "Seamless Drag &amp; Drop" file transfer between connected machines. This allows reading files outside the Sandbox.</p>
+<button class="bg-surface-variant border border-outline-variant text-on-surface px-6 py-2 rounded-lg font-bold text-body-md transition-all active:scale-95 hover:bg-surface-container-highest flex items-center gap-2" onclick="simulateEnable(this)">
+                                Grant Access <span class="material-symbols-outlined text-sm" data-icon="add_moderator">add_moderator</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Environment Check Card -->
+<div class="space-y-6">
+<div class="glass-panel p-6 rounded-xl overflow-hidden relative">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 rounded-full"></div>
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="network_check">network_check</span>
+                            Connection Check
+                        </h3>
+<div class="space-y-4 relative z-10">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">Local Latency</span>
+<span class="font-mono-sm text-primary text-body-md">0.42ms <span class="text-[10px] text-on-surface-variant uppercase">Excellent</span></span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">Gateway Hub</span>
+<span class="font-mono-sm text-on-surface text-body-md">192.168.1.1</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">mDNS Service</span>
+<span class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+<span class="text-on-surface text-body-md">Active</span>
+</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">Encryption</span>
+<span class="text-on-surface text-body-md flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-[#10B981]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+                                    AES-256
+                                </span>
+</div>
+</div>
+<div class="mt-8 bg-surface-container-low rounded-lg p-4 border border-outline-variant">
+<p class="text-[11px] text-on-surface-variant font-mono-sm uppercase mb-2">Network Topology</p>
+<div class="h-24 w-full flex items-center justify-center gap-4 relative">
+<div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="laptop_mac">laptop_mac</span>
+</div>
+<div class="flex-1 border-t-2 border-dashed border-outline-variant relative">
+<div class="absolute left-1/2 -top-1.5 w-3 h-3 bg-primary rounded-full blur-[2px] animate-ping" style="animation-duration: 3s;"></div>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary/20 border border-secondary/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="desktop_windows">desktop_windows</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Assistance Card -->
+<div class="rounded-xl overflow-hidden h-64 relative border border-outline-variant">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+<div class="absolute bottom-4 left-4 right-4 z-20">
+<h4 class="font-bold text-on-surface">Setup Guide</h4>
+<p class="text-xs text-on-surface-variant">View visual steps for macOS Sonoma and Windows 11.</p>
+</div>
+<img class="w-full h-full object-cover" data-alt="A clean, high-angle technical illustration of a minimalist workspace. Two silver laptops sit next to each other on a dark oak desk, connected by a ghostly, ethereal blue light path symbolizing a high-speed LAN connection. The atmosphere is professional and calm, with soft cinematic lighting and a shallow depth of field. The style is inspired by modern software documentation, utilizing a palette of deep slate and electric blue accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnLiKZwpIsCb4RsuT9mVUO8fgYQ0-ZtJEdt3sXRkpcIWphJYT_g7_SjY4bJcu3Olr6EhcutsD2z_1byo4U_D8jSBNHg_KupqH8F9nL-ymgClKu3o1WTyxUvj_d0lt-410QDSd6Aitat3mhCRFNql7TRPppwHwIdtAgFM5ZuA0UONFt-rIMMZsO6BU-V4s1jPaFog89ef3B0vz5KNNd6WNge4F0ilufcgVvZMYMOEDU7my8PcdOpNd09FpGUJ47pRhma8x6oe4PSM4">
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="mt-12 pt-8 border-t border-outline-variant flex justify-between items-center">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="help_outline">help_outline</span>
+<span class="text-body-md">Having trouble? <a class="text-primary hover:underline" href="#">Read the docs</a></span>
+</div>
+<div class="flex gap-4">
+<button class="bg-surface-variant text-on-surface px-8 py-2 rounded-lg font-bold text-body-md transition-all active:scale-95 border border-outline-variant">Skip for now</button>
+<button class="bg-primary text-on-primary px-8 py-2 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-[0_0_20px_rgba(173,198,255,0.2)]">Finalize Setup</button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function simulateEnable(btn) {
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span> Waiting for System...';
+            
+            // Simulate system response
+            setTimeout(() => {
+                const parent = btn.closest('.glass-panel');
+                const status = parent.querySelector('span[class*="Pending"]');
+                if (status) {
+                    status.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> Granted';
+                    status.className = 'px-2 py-0.5 rounded-full bg-[#10B981]/10 text-[#10B981] font-label-md border border-[#10B981]/20 flex items-center gap-1.5';
+                }
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span> Enabled';
+                btn.className = 'text-[#10B981] font-label-md flex items-center gap-2';
+            }, 2500);
+        }
+
+        // Mini network pulse interaction
+        setInterval(() => {
+            const pulse = document.querySelector('.animate-ping');
+            if(pulse) {
+                pulse.style.left = '0%';
+                let pos = 0;
+                const id = setInterval(() => {
+                    if (pos >= 100) {
+                        clearInterval(id);
+                    } else {
+                        pos++;
+                        pulse.style.left = pos + '%';
+                    }
+                }, 15);
+            }
+        }, 5000);
+    </script>
+
+</body></html>

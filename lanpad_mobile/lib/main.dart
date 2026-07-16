@@ -19,6 +19,7 @@ void main() async {
 
   if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
+    await windowManager.setPreventClose(true);
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1000, 650),
       minimumSize: Size(950, 600),

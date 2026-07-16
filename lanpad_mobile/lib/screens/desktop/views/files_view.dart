@@ -25,7 +25,16 @@ class FilesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRunning = state.serverService.isRunning;
     final query = searchController.text.trim().toLowerCase();
-    final filtered = state.files
+    
+    final modeFiles = state.files.where((f) {
+      if (state.transferMode == 'inbox') {
+        return f.inbox == true;
+      } else {
+        return f.inbox == false;
+      }
+    }).toList();
+
+    final filtered = modeFiles
         .where((f) => f.name.toLowerCase().contains(query))
         .toList();
 
@@ -51,25 +60,19 @@ class _FilesTopBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: kOutlineVariant, width: 1)),
+        border: Border(bottom: BorderSide(color: kOutlineVariant.withOpacity(0.35), width: 1)),
       ),
       child: Row(children: [
-        Text('File Transfer Hub', style: GoogleFonts.outfit(
-          fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-        if (isRunning) ...[
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: kSecondary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kSecondary.withValues(alpha: 0.2)),
-            ),
-            child: Text('HIGH SPEED LINK', style: GoogleFonts.inter(
-              fontSize: 10, color: kSecondary, letterSpacing: 0.8, fontWeight: FontWeight.bold)),
+        Expanded(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [
+              Text('File Transfer Hub', style: GoogleFonts.outfit(
+                fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+            ],
           ),
-        ],
-        const Spacer(),
+        ),
         if (onNavigate != null) ...[
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
@@ -84,8 +87,8 @@ class _FilesTopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
         ],
-        SizedBox(
-          width: 260,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260),
           child: StatefulBuilder(
             builder: (context, setLocal) => TextField(
               controller: searchController,
@@ -208,11 +211,134 @@ class _FilesContent extends StatelessWidget {
     );
   }
 
+  Widget _buildTransferModeSelector(BuildContext context) {
+    final mode = state.transferMode;
+    final isInbox = mode == 'inbox';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final innerWidth = totalWidth - 8; // account for 4px padding on each side
+        final tabWidth = innerWidth / 2;
+
+        return Container(
+          height: 48,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: kSurfaceContainer,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: kOutlineVariant),
+          ),
+          child: Stack(
+            children: [
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                left: isInbox ? 0 : tabWidth,
+                width: tabWidth,
+                height: 38,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: kPrimary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: kPrimary.withOpacity(0.3), width: 1),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => state.onToggleTransferMode('inbox'),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.inbox,
+                              color: isInbox ? kPrimary : kOnSurfaceVariant,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Inbox Mode',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isInbox ? kPrimary : kOnSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '(Session Share)',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: kOnSurfaceVariant.withOpacity(isInbox ? 0.7 : 0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => state.onToggleTransferMode('parallel'),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.send,
+                              color: !isInbox ? kPrimary : kOnSurfaceVariant,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Parallel Mode',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: !isInbox ? kPrimary : kOnSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '(Direct P2P)',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: kOnSurfaceVariant.withOpacity(!isInbox ? 0.7 : 0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final modeFiles = state.files.where((f) {
+      return state.transferMode == 'inbox' ? f.inbox == true : f.inbox == false;
+    }).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildTransferModeSelector(context),
+        const SizedBox(height: 16),
         // Drop zone / upload area
         _DropZone(state: state),
         const SizedBox(height: 24),
@@ -226,14 +352,14 @@ class _FilesContent extends StatelessWidget {
                 Text('Shared Files', style: GoogleFonts.outfit(
                   fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
                 const SizedBox(width: 10),
-                if (state.files.isNotEmpty) ...[
+                if (modeFiles.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: kSurfaceVariant,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('${state.files.length}', style: GoogleFonts.inter(
+                    child: Text('${modeFiles.length}', style: GoogleFonts.inter(
                       fontSize: 11, color: kOnSurface, fontWeight: FontWeight.bold)),
                   ),
                   const Spacer(),
@@ -258,6 +384,55 @@ class _FilesContent extends StatelessWidget {
                   onDelete: () => state.onDeleteFile(f),
                   formatBytes: state.formatBytes,
                 )).toList()),
+
+              // --- Remote Hubs ---
+              if (state.connectedRemoteHubs.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                ...state.connectedRemoteHubs.map((hub) {
+                  final hubName = hub['name'] ?? hub['url'];
+                  final List<SharedFile> hubFiles = (hub['files'] as List?)?.cast<SharedFile>() ?? [];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(LucideIcons.globe, size: 16, color: kPrimary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'FILES ON REMOTE DEVICE ($hubName)'.toUpperCase(),
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: kPrimary,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: () => state.onDisconnectRemoteHub(hub['url']),
+                            icon: Icon(LucideIcons.unplug, size: 14, color: kError),
+                            label: Text('Disconnect', style: GoogleFonts.inter(color: kError, fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (hubFiles.isEmpty)
+                        _Empty(icon: LucideIcons.folder_open, message: 'No files on remote device')
+                      else
+                        Column(
+                          children: hubFiles.map((f) => _FileRow(
+                            file: f,
+                            isDownloaded: false,
+                            onDownload: () => state.onDownloadFile(f, remoteUrl: hub['url'], remoteToken: hub['token']),
+                            onDelete: () {}, 
+                            formatBytes: state.formatBytes,
+                            isRemote: true,
+                          )).toList(),
+                        ),
+                      const SizedBox(height: 24),
+                    ],
+                  );
+                }),
+              ],
             ],
           )),
           const SizedBox(width: 20),
@@ -272,12 +447,12 @@ class _FilesContent extends StatelessWidget {
                 Text('Session Stats', style: GoogleFonts.outfit(
                   fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
                 const SizedBox(height: 16),
-                _Stat('Files Shared', '${state.files.length}'),
+                _Stat('Files Shared', '${modeFiles.length}'),
                 Divider(color: kOutlineVariant, height: 20),
-                _Stat('Downloaded', '${state.downloadedFileNames.length}'),
+                _Stat('Downloaded', '${modeFiles.where((f) => state.downloadedFileNames.contains(f.name)).length}'),
                 Divider(color: kOutlineVariant, height: 20),
-                _Stat('Total Size', state.files.isEmpty ? '0 B'
-                  : state.formatBytes(state.files.fold<int>(0, (s, f) => s + f.size))),
+                _Stat('Total Size', modeFiles.isEmpty ? '0 B'
+                  : state.formatBytes(modeFiles.fold<int>(0, (s, f) => s + f.size))),
               ]),
             ),
           ),
@@ -297,37 +472,37 @@ class _DropZone extends StatelessWidget {
     if (state.isUploading) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: kSurfaceLowest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kSecondary.withValues(alpha: 0.5), width: 2),
+          border: Border.all(color: kSecondary.withValues(alpha: 0.5), width: 1.5),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(Icons.sync_rounded, color: kSecondary, size: 18),
-            const SizedBox(width: 10),
+            Icon(Icons.sync_rounded, color: kSecondary, size: 16),
+            const SizedBox(width: 8),
             Text('TRANSFERRING...', style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.bold,
+              fontSize: 10, fontWeight: FontWeight.bold,
               color: kSecondary, letterSpacing: 1)),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(state.uploadProgressName, maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
-          const SizedBox(height: 14),
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: kOnSurface)),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: state.uploadProgress, minHeight: 6,
+              value: state.uploadProgress, minHeight: 4,
               backgroundColor: kSurfaceVariant,
               valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(state.uploadSpeed, style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+            Text(state.uploadSpeed, style: GoogleFonts.inter(fontSize: 10, color: kOnSurfaceVariant)),
             Text(state.uploadEta, style: GoogleFonts.inter(
-              fontSize: 11, color: kPrimary, fontWeight: FontWeight.bold)),
+              fontSize: 10, color: kPrimary, fontWeight: FontWeight.bold)),
           ]),
         ]),
       );
@@ -335,54 +510,90 @@ class _DropZone extends StatelessWidget {
 
     return GestureDetector(
       onTap: state.onPickAndUpload,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 200),
-        decoration: BoxDecoration(
-          color: kSurfaceLowest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kOutlineVariant, width: 2),
-        ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const SizedBox(height: 40),
-          Container(
-            width: 64, height: 64,
-            decoration: BoxDecoration(
-              color: kPrimary.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(LucideIcons.cloud_upload, color: kPrimary, size: 28),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          decoration: BoxDecoration(
+            color: kSurfaceLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: kOutlineVariant.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text('Drop files to send', style: GoogleFonts.outfit(
-            fontSize: 22, fontWeight: FontWeight.w600, color: kOnSurface)),
-          const SizedBox(height: 4),
-          Text('Maximum file size: 10GB per transfer',
-            style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
-          const SizedBox(height: 20),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimary, foregroundColor: kSurfaceLowest,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: kPrimary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(LucideIcons.cloud_upload, color: kPrimary, size: 22),
               ),
-              onPressed: state.onPickAndUpload,
-              child: Text('Browse Files',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: kOutlineVariant),
-                foregroundColor: kOnSurface,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Drag & drop files here to send',
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: kOnSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Select files or folders from your computer to transfer',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: kOnSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: state.onPickFolder,
-              child: Text('Select Folder', style: GoogleFonts.inter(fontSize: 14)),
-            ),
-          ]),
-          const SizedBox(height: 36),
-        ]),
+              const SizedBox(width: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimary,
+                  foregroundColor: kSurfaceLowest,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                onPressed: state.onPickAndUpload,
+                child: Text(
+                  'Browse Files',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: kOutlineVariant),
+                  foregroundColor: kOnSurface,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: state.onPickFolder,
+                child: Text(
+                  'Select Folder',
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -395,11 +606,13 @@ class _FileRow extends StatelessWidget {
   final VoidCallback onDownload;
   final VoidCallback onDelete;
   final String Function(int) formatBytes;
+  final bool isRemote;
 
   const _FileRow({
     required this.file, required this.isDownloaded,
     required this.onDownload, required this.onDelete,
     required this.formatBytes,
+    this.isRemote = false,
   });
 
   @override
@@ -442,8 +655,9 @@ class _FileRow extends StatelessWidget {
         ],
         IconButton(icon: Icon(LucideIcons.download, color: kPrimary, size: 16),
           onPressed: onDownload, tooltip: 'Download'),
-        IconButton(icon: Icon(LucideIcons.trash_2, color: kOnSurfaceVariant, size: 16),
-          onPressed: onDelete, tooltip: 'Delete'),
+        if (!isRemote)
+          IconButton(icon: Icon(LucideIcons.trash_2, color: kOnSurfaceVariant, size: 16),
+            onPressed: onDelete, tooltip: 'Delete'),
       ]),
     );
   }

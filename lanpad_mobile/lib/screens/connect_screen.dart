@@ -77,7 +77,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     _discoverLocalDevices(clear: _discoveredDevices.isEmpty);
     _discoveryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_selectedTab == 1 && !_isDiscovering && mounted) {
-        _discoverLocalDevices(clear: false);
+        _discoverLocalDevices(clear: false, isBackground: true);
       }
     });
   }
@@ -87,14 +87,19 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     _discoveryTimer = null;
   }
 
-  Future<void> _discoverLocalDevices({bool clear = false}) async {
+  Future<void> _discoverLocalDevices({bool clear = false, bool isBackground = false}) async {
     if (_isDiscovering) return;
-    setState(() {
+    
+    if (!isBackground) {
+      setState(() {
+        _isDiscovering = true;
+        if (clear) {
+          _discoveredDevices.clear();
+        }
+      });
+    } else {
       _isDiscovering = true;
-      if (clear) {
-        _discoveredDevices.clear();
-      }
-    });
+    }
 
     final Set<String> activeUrls = {};
 
@@ -123,6 +128,9 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
 
           for (int i = 1; i <= 254; i++) {
             final ip = '$subnet.$i';
+            // Skip scanning the local mobile device itself
+            if (ip == localIp) continue;
+            
             final url = 'http://$ip:8000';
             tasks.add(
               http.get(Uri.parse('$url/api/connection/info')).timeout(const Duration(milliseconds: 1200)).then((res) {

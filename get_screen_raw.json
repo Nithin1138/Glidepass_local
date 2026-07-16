@@ -1,0 +1,28 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"name\":\"projects/16085606782289483671/screens/5dc2a96d6d484371acf849278fd5a447\",\"title\":\"File Transfer (Pro)\",\"screenshot\":{\"name\":\"projects/16085606782289483671/files/4750a441913c4f4fb8876c1a52c46c14\",\"downloadUrl\":\"https://lh3.googleusercontent.com/aida/AP1WRLsG6UdY0KCsegLWSup5IDX7GRCJpuHHWcqUl7jofmwYgy59XX14o_-IqqnxElYL12bS5tpTKGLFhGmRI_cgBgVcDg6aXEb1ut3nG-VTAM05SXVWVM9xIRG9ZNBVrbunp_ftzkJwDnAVe6ViAD2BeOUcDMAoVK4HmM2bKDh9Agf-FN4wRrm4YTBft7kCOzGRNyK722xoFlztXuGQPkWu92ELw56WsR7SEFNrhdk6at-xwqJ4YgZKZCwSUSdH\"},\"htmlCode\":{\"name\":\"projects/16085606782289483671/files/55490b5a13ba4ab099c26041d402ec7b\",\"downloadUrl\":\"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzM2NTkwNjYwOTMyMzQzZmJhYzRiYTg2NmIyNDU3MjE1EgsSBxCaz_LNpwsYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjA4NTYwNjc4MjI4OTQ4MzY3MQ&filename=&opi=89354086\",\"mimeType\":\"text/html\"},\"width\":\"780\",\"height\":\"4510\",\"deviceType\":\"MOBILE\"}",
+        "type": "text"
+      }
+    ],
+    "structuredContent": {
+      "deviceType": "MOBILE",
+      "height": "4510",
+      "htmlCode": {
+        "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzM2NTkwNjYwOTMyMzQzZmJhYzRiYTg2NmIyNDU3MjE1EgsSBxCaz_LNpwsYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjA4NTYwNjc4MjI4OTQ4MzY3MQ&filename=&opi=89354086",
+        "mimeType": "text/html",
+        "name": "projects/16085606782289483671/files/55490b5a13ba4ab099c26041d402ec7b"
+      },
+      "name": "projects/16085606782289483671/screens/5dc2a96d6d484371acf849278fd5a447",
+      "screenshot": {
+        "downloadUrl": "https://lh3.googleusercontent.com/aida/AP1WRLsG6UdY0KCsegLWSup5IDX7GRCJpuHHWcqUl7jofmwYgy59XX14o_-IqqnxElYL12bS5tpTKGLFhGmRI_cgBgVcDg6aXEb1ut3nG-VTAM05SXVWVM9xIRG9ZNBVrbunp_ftzkJwDnAVe6ViAD2BeOUcDMAoVK4HmM2bKDh9Agf-FN4wRrm4YTBft7kCOzGRNyK722xoFlztXuGQPkWu92ELw56WsR7SEFNrhdk6at-xwqJ4YgZKZCwSUSdH",
+        "name": "projects/16085606782289483671/files/4750a441913c4f4fb8876c1a52c46c14"
+      },
+      "title": "File Transfer (Pro)",
+      "width": "780"
+    }
+  }
+}

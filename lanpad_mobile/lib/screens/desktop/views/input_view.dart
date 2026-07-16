@@ -152,253 +152,339 @@ class _InputViewState extends State<InputView> {
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Left Column: Editor and Mode Controls (Flex 8) ──────────────────────
-        Expanded(
-          flex: 8,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
+  Widget _buildEditorContainer({double? height}) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kOutlineVariant),
+      ),
+      child: Column(
+        children: [
+          // Editor Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: kOutlineVariant)),
+            ),
+            child: Row(
               children: [
-                // Editor Container
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: kOutlineVariant),
-                    ),
-                    child: Column(
-                      children: [
-                        // Editor Header
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: kOutlineVariant)),
-                          ),
-                          child: Row(
-                            children: [
-                              Text('buffer: snippet_alpha.sh',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: kOnSurface)),
-                              const SizedBox(width: 8),
-                              Text('UTF-8',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: kOnSurfaceVariant.withOpacity(0.5))),
-                              const Spacer(),
-                              IconButton(
-                                onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: _controller.text));
-                                  widget.state.onShowToast('Copied to clipboard');
-                                },
-                                icon: Icon(LucideIcons.copy, size: 16, color: kOnSurfaceVariant),
-                                tooltip: 'Copy Buffer',
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  _controller.clear();
-                                },
-                                icon: Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
-                                tooltip: 'Clear Buffer',
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Editor Text Field
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            maxLines: null,
-                            expands: true,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text('Shared Clipboard / Input Buffer',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                             style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: kOnSurface,
-                              height: 1.6,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Enter commands, notes, or raw text to transfer...',
-                              hintStyle: GoogleFonts.inter(
-                                  color: kOnSurfaceVariant.withOpacity(0.5),
-                                  fontSize: 14),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(20),
-                            ),
-                          ),
-                        ),
-
-                        // Editor Footer
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            border: Border(top: BorderSide(color: kOutlineVariant)),
-                          ),
-                          child: Row(
-                            children: [
-                              Text('Ln $_line, Col $_col',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11, color: kOnSurfaceVariant)),
-                              const Spacer(),
-                              Text('CHARS: $_chars',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11, color: kOnSurfaceVariant)),
-                              const SizedBox(width: 16),
-                              Text('LINES: $_lines',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11, color: kOnSurfaceVariant)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kOnSurface)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('UTF-8',
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: kOnSurfaceVariant.withOpacity(0.5))),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                IconButton(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _controller.text));
+                    widget.state.onShowToast('Copied to clipboard');
+                  },
+                  icon: Icon(LucideIcons.copy, size: 16, color: kOnSurfaceVariant),
+                  tooltip: 'Copy Buffer',
+                ),
+                IconButton(
+                  onPressed: () {
+                    _controller.clear();
+                  },
+                  icon: Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
+                  tooltip: 'Clear Buffer',
+                ),
+              ],
+            ),
+          ),
 
-                // Controls Row & Expandable Settings Panel
-                Column(
-                  children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isNarrow = constraints.maxWidth < 620;
-                        final modeSelector = Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: kSurfaceContainer,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: kOutlineVariant),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildModeBtn('Flash'),
-                              _buildModeBtn('Type'),
-                              _buildModeBtn('Inject'),
-                              _buildModeBtn('Live Sync', hasDot: true),
-                            ],
-                          ),
-                        );
+          // Editor Text Field
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              maxLines: null,
+              expands: true,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: kOnSurface,
+                height: 1.6,
+                fontWeight: FontWeight.w400,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Enter commands, notes, or raw text to transfer...',
+                hintStyle: GoogleFonts.inter(
+                    color: kOnSurfaceVariant.withOpacity(0.5),
+                    fontSize: 14),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(20),
+              ),
+            ),
+          ),
 
-                        final sendBtn = ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
-                            foregroundColor: const Color(0xFF38BDF8),
-                            side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: isRunning ? _sendText : null,
-                          icon: const Icon(LucideIcons.rocket, size: 16),
-                          label: Text('Send to Active App',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                        );
+          // Editor Footer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: kOutlineVariant)),
+            ),
+            child: Row(
+              children: [
+                Text('Ln $_line, Col $_col',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: kOnSurfaceVariant)),
+                const Spacer(),
+                Text('CHARS: $_chars',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: kOnSurfaceVariant)),
+                const SizedBox(width: 16),
+                Text('LINES: $_lines',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: kOnSurfaceVariant)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                        if (isNarrow) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              modeSelector,
-                              const SizedBox(height: 12),
-                              sendBtn,
-                            ],
-                          );
-                        } else {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              modeSelector,
-                              sendBtn,
-                            ],
-                          );
-                        }
-                      },
-                    ),
+  Widget _buildControlsAndSettings(bool isRunning) {
+    return Column(
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 750;
+            final modeSelector = Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: kSurfaceContainer,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: kOutlineVariant),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildModeBtn('Flash'),
+                  _buildModeBtn('Type'),
+                  _buildModeBtn('Inject'),
+                  _buildModeBtn('Live Sync', hasDot: true),
+                ],
+              ),
+            );
 
-                    // Expandable typing speed & mode options if 'Type' is selected
-                    if (_selectedMode == 'Type') ...[
-                      const SizedBox(height: 16),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kOutlineVariant),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Typing Speed (WPM)',
-                                    style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
-                                Text('$_wpm WPM',
-                                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: const Color(0xFF38BDF8),
-                                inactiveTrackColor: kOutlineVariant,
-                                thumbColor: const Color(0xFF38BDF8),
-                                overlayColor: const Color(0xFF38BDF8).withOpacity(0.12),
-                              ),
-                              child: Slider(
-                                value: _wpm.toDouble(),
-                                min: 10,
-                                max: 300,
-                                divisions: 29,
-                                onChanged: (val) {
-                                  setState(() {
-                                    _wpm = val.round();
-                                  });
-                                },
-                              ),
-                            ),
-                            Divider(color: kOutlineVariant, height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Coding / IDE Mode',
-                                        style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
-                                    const SizedBox(height: 2),
-                                    Text('Optimizes character pauses for developer IDEs',
-                                        style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
-                                  ],
-                                ),
-                                Switch(
-                                  value: _isCoding,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _isCoding = val;
-                                    });
-                                  },
-                                  activeColor: const Color(0xFF38BDF8),
-                                  activeTrackColor: const Color(0xFF38BDF8).withOpacity(0.3),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+            final selectCopyBtn = OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF34D399),
+                side: BorderSide(color: const Color(0xFF34D399).withOpacity(0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isRunning ? () async {
+                final res = await widget.state.apiService.sendCopyCommand();
+                if (res['status'] == 'success') {
+                  final copiedText = res['text'] ?? '';
+                  if (copiedText.isNotEmpty) {
+                    _controller.text = copiedText;
+                  }
+                  widget.state.onShowToast('Text copied from remote device!');
+                } else {
+                  widget.state.onShowToast('Failed to copy: ${res['message']}', isError: true);
+                }
+              } : null,
+              icon: const Icon(LucideIcons.copy, size: 16),
+              label: Text('Select Copy',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            );
+
+            final stopPastingBtn = OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFF87171),
+                side: BorderSide(color: const Color(0xFFF87171).withOpacity(0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isRunning ? () async {
+                await widget.state.apiService.stopPasting();
+                widget.state.onShowToast('Pasting halted');
+              } : null,
+              icon: const Icon(LucideIcons.circle_stop, size: 16),
+              label: Text('Stop Pasting',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            );
+
+            final sendBtn = ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF38BDF8).withOpacity(0.12),
+                foregroundColor: const Color(0xFF38BDF8),
+                side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isRunning ? _sendText : null,
+              icon: const Icon(LucideIcons.rocket, size: 16),
+              label: Text('Send to Active App',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  modeSelector,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: selectCopyBtn),
+                      const SizedBox(width: 8),
+                      Expanded(child: stopPastingBtn),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  sendBtn,
+                ],
+              );
+            } else {
+              return Row(
+                children: [
+                  modeSelector,
+                  const Spacer(),
+                  selectCopyBtn,
+                  const SizedBox(width: 12),
+                  stopPastingBtn,
+                  const SizedBox(width: 12),
+                  sendBtn,
+                ],
+              );
+            }
+          },
+        ),
+
+        // Expandable typing speed & mode options if 'Type' is selected
+        if (_selectedMode == 'Type') ...[
+          const SizedBox(height: 16),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kOutlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Typing Speed (WPM)',
+                        style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
+                    Text('$_wpm WPM',
+                        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFF38BDF8),
+                    inactiveTrackColor: kOutlineVariant,
+                    thumbColor: const Color(0xFF38BDF8),
+                    overlayColor: const Color(0xFF38BDF8).withOpacity(0.12),
+                  ),
+                  child: Slider(
+                    value: _wpm.toDouble(),
+                    min: 10,
+                    max: 300,
+                    divisions: 29,
+                    onChanged: (val) {
+                      setState(() {
+                        _wpm = val.round();
+                      });
+                    },
+                  ),
+                ),
+                Divider(color: kOutlineVariant, height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Coding / IDE Mode',
+                            style: GoogleFonts.inter(fontSize: 13, color: kOnSurface, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text('Optimizes character pauses for developer IDEs',
+                            style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant)),
+                      ],
+                    ),
+                    Switch(
+                      value: _isCoding,
+                      onChanged: (val) {
+                        setState(() {
+                          _isCoding = val;
+                        });
+                      },
+                      activeColor: const Color(0xFF38BDF8),
+                      activeTrackColor: const Color(0xFF38BDF8).withOpacity(0.3),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-        ),
+        ],
+      ],
+    );
+  }
+
+  final double screenHeight = MediaQuery.of(context).size.height;
+  // Calculate a comfortable dynamic height for the editor container
+  final double editorHeight = (screenHeight - 380).clamp(260.0, 600.0);
+
+  final Widget leftColumnContent = _selectedMode == 'Type'
+      ? SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                _buildEditorContainer(height: editorHeight),
+                const SizedBox(height: 20),
+                _buildControlsAndSettings(isRunning),
+              ],
+            ),
+          ),
+        )
+      : Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: _buildEditorContainer(),
+              ),
+              const SizedBox(height: 20),
+              _buildControlsAndSettings(isRunning),
+            ],
+          ),
+        );
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // ── Left Column: Editor and Mode Controls (Flex 8) ──────────────────────
+      Expanded(
+        flex: 8,
+        child: leftColumnContent,
+      ),
 
         // ── Right Column: Recent Snippets & Tips (Flex 3) ───────────────────────
         Container(

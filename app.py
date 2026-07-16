@@ -274,7 +274,7 @@ def get_license_tier():
         except Exception:
             pass
 
-    result = "Free" if free_enabled else "Basic"
+    result = "Free" if free_enabled else "UNLICENSED"
     _license_tier_cache = {"tier": result, "ts": time.time()}
     return result
 
@@ -301,6 +301,7 @@ def get_cloud_limits(tier, force=False):
                 CLOUD_LIMITS_CACHE = {
                     "timestamp": time.time(),
                     "monetization_enabled": data.get("monetization_enabled", False),
+                    "free_enabled": data.get("free_enabled", False),
                     "plans": data.get("plans", [])
                 }
         except Exception:
@@ -308,6 +309,7 @@ def get_cloud_limits(tier, force=False):
             CLOUD_LIMITS_CACHE = {
                 "timestamp": time.time() + 540,
                 "monetization_enabled": False,
+                "free_enabled": True,
                 "plans": []
             }
 
@@ -890,9 +892,12 @@ def _cached_file_response(filename: str):
     return response
 
 
-@app.get("/api/connection/info")
-async def connection_info():
-    # Generate a stable unique name based on hardware ID (adjective + animal)
+_cached_device_name = None
+
+def get_server_device_name():
+    global _cached_device_name
+    if _cached_device_name:
+        return _cached_device_name
     import hashlib
     try:
         from platform_utils import get_hardware_id
@@ -925,8 +930,13 @@ async def connection_info():
     h = int(hashlib.sha256(hwid.encode("utf-8")).hexdigest()[:8], 16)
     adj = adjectives[h % len(adjectives)]
     animal = animals[(h // len(adjectives)) % len(animals)]
-    unique_name = f"{adj}{animal}"
+    _cached_device_name = f"{adj}{animal}"
+    return _cached_device_name
 
+
+@app.get("/api/connection/info")
+async def connection_info():
+    unique_name = get_server_device_name()
     return {
         "status": "success",
         "lan_ip": get_local_ip(),
@@ -1290,6 +1300,10 @@ async def admin_status(force: bool = False):
     # Check monetization status from cache
     monetization_enabled = bool(CLOUD_LIMITS_CACHE and CLOUD_LIMITS_CACHE.get("monetization_enabled", False))
     
+    free_enabled = True
+    if CLOUD_LIMITS_CACHE and monetization_enabled:
+        free_enabled = CLOUD_LIMITS_CACHE.get("free_enabled", True)
+    
     # Get version
     try:
         from platform_utils import VERSION as app_version
@@ -1300,6 +1314,7 @@ async def admin_status(force: bool = False):
         "status": "success",
         "tier": tier,
         "monetization_enabled": monetization_enabled,
+        "free_enabled": free_enabled,
         "feature_limits": limits,
         "version": app_version
     }
@@ -2332,8 +2347,30 @@ def save_file_duration(filename: str, duration: float):
         pass
 
 
+def save_file_uploader(filename: str, device_name: str):
+    """Saves uploader device name to .metadata.json inside the LANpad shared directory."""
+    try:
+        import json
+        meta_path = os.path.join(SHARED_DIR, ".metadata.json")
+        data = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        if "uploaders" not in data or not isinstance(data["uploaders"], dict):
+            data["uploaders"] = {}
+        data["uploaders"][filename] = device_name
+        os.makedirs(SHARED_DIR, exist_ok=True)
+        with open(meta_path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+
 @app.get("/api/files/list")
-async def list_files(sid: str = None, client_device: str = None):
+async def list_files(sid: str = None, client_device: str = None, show_all: str = "false"):
     if client_device:
         import time
         _registered_clients[client_device] = time.time()
@@ -2344,13 +2381,15 @@ async def list_files(sid: str = None, client_device: str = None):
     if not allowed:
         return {"status": "error", "message": err}
     try:
-        import json
         meta_path = os.path.join(SHARED_DIR, ".metadata.json")
         durations = {}
+        uploaders = {}
         if os.path.exists(meta_path):
             try:
                 with open(meta_path, "r") as f:
-                    durations = json.load(f)
+                    meta_data = json.load(f)
+                    durations = meta_data
+                    uploaders = meta_data.get("uploaders", {})
             except Exception:
                 pass
 
@@ -2373,7 +2412,7 @@ async def list_files(sid: str = None, client_device: str = None):
                         else:
                             continue
                     # Only show files created/modified in this session (always show APKs)
-                    if not name.endswith(".apk"):
+                    if not name.endswith(".apk") and show_all.lower() != "true":
                         if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
                             continue
                     files.append({
@@ -2381,7 +2420,8 @@ async def list_files(sid: str = None, client_device: str = None):
                         "size": stat.st_size,
                         "modified": stat.st_mtime,
                         "duration": durations.get(name),
-                        "inbox": False
+                        "inbox": False,
+                        "uploaded_by": uploaders.get(name, get_server_device_name())
                     })
         # 2. Inbox Directory Files (Waiting to be accepted)
         if os.path.exists(INBOX_DIR):
@@ -2395,7 +2435,7 @@ async def list_files(sid: str = None, client_device: str = None):
                         else:
                             continue
                     # Only show files created/modified in this session (always show APKs)
-                    if not name.endswith(".apk"):
+                    if not name.endswith(".apk") and show_all.lower() != "true":
                         if stat.st_ctime < SERVER_START_TIME and stat.st_mtime < SERVER_START_TIME:
                             continue
                     files.append({
@@ -2403,7 +2443,8 @@ async def list_files(sid: str = None, client_device: str = None):
                         "size": stat.st_size,
                         "modified": stat.st_mtime,
                         "duration": durations.get(name),
-                        "inbox": True
+                        "inbox": True,
+                        "uploaded_by": uploaders.get(name, "Mobile Device")
                     })
         files.sort(key=lambda x: x["modified"], reverse=True)
         return {"status": "success", "files": files}
@@ -2412,7 +2453,7 @@ async def list_files(sid: str = None, client_device: str = None):
 
 
 @app.post("/api/files/upload")
-async def upload_file(file: UploadFile = File(...), mode: str = "parallel", sid: str = None):
+async def upload_file(request: Request, file: UploadFile = File(...), mode: str = "parallel", sid: str = None, uploader: str = None):
     if not is_valid_sid(sid):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=403, content={"status": "error", "message": "Unauthorized session"})
@@ -2434,6 +2475,21 @@ async def upload_file(file: UploadFile = File(...), mode: str = "parallel", sid:
                 shutil.copyfileobj(file.file, f, length=1024 * 1024)
 
         await run_in_threadpool(save_file)
+        if not uploader:
+            user_agent = (request.headers.get("user-agent") or "").lower()
+            if "iphone" in user_agent:
+                uploader = "iPhone"
+            elif "ipad" in user_agent:
+                uploader = "iPad"
+            elif "android" in user_agent:
+                uploader = "Android"
+            elif "macintosh" in user_agent:
+                uploader = "Mac"
+            elif "windows" in user_agent:
+                uploader = "Windows"
+            else:
+                uploader = "Mobile Device"
+        save_file_uploader(filename, uploader)
         asyncio.ensure_future(broadcast_files_changed())
         return {"status": "success", "filename": filename}
     except Exception as e:
@@ -2829,6 +2885,107 @@ async def merge_file_chunks(upload_id: str, filename: str, total_chunks: int, si
 
 
 
+@app.get("/api/files/pdf_info/{filename}")
+async def get_pdf_info(filename: str, sid: str = None):
+    if not is_valid_sid(sid):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+    try:
+        import fitz
+        doc = fitz.open(file_path)
+        return {"status": "success", "page_count": len(doc)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/files/pdf_page/{filename}/{page_num}")
+async def get_pdf_page_image(filename: str, page_num: int, sid: str = None):
+    if not is_valid_sid(sid):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+            
+    import io
+    from fastapi.responses import StreamingResponse
+    try:
+        import fitz
+        doc = fitz.open(file_path)
+        if page_num < 0 or page_num >= len(doc):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Page number out of range")
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(dpi=150)
+        img_data = pix.tobytes("png")
+        return StreamingResponse(io.BytesIO(img_data), media_type="image/png")
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Failed to render PDF page: {str(e)}")
+
+
+@app.get("/api/files/preview_text/{filename}")
+async def preview_text_file(filename: str, sid: str = None):
+    if not is_valid_sid(sid):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+
+    ext = safe_filename.split('.')[-1].lower()
+    content = ""
+    try:
+        if ext in ['txt', 'md', 'csv', 'json', 'xml', 'html', 'css', 'js', 'py', 'sh', 'bat']:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read(100000) # Read up to 100kb
+        elif ext == 'pdf':
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(file_path)
+                pages_text = []
+                for i in range(min(5, len(reader.pages))): # Read first 5 pages max
+                    pages_text.append(f"--- PAGE {i+1} ---\n" + (reader.pages[i].extract_text() or ""))
+                content = "\n\n".join(pages_text)
+            except Exception as e:
+                content = f"Failed to extract PDF text: {str(e)}"
+        elif ext in ['doc', 'docx']:
+            try:
+                import docx
+                doc = docx.Document(file_path)
+                paras = [p.text for p in doc.paragraphs[:100]] # First 100 paragraphs max
+                content = "\n".join(paras)
+            except Exception as e:
+                content = f"Failed to extract Word document text: {str(e)}"
+        else:
+            content = f"Preview not supported for .{ext} files."
+    except Exception as e:
+        content = f"Error reading file preview: {str(e)}"
+        
+    return {"status": "success", "content": content}
+
+
 @app.get("/api/files/download/{filename}")
 async def download_file(filename: str, sid: str = None):
     if not is_valid_sid(sid):
@@ -2902,6 +3059,73 @@ async def download_file(filename: str, sid: str = None):
     }
     return StreamingResponse(iterfile(), media_type="application/octet-stream", headers=headers)
 
+@app.get("/api/system/storage")
+async def get_storage_health():
+    import shutil
+    try:
+        total, used, free = shutil.disk_usage(SHARED_DIR)
+        cache_size = 0
+        for d in [SHARED_DIR, INBOX_DIR]:
+            if os.path.exists(d):
+                for f in os.listdir(d):
+                    fp = os.path.join(d, f)
+                    if os.path.isfile(fp):
+                        cache_size += os.path.getsize(fp)
+        return {
+            "status": "success",
+            "disk_total": total,
+            "disk_used": used,
+            "disk_free": free,
+            "cache_size": cache_size
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/system/clean_cache")
+async def clean_cache():
+    import time
+    now = time.time()
+    freed = 0
+    try:
+        for d in [SHARED_DIR, INBOX_DIR]:
+            if os.path.exists(d):
+                for f in os.listdir(d):
+                    fp = os.path.join(d, f)
+                    if os.path.isfile(fp):
+                        # Clean files older than 48h
+                        if os.stat(fp).st_mtime < now - 172800:
+                            size = os.path.getsize(fp)
+                            os.remove(fp)
+                            freed += size
+        import asyncio
+        asyncio.ensure_future(broadcast_files_changed())
+        return {"status": "success", "freed_bytes": freed}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/files/share/{filename}")
+async def share_file(filename: str, sid: str = None):
+    if not is_valid_sid(sid):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized session")
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SHARED_DIR, safe_filename)
+    if not os.path.exists(file_path):
+        inbox_path = os.path.join(INBOX_DIR, safe_filename)
+        if os.path.exists(inbox_path):
+            file_path = inbox_path
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+    import time
+    try:
+        os.utime(file_path, None)
+        save_file_uploader(safe_filename, get_server_device_name())
+    except Exception:
+        pass
+    import asyncio
+    asyncio.ensure_future(broadcast_files_changed())
+    return {"status": "success"}
 
 @app.delete("/api/files/delete/{filename}")
 async def delete_file(filename: str, sid: str = None):

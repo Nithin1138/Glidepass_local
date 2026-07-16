@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
 /// Represents the resolved admin state returned by the backend.
 class AdminStatus {
   final String tier;
   final bool monetizationEnabled;
+  final bool freeEnabled;
   final Map<String, dynamic> featureLimits;
   final String version;
   final bool isLoaded;
@@ -13,6 +17,7 @@ class AdminStatus {
   const AdminStatus({
     this.tier = 'FREE',
     this.monetizationEnabled = false,
+    this.freeEnabled = true,
     this.featureLimits = const {},
     this.version = '',
     this.isLoaded = false,
@@ -91,24 +96,71 @@ class AdminService {
     _pollTimer?.cancel();
   }
 
-  Future<void> _fetchAll() async {
-    await Future.wait([_fetchStatus(), _fetchUpdate()]);
+  Future<void> _fetchAll({bool force = false}) async {
+    await Future.wait([_fetchStatus(force: force), _fetchUpdate()]);
   }
 
-  Future<void> _fetchStatus() async {
+  Future<void> _fetchStatus({bool force = false}) async {
     try {
-      final data = await _apiService.fetchAdminStatus();
+      final data = await _apiService.fetchAdminStatus(force: force);
       if (data['status'] == 'success') {
         status.value = AdminStatus(
           tier: (data['tier'] ?? 'FREE').toString().toUpperCase(),
           monetizationEnabled: data['monetization_enabled'] == true,
+          freeEnabled: data['free_enabled'] ?? true,
           featureLimits: Map<String, dynamic>.from(data['feature_limits'] ?? {}),
           version: data['version'] ?? '',
           isLoaded: true,
         );
+        return;
       }
     } catch (e) {
-      debugPrint('[AdminService] status fetch failed: $e');
+      debugPrint('[AdminService] status fetch failed from server: $e');
+    }
+
+    // Fallback: If server is unreachable, check monetization and license locally
+    try {
+      String homeDir = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+      bool monetizationEnabled = false;
+      bool freeEnabled = true;
+      String tier = 'UNLICENSED';
+
+      // 1. Fetch monetization status
+      try {
+        final url = 'https://lanpad.app/api/monetization/status';
+        final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          final res = jsonDecode(response.body);
+          monetizationEnabled = res['monetization_enabled'] == true;
+          freeEnabled = res['free_enabled'] ?? true;
+        }
+      } catch (e) {
+        final file = File('$homeDir/.lanpad_monetization.json');
+        if (await file.exists()) {
+          final cache = jsonDecode(await file.readAsString());
+          monetizationEnabled = cache['monetization_enabled'] == true;
+          freeEnabled = cache['free_enabled'] ?? true;
+        }
+      }
+
+      // 2. Read local license
+      final licenseFile = File('$homeDir/.lanpad_license.json');
+      if (await licenseFile.exists()) {
+        final lic = jsonDecode(await licenseFile.readAsString());
+        // For UI purposes, just check if tier is there. The python enforcer does the strict HWID check.
+        tier = (lic['tier'] ?? 'UNLICENSED').toString().toUpperCase();
+      }
+
+      status.value = AdminStatus(
+        tier: tier,
+        monetizationEnabled: monetizationEnabled,
+        freeEnabled: freeEnabled,
+        featureLimits: const {},
+        version: '',
+        isLoaded: true,
+      );
+    } catch (e) {
+      debugPrint('[AdminService] Fallback status fetch failed: $e');
     }
   }
 
@@ -124,7 +176,7 @@ class AdminService {
   }
 
   /// Forces an immediate refresh of admin status and update info.
-  Future<void> refresh() => _fetchAll();
+  Future<void> refresh({bool force = false}) => _fetchAll(force: force);
 
   /// Fires a telemetry event asynchronously. Does not block caller.
   void logEvent(String event) {

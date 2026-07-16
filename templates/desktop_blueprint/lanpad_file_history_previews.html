@@ -1,0 +1,418 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#df7412",
+                      "on-primary": "#002e6a",
+                      "surface-tint": "#adc6ff",
+                      "outline": "#8c909f",
+                      "surface": "#111318",
+                      "secondary": "#5de6ff",
+                      "inverse-primary": "#005ac2",
+                      "surface-bright": "#37393e",
+                      "on-surface": "#e2e2e8",
+                      "on-secondary-fixed": "#001f25",
+                      "surface-container-high": "#282a2e",
+                      "on-primary-container": "#00285d",
+                      "inverse-on-surface": "#2f3035",
+                      "tertiary-fixed": "#ffdcc6",
+                      "surface-dim": "#111318",
+                      "on-secondary": "#00363e",
+                      "surface-container-highest": "#333539",
+                      "on-tertiary": "#502400",
+                      "on-surface-variant": "#c2c6d6",
+                      "primary-fixed": "#d8e2ff",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-primary-fixed": "#001a42",
+                      "secondary-fixed-dim": "#2fd9f4",
+                      "secondary-container": "#00cbe6",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "surface-container-lowest": "#0c0e12",
+                      "tertiary": "#ffb786",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "surface-variant": "#333539",
+                      "secondary-fixed": "#a2eeff",
+                      "on-background": "#e2e2e8",
+                      "primary-fixed-dim": "#adc6ff",
+                      "surface-container": "#1e2024",
+                      "outline-variant": "#424754",
+                      "on-tertiary-container": "#461f00",
+                      "primary": "#adc6ff",
+                      "surface-container-low": "#1a1c20",
+                      "on-secondary-container": "#00515d",
+                      "background": "#111318",
+                      "on-error": "#690005",
+                      "inverse-surface": "#e2e2e8",
+                      "error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#004e5a",
+                      "on-tertiary-fixed": "#311400",
+                      "primary-container": "#4d8eff",
+                      "error": "#ffb4ab"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "container-margin": "24px",
+                      "gutter": "16px",
+                      "component-padding-y": "8px",
+                      "component-padding-x": "12px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "mono-sm": ["Geist"],
+                      "headline-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Geist"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                      "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+              }
+            },
+          },
+        }
+      }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-surface text-on-surface font-body-md overflow-hidden">
+<!-- Side Navigation Shell -->
+<nav class="fixed left-0 top-0 h-full w-[260px] border-r border-outline-variant bg-surface-container-lowest flex flex-col py-container-margin px-component-padding-x z-50"><div class="mb-8 px-2">
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">TransferNode</h1>
+<p class="text-on-surface-variant font-label-md text-label-md opacity-70">Local Instance: Active</p>
+</div>
+<div class="space-y-1 flex-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-body-md">Home</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings_input_antenna</span>
+<span class="font-body-md">Connect</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">input</span>
+<span class="font-body-md">Input</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-body-md">Resources</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary bg-primary-container/10 border-r-2 border-primary active:scale-[0.98] transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-md font-medium">History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-6 border-t border-outline-variant/30 px-2">
+<button class="w-full bg-primary text-on-primary py-2.5 rounded font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                Connect Peer
+            </button>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div>
+<p class="text-on-surface font-label-md text-label-md leading-none">System Operator</p>
+<p class="text-on-surface-variant text-[10px] uppercase tracking-wider mt-1">Admin Access</p>
+</div>
+</div>
+</div></nav>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-[260px] h-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant flex justify-between items-center px-container-margin">
+<div class="flex items-center gap-4">
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Global History / Preview</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">search</span>
+<input type="text" placeholder="Search hash, name, or node..." class="bg-surface-container-lowest border border-outline-variant text-on-surface text-body-md px-10 py-1.5 rounded-full w-64 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all">
+</div>
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">lan</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">account_tree</span></button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas-->
+<main class="pl-[260px] pt-16 h-screen flex">
+<!-- Left Column: History & Filters -->
+<section class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- Filter Row -->
+<div class="px-container-margin py-4 flex items-center justify-between border-b border-outline-variant/30">
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
+<button class="px-4 py-1.5 rounded text-label-md bg-surface-container-highest text-primary shadow-sm">All</button>
+<button class="px-4 py-1.5 rounded text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Sent</button>
+<button class="px-4 py-1.5 rounded text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Received</button>
+<button class="px-4 py-1.5 rounded text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Large Files</button>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded border border-outline-variant hover:bg-surface-container text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+<button class="p-2 rounded border border-outline-variant hover:bg-surface-container text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete_sweep</span>
+</button>
+</div>
+</div>
+<!-- Transfer List -->
+<div class="flex-1 overflow-y-auto px-container-margin py-gutter">
+<table class="w-full text-left border-separate border-spacing-y-2">
+<thead>
+<tr class="text-on-surface-variant font-label-md text-[11px] uppercase tracking-wider">
+<th class="pb-2 px-3 font-medium">Type</th>
+<th class="pb-2 px-3 font-medium">File Name</th>
+<th class="pb-2 px-3 font-medium">Source / Dest</th>
+<th class="pb-2 px-3 font-medium">Size</th>
+<th class="pb-2 px-3 font-medium">Time</th>
+<th class="pb-2 px-3 font-medium">Status</th>
+<th class="pb-2 px-3 font-medium"></th>
+</tr>
+</thead>
+<tbody>
+<!-- Row 1 (Selected) -->
+<tr class="group cursor-pointer bg-primary-container/5 ring-1 ring-primary/30 rounded-lg hover:ring-primary/50 transition-all">
+<td class="py-3 px-3">
+<div class="bg-tertiary-container/20 text-tertiary text-[10px] font-bold px-2 py-1 rounded inline-block">CODE</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-body-md text-on-surface">api-middleware-v2.ts</div>
+<div class="text-[11px] text-on-surface-variant font-mono-sm opacity-60">sha256:8f3c...12e</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="text-on-surface text-body-md">mbp-14</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="text-on-surface text-body-md">nas-core-01</span>
+</div>
+</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">42.5 KB</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">2m ago</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+<span class="text-label-md uppercase tracking-wide">Success</span>
+</div>
+</td>
+<td class="py-3 px-3 text-right">
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group cursor-pointer bg-surface-container-low border border-transparent hover:border-outline-variant rounded-lg transition-all">
+<td class="py-3 px-3">
+<div class="bg-primary-container/20 text-primary text-[10px] font-bold px-2 py-1 rounded inline-block">PDF</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-body-md text-on-surface">Q3_Project_Specs.pdf</div>
+<div class="text-[11px] text-on-surface-variant font-mono-sm opacity-60">sha256:e4d1...88b</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="text-on-surface text-body-md">dev-box-3</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="text-on-surface text-body-md">local-cache</span>
+</div>
+</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">12.8 MB</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">15m ago</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-label-md uppercase tracking-wide">Success</span>
+</div>
+</td>
+<td class="py-3 px-3 text-right">
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group cursor-pointer bg-surface-container-low border border-transparent hover:border-outline-variant rounded-lg transition-all">
+<td class="py-3 px-3">
+<div class="bg-secondary-container/20 text-secondary text-[10px] font-bold px-2 py-1 rounded inline-block">IMG</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-body-md text-on-surface">hero_render_dark_mode.png</div>
+<div class="text-[11px] text-on-surface-variant font-mono-sm opacity-60">sha256:0a21...ff9</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="text-on-surface text-body-md">workstation-a</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_back</span>
+<span class="text-on-surface text-body-md">iPad-Pro-12</span>
+</div>
+</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">144.2 MB</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">42m ago</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-label-md uppercase tracking-wide">Success</span>
+</div>
+</td>
+<td class="py-3 px-3 text-right">
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group cursor-pointer bg-surface-container-low border border-transparent hover:border-outline-variant rounded-lg transition-all">
+<td class="py-3 px-3">
+<div class="bg-outline-variant/20 text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded inline-block">ZIP</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-body-md text-on-surface">node_modules_archive_04.zip</div>
+<div class="text-[11px] text-on-surface-variant font-mono-sm opacity-60">sha256:99c2...bb4</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2">
+<span class="text-on-surface text-body-md">local-server</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="text-on-surface text-body-md">vault-storage</span>
+</div>
+</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">2.1 GB</td>
+<td class="py-3 px-3 font-mono-sm text-on-surface-variant">1h ago</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-label-md uppercase tracking-wide">Success</span>
+</div>
+</td>
+<td class="py-3 px-3 text-right">
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Right Column: Detail Panel -->
+<aside class="w-[400px] border-l border-outline-variant bg-surface-container-low p-gutter flex flex-col gap-gutter overflow-y-auto">
+<!-- Preview Card -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-[18px]">File Preview</h3>
+<button class="p-1 rounded hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-[18px]">close</span></button>
+</div>
+<div class="relative h-64 bg-surface-container-highest">
+<div class="bg-cover bg-center w-full h-full opacity-60" data-alt="A macro close-up of a high-resolution retina display showing lines of React code with syntax highlighting in electric blue, orange, and purple. The camera focus is shallow, blurring the top and bottom of the code snippet. The background is a sleek, dark-themed developer environment with subtle glows from the active cursor and line markers, creating a high-tech and professional atmosphere." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBJqAEXXwyvAcQIOL17uFTOKYRsEdTY8mMUykFlPPoKgdSB4Tkt0HqE38obTYyukbVKX8myfYdfj6qsF5kMCl13OCgjpLR-e5sI4-NuyYjeEP8jCs5SJ22o72WIT9zIYmQcC8PMO-KQMy3_Q10toYpKEzm8uRPllSZE4QpoG4pVA5eBd_jUpBTM0ePZBk4LIs2_9j6Fa5aMHeL3OaLZ919k9QMffK6aacOMWO3Ah9o6zd7QNbNLsuhErCHr5TA8ThGGhy1OPCJv8Bc')"></div>
+<div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-[2px]">
+<div class="bg-surface-container-lowest/90 border border-outline-variant p-4 rounded-lg shadow-2xl flex flex-col items-center max-w-[80%] text-center">
+<span class="material-symbols-outlined text-primary text-[48px] mb-2">code</span>
+<span class="font-mono-sm text-body-md text-on-surface break-all">api-middleware-v2.ts</span>
+<span class="text-label-md text-on-surface-variant mt-1">TypeScript Source File</span>
+</div>
+</div>
+</div>
+<div class="p-container-margin space-y-4">
+<div>
+<label class="text-label-md text-on-surface-variant uppercase tracking-widest block mb-1">Local Path</label>
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant flex items-center justify-between group">
+<code class="font-mono-sm text-body-md text-secondary overflow-hidden text-ellipsis whitespace-nowrap">/Users/admin/vault/dev/api-middleware-v2.ts</code>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">content_copy</span></button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant">
+<label class="text-[10px] text-on-surface-variant uppercase block">MIME Type</label>
+<span class="font-mono-sm text-on-surface">application/typescript</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant">
+<label class="text-[10px] text-on-surface-variant uppercase block">Permissions</label>
+<span class="font-mono-sm text-on-surface">rw- r-- r--</span>
+</div>
+</div>
+<div class="pt-4 flex gap-3">
+<button class="flex-1 bg-primary text-on-primary py-2.5 rounded font-medium flex items-center justify-center gap-2 hover:brightness-110">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+                            Reveal in Finder
+                        </button>
+<button class="w-12 h-12 flex items-center justify-center border border-outline-variant rounded hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">share</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Storage Health Card -->
+<div class="glass-panel rounded-xl p-container-margin space-y-4 mt-auto">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">database</span>
+<h4 class="font-headline-md text-[16px]">Storage Health</h4>
+</div>
+<span class="text-label-md text-on-surface-variant">92% Health</span>
+</div>
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-label-md mb-1.5">
+<span class="text-on-surface">Local Drive (NVMe)</span>
+<span class="text-on-surface-variant">742 GB / 1 TB</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 74.2%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-label-md mb-1.5">
+<span class="text-on-surface">LANpad Cache</span>
+<span class="text-on-surface-variant">4.2 GB / 10 GB</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<div class="pt-2 flex items-center gap-2 text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-tertiary">info</span>
+<span class="">Cache automatically clears files older than 48h.</span>
+</div>
+<button class="w-full text-label-md text-on-surface-variant border border-outline-variant py-2 rounded hover:bg-surface-container transition-colors">
+                    Clean Cache
+                </button>
+</div>
+</aside>
+</main>
+<!-- Visual Polish: Connection Indicator -->
+<div class="fixed bottom-6 right-6 z-50">
+<div class="bg-surface-container-high border border-outline-variant pl-4 pr-6 py-2 rounded-full flex items-center gap-3 shadow-2xl">
+<div class="relative flex items-center justify-center">
+<div class="absolute w-3 h-3 bg-secondary rounded-full animate-ping opacity-20"></div>
+<div class="w-2.5 h-2.5 bg-secondary rounded-full shadow-[0_0_8px_#5de6ff]"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface uppercase font-bold leading-none">Live Sync</span>
+<span class="text-[10px] text-on-surface-variant font-mono-sm">4 peers active</span>
+</div>
+</div>
+</div>
+<script class="">
+        // Micro-interaction: Table row hover and click effects
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                // Clear active states
+                document.querySelectorAll('tbody tr').forEach(r => {
+                    r.classList.remove('bg-primary-container/5', 'ring-1', 'ring-primary/30');
+                    r.classList.add('bg-surface-container-low', 'border-transparent');
+                });
+                // Set active
+                row.classList.remove('bg-surface-container-low', 'border-transparent');
+                row.classList.add('bg-primary-container/5', 'ring-1', 'ring-primary/30');
+            });
+        });
+    </script>
+
+</body></html>

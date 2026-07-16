@@ -42,7 +42,7 @@ class _WaitingViewState extends State<_WaitingView> {
   bool _isScanning = false;
   bool _showManual = false;
   List<Map<String, dynamic>> _discoveredDevices = [];
-  bool _encryptionEnabled = true;
+  bool _encryptionEnabled = false;
 
   final _manualUrlController = TextEditingController();
   final _manualNameController = TextEditingController();
@@ -235,7 +235,7 @@ class _WaitingViewState extends State<_WaitingView> {
                             isConnecting = true;
                             errorText = null;
                           });
-                          final err = await widget.state.connectionService.connect(device['url'], code);
+                          final err = await widget.state.onConnectToRemoteHub(device['url'], code);
                           if (err != null) {
                             setModalState(() {
                               isConnecting = false;
@@ -272,7 +272,7 @@ class _WaitingViewState extends State<_WaitingView> {
 
     try {
       widget.state.onShowToast('Connecting manually...');
-      final err = await widget.state.connectionService.connect(url, code);
+      final err = await widget.state.onConnectToRemoteHub(url, code);
       if (err != null) {
         widget.state.onShowToast('Connection failed: $err', isError: true);
       } else {
@@ -1107,7 +1107,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                             isConnecting = true;
                             errorText = null;
                           });
-                          final err = await widget.state.connectionService.connect(device['url'], code);
+                          final err = await widget.state.onConnectToRemoteHub(device['url'], code);
                           if (err != null) {
                             setModalState(() {
                               isConnecting = false;
@@ -1145,7 +1145,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
 
     try {
       widget.state.onShowToast('Connecting manually...');
-      final err = await widget.state.connectionService.connect(url, code);
+      final err = await widget.state.onConnectToRemoteHub(url, code);
       if (err != null) {
         widget.state.onShowToast('Connection failed: $err', isError: true);
       } else {

@@ -1,0 +1,395 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#37393e",
+                        "on-primary-container": "#00285d",
+                        "tertiary": "#ffb786",
+                        "outline": "#8c909f",
+                        "on-tertiary-fixed": "#311400",
+                        "on-secondary-container": "#00515d",
+                        "secondary": "#5de6ff",
+                        "surface-container": "#1e2024",
+                        "on-surface": "#e2e2e8",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-tertiary": "#502400",
+                        "background": "#111318",
+                        "inverse-on-surface": "#2f3035",
+                        "surface": "#111318",
+                        "on-secondary-fixed-variant": "#004e5a",
+                        "tertiary-fixed": "#ffdcc6",
+                        "primary": "#adc6ff",
+                        "on-secondary": "#00363e",
+                        "surface-dim": "#111318",
+                        "on-background": "#e2e2e8",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#2fd9f4",
+                        "surface-container-lowest": "#0c0e12",
+                        "on-error": "#690005",
+                        "secondary-container": "#00cbe6",
+                        "surface-tint": "#adc6ff",
+                        "on-primary-fixed-variant": "#004395",
+                        "primary-container": "#4d8eff",
+                        "on-primary": "#002e6a",
+                        "surface-variant": "#333539",
+                        "secondary-fixed": "#a2eeff",
+                        "outline-variant": "#424754",
+                        "inverse-primary": "#005ac2",
+                        "surface-container-high": "#282a2e",
+                        "tertiary-container": "#df7412",
+                        "primary-fixed": "#d8e2ff",
+                        "on-primary-fixed": "#001a42",
+                        "surface-container-highest": "#333539",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "primary-fixed-dim": "#adc6ff",
+                        "inverse-surface": "#e2e2e8",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#001f25",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "surface-container-low": "#1a1c20",
+                        "on-tertiary-container": "#461f00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "component-padding-x": "12px",
+                        "container-margin": "24px",
+                        "component-padding-y": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "mono-sm": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "mono-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="font-body-md text-body-md antialiased">
+<!-- Side Navigation Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-container-margin w-[280px] h-screen flex-shrink-0 bg-surface-container border-r border-outline-variant z-50">
+<div class="mb-10 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">LANpad</h1>
+<p class="text-on-surface-variant opacity-60">Local-First Utility</p>
+</div>
+<nav class="flex flex-col gap-2 flex-grow"><a class="flex items-center gap-3 px-4 py-2 text-primary font-bold bg-surface-variant rounded-xl transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span><span class="">Home</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">sensors</span><span class="">Connect</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">keyboard</span><span class="">Input</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">folder_shared</span><span class="">Resources</span></a><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">history</span><span class="">History</span></a><div class="mt-auto"><a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all duration-200 active:scale-95" href="#"><span class="material-symbols-outlined">settings</span><span class="">Settings</span></a></div></nav>
+<div class="mt-8 pt-6 border-t border-outline-variant flex items-center gap-3 px-4">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-detail portrait of a professional developer in their late 20s, wearing a minimalist black hoodie. The scene is shot with shallow depth of field in a dimly lit studio with electric blue ambient lighting reflections. High-end tech aesthetic, 10cr startup style, sharp focus on facial features." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7TihTdVj5TqWSS27IsTxJyjlcxJlYwK3ePd7uf1o1_cuVcC-Hu16KU7i5AohBAz8cdfo2VqOZ-K07TPd0k2evFDclxpiEcJyPW9KqUfSEl5_qH0TMMGWry2GHsLCGvxfLgny7GHpoKUVZqT0BFqUIwEONII6SMSX662PaOs4-WTTbkyCltXyj-wp0JqwEOqU3EtiipOtNa6VhFKEzYp7L5HD84oFJuDhIrzgZvEgZg8n4vNG66UoXVExsi2KriQMrwZDuxYJXGAs">
+</div>
+<div>
+<p class="font-bold text-on-surface">Alex Chen</p>
+<p class="text-xs text-on-surface-variant">Pro Developer</p>
+</div>
+</div>
+</aside>
+<!-- Top Bar Shell -->
+<header class="flex justify-between items-center h-14 px-gutter ml-[280px] w-[calc(100%-280px)] fixed top-0 bg-surface/80 backdrop-blur-xl border-b border-outline-variant z-40">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">wifi_tethering</span>
+<span class="font-mono-sm text-mono-sm text-primary tracking-wider">SECURE LINK ESTABLISHED</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">wifi_tethering</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[280px] mt-14 p-container-margin grid grid-cols-12 gap-6 min-h-[calc(100vh-56px)]">
+<!-- Left: Hero & Activity Feed -->
+<div class="col-span-8 flex flex-col gap-6">
+<!-- Hero: Device Connected Card -->
+<section class="glass-panel p-6 rounded-xl flex items-center justify-between overflow-hidden relative group">
+<div class="absolute -right-12 -top-12 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
+<div class="flex items-center gap-6 z-10">
+<div class="relative">
+<div class="w-20 h-20 bg-surface-container rounded-2xl flex items-center justify-center border border-outline-variant shadow-lg">
+<span class="material-symbols-outlined text-4xl text-primary">smartphone</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-[#10B981] rounded-full border-4 border-background status-pulse"></div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md">iPhone 15 Pro</h2>
+<span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Active Session</span>
+</div>
+<div class="flex items-center gap-4 mt-1 text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">signal_cellular_4_bar</span>
+<span class="font-mono-sm text-mono-sm">94% Signal</span>
+</div>
+<div class="w-1 h-1 rounded-full bg-outline-variant"></div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span class="font-mono-sm text-mono-sm" id="session-timer">00:42:15</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end z-10">
+<button class="bg-error-container/20 text-error border border-error/20 px-4 py-2 rounded-lg font-bold hover:bg-error-container hover:text-on-error transition-all active:scale-95 text-xs uppercase tracking-widest">
+                        Disconnect
+                    </button>
+</div>
+</section>
+<!-- Main: Activity Feed -->
+<section class="flex flex-col gap-4 flex-grow">
+<div class="flex justify-between items-center px-2">
+<h3 class="font-headline-md text-body-lg font-bold">Activity Feed</h3>
+<button class="text-primary text-xs hover:underline">Clear History</button>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<!-- Feed Header -->
+<div class="grid grid-cols-12 px-6 py-3 border-b border-outline-variant bg-surface-container/50 text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">
+<div class="col-span-6">Action</div>
+<div class="col-span-3">Target</div>
+<div class="col-span-3 text-right">Time</div>
+</div>
+<!-- Feed Items -->
+<div class="flex flex-col custom-scrollbar overflow-y-auto max-h-[600px]">
+<div class="grid grid-cols-12 px-6 py-4 border-b border-outline-variant/30 hover:bg-surface-variant/20 transition-colors group">
+<div class="col-span-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg">content_paste</span>
+<div>
+<p class="font-bold text-on-surface">Pasted snippet to VS Code</p>
+<p class="text-xs text-on-surface-variant font-mono-sm">const data = await fetch('/api/v1/node')...</p>
+</div>
+</div>
+<div class="col-span-3 flex items-center">
+<span class="bg-surface-variant px-2 py-1 rounded text-[11px] font-mono-sm">Visual Studio Code</span>
+</div>
+<div class="col-span-3 flex items-center justify-end text-xs text-on-surface-variant">Just now</div>
+</div>
+<div class="grid grid-cols-12 px-6 py-4 border-b border-outline-variant/30 hover:bg-surface-variant/20 transition-colors group">
+<div class="col-span-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">link</span>
+<div>
+<p class="font-bold text-on-surface">Received link from Safari</p>
+<p class="text-xs text-on-surface-variant font-mono-sm">https://github.com/vercel/next.js/pull/...</p>
+</div>
+</div>
+<div class="col-span-3 flex items-center">
+<span class="bg-surface-variant px-2 py-1 rounded text-[11px] font-mono-sm">Chrome Desktop</span>
+</div>
+<div class="col-span-3 flex items-center justify-end text-xs text-on-surface-variant">2m ago</div>
+</div>
+<div class="grid grid-cols-12 px-6 py-4 border-b border-outline-variant/30 hover:bg-surface-variant/20 transition-colors group">
+<div class="col-span-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-lg">keyboard</span>
+<div>
+<p class="font-bold text-on-surface">Remote Type session ended</p>
+<p class="text-xs text-on-surface-variant font-mono-sm">1,204 characters sent</p>
+</div>
+</div>
+<div class="col-span-3 flex items-center">
+<span class="bg-surface-variant px-2 py-1 rounded text-[11px] font-mono-sm">Slack</span>
+</div>
+<div class="col-span-3 flex items-center justify-end text-xs text-on-surface-variant">15m ago</div>
+</div>
+<div class="grid grid-cols-12 px-6 py-4 border-b border-outline-variant/30 hover:bg-surface-variant/20 transition-colors group">
+<div class="col-span-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">image</span>
+<div>
+<p class="font-bold text-on-surface">AirDrop received</p>
+<p class="text-xs text-on-surface-variant font-mono-sm">IMG_9822.png (4.2 MB)</p>
+</div>
+</div>
+<div class="col-span-3 flex items-center">
+<span class="bg-surface-variant px-2 py-1 rounded text-[11px] font-mono-sm">Downloads</span>
+</div>
+<div class="col-span-3 flex items-center justify-end text-xs text-on-surface-variant">1h ago</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right: Quick Actions Sidebar -->
+<aside class="col-span-4 flex flex-col gap-6">
+<section class="glass-panel p-6 rounded-xl">
+<h3 class="font-headline-md text-body-lg font-bold mb-4">Quick Actions</h3>
+<div class="flex flex-col gap-3">
+<button class="flex items-center gap-4 w-full p-4 bg-primary text-on-primary rounded-xl font-bold hover:brightness-110 transition-all active:scale-[0.98] group">
+<div class="w-10 h-10 rounded-lg bg-on-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined">send</span>
+</div>
+<div class="text-left">
+<p class="text-sm">Send Clipboard</p>
+<p class="text-[10px] opacity-70 font-normal">Push text to iPhone</p>
+</div>
+<span class="material-symbols-outlined ml-auto opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="flex items-center gap-4 w-full p-4 bg-surface-variant text-on-surface rounded-xl font-bold border border-outline-variant hover:bg-surface-bright transition-all active:scale-[0.98] group">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">content_paste_go</span>
+</div>
+<div class="text-left">
+<p class="text-sm">Paste Here</p>
+<p class="text-[10px] text-on-surface-variant font-normal">Pull from iPhone</p>
+</div>
+<span class="material-symbols-outlined ml-auto opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="flex items-center gap-4 w-full p-4 bg-surface-variant text-on-surface rounded-xl font-bold border border-outline-variant hover:bg-surface-bright transition-all active:scale-[0.98] group">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">keyboard_alt</span>
+</div>
+<div class="text-left">
+<p class="text-sm">Enter Type Mode</p>
+<p class="text-[10px] text-on-surface-variant font-normal">PC Keyboard to Mobile</p>
+</div>
+<span class="material-symbols-outlined ml-auto opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Stats Panel -->
+<section class="glass-panel p-6 rounded-xl flex-grow">
+<h3 class="font-headline-md text-body-lg font-bold mb-4">Connection Stats</h3>
+<div class="space-y-6">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Latency</p>
+<p class="text-2xl font-mono-sm font-bold text-primary">12ms</p>
+</div>
+<div class="h-8 flex items-end gap-0.5">
+<div class="w-1 h-3 bg-primary rounded-t-sm"></div>
+<div class="w-1 h-4 bg-primary rounded-t-sm"></div>
+<div class="w-1 h-2 bg-primary rounded-t-sm"></div>
+<div class="w-1 h-5 bg-primary rounded-t-sm"></div>
+<div class="w-1 h-6 bg-primary rounded-t-sm"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-2">Network Security</p>
+<div class="bg-surface-container rounded-lg p-3 flex items-center gap-3 border border-outline-variant">
+<span class="material-symbols-outlined text-[#10B981]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<p class="text-xs font-mono-sm">WPA3 - AES 256 Encrypted</p>
+</div>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant">
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-3">IP Addresses</p>
+<div class="space-y-2">
+<div class="flex justify-between font-mono-sm text-xs">
+<span class="text-on-surface-variant">Desktop</span>
+<span class="">192.168.1.104</span>
+</div>
+<div class="flex justify-between font-mono-sm text-xs">
+<span class="text-on-surface-variant">iPhone</span>
+<span class="">192.168.1.112</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+</aside></main>
+<!-- Floating UI Element for Status Feedback -->
+<div class="fixed bottom-8 right-8 translate-y-24 opacity-0 transition-all duration-500 glass-panel px-6 py-4 rounded-xl flex items-center gap-4 z-[100]" id="feedback-toast">
+<div class="w-2 h-2 rounded-full bg-primary status-pulse"></div>
+<p class="font-bold text-sm" id="toast-message">Clipboard Synced</p>
+</div>
+<script>
+        // Micro-interaction: Timer logic
+        let seconds = 2535; // Starting at 42:15
+        const timerEl = document.getElementById('session-timer');
+        
+        setInterval(() => {
+            seconds++;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            timerEl.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }, 1000);
+
+        // Micro-interaction: Toast notification for quick actions
+        const buttons = document.querySelectorAll('button');
+        const toast = document.getElementById('feedback-toast');
+        const toastMsg = document.getElementById('toast-message');
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const text = btn.querySelector('p')?.textContent || "Action Triggered";
+                toastMsg.textContent = `${text} Success`;
+                
+                toast.classList.remove('translate-y-24', 'opacity-0');
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-y-24', 'opacity-0');
+                }, 3000);
+            });
+        });
+
+        // Atmospheric effect: Subtle canvas particle layer (simulating "Technical Calm")
+        // Not using placeholders, just lightweight JS
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '0';
+        canvas.style.opacity = '0.3';
+        document.body.prepend(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        const dots = Array.from({ length: 40 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.2,
+            vy: (Math.random() - 0.5) * 0.2,
+            size: Math.random() * 2
+        }));
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#adc6ff';
+            
+            dots.forEach(dot => {
+                dot.x += dot.vx;
+                dot.y += dot.vy;
+                
+                if (dot.x < 0 || dot.x > width) dot.vx *= -1;
+                if (dot.y < 0 || dot.y > height) dot.vy *= -1;
+                
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+
+</body></html>

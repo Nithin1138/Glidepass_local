@@ -27,30 +27,38 @@ class TunnelService {
     _tunnelUrl = null;
     _statusController.add(null);
 
+    void handleLine(String line) {
+      if (_tunnelUrl == null) {
+        final cfMatch = RegExp(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com').firstMatch(line);
+        final ltMatch = RegExp(r'https://[a-zA-Z0-9-]+\.loca\.lt').firstMatch(line);
+        final matchUrl = cfMatch?.group(0) ?? ltMatch?.group(0);
+        
+        if (matchUrl != null) {
+          _tunnelUrl = matchUrl;
+          _isConnecting = false;
+          _statusController.add(null);
+          _notifyPythonServerOfTunnel(_tunnelUrl!);
+        }
+      }
+    }
+
     try {
       final binPath = await _getOrDownloadBinary();
       if (binPath == null) {
         throw Exception('Could not obtain cloudflared binary');
       }
 
+      if (Platform.isMacOS) {
+        try {
+          await Process.run('xattr', ['-d', 'com.apple.quarantine', binPath]);
+        } catch (_) {}
+      }
+
       print("[TunnelService] Spawning cloudflared process: $binPath");
-      // Launch process: cloudflared tunnel --url http://127.0.0.1:8000
       _process = await Process.start(
         binPath,
         ['tunnel', '--url', 'http://127.0.0.1:8000'],
       );
-
-      void handleLine(String line) {
-        if (_tunnelUrl == null) {
-          final match = RegExp(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com').firstMatch(line);
-          if (match != null) {
-            _tunnelUrl = match.group(0);
-            _isConnecting = false;
-            _statusController.add(null);
-            _notifyPythonServerOfTunnel(_tunnelUrl!);
-          }
-        }
-      }
 
       _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
       _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
@@ -63,10 +71,28 @@ class TunnelService {
       });
 
     } catch (e) {
-      _process = null;
-      _tunnelUrl = null;
-      _isConnecting = false;
-      _statusController.add(null);
+      print("[TunnelService] cloudflared failed, trying localtunnel fallback: $e");
+      try {
+        _process = await Process.start(
+          Platform.isWindows ? 'npx.cmd' : 'npx',
+          ['localtunnel', '--port', '8000'],
+        );
+        _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
+        _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(handleLine);
+        
+        _process!.exitCode.then((code) {
+          _process = null;
+          _tunnelUrl = null;
+          _isConnecting = false;
+          _statusController.add(null);
+        });
+      } catch (e2) {
+        print("[TunnelService] localtunnel also failed: $e2");
+        _process = null;
+        _tunnelUrl = null;
+        _isConnecting = false;
+        _statusController.add(null);
+      }
     }
   }
 

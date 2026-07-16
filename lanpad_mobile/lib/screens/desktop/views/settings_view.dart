@@ -28,31 +28,31 @@ class _SettingsViewState extends State<SettingsView> {
     (
       title: 'Terms of Service',
       desc: 'Terms of using the bridge services',
-      path: '/terms_of_service.html',
+      path: '/terms',
       fallbackUrl: 'https://lanpad.app/terms'
     ),
     (
       title: 'Privacy Policy',
       desc: 'Data transmission & privacy standards',
-      path: '/privacy_policy.html',
+      path: '/privacy',
       fallbackUrl: 'https://lanpad.app/privacy'
     ),
     (
       title: 'Content Policy',
       desc: 'Transfer guidelines and restrictions',
-      path: '/content_policy.html',
+      path: '/content-policy',
       fallbackUrl: 'https://lanpad.app/content'
     ),
     (
       title: 'Copyright Takedown',
       desc: 'DMCA / Intellectual property claims',
-      path: '/copyright_takedown.html',
+      path: '/copyright-takedown',
       fallbackUrl: 'https://lanpad.app/dmca'
     ),
     (
       title: 'Refund Policy',
       desc: 'Relay & license monetization guidelines',
-      path: '/refund_policy.html',
+      path: '/refund-policy',
       fallbackUrl: 'https://lanpad.app/refund'
     ),
   ];
@@ -373,13 +373,17 @@ class _SettingsViewState extends State<SettingsView> {
                       onTap: () async {
                         final serverUrl = s.serverService.isRunning ? 'http://localhost:8000' : 'https://lanpad.app';
                         final uri = Uri.parse('$serverUrl${policy.path}');
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        } else {
-                          final fallback = Uri.parse(policy.fallbackUrl);
-                          if (await canLaunchUrl(fallback)) {
-                            await launchUrl(fallback);
-                          } else {
+                        try {
+                          final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          if (!success) {
+                            final fallback = Uri.parse(policy.fallbackUrl);
+                            await launchUrl(fallback, mode: LaunchMode.externalApplication);
+                          }
+                        } catch (e) {
+                          try {
+                            final fallback = Uri.parse(policy.fallbackUrl);
+                            await launchUrl(fallback, mode: LaunchMode.externalApplication);
+                          } catch (e2) {
                             s.onShowToast('Could not launch policy URL', isError: true);
                           }
                         }
@@ -421,7 +425,10 @@ class _GlassCard extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: kGlassCard,
-    child: child,
+    child: Material(
+      type: MaterialType.transparency,
+      child: child,
+    ),
   );
 }
 

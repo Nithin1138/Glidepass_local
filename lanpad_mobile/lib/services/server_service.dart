@@ -14,20 +14,33 @@ class ServerService {
   int _connectedCount = 0;
   List<String> _connectedDevices = [];
 
+  bool _isIntentionalShutdown = false;
+
   bool get isRunning => _process != null;
+  bool get isStarting => _isStarting;
+  bool get isServerReady => _process != null && _sessionToken.isNotEmpty;
   String get sessionToken => _sessionToken;
   String get sessionCode => _sessionToken.length >= 6 ? _sessionToken.substring(_sessionToken.length - 6) : _sessionToken;
   String get deviceName => _deviceName;
   int get connectedClientsCount => _connectedCount;
   List<String> get connectedDeviceNames => _connectedDevices;
 
+  bool _hasCrashed = false;
+  String _crashLog = '';
+  bool get hasCrashed => _hasCrashed;
+  String get crashLog => _crashLog;
+
   final StreamController<void> _statusController = StreamController<void>.broadcast();
   Stream<void> get onStatusChanged => _statusController.stream;
 
   Timer? _statusTimer;
+  bool _isStarting = false;
 
   Future<void> startServer() async {
-    if (_process != null) return;
+    if (_process != null || _isStarting) return;
+    _isStarting = true;
+    _hasCrashed = false;
+    _crashLog = '';
 
     // Free port 8000 before starting to prevent address already in use crashes
     await _freePort();
@@ -35,14 +48,14 @@ class ServerService {
     String workingDir = '/Users/nithin/Projects/GlidePass';
     if (!Directory(workingDir).existsSync()) {
       workingDir = Directory.current.path;
-      if (!File(p.join(workingDir, 'app.py')).existsSync()) {
+      if (!File(p.join(workingDir, 'main.py')).existsSync()) {
         workingDir = p.dirname(workingDir);
       }
     }
 
     try {
       Process? proc;
-      final String appPyPath = p.join(workingDir, 'app.py');
+      final String appPyPath = p.join(workingDir, 'main.py');
 
       // Try multiple known absolute Python binary paths in order of preference.
       // macOS app bundles run with a restricted PATH, so 'python3' alone often
@@ -63,7 +76,7 @@ class ServerService {
         try {
           proc = await Process.start(
             pyBin,
-            [appPyPath],
+            [appPyPath, '--server-only'],
             workingDirectory: workingDir,
           );
           print('[ServerService] Started server with: $pyBin $appPyPath');
@@ -88,15 +101,25 @@ class ServerService {
       });
       _process!.stderr.transform(utf8.decoder).listen((data) {
         print("[python stderr] $data");
+        _crashLog += data;
+        if (_crashLog.length > 5000) {
+          _crashLog = _crashLog.substring(_crashLog.length - 5000);
+        }
       });
 
-      _process!.exitCode.then((_) {
+      _process!.exitCode.then((code) {
+        if (code != 0 && !_isIntentionalShutdown) {
+          _hasCrashed = true;
+        }
+        _isIntentionalShutdown = false;
         _stopTracking();
       });
 
       // Start polling the Python server for active status, tokens, and connections
       _startTracking();
+      _isStarting = false;
     } catch (e) {
+      _isStarting = false;
       print("[ServerService] Failed to start python server: $e");
       _stopTracking();
     }
@@ -107,7 +130,7 @@ class ServerService {
       if (Platform.isMacOS || Platform.isLinux) {
         final result = await Process.run('sh', [
           '-c',
-          'lsof -t -i tcp:8000 | xargs kill -9'
+          'pid=\$(lsof -t -i tcp:8000) && [ -n "\$pid" ] && kill -9 \$pid || true'
         ]);
         print("[ServerService] Freed port 8000: ${result.exitCode}");
       } else if (Platform.isWindows) {
@@ -124,11 +147,13 @@ class ServerService {
 
   Future<void> stopServer() async {
     if (_process == null) return;
+    _isIntentionalShutdown = true;
     _process!.kill(ProcessSignal.sigterm);
     _stopTracking();
   }
 
   void _startTracking() {
+    _statusTimer?.cancel();
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (_process == null) return;
       try {

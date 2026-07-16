@@ -27,6 +27,7 @@ class DesktopState {
 
   // File state
   final List<SharedFile> files;
+  final List<SharedFile> allFiles;
   final bool loadingFiles;
   final bool isUploading;
   final double uploadProgress;
@@ -48,6 +49,9 @@ class DesktopState {
 
   // System
   final bool hasAccessibilityPermission;
+  final bool isSidebarOpen;
+  final String transferMode;
+  final ValueChanged<String> onToggleTransferMode;
 
   // ── Callbacks ────────────────────────────────────────────────────
   final VoidCallback onToggleServer;
@@ -55,14 +59,19 @@ class DesktopState {
   final VoidCallback onPickAndUpload;
   final VoidCallback onPickFolder;
   final ValueChanged<bool> onToggleLanMode;
-  final Future<void> Function(SharedFile) onDownloadFile;
+  final Future<void> Function(SharedFile, {String? remoteUrl, String? remoteToken}) onDownloadFile;
   final Future<void> Function(SharedFile) onDeleteFile;
   final VoidCallback onDeleteAllFiles;
   final Future<void> Function(Hub) onSelectHub;
   final ValueChanged<String> onFilterHubResources;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onToggleSidebar;
   final VoidCallback onRequestAccessibility;
   final void Function(String, {bool isError}) onShowToast;
   final ValueChanged<String> onDisconnectRemoteDevice;
+  final List<Map<String, dynamic>> connectedRemoteHubs;
+  final Future<String?> Function(String, String) onConnectToRemoteHub;
+  final ValueChanged<String> onDisconnectRemoteHub;
 
   // ── Formatters ────────────────────────────────────────────────────
   final String Function(int bytes) formatBytes;
@@ -77,6 +86,7 @@ class DesktopState {
     required this.isDirectLan,
     required this.sessionTimeFormatted,
     required this.files,
+    required this.allFiles,
     required this.loadingFiles,
     required this.isUploading,
     required this.uploadProgress,
@@ -92,6 +102,9 @@ class DesktopState {
     required this.resources,
     required this.filteredResources,
     required this.hasAccessibilityPermission,
+    required this.isSidebarOpen,
+    required this.transferMode,
+    required this.onToggleTransferMode,
     required this.onToggleServer,
     required this.onReconnect,
     required this.onPickAndUpload,
@@ -102,9 +115,14 @@ class DesktopState {
     required this.onDeleteAllFiles,
     required this.onSelectHub,
     required this.onFilterHubResources,
+    required this.onOpenSettings,
+    required this.onToggleSidebar,
     required this.onRequestAccessibility,
     required this.onShowToast,
     required this.onDisconnectRemoteDevice,
+    required this.connectedRemoteHubs,
+    required this.onConnectToRemoteHub,
+    required this.onDisconnectRemoteHub,
     required this.formatBytes,
   });
 
