@@ -49,3 +49,5 @@ LANpad.app/
 tmp.dmg
 .vercel
 .env*
+*.dmg
+*.exe
