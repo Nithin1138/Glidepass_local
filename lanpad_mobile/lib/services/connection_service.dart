@@ -172,6 +172,20 @@ class ConnectionService extends ChangeNotifier {
     }
   }
 
+  void setServerConnection(String serverUrl, String sessionId, String deviceName) async {
+    _serverUrl = serverUrl;
+    _sessionId = sessionId;
+    _isConnected = true;
+    _connectedDeviceName = deviceName;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.keyServerUrl, _serverUrl!);
+    await prefs.setString(AppConstants.keySessionId, _sessionId!);
+    await prefs.setString('connected_device_name', _connectedDeviceName!);
+    
+    notifyListeners();
+  }
+
   Future<void> disconnect() async {
     _serverUrl = null;
     _sessionId = null;

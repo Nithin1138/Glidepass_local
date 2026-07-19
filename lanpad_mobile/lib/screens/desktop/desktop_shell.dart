@@ -105,12 +105,15 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
   String _uploadEta = '';
   final Set<String> _downloadedFileNames = {};
   final TextEditingController _fileSearchController = TextEditingController();
-  String _transferMode = 'inbox'; // 'inbox' (upload to session) or 'parallel' (direct to device)
+  String _transferMode = 'parallel'; // 'inbox' (upload to session) or 'parallel' (direct to device)
 
   // ── Hub / Resource state ──────────────────────────────────────────
   List<Hub> _hubs = [];
   bool _loadingHubs = false;
   Hub? _selectedHub;
+  Category? _selectedCategory;
+  Topic? _selectedTopic;
+  String? _initialInputText;
   List<ResourceSnippet> _resources = [];
   List<ResourceSnippet> _filteredResources = [];
   final TextEditingController _hubSearchController = TextEditingController();
@@ -130,6 +133,12 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
   @override
   void initState() {
     super.initState();
+    DesktopThemeManager.instance.init().then((_) {
+      if (mounted) setState(() {});
+    });
+    DesktopThemeManager.instance.addListener(_onThemeChanged);
+    AppTheme.themeModeNotifier.addListener(_onThemeChanged);
+
     _serverSub = _serverService.onStatusChanged.listen((_) {
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -185,6 +194,10 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
 
     _startMobileUploadPolling();
     _startRemoteHubPolling();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onAdminStatusChanged() {
@@ -303,6 +316,8 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     _adminService.dispose();
     _mobileUploadPollTimer?.cancel();
     _remoteHubPollTimer?.cancel();
+    DesktopThemeManager.instance.removeListener(_onThemeChanged);
+    AppTheme.themeModeNotifier.removeListener(_onThemeChanged);
     super.dispose();
   }
 
@@ -611,8 +626,23 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     setState(() { _hubs = list; _loadingHubs = false; });
   }
 
-  Future<void> _selectHub(Hub hub) async {
-    setState(() { _selectedHub = hub; _loadingHubs = true; });
+  Future<void> _selectHub(Hub? hub) async {
+    if (hub == null) {
+      setState(() {
+        _selectedHub = null;
+        _selectedCategory = null;
+        _selectedTopic = null;
+        _resources = [];
+        _filteredResources = [];
+      });
+      return;
+    }
+    setState(() {
+      _selectedHub = hub;
+      _selectedCategory = null;
+      _selectedTopic = null;
+      _loadingHubs = true;
+    });
     final list = await _apiService.fetchResources(hub.id);
     setState(() { _resources = list; _filteredResources = list; _loadingHubs = false; });
   }
@@ -675,6 +705,54 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
       _showToast('File picker error: $e', isError: true);
     } finally {
       setState(() { _isUploading = false; _isLocalUploadActive = false; _uploadProgressName = ''; _uploadProgress = 0.0; });
+    }
+  }
+
+  Future<void> _uploadDirectFile(String filePath) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      _showToast('File not found: $filePath', isError: true);
+      return;
+    }
+    final filename = file.path.replaceAll('\\', '/').split('/').last;
+    setState(() {
+      _isUploading = true;
+      _uploadProgressName = filename;
+      _uploadProgress = 0.0;
+    });
+    final startTime = DateTime.now();
+    try {
+      final response = await _apiService.uploadFileDirect(
+        file: file,
+        filename: filename,
+        mode: _transferMode,
+        uploader: _serverService.deviceName.isNotEmpty ? _serverService.deviceName : 'Desktop',
+        onProgress: (sent, total) {
+          final elapsed = DateTime.now().difference(startTime).inSeconds;
+          final speedMbps = elapsed > 0 ? (sent * 8) / (elapsed * 1024 * 1024) : 0.0;
+          setState(() {
+            _uploadProgress = sent / total;
+            _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
+            _uploadEta = speedMbps > 0
+                ? '${((total - sent) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
+                : 'calculating...';
+          });
+        },
+      );
+      if (response.statusCode == 200) {
+        _showToast('Uploaded $filename successfully!');
+        _loadFiles();
+      } else {
+        _showToast('Failed to upload $filename', isError: true);
+      }
+    } catch (e) {
+      _showToast('Failed: $e', isError: true);
+    } finally {
+      setState(() {
+        _isUploading = false;
+        _uploadProgressName = '';
+        _uploadProgress = 0.0;
+      });
     }
   }
 
@@ -787,10 +865,8 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
       targetUrl = targetUrl.substring(0, targetUrl.length - 1);
     }
 
-    if (_connectedRemoteHubs.any((h) => h['url'] == targetUrl)) {
-      _showToast('Already connected to this device.', isError: true);
-      return 'Already connected';
-    }
+    // Remove existing if any to allow fresh reconnect/code validation
+    _connectedRemoteHubs.removeWhere((h) => h['url'] == targetUrl);
 
     try {
       final res = await http.get(Uri.parse('$targetUrl/api/connection/info?_t=${DateTime.now().millisecondsSinceEpoch}')).timeout(const Duration(seconds: 5));
@@ -845,12 +921,25 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     final baseUrl = remoteUrl ?? _connectionService.serverUrl;
     final sid = remoteToken ?? _connectionService.sessionId ?? '';
     final url = Uri.parse('$baseUrl/api/files/download/${Uri.encodeComponent(file.name)}?sid=$sid');
+    _showToast('Downloading "${file.name}"...');
     try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-      await _markFileDownloaded(file.name);
-      _showToast('Starting download...');
+      Directory? downloadsDir = await getDownloadsDirectory();
+      downloadsDir ??= await getApplicationDocumentsDirectory();
+      
+      final savePath = p.join(downloadsDir.path, file.name);
+      
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final localFile = File(savePath);
+        await localFile.writeAsBytes(response.bodyBytes);
+        
+        await _markFileDownloaded(file.name);
+        _showToast('Downloaded to: $savePath');
+      } else {
+        throw 'HTTP ${response.statusCode}';
+      }
     } catch (e) {
-      _showToast('Could not open download link', isError: true);
+      _showToast('Download failed: $e', isError: true);
     }
   }
 
@@ -995,10 +1084,12 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     onToggleSidebar: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
     onRequestAccessibility: _requestAccessibility,
     onShowToast: _showToast,
+    onRefreshHistory: _loadHistory,
     onDisconnectRemoteDevice: _disconnectRemoteDevice,
     connectedRemoteHubs: _connectedRemoteHubs,
     onConnectToRemoteHub: _connectToRemoteHub,
     onDisconnectRemoteHub: _disconnectRemoteHub,
+    onUploadFileDirect: _uploadDirectFile,
     formatBytes: _formatBytes,
   );
 
@@ -1033,9 +1124,10 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     final state = _buildState();
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
+          Positioned.fill(child: DesktopThemeBackground()),
           if (_serverService.hasCrashed)
             _DesktopCrashView(
               crashLog: _serverService.crashLog,
@@ -1068,7 +1160,14 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
                 // ── Sidebar ─────────────────────────────────────────────────
                 DesktopSidebar(
                   currentView: _currentView,
-                  onNavigate: (view) => setState(() => _currentView = view),
+                  onNavigate: (view) {
+                    setState(() {
+                      if (view != DesktopView.input) {
+                        _initialInputText = null;
+                      }
+                      _currentView = view;
+                    });
+                  },
                   state: state,
                 ),
 
@@ -1198,13 +1297,27 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
           onNavigate: (view) => setState(() => _currentView = view),
         );
       case DesktopView.resources:
-        return ResourcesView(state: state, searchController: _hubSearchController);
+        return ResourcesView(
+          state: state,
+          searchController: _hubSearchController,
+          selectedCategory: _selectedCategory,
+          selectedTopic: _selectedTopic,
+          onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
+          onTopicChanged: (topic) => setState(() => _selectedTopic = topic),
+          onNavigate: (view) => setState(() => _currentView = view),
+          onNavigateToInput: (text) {
+            setState(() {
+              _initialInputText = text;
+              _currentView = DesktopView.input;
+            });
+          },
+        );
       case DesktopView.history:
         return HomeView(state: state);
       case DesktopView.settings:
         return SettingsView(state: state);
       case DesktopView.input:
-        return InputView(state: state);
+        return InputView(state: state, initialText: _initialInputText);
       case DesktopView.terms:
         return SettingsView(state: state);
       case DesktopView.setupPermissions:
@@ -1336,7 +1449,7 @@ class _DesktopSplashView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: kSurface,
+      color: Colors.transparent,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

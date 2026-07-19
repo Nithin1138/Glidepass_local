@@ -19,10 +19,11 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasDevices = state.serverService.connectedDeviceNames.isNotEmpty;
+    final hasRemoteHubs = state.connectedRemoteHubs.isNotEmpty;
     final isRunning = state.serverService.isRunning;
     final isConnectedClient = state.connectionService.isConnected && !state.connectionService.isLocalConnection;
 
-    if ((isRunning && hasDevices) || isConnectedClient) {
+    if ((isRunning && (hasDevices || hasRemoteHubs)) || isConnectedClient) {
       return _ConnectedView(state: state);
     }
     return _WaitingView(state: state);
@@ -51,7 +52,9 @@ class _WaitingViewState extends State<_WaitingView> {
   @override
   void initState() {
     super.initState();
-    _discoverLocalDevices();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _discoverLocalDevices();
+    });
   }
 
   @override
@@ -329,42 +332,49 @@ class _WaitingViewState extends State<_WaitingView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: _showManual
-                      ? Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: kGlassCard,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Manual Connection',
-                                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
-                              const SizedBox(height: 4),
-                              Text('Enter connection details of another device directly.',
-                                  style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
-                              const SizedBox(height: 24),
-                              _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
-                              const SizedBox(height: 16),
-                              _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
-                              const SizedBox(height: 16),
-                              _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
-                              const SizedBox(height: 28),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: kPrimary,
-                                    foregroundColor: kSurfaceLowest,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _showManual
+                        ? Container(
+                            key: const ValueKey('waiting_manual_panel'),
+                            padding: const EdgeInsets.all(24),
+                            decoration: kGlassCard,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Manual Connection',
+                                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600, color: kOnSurface)),
+                                const SizedBox(height: 4),
+                                Text('Enter connection details of another device directly.',
+                                    style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant)),
+                                const SizedBox(height: 24),
+                                _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+                                const SizedBox(height: 16),
+                                _buildTextField('Device Name (Optional)', _manualNameController, 'Target Laptop'),
+                                const SizedBox(height: 16),
+                                _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+                                const SizedBox(height: 28),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: kPrimary,
+                                      foregroundColor: kSurfaceLowest,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: _connectManual,
+                                    child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                                   ),
-                                  onPressed: _connectManual,
-                                  child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          )
+                        : KeyedSubtree(
+                            key: const ValueKey('waiting_nearby_panel'),
+                            child: _buildNearbyPanel(),
                           ),
-                        )
-                      : _buildNearbyPanel(),
+                  ),
                 ),
                 const SizedBox(width: 40),
                 Expanded(
@@ -387,12 +397,11 @@ class _WaitingViewState extends State<_WaitingView> {
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(28),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 960),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -431,7 +440,7 @@ class _WaitingViewState extends State<_WaitingView> {
                         onPressed: () => setState(() => _showManual = !_showManual),
                         icon: Icon(_showManual ? LucideIcons.scan : LucideIcons.settings, size: 16),
                         label: Text(
-                          _showManual ? 'Back to Scanner' : 'Manual Setup',
+                          _showManual ? 'Nearby Devices' : 'Manual Setup',
                           style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
@@ -442,7 +451,6 @@ class _WaitingViewState extends State<_WaitingView> {
                 ],
               ),
             ),
-          ),
         );
       },
     );
@@ -522,12 +530,8 @@ class _WaitingViewState extends State<_WaitingView> {
               ),
             ),
           ] else ...[
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _discoveredDevices.length,
-              itemBuilder: (context, index) {
-                final d = _discoveredDevices[index];
+            Column(
+              children: _discoveredDevices.map((d) {
                 final nameLower = d['device_name'].toString().toLowerCase();
                 final isMobile = nameLower.contains('android') || 
                                  nameLower.contains('ios') || 
@@ -569,26 +573,6 @@ class _WaitingViewState extends State<_WaitingView> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
                                     ),
-                                    if (formattedCode.isNotEmpty) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: kPrimary.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: kPrimary.withOpacity(0.2)),
-                                        ),
-                                        child: Text(
-                                          formattedCode,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: kPrimary,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 2),
@@ -603,7 +587,7 @@ class _WaitingViewState extends State<_WaitingView> {
                     ),
                   ),
                 );
-              },
+              }).toList(),
             ),
           ],
         ],
@@ -857,11 +841,12 @@ class _ConnectedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text('Connected', style: kHeadlineLg),
+    return SizedBox.expand(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('Connected', style: kHeadlineLg),
           const SizedBox(width: 20),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -884,11 +869,9 @@ class _ConnectedView extends StatelessWidget {
         const SizedBox(height: 16),
 
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Left col (8/12) — hero + activity
+          // Left col (8/12) — hero
           Expanded(flex: 8, child: Column(children: [
             _DeviceHeroCard(state: state),
-            const SizedBox(height: 16),
-            _ActivityFeed(state: state),
           ])),
           const SizedBox(width: 16),
           // Right col (4/12) — quick actions + stats
@@ -898,8 +881,10 @@ class _ConnectedView extends StatelessWidget {
             _ConnectionStatsCard(state: state),
           ])),
         ]),
-      ]),
-    );
+      ],
+    ),
+  ),
+);
   }
 }
 
@@ -1171,9 +1156,10 @@ class _ScannerDialogState extends State<_ScannerDialog> {
       ),
       child: Container(
         width: 800,
+        height: 520,
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -1187,7 +1173,7 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                   onPressed: () => setState(() => _showManual = !_showManual),
                   icon: Icon(_showManual ? LucideIcons.scan : LucideIcons.settings, size: 14),
                   label: Text(
-                    _showManual ? 'Back to Scanner' : 'Manual Relay Connection',
+                    _showManual ? 'Nearby Devices' : 'Manual Relay Connection',
                     style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: kPrimary),
                   ),
                 ),
@@ -1206,50 +1192,57 @@ class _ScannerDialogState extends State<_ScannerDialog> {
               style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant),
             ),
             const SizedBox(height: 24),
-            _showManual
-                ? Center(
-                    child: Container(
-                      width: 500,
-                      padding: const EdgeInsets.all(24),
-                      decoration: kGlassCard,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
-                          const SizedBox(height: 12),
-                          _buildTextField('Device Name (Optional)', _manualNameController, 'Target Device'),
-                          const SizedBox(height: 12),
-                          _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kPrimary,
-                                foregroundColor: kSurfaceLowest,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: _connectManual,
-                              child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _showManual
+                    ? Center(
+                        key: const ValueKey('scanner_manual_form'),
+                        child: SingleChildScrollView(
+                          child: Container(
+                            width: 500,
+                            padding: const EdgeInsets.all(24),
+                            decoration: kGlassCard,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildTextField('Connection URL', _manualUrlController, 'http://192.168.0.106:8000'),
+                                const SizedBox(height: 12),
+                                _buildTextField('Device Name (Optional)', _manualNameController, 'Target Device'),
+                                const SizedBox(height: 12),
+                                _buildTextField('Pairing Code', _manualCodeController, '6-digit code', maxLength: 6),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: kPrimary,
+                                      foregroundColor: kSurfaceLowest,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: _connectManual,
+                                    child: Text('Connect Device', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
+                      )
+                    : KeyedSubtree(
+                        key: const ValueKey('scanner_nearby_list'),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildNearbyPanel()),
+                            const SizedBox(width: 24),
+                            Expanded(child: _buildQrPanel(qrData)),
+                          ],
+                        ),
                       ),
-                    ),
-                  )
-                : Flexible(
-                    child: SingleChildScrollView(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _buildNearbyPanel()),
-                          const SizedBox(width: 24),
-                          Expanded(child: _buildQrPanel(qrData)),
-                        ],
-                      ),
-                    ),
-                  ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1330,10 +1323,9 @@ class _ScannerDialogState extends State<_ScannerDialog> {
               ),
             ),
           ] else ...[
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _discoveredDevices.length,
+            Expanded(
+              child: ListView.builder(
+                itemCount: _discoveredDevices.length,
               itemBuilder: (context, index) {
                 final d = _discoveredDevices[index];
                 final nameLower = d['device_name'].toString().toLowerCase();
@@ -1413,11 +1405,12 @@ class _ScannerDialogState extends State<_ScannerDialog> {
                 );
               },
             ),
-          ],
+          ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   Widget _buildQrPanel(String qrData) {
     return Container(

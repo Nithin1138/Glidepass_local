@@ -17,6 +17,7 @@ import '../widgets/app_logo.dart';
 import '../config/theme.dart';
 import 'main_navigation_screen.dart';
 import '../widgets/glass_segmented_control.dart';
+import '../services/mobile_server_service.dart';
 
 class ConnectScreen extends StatefulWidget {
   final bool isAddingDevice;
@@ -44,6 +45,10 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _scannerLineController;
+  final MobileScannerController _scannerController = MobileScannerController(
+    autoStart: false,
+  );
+  bool _isScannerStarting = false;
 
   @override
   void initState() {
@@ -58,6 +63,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     )..repeat(reverse: true);
     
     _discoverLocalDevices(clear: true);
+    MobileServerService.isClientConnected.addListener(_onMobileServerConnectionChanged);
   }
 
   @override
@@ -69,6 +75,8 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     _sessionCodeController.dispose();
     _fadeController.dispose();
     _scannerLineController.dispose();
+    _scannerController.dispose();
+    MobileServerService.isClientConnected.removeListener(_onMobileServerConnectionChanged);
     super.dispose();
   }
 
@@ -272,9 +280,20 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
 
   Future<void> _startQRScan() async {
     _triggerHaptic();
+    if (_isScannerStarting) return; // prevent double-start
     final status = await Permission.camera.request();
     if (status.isGranted) {
-      setState(() => _isScanning = true);
+      setState(() {
+        _isScanning = true;
+        _isScannerStarting = true;
+      });
+      try {
+        await _scannerController.start();
+      } catch (_) {
+        // already starting or started — ignore
+      } finally {
+        if (mounted) setState(() => _isScannerStarting = false);
+      }
     } else {
       if (status.isDenied) {
         TopToast.show(context, 'Camera permission required to scan QR code', isError: true);
@@ -298,6 +317,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
       final barcodeValue = barcodes.first.rawValue;
       if (barcodeValue != null && barcodeValue.isNotEmpty) {
         setState(() => _isScanning = false);
+        _scannerController.stop();
 
         final uri = Uri.tryParse(barcodeValue.trim());
         if (uri != null) {
@@ -384,7 +404,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
                         final double bottomPadding = MediaQuery.of(context).padding.bottom;
                         
                         // Subtract a smaller offset so the card stretches all the way to the bottom
-                        final double topOffsets = statusBarHeight + 16 + 148 + 20 + 48 + 20 + bottomPadding + 8 + 56;
+                        final double topOffsets = statusBarHeight + 16 + 148 + 20 + 48 + 20 + bottomPadding + 8 + 56 + 36;
                         final double dynamicCardHeight = screenHeight - topOffsets;
                         final double cardHeight = dynamicCardHeight < 280 ? 280 : dynamicCardHeight;
 
@@ -502,11 +522,15 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         setState(() {
           _isScanning = false;
         });
+        _scannerController.stop();
       },
       child: Scaffold(
         body: Stack(
           children: [
-            MobileScanner(onDetect: _handleQRScanResult),
+            MobileScanner(
+              controller: _scannerController,
+              onDetect: _handleQRScanResult,
+            ),
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _scannerLineController,
@@ -530,7 +554,10 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               top: MediaQuery.of(context).padding.top + 10,
               right: 15,
               child: GestureDetector(
-                onTap: () => setState(() => _isScanning = false),
+                onTap: () {
+                  setState(() => _isScanning = false);
+                  _scannerController.stop();
+                },
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -586,6 +613,31 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             color: context.textMuted, 
             height: 1.4,
             fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.smartphone, color: context.accentColor, size: 11),
+              const SizedBox(width: 5),
+              Text(
+                'This Device Code: ${MobileServerService().sessionCode}',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1055,6 +1107,24 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       ),
     );
+  }
+
+  void _onMobileServerConnectionChanged() {
+    if (MobileServerService.isClientConnected.value && mounted) {
+      final ConnectionService cs = ConnectionService();
+      cs.setServerConnection(
+        'http://127.0.0.1:8000',
+        MobileServerService().sessionToken,
+        MobileServerService.connectedClientName.isNotEmpty 
+            ? MobileServerService.connectedClientName 
+            : 'LANpad Laptop',
+      );
+      
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        (route) => false,
+      );
+    }
   }
 }
 

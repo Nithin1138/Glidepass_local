@@ -79,9 +79,7 @@ class _AppLogoState extends State<AppLogo> with SingleTickerProviderStateMixin {
                 child: Padding(
                   padding: EdgeInsets.all(widget.size * 0.15),
                   child: Image.asset(
-                    Theme.of(context).brightness == Brightness.dark
-                        ? 'assets/logo_dark_theme.png'
-                        : 'assets/logo.png',
+                    'assets/logo.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(

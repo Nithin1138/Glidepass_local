@@ -62,16 +62,19 @@ class DesktopState {
   final Future<void> Function(SharedFile, {String? remoteUrl, String? remoteToken}) onDownloadFile;
   final Future<void> Function(SharedFile) onDeleteFile;
   final VoidCallback onDeleteAllFiles;
-  final Future<void> Function(Hub) onSelectHub;
+  final Future<void> Function(Hub?) onSelectHub;
   final ValueChanged<String> onFilterHubResources;
   final VoidCallback onOpenSettings;
   final VoidCallback onToggleSidebar;
   final VoidCallback onRequestAccessibility;
   final void Function(String, {bool isError}) onShowToast;
+  final Future<void> Function() onRefreshHistory;
   final ValueChanged<String> onDisconnectRemoteDevice;
   final List<Map<String, dynamic>> connectedRemoteHubs;
   final Future<String?> Function(String, String) onConnectToRemoteHub;
   final ValueChanged<String> onDisconnectRemoteHub;
+
+  final Future<void> Function(String filePath)? onUploadFileDirect;
 
   // ── Formatters ────────────────────────────────────────────────────
   final String Function(int bytes) formatBytes;
@@ -119,10 +122,12 @@ class DesktopState {
     required this.onToggleSidebar,
     required this.onRequestAccessibility,
     required this.onShowToast,
+    required this.onRefreshHistory,
     required this.onDisconnectRemoteDevice,
     required this.connectedRemoteHubs,
     required this.onConnectToRemoteHub,
     required this.onDisconnectRemoteHub,
+    this.onUploadFileDirect,
     required this.formatBytes,
   });
 

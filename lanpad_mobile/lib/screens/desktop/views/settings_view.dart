@@ -161,6 +161,26 @@ class _SettingsViewState extends State<SettingsView> {
                     }),
                 ]))),
               ]),
+              const SizedBox(height: 16),
+
+              // Full-width Theme Selector
+              _GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('VISUAL STYLE & THEME', style: GoogleFonts.inter(
+                      fontSize: 10, color: kPrimary, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    const SizedBox(height: 6),
+                    Text('Active Theme Accent', style: GoogleFonts.outfit(
+                      fontSize: 16, fontWeight: FontWeight.bold, color: kOnSurface)),
+                    const SizedBox(height: 4),
+                    Text('Choose the global interface style and accent colors.',
+                      style: GoogleFonts.inter(fontSize: 13, color: kOnSurfaceVariant)),
+                    const SizedBox(height: 20),
+                    _DesktopThemeSelector(),
+                  ],
+                ),
+              ),
               const SizedBox(height: 28),
 
               // ── Connection ────────────────────────────────────────
@@ -525,6 +545,122 @@ class _ThemeToggle extends StatelessWidget {
           }).toList()),
         );
       }
+    );
+  }
+}
+
+class _DesktopThemeSelector extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final themes = [
+      (
+        key: 'gemini',
+        name: 'Aether Glow',
+        desc: 'Shifting multi-color aurora (Default)',
+        colors: [const Color(0xFF4285F4), const Color(0xFF9C27F0), const Color(0xFFF94BA4)]
+      ),
+      (
+        key: 'arc',
+        name: 'Arc Space',
+        desc: 'Continuous playful hue-shifting mesh',
+        colors: [const Color(0xFFFF6F61), const Color(0xFF7C5CFF), const Color(0xFFFFC15E)]
+      ),
+      (
+        key: 'linear',
+        name: 'Monochrome',
+        desc: 'Restrained deep indigo periwinkle',
+        colors: [const Color(0xFF5E6AD2), const Color(0xFF8B93F0), const Color(0xFF17181C)]
+      ),
+      (
+        key: 'liquid_glass_blue',
+        name: 'Liquid Glass',
+        desc: 'Translucent frosted material',
+        colors: [const Color(0xFF3B82F6), const Color(0xFF22D3EE), const Color(0xFF030711)]
+      ),
+      (
+        key: 'spotify',
+        name: 'Neon Dark',
+        desc: 'Bold true black with neon green accent',
+        colors: [const Color(0xFF1ED760), const Color(0xFF2D46B9), const Color(0xFF000000)]
+      ),
+    ];
+
+    final current = DesktopThemeManager.instance.currentTheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useGrid = constraints.maxWidth > 580;
+        final cols = useGrid ? 3 : 2;
+        
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: themes.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: useGrid ? 3.6 : 3.0,
+          ),
+          itemBuilder: (context, index) {
+            final t = themes[index];
+            final isSelected = t.key == current;
+            return GestureDetector(
+              onTap: () {
+                DesktopThemeManager.instance.setTheme(t.key);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? kPrimary.withValues(alpha: 0.08) : kSurfaceLowest,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? kPrimary : kOutlineVariant.withValues(alpha: 0.4),
+                    width: isSelected ? 1.6 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Palette preview circle
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: t.colors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        t.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? kPrimary : kOnSurface,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(
+                        LucideIcons.check,
+                        color: kPrimary,
+                        size: 13,
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

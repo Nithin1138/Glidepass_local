@@ -15,11 +15,11 @@ class DesktopTopBar extends StatelessWidget {
     final connectedCount = state.serverService.connectedClientsCount;
 
     return Container(
-      height: 56,
+      height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: kSurface.withValues(alpha: 0.95),
-        border: Border(bottom: BorderSide(color: kOutlineVariant.withOpacity(0.35), width: 1)),
+        color: kSurface.withValues(alpha: 0.20),
+        border: Border(bottom: BorderSide(color: kOutlineVariant.withValues(alpha: 0.15), width: 1)),
       ),
       child: Row(children: [
         // Node status pill
@@ -37,21 +37,50 @@ class DesktopTopBar extends StatelessWidget {
           ]),
         ),
 
-        // Secure link badge
+        // Secure link / encryption status badge
         if (isRunning) ...[
           const SizedBox(width: 10),
           _StatusPill(
-            color: kPrimary.withValues(alpha: 0.08),
-            borderColor: kPrimary.withValues(alpha: 0.2),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.wifi, color: kPrimary, size: 12),
-              const SizedBox(width: 6),
-              Text('SECURE LINK ESTABLISHED',
-                style: GoogleFonts.inter(
-                  fontSize: 10, fontWeight: FontWeight.w600,
-                  color: kPrimary, letterSpacing: 0.8,
-                )),
-            ]),
+            color: state.apiService.encryptionEnabled
+                ? const Color(0xFF1B5E20).withValues(alpha: 0.15)
+                : const Color(0xFFB71C1C).withValues(alpha: 0.15),
+            borderColor: state.apiService.encryptionEnabled
+                ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+                : const Color(0xFFF44336).withValues(alpha: 0.3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  state.apiService.encryptionEnabled ? LucideIcons.shield : LucideIcons.shield_alert,
+                  color: state.apiService.encryptionEnabled ? const Color(0xFF81C784) : const Color(0xFFE57373),
+                  size: 13,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  state.apiService.encryptionEnabled ? 'ENCRYPTED' : 'UNENCRYPTED',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: state.apiService.encryptionEnabled ? const Color(0xFF81C784) : const Color(0xFFE57373),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              state.apiService.encryptionEnabled
+                  ? 'AES-256 secure channel (protects data, slightly lower speed)'
+                  : 'Max speed • Safe for home/mobile Wi-Fi (secure via pairing if needed)',
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                color: kOnSurfaceVariant.withValues(alpha: 0.6),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
 

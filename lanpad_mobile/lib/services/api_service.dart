@@ -7,6 +7,7 @@ import 'connection_service.dart';
 import '../models/history_model.dart';
 import '../models/file_model.dart';
 import '../models/resource_model.dart';
+import 'mobile_server_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -288,7 +289,14 @@ class ApiService {
   // --- File Sharing ---
 
   Future<List<SharedFile>> fetchFiles({bool showAll = false}) async {
-    final url = _buildUrl('/api/files/list', {'show_all': showAll ? 'true' : 'false'});
+    final Map<String, String> queryParams = {
+      'show_all': showAll ? 'true' : 'false',
+    };
+    if (Platform.isAndroid || Platform.isIOS) {
+      final friendlyName = await MobileServerService.getFriendlyDeviceName();
+      queryParams['client_device'] = friendlyName;
+    }
+    final url = _buildUrl('/api/files/list', queryParams);
     try {
       final response = await httpClient.get(Uri.parse(url));
       if (response.statusCode == 200) {

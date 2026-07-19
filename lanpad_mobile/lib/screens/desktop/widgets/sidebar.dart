@@ -26,8 +26,9 @@ class DesktopSidebar extends StatelessWidget {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       width: state.isSidebarOpen ? 280 : 64,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: kSurfaceContainer,
+        color: kSurfaceContainer.withValues(alpha: 0.35),
         border: Border(right: BorderSide(color: kOutlineVariant, width: 1)),
       ),
       child: Column(
@@ -134,6 +135,7 @@ class DesktopSidebar extends StatelessWidget {
                   const totalItemHeight = itemHeight + itemSpacing;
 
                   return Stack(
+                    clipBehavior: Clip.none,
                     children: [
                       if (activeIndex != -1)
                         AnimatedPositioned(
@@ -145,28 +147,40 @@ class DesktopSidebar extends StatelessWidget {
                           height: itemHeight,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: kSurfaceVariant,
-                              borderRadius: BorderRadius.circular(12),
+                              color: kPrimary.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: kPrimary.withValues(alpha: 0.40),
+                                width: 1,
+                              ),
                             ),
                           ),
                         ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _NavItem(icon: LucideIcons.house, label: 'Home', view: DesktopView.home,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.keyboard, label: 'Input', view: DesktopView.input,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.folder_sync, label: 'Transfer', view: DesktopView.files,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.book_open, label: 'Resources', view: DesktopView.resources,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.key, label: 'Licenses', view: DesktopView.licenses,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.shield_check, label: 'Permissions', view: DesktopView.setupPermissions,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.settings, label: 'Settings', view: DesktopView.settings,
-                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen),
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
                         ],
                       ),
                     ],
@@ -273,40 +287,62 @@ class _NavItem extends StatelessWidget {
   final DesktopView current;
   final ValueChanged<DesktopView> onTap;
   final bool isOpen;
+  final double itemHeight;
+  final double itemSpacing;
 
   const _NavItem({
     required this.icon, required this.label,
     required this.view, required this.current, required this.onTap, required this.isOpen,
+    required this.itemHeight, required this.itemSpacing,
   });
 
   @override
   Widget build(BuildContext context) {
     final isSelected = current == view;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: GestureDetector(
-        onTap: () => onTap(view),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: EdgeInsets.symmetric(horizontal: isOpen ? 16 : 11, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            child: Row(children: [
-              Icon(icon, size: 18, color: isSelected ? kPrimary : kOnSurfaceVariant),
-              if (isOpen) ...[
-                const SizedBox(width: 12),
-                Text(label, style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? kPrimary : kOnSurfaceVariant,
-                )),
+    final double leftPadding = isOpen ? 14.0 : 11.0;
+    
+    return SizedBox(
+      height: itemHeight + itemSpacing,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: itemSpacing),
+        child: GestureDetector(
+          onTap: () => onTap(view),
+          behavior: HitTestBehavior.opaque,
+          child: ClipRect(
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                // Icon (always visible, left position animates to center when closed)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  left: leftPadding,
+                  child: Icon(icon, size: 18, color: isSelected ? kPrimary : kOnSurfaceVariant),
+                ),
+                
+                // Label (fades in/out and slides based on isOpen)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  left: isOpen ? 44.0 : 64.0, // Slides in from right when opening
+                  width: 200,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: isOpen ? 1.0 : 0.0,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected ? kOnSurface : kOnSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            ]),
+            ),
           ),
         ),
       ),

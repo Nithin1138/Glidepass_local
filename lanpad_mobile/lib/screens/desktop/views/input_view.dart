@@ -9,7 +9,8 @@ import '../desktop_theme.dart';
 /// Premium Input Composer view matching the user's uploaded mock design.
 class InputView extends StatefulWidget {
   final DesktopState state;
-  const InputView({super.key, required this.state});
+  final String? initialText;
+  const InputView({super.key, required this.state, this.initialText});
 
   @override
   State<InputView> createState() => _InputViewState();
@@ -17,23 +18,90 @@ class InputView extends StatefulWidget {
 
 class _InputViewState extends State<InputView> {
   final _controller = TextEditingController();
+  late final FocusNode _focusNode;
   String _selectedMode = 'Flash'; // 'Flash', 'Type', 'Inject', 'Live Sync'
   int _wpm = 120;
   bool _isCoding = false;
+  bool _showHistory = false;
+
+  String? _selectedTargetDevice;
 
   int _line = 1;
   int _col = 1;
   int _chars = 0;
   int _lines = 1;
 
+  bool _isMobileDevice(String name) {
+    final n = name.toLowerCase();
+    return n.contains('android') ||
+           n.contains('ios') ||
+           n.contains('phone') ||
+           n.contains('mobile') ||
+           n.contains('oneplus') ||
+           n.contains('pixel') ||
+           n.contains('galaxy') ||
+           n.contains('iphone') ||
+           n.contains('ipad') ||
+           n.startsWith('cph') ||
+           n.startsWith('sm-');
+  }
+
+  List<String> _getConnectedDesktops() {
+    final allConnectedDevices = [
+      if (widget.state.connectionService.isConnected && widget.state.connectionService.connectedDeviceName != null)
+        widget.state.connectionService.connectedDeviceName!,
+      ...widget.state.serverService.connectedDeviceNames,
+      ...widget.state.connectedRemoteHubs.map((h) => h['name'] as String),
+    ];
+    return allConnectedDevices.where((d) => !_isMobileDevice(d)).toList();
+  }
+
+  List<String> _getConnectedMobiles() {
+    final allConnectedDevices = [
+      if (widget.state.connectionService.isConnected && widget.state.connectionService.connectedDeviceName != null)
+        widget.state.connectionService.connectedDeviceName!,
+      ...widget.state.serverService.connectedDeviceNames,
+      ...widget.state.connectedRemoteHubs.map((h) => h['name'] as String),
+    ];
+    return allConnectedDevices.where((d) => _isMobileDevice(d)).toList();
+  }
+
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.numpadEnter;
+          final isMetaPressed = HardwareKeyboard.instance.isMetaPressed ||
+              HardwareKeyboard.instance.isControlPressed;
+          if (isEnter && isMetaPressed) {
+            _sendText();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+    );
     _controller.addListener(_updateEditorStats);
+    if (widget.initialText != null) {
+      _controller.text = widget.initialText!;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.state.onRefreshHistory();
+      final desktops = _getConnectedDesktops();
+      if (desktops.isNotEmpty && _selectedTargetDevice == null) {
+        setState(() {
+          _selectedTargetDevice = desktops.first;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.removeListener(_updateEditorStats);
     _controller.dispose();
     super.dispose();
@@ -80,6 +148,7 @@ class _InputViewState extends State<InputView> {
       );
       widget.state.onShowToast('Text sent successfully');
       _controller.clear();
+      widget.state.onRefreshHistory();
     } catch (e) {
       widget.state.onShowToast('Failed to send: $e', isError: true);
     }
@@ -88,14 +157,10 @@ class _InputViewState extends State<InputView> {
   @override
   Widget build(BuildContext context) {
     final isRunning = widget.state.serverService.isRunning;
-    final isConnected = widget.state.connectionService.isConnected;
-    final connectedName = widget.state.connectionService.connectedDeviceName ?? '';
-    final isMobile = connectedName.toLowerCase().contains('android') ||
-                     connectedName.toLowerCase().contains('ios') ||
-                     connectedName.toLowerCase().contains('phone') ||
-                     connectedName.toLowerCase().contains('mobile');
+    final desktops = _getConnectedDesktops();
+    final mobiles = _getConnectedMobiles();
 
-    if (isConnected && isMobile) {
+    if (desktops.isEmpty && mobiles.isNotEmpty) {
       return Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -152,6 +217,137 @@ class _InputViewState extends State<InputView> {
       );
     }
 
+    final double screenHeight = MediaQuery.of(context).size.height;
+    // Calculate a comfortable dynamic height for the editor container
+    final double editorHeight = (screenHeight - 380).clamp(260.0, 600.0);
+
+    final Widget leftColumnContent = _selectedMode == 'Type'
+        ? SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  _buildEditorContainer(height: editorHeight),
+                  const SizedBox(height: 20),
+                  _buildControlsAndSettings(isRunning),
+                ],
+              ),
+            ),
+          )
+        : Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _buildEditorContainer(),
+                ),
+                const SizedBox(height: 20),
+                _buildControlsAndSettings(isRunning),
+              ],
+            ),
+          );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Left Column: Editor and Mode Controls (Flex 8) ──────────────────────
+        Expanded(
+          flex: 8,
+          child: leftColumnContent,
+        ),
+
+        // ── Right Column: Recent Snippets & Tips (Flex 3) ───────────────────────
+        if (_showHistory)
+          Container(
+            width: 320,
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: kOutlineVariant)),
+              color: kSurfaceLow,
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('RECENT SNIPPETS',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: kOnSurfaceVariant,
+                        letterSpacing: 1.2)),
+                const SizedBox(height: 16),
+
+                // Snippet List
+                Expanded(
+                  child: widget.state.history.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No recent snippets',
+                            style: GoogleFonts.inter(fontSize: 12, color: kOnSurfaceVariant),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: widget.state.history.length,
+                          itemBuilder: (context, index) {
+                            final snippet = widget.state.history[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                snippet.content,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(fontSize: 12, color: kOnSurface),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(LucideIcons.copy, size: 14),
+                                onPressed: () {
+                                  _controller.text = snippet.content;
+                                  widget.state.onShowToast('Snippet loaded');
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                const SizedBox(height: 24),
+
+                // Pro Tip Box
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kSurfaceContainer.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kOutlineVariant),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(LucideIcons.info, size: 16, color: kPrimary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('PRO TIP',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.bold, color: kOnSurface)),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Use Cmd+Enter to quickly dispatch the current buffer using the selected mode.',
+                              style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildEditorContainer({double? height}) {
     return Container(
       height: height,
@@ -187,8 +383,92 @@ class _InputViewState extends State<InputView> {
                           style: GoogleFonts.inter(
                               fontSize: 11,
                               color: kOnSurfaceVariant.withOpacity(0.5))),
+                      
+                      // Target Device Selector
+                      Builder(builder: (context) {
+                        final desktops = _getConnectedDesktops();
+                        if (desktops.length > 1) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Container(
+                              height: 26,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.isDark ? const Color(0xFF1B2026) : const Color(0xFFF0F2F5),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: kOutlineVariant),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedTargetDevice ?? (desktops.isNotEmpty ? desktops.first : null),
+                                  dropdownColor: AppTheme.isDark ? const Color(0xFF13171C) : Colors.white,
+                                  icon: const Padding(
+                                    padding: EdgeInsets.only(left: 4),
+                                    child: Icon(LucideIcons.chevron_down, size: 10),
+                                  ),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: kOnSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  items: desktops.map((d) => DropdownMenuItem(
+                                    value: d,
+                                    child: Text(d),
+                                  )).toList(),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _selectedTargetDevice = val;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (desktops.length == 1) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.isDark ? const Color(0xFF1B2026) : const Color(0xFFF0F2F5),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: kOutlineVariant),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.monitor, size: 11, color: kPrimary),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    desktops.first,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: kOnSurface,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }),
                     ],
                   ),
+                ),
+                 IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _showHistory = !_showHistory;
+                    });
+                  },
+                  icon: Icon(
+                    LucideIcons.history,
+                    size: 16,
+                    color: _showHistory ? kPrimary : kOnSurfaceVariant,
+                  ),
+                  tooltip: _showHistory ? 'Hide History' : 'Show History',
                 ),
                 IconButton(
                   onPressed: () {
@@ -199,58 +479,86 @@ class _InputViewState extends State<InputView> {
                   tooltip: 'Copy Buffer',
                 ),
                 IconButton(
-                  onPressed: () {
-                    _controller.clear();
-                  },
-                  icon: Icon(LucideIcons.trash_2, size: 16, color: kOnSurfaceVariant),
+                  onPressed: _controller.clear,
+                  icon: Icon(LucideIcons.trash_2, size: 16, color: kError),
                   tooltip: 'Clear Buffer',
                 ),
               ],
             ),
           ),
 
-          // Editor Text Field
+          // Editor Area
           Expanded(
-            child: TextField(
-              controller: _controller,
-              maxLines: null,
-              expands: true,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: kOnSurface,
-                height: 1.6,
-                fontWeight: FontWeight.w400,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Enter commands, notes, or raw text to transfer...',
-                hintStyle: GoogleFonts.inter(
-                    color: kOnSurfaceVariant.withOpacity(0.5),
-                    fontSize: 14),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(20),
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Line Numbers
+                Container(
+                  width: 46,
+                  padding: const EdgeInsets.only(top: 16, right: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.isDark ? const Color(0xFF0C0E11) : const Color(0xFFF8F9FA),
+                    border: Border(right: BorderSide(color: kOutlineVariant)),
+                  ),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: _lines,
+                    itemBuilder: (context, i) => Text(
+                      '${i + 1}',
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.firaCode(
+                        fontSize: 11,
+                        color: kOnSurfaceVariant.withOpacity(0.35),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Text Field Area
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    style: GoogleFonts.firaCode(
+                      fontSize: 13,
+                      color: kOnSurface,
+                      height: 1.5,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Type, paste, or drag files here to start streaming...',
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: kOnSurfaceVariant.withOpacity(0.35),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // Editor Footer
+          // Editor Status Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
+              color: AppTheme.isDark ? const Color(0xFF0C0E11) : const Color(0xFFF8F9FA),
               border: Border(top: BorderSide(color: kOutlineVariant)),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Ln $_line, Col $_col',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: kOnSurfaceVariant)),
-                const Spacer(),
-                Text('CHARS: $_chars',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: kOnSurfaceVariant)),
-                const SizedBox(width: 16),
-                Text('LINES: $_lines',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: kOnSurfaceVariant)),
+                Text(
+                  'Ln $_line, Col $_col',
+                  style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant),
+                ),
+                Text(
+                  '$_chars chars, $_lines lines',
+                  style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant),
+                ),
               ],
             ),
           ),
@@ -443,161 +751,6 @@ class _InputViewState extends State<InputView> {
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  final double screenHeight = MediaQuery.of(context).size.height;
-  // Calculate a comfortable dynamic height for the editor container
-  final double editorHeight = (screenHeight - 380).clamp(260.0, 600.0);
-
-  final Widget leftColumnContent = _selectedMode == 'Type'
-      ? SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                _buildEditorContainer(height: editorHeight),
-                const SizedBox(height: 20),
-                _buildControlsAndSettings(isRunning),
-              ],
-            ),
-          ),
-        )
-      : Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: _buildEditorContainer(),
-              ),
-              const SizedBox(height: 20),
-              _buildControlsAndSettings(isRunning),
-            ],
-          ),
-        );
-
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // ── Left Column: Editor and Mode Controls (Flex 8) ──────────────────────
-      Expanded(
-        flex: 8,
-        child: leftColumnContent,
-      ),
-
-        // ── Right Column: Recent Snippets & Tips (Flex 3) ───────────────────────
-        Container(
-          width: 320,
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: kOutlineVariant)),
-            color: kSurfaceLow,
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('RECENT SNIPPETS',
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: kOnSurfaceVariant,
-                      letterSpacing: 1.2)),
-              const SizedBox(height: 16),
-
-              // Snippet List
-              Expanded(
-                child: widget.state.loadingHistory
-                    ? const Center(child: CircularProgressIndicator())
-                    : widget.state.history.isEmpty
-                        ? Center(
-                            child: Text('No snippets yet',
-                                style: GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 13)),
-                          )
-                        : ListView.builder(
-                            itemCount: widget.state.history.length > 5 ? 5 : widget.state.history.length,
-                            itemBuilder: (context, i) {
-                              final item = widget.state.history[i];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: InkWell(
-                                  onTap: () {
-                                    _controller.text = item.content;
-                                  },
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.isDark ? const Color(0xFF0F1216) : const Color(0xFFFFFFFF),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: kOutlineVariant),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(item.mode.toUpperCase(),
-                                                style: GoogleFonts.inter(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: kSecondary)),
-                                            Text(item.timestamp,
-                                                style: GoogleFonts.inter(
-                                                    fontSize: 10, color: kOnSurfaceVariant)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          item.content,
-                                          style: GoogleFonts.inter(fontSize: 12, color: kOnSurface, height: 1.4),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-              ),
-
-              // Pro Tip Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: kSurfaceContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kOutlineVariant),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(LucideIcons.info, size: 16, color: kPrimary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('PRO TIP',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11, fontWeight: FontWeight.bold, color: kOnSurface)),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Use Cmd+Enter to quickly dispatch the current buffer using the selected mode.',
-                            style: GoogleFonts.inter(fontSize: 11, color: kOnSurfaceVariant, height: 1.4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

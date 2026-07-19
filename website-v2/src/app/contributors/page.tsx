@@ -892,12 +892,12 @@ function ContributorsDashboard() {
       <nav className={`shrink-0 border-b ${borderLight} backdrop-blur-xl ${dk ? 'bg-black/50' : 'bg-white/50'} z-45`}>
         <div className="px-4 md:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 font-outfit font-black tracking-tighter truncate">
-            <div className={`shrink-0 w-8 h-8 rounded-lg overflow-hidden border ${dk ? 'border-white/10' : 'border-black/10'} ${dk ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
+            <div className={`shrink-0 w-9 h-9 rounded-xl overflow-hidden`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
                 alt="LANpad Logo"
-                className={`w-[120%] h-[120%] object-contain scale-125 transition-all duration-500 ${dk ? 'invert' : ''}`}
+                className="w-full h-full object-cover"
               />
             </div>
             <span className={`text-base md:text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r ${dk ? 'from-white to-white/60' : 'from-black to-black/60'} truncate`}>

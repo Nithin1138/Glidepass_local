@@ -35,7 +35,7 @@ class _FilesScreenState extends State<FilesScreen> {
   String _uploadSpeed = '';
   String _uploadEta = '';
   
-  String _transferMode = 'parallel'; // 'parallel', 'inbox'
+  String _transferMode = 'inbox'; // 'parallel', 'inbox'
   final Set<String> _downloadedFileNames = {};
 
   @override
@@ -319,9 +319,9 @@ class _FilesScreenState extends State<FilesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      _buildTransferModeButton('parallel', LucideIcons.zap, 'Parallel Mode'),
-                      const SizedBox(width: 12),
                       _buildTransferModeButton('inbox', LucideIcons.inbox, 'Inbox Mode'),
+                      const SizedBox(width: 12),
+                      _buildTransferModeButton('parallel', LucideIcons.zap, 'Parallel Mode'),
                     ],
                   ),
                 ),
@@ -413,26 +413,36 @@ class _FilesScreenState extends State<FilesScreen> {
                         ? Center(
                             child: CircularProgressIndicator(color: AppTheme.accentColor),
                           )
-                        : _files.isEmpty
-                            ? Center(
+                        : (() {
+                            final filteredFiles = _files.where((f) {
+                              if (_transferMode == 'parallel') return !f.inbox;
+                              return f.inbox;
+                            }).toList();
+
+                            if (filteredFiles.isEmpty) {
+                              return Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(LucideIcons.inbox, size: 40, color: context.textMuted),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'No shared files in this session',
+                                      _transferMode == 'parallel'
+                                          ? 'No parallel files shared yet'
+                                          : 'No inbox files waiting',
                                       style: TextStyle(color: context.textMuted, fontSize: 13),
                                     ),
                                   ],
                                 ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 140), // padding to clear bottom navigation bar
-                                itemCount: _files.length,
-                                itemBuilder: (context, index) {
-                                  final file = _files[index];
-                                  final isDownloaded = _downloadedFileNames.contains(file.name);
+                              );
+                            }
+
+                            return ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 140),
+                              itemCount: filteredFiles.length,
+                              itemBuilder: (context, index) {
+                                final file = filteredFiles[index];
+                                final isDownloaded = _downloadedFileNames.contains(file.name);
                                   
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 12.0),
@@ -468,9 +478,39 @@ class _FilesScreenState extends State<FilesScreen> {
                                                   ],
                                                 ),
                                                 const SizedBox(height: 4),
-                                                Text(
-                                                  _formatBytes(file.size),
-                                                  style: TextStyle(fontSize: 10, color: context.textMuted),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      _formatBytes(file.size),
+                                                      style: TextStyle(fontSize: 10, color: context.textMuted),
+                                                    ),
+                                                    if (_transferMode == 'inbox' && file.uploadedBy != null && file.uploadedBy!.isNotEmpty) ...[
+                                                      const SizedBox(width: 8),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: AppTheme.accentColor.withOpacity(0.1),
+                                                          borderRadius: BorderRadius.circular(20),
+                                                          border: Border.all(color: AppTheme.accentColor.withOpacity(0.25)),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Icon(LucideIcons.user_round, size: 9, color: AppTheme.accentColor),
+                                                            const SizedBox(width: 3),
+                                                            Text(
+                                                              file.uploadedBy!,
+                                                              style: TextStyle(
+                                                                fontSize: 9,
+                                                                color: AppTheme.accentColor,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
                                                 ),
                                               ],
                                             ),
@@ -519,7 +559,8 @@ class _FilesScreenState extends State<FilesScreen> {
                                     ),
                                   );
                                 },
-                              ),
+                              );
+                            })(),
                   ),
                 ),
               ],

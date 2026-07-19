@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../services/connection_service.dart';
 import '../services/api_service.dart';
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  Timer? _statusCheckTimer;
 
   @override
   void initState() {
@@ -51,17 +53,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _pulseAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _statusCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_connectionService.isConnected && mounted) {
+        _connectionService.checkConnection().then((alive) {
+          if (!alive && mounted) {
+            _connectionService.disconnect();
+            _showToast('Session ended by host.');
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _connectionService.removeListener(_onConnectionChanged);
     _pulseController.dispose();
+    _statusCheckTimer?.cancel();
     super.dispose();
   }
 
   void _onConnectionChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      if (!_connectionService.isConnected) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const ConnectScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> _loadStats() async {

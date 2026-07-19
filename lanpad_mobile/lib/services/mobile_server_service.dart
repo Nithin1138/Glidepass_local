@@ -2,11 +2,15 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class MobileServerService {
   static final MobileServerService _instance = MobileServerService._internal();
   factory MobileServerService() => _instance;
   MobileServerService._internal();
+
+  static final ValueNotifier<bool> isClientConnected = ValueNotifier<bool>(false);
+  static String connectedClientName = '';
 
   HttpServer? _server;
   String _sessionToken = '';
@@ -15,9 +19,48 @@ class MobileServerService {
   String get sessionToken => _sessionToken;
   String get sessionCode => _sessionToken.length >= 6 ? _sessionToken.substring(_sessionToken.length - 6) : _sessionToken;
 
+  static Future<String> getFriendlyDeviceName() async {
+    final deviceInfo = DeviceInfoPlugin();
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        final brand = androidInfo.brand;
+        final model = androidInfo.model;
+        final friendlyBrand = brand.isNotEmpty ? '${brand[0].toUpperCase()}${brand.substring(1)}' : '';
+        return friendlyBrand.isNotEmpty ? '$friendlyBrand $model' : model;
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.name;
+      } else if (Platform.isMacOS) {
+        final macInfo = await deviceInfo.macOsInfo;
+        return macInfo.computerName;
+      }
+    } catch (e) {
+      debugPrint('Failed to get device info: $e');
+    }
+    
+    var friendlyName = Platform.localHostname;
+    if (friendlyName.endsWith('.local')) {
+      friendlyName = friendlyName.substring(0, friendlyName.length - 6);
+    }
+    friendlyName = friendlyName.replaceAll('-', ' ').replaceAll('_', ' ');
+    friendlyName = friendlyName.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      return '${word[0].toUpperCase()}${word.substring(1)}';
+    }).join(' ');
+    
+    return friendlyName.trim().isNotEmpty 
+        ? friendlyName 
+        : (Platform.isAndroid ? 'Android Device' : 'iOS Device');
+  }
+
   Future<void> start() async {
     if (!Platform.isAndroid && !Platform.isIOS) return;
     if (_server != null) return;
+
+    // Reset pairing notifier on start
+    isClientConnected.value = false;
+    connectedClientName = '';
 
     // Generate random 6 digit numeric code or random token
     final rand = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
@@ -54,7 +97,7 @@ class MobileServerService {
         }
 
         if (path == '/api/connection/info') {
-          final friendlyName = Platform.isAndroid ? 'Android Device' : 'iOS Device';
+          final friendlyName = await getFriendlyDeviceName();
           final responseData = {
             'status': 'success',
             'device_name': friendlyName,
@@ -66,6 +109,18 @@ class MobileServerService {
             ..statusCode = 200
             ..headers.contentType = ContentType.json
             ..write(jsonEncode(responseData));
+          await request.response.close();
+        } else if (path == '/api/files/list') {
+          // If the desktop client lists files, we know it has paired successfully!
+          final sid = request.uri.queryParameters['sid'];
+          if (sid == _sessionToken || sid == sessionCode) {
+            MobileServerService.isClientConnected.value = true;
+            MobileServerService.connectedClientName = 'LANpad Laptop';
+          }
+          request.response
+            ..statusCode = 200
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode({'status': 'success', 'files': []}));
           await request.response.close();
         } else if (path == '/api/connections') {
           request.response

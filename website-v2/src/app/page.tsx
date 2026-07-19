@@ -180,9 +180,9 @@ const Navbar = ({ globalMouseX, globalMouseY }: { globalMouseX: any; globalMouse
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="fixed top-6 left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/75 rounded-[32px] border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] font-dmsans"
     >
-      <div className="clay-card px-6 py-2.5 flex items-center gap-2.5">
-        <img src="/logo.png" alt="LANpad Logo" className="w-8 h-8 object-contain rounded-full shadow-sm" />
-        <span className="font-rubik font-black text-xl tracking-tight text-gray-900">LANpad</span>
+      <div className="flex items-center gap-3">
+        <img src="/logo.png" alt="LANpad Logo" className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-2xl shrink-0" />
+        <span className="font-rubik font-black text-xl md:text-2xl tracking-tight text-gray-900">LANpad</span>
       </div>
 
       <div className="hidden lg:flex items-center gap-5 xl:gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
@@ -1677,7 +1677,7 @@ export default function Home() {
             {/* Brand Column */}
             <div className="col-span-2">
               <div className="flex items-center gap-4 font-rubik font-black text-xl md:text-2xl tracking-tighter mb-8 text-gray-900">
-                <img src="/logo.png" alt="LANpad Logo" className="w-12 h-12 object-contain rounded-xl shadow-md" />
+                <img src="/logo.png" alt="LANpad Logo" className="w-14 h-14 object-cover rounded-2xl" />
                 <span className="mt-1">LANPAD</span>
               </div>
               <p className="text-sm text-gray-500 font-bold max-w-xs leading-relaxed mb-8">

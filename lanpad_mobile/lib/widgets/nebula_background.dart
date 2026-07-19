@@ -20,18 +20,18 @@ class _NebulaBackgroundState extends State<NebulaBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 40),
+      duration: const Duration(seconds: 25), // slightly faster, smoother morphing
     )..repeat();
 
-    // Generate random stars for dark mode
-    for (int i = 0; i < 60; i++) {
+    // Generate random stars for neon dark space field
+    for (int i = 0; i < 70; i++) {
       _stars.add(
         Star(
           x: _random.nextDouble(),
           y: _random.nextDouble(),
-          size: _random.nextDouble() * 2 + 0.5,
-          opacity: _random.nextDouble() * 0.7 + 0.3,
-          speed: _random.nextDouble() * 0.02 + 0.005,
+          size: _random.nextDouble() * 1.8 + 0.6,
+          opacity: _random.nextDouble() * 0.6 + 0.4,
+          speed: _random.nextDouble() * 0.015 + 0.005,
         ),
       );
     }
@@ -50,19 +50,20 @@ class _NebulaBackgroundState extends State<NebulaBackground>
       builder: (context, child) {
         final isDark = context.isDark;
 
+        // Base Neon Dark Gradient (Obsidian to Midnight Obsidian)
         final decoration = isDark
             ? const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF000511),
-                    Color(0xFF021024),
-                    Color(0xFF052659),
-                    Color(0xFF021024),
-                    Color(0xFF000511),
+                    Color(0xFF030303), // pure obsidian
+                    Color(0xFF080D1A), // deep space midnight
+                    Color(0xFF04060C),
+                    Color(0xFF0C081A), // hints of deep violet-black
+                    Color(0xFF030303),
                   ],
-                  stops: [0.0, 0.25, 0.55, 0.8, 1.0],
+                  stops: [0.0, 0.3, 0.55, 0.8, 1.0],
                 ),
               )
             : const BoxDecoration(
@@ -70,36 +71,85 @@ class _NebulaBackgroundState extends State<NebulaBackground>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFFFDFBF7),
-                    Color(0xFFEBF0F5),
+                    Color(0xFFFBFDFF),
+                    Color(0xFFF0F4F8),
                   ],
                 ),
               );
 
+        // Sinusoidal path coordinates for fluid organic motion
+        final double progress = _controller.value * 2 * pi;
+        final double x1 = sin(progress) * 80;
+        final double y1 = cos(progress) * 80;
+        final double x2 = cos(progress + pi / 2) * 90;
+        final double y2 = sin(progress + pi / 2) * 90;
+        final double x3 = sin(progress * 1.5) * 60;
+        final double y3 = cos(progress * 1.5) * 60;
+
         return Stack(
           children: [
-            // Base Background Silk Wave
+            // Base Background
             AnimatedContainer(
-              duration: const Duration(milliseconds: 600),
+              duration: const Duration(milliseconds: 400),
               curve: Curves.easeInOut,
               decoration: decoration,
               width: double.infinity,
               height: double.infinity,
             ),
             
-            // Nebula 1 (Glowing Theme Accent)
+            // Neon Orb 1: Electric Emerald Green (Left-center, drifts right/down)
             Positioned(
-              top: -150 + sin(_controller.value * 2 * pi) * 50,
-              left: -150 + cos(_controller.value * 2 * pi) * 50,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 600),
+              left: 40 + x1,
+              top: 100 + y1,
+              child: Container(
+                width: 600,
+                height: 600,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF00FF88).withValues(alpha: isDark ? 0.09 : 0.05),
+                      const Color(0xFF10B981).withValues(alpha: isDark ? 0.03 : 0.02),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Neon Orb 2: Electric Cyan (Right-center, drifts left/up)
+            Positioned(
+              right: 60 + x2,
+              bottom: 120 + y2,
+              child: Container(
+                width: 550,
+                height: 550,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF00F2FF).withValues(alpha: isDark ? 0.08 : 0.04),
+                      const Color(0xFF0077FF).withValues(alpha: isDark ? 0.02 : 0.01),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Neon Orb 3: Deep Cyber Purple / Magenta (Top-Right, morphs)
+            Positioned(
+              right: -50 + x3,
+              top: -50 + y3,
+              child: Container(
                 width: 500,
                 height: 500,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      context.accentColor.withOpacity(isDark ? 0.18 : 0.12),
+                      const Color(0xFFBD00FF).withValues(alpha: isDark ? 0.07 : 0.03),
+                      const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.02 : 0.01),
                       Colors.transparent,
                     ],
                   ),
@@ -107,29 +157,7 @@ class _NebulaBackgroundState extends State<NebulaBackground>
               ),
             ),
             
-            // Nebula 2 (Glowing Indigo/Sky)
-            Positioned(
-              bottom: -100 + cos(_controller.value * 2 * pi + 1) * 60,
-              right: -100 + sin(_controller.value * 2 * pi + 1) * 60,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 600),
-                width: 450,
-                height: 450,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      (isDark 
-                          ? const Color(0x26C7EEFF) 
-                          : context.accentColor.withOpacity(0.08)),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            
-            // Stars Particle Field (Only drawn in Dark mode)
+            // Particle Stars Field
             if (isDark)
               CustomPaint(
                 painter: StarsPainter(
@@ -180,7 +208,8 @@ class StarsPainter extends CustomPainter {
       final double dx = star.x * size.width;
       final double dy = currentY * size.height;
 
-      paint.color = Colors.white.withOpacity(star.opacity);
+      // Soft glow effect on the stars
+      paint.color = Colors.white.withValues(alpha: star.opacity);
       canvas.drawCircle(Offset(dx, dy), star.size, paint);
     }
   }
