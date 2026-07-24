@@ -556,6 +556,8 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
                           onPressed: () => Navigator.of(ctx).pop(),
                           child: Text(
                             'Later',
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ],
                     ),

@@ -386,8 +386,15 @@ class _InputViewState extends State<InputView> {
                       
                       // Target Device Selector
                       Builder(builder: (context) {
+                        final allDevices = [
+                          if (widget.state.connectionService.isConnected && widget.state.connectionService.connectedDeviceName != null)
+                            widget.state.connectionService.connectedDeviceName!,
+                          ...widget.state.serverService.connectedDeviceNames,
+                          ...widget.state.connectedRemoteHubs.map((h) => h['name'] as String),
+                        ];
                         final desktops = _getConnectedDesktops();
-                        if (desktops.length > 1) {
+
+                        if (allDevices.isNotEmpty) {
                           return Padding(
                             padding: const EdgeInsets.only(left: 16),
                             child: Container(
@@ -411,43 +418,38 @@ class _InputViewState extends State<InputView> {
                                     color: kOnSurface,
                                     fontWeight: FontWeight.w600,
                                   ),
-                                  items: desktops.map((d) => DropdownMenuItem(
-                                    value: d,
-                                    child: Text(d),
-                                  )).toList(),
+                                  items: allDevices.map((d) {
+                                    bool isMobile = _isMobileDevice(d);
+                                    return DropdownMenuItem<String>(
+                                      value: d,
+                                      enabled: !isMobile,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isMobile ? LucideIcons.smartphone : LucideIcons.monitor, 
+                                            size: 11, 
+                                            color: isMobile ? kOnSurfaceVariant.withOpacity(0.5) : kPrimary
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            d,
+                                            style: TextStyle(
+                                              color: isMobile ? kOnSurfaceVariant.withOpacity(0.5) : kOnSurface
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                                   onChanged: (val) {
-                                    setState(() {
-                                      _selectedTargetDevice = val;
-                                    });
+                                    if (val != null) {
+                                      setState(() {
+                                        _selectedTargetDevice = val;
+                                      });
+                                    }
                                   },
                                 ),
-                              ),
-                            ),
-                          );
-                        } else if (desktops.length == 1) {
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 16),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppTheme.isDark ? const Color(0xFF1B2026) : const Color(0xFFF0F2F5),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: kOutlineVariant),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(LucideIcons.monitor, size: 11, color: kPrimary),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    desktops.first,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: kOnSurface,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           );
