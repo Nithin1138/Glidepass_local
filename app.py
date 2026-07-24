@@ -1077,6 +1077,13 @@ def _check_mac_accessibility_and_prompt():
         )
         app_services.AXIsProcessTrusted.restype = ctypes.c_bool
         if not app_services.AXIsProcessTrusted():
+            import os, tempfile
+            lock_file = os.path.join(tempfile.gettempdir(), "lanpad_accessibility_prompt.lock")
+            if os.path.exists(lock_file):
+                return False
+            with open(lock_file, "w") as f:
+                f.write("1")
+                
             script = (
                 'display alert "LANpad Needs Permissions" '
                 'message "To auto-type or paste text from your phone, '
@@ -1090,7 +1097,7 @@ def _check_mac_accessibility_and_prompt():
                 '  open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"\n'
                 'end if'
             )
-            os.system(f"osascript -e '{script}' &")
+            os.system(f"osascript -e '{script}' ; rm -f {lock_file} &")
             return False
         return True
     except Exception:

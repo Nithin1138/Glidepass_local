@@ -120,6 +120,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
 
   // ── Misc ──────────────────────────────────────────────────────────
   bool _hasAccessibilityPermission = true;
+  bool _isPermissionDialogOpen = false;
   bool _hasAcceptedAgreement = true;
   bool _isSidebarOpen = true;
   double _lastWidth = 0.0;
@@ -459,6 +460,9 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
   }
 
   void _showPermissionDialog() {
+    if (_isPermissionDialogOpen) return;
+    _isPermissionDialogOpen = true;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -521,7 +525,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
                       children: [
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF333333),
+                            backgroundColor: const Color(0xFF2D8CFF),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -552,8 +556,6 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
                           onPressed: () => Navigator.of(ctx).pop(),
                           child: Text(
                             'Later',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
                         ),
                       ],
                     ),
@@ -564,7 +566,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
           ),
         ),
       ),
-    );
+    ).then((_) => _isPermissionDialogOpen = false);
   }
 
   // ─────────────────────────────────────────────────────────────────

@@ -340,14 +340,20 @@ def check_mac_accessibility():
         app_services = ctypes.cdll.LoadLibrary('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
         app_services.AXIsProcessTrusted.restype = ctypes.c_bool
         if not app_services.AXIsProcessTrusted():
-            import os
+            import os, tempfile
+            lock_file = os.path.join(tempfile.gettempdir(), "lanpad_accessibility_prompt.lock")
+            if os.path.exists(lock_file):
+                return
+            with open(lock_file, "w") as f:
+                f.write("1")
+                
             script = """
             display alert "LANpad Needs Permissions" message "To auto-type text from your phone, macOS requires you to grant Accessibility permissions to LANpad.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If LANpad is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add LANpad.app again.\\n4. Restart LANpad." buttons {"Open Settings", "Later"} default button "Open Settings"
             if button returned of result is "Open Settings" then
                 open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
             end if
             """
-            os.system(f"osascript -e '{script}' &")
+            os.system(f"osascript -e '{script}' ; rm -f {lock_file} &")
     except Exception as e:
         pass
 
