@@ -285,6 +285,15 @@ class AppController:
 
         # 2. No running dashboard found – launch a fresh one.
         try:
+            if sys.platform == "darwin":
+                # First check if development flutter app exists
+                dev_app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lanpad_mobile", "build", "macos", "Build", "Products", "Release", "lanpad.app")
+                if os.path.exists(dev_app_path):
+                    subprocess.Popen(["open", "-a", dev_app_path])
+                else:
+                    subprocess.Popen(["open", "-a", "lanpad"])
+                return
+                
             kwargs = {}
             if sys.platform.startswith("win"):
                 kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW (suppress console flash)
