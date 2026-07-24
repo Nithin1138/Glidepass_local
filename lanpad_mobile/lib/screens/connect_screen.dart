@@ -321,8 +321,21 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
 
         final uri = Uri.tryParse(barcodeValue.trim());
         if (uri != null) {
-          final sid = uri.queryParameters['sid'] ?? '';
-          final baseUrl = '${uri.scheme}://${uri.authority}';
+          String baseUrl;
+          String sid = uri.queryParameters['sid'] ?? '';
+
+          if (uri.scheme == 'lanpad' && uri.authority == 'connect') {
+            final ip = uri.queryParameters['ip'];
+            final port = uri.queryParameters['port'] ?? '8000';
+            if (ip != null && ip.isNotEmpty) {
+              baseUrl = 'http://$ip:$port';
+            } else {
+              TopToast.show(context, 'Invalid LANpad QR Code', isError: true);
+              return;
+            }
+          } else {
+            baseUrl = '${uri.scheme}://${uri.authority}';
+          }
           await _submitConnection(baseUrl, sid);
         } else {
           TopToast.show(context, 'Invalid QR Code format', isError: true);
