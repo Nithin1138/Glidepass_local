@@ -27,7 +27,8 @@ import {
   X,
   FileSpreadsheet,
   FileCode,
-  Search
+  Search,
+  Pen
 } from "lucide-react";
 import Link from "next/link";
 
@@ -95,6 +96,15 @@ export default function ClipboardPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedItemId, setCopiedItemId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editTitleInput, setEditTitleInput] = useState("");
+
+  // AI States
+  const [activeAiItemId, setActiveAiItemId] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSelectedModel, setAiSelectedModel] = useState("llama-3.1-8b-instant");
 
   // Expiration countdown
   const [timeLeft, setTimeLeft] = useState("");
@@ -583,6 +593,65 @@ export default function ClipboardPage() {
     } catch (e: any) {
       console.error(e);
       setError("Failed to delete clipboard item.");
+    }
+  };
+
+  const handleEditTitleSubmit = async (itemId: string) => {
+    if (!currentRoom) return;
+    if (!editTitleInput.trim()) {
+      setEditingItemId(null);
+      return;
+    }
+    try {
+      const res = await fetch("/api/clipboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "edit-item",
+          itemId,
+          roomCode: currentRoom.code,
+          sessionId,
+          title: editTitleInput.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingItemId(null);
+        fetchRoomDetails(currentRoom.code, true);
+      } else {
+        setError(data.error || "Failed to edit title");
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError("Failed to edit clipboard item title.");
+    }
+  };
+
+  const handleAskAi = async (itemId: string, promptText: string) => {
+    if (!promptText.trim()) return;
+    setAiLoading(true);
+    setAiResponse("");
+    try {
+      const res = await fetch("/api/clipboard/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemId,
+          prompt: promptText,
+          model: aiSelectedModel
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiResponse(data.response);
+      } else {
+        setAiResponse(`Error: ${data.error || "Failed to get AI response."}`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setAiResponse("Error: Network request failed.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -1271,9 +1340,28 @@ export default function ClipboardPage() {
                                 {/* Title / Info */}
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                   <span className="text-[#F28500] font-mono text-[11px] font-bold shrink-0">&gt;_</span>
-                                  <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
-                                    {item.title}
-                                  </h4>
+                                  {editingItemId === item.id ? (
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      value={editTitleInput}
+                                      onChange={(e) => setEditTitleInput(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          handleEditTitleSubmit(item.id);
+                                        } else if (e.key === "Escape") {
+                                          setEditingItemId(null);
+                                        }
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className={`text-xs md:text-sm font-bold bg-transparent border-b border-[#468FEA] focus:outline-none ${textPrimary} w-full max-w-[200px]`}
+                                    />
+                                  ) : (
+                                    <h4 className={`text-xs md:text-sm font-bold truncate ${textPrimary}`}>
+                                      {item.title}
+                                    </h4>
+                                  )}
                                   {fileItem && (
                                     <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
                                       dk ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
@@ -1311,10 +1399,48 @@ export default function ClipboardPage() {
                                     </button>
                                   )}
 
+                                  {(canAddItems || isHost) && (
+                                    <>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveAiItemId(item.id);
+                                          setAiPrompt("");
+                                          setAiResponse("");
+                                        }}
+                                        className="text-gray-400 hover:text-purple-500 transition-colors shrink-0"
+                                        title="Ask AI"
+                                      >
+                                        <Sparkles size={13} />
+                                      </button>
+                                      {editingItemId === item.id ? (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleEditTitleSubmit(item.id); }}
+                                          className="text-[#468FEA] hover:text-[#3b7dc9] transition-colors shrink-0"
+                                          title="Save Title"
+                                        >
+                                          <Check size={13} />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            setEditTitleInput(item.title);
+                                            setEditingItemId(item.id); 
+                                          }}
+                                          className="text-gray-400 hover:text-emerald-500 transition-colors shrink-0"
+                                          title="Edit Title"
+                                        >
+                                          <Pen size={13} />
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+
                                   {isHost && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                                      className="text-gray-400 hover:text-rose-500 transition-colors"
+                                      className="text-gray-400 hover:text-rose-500 transition-colors shrink-0"
                                       title="Delete Item"
                                     >
                                       <Trash2 size={13} />
@@ -1409,6 +1535,116 @@ export default function ClipboardPage() {
         )}
 
       </main>
+
+      {/* AI Modal */}
+      <AnimatePresence>
+        {activeAiItemId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setActiveAiItemId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] ${cardBg} border ${borderLight}`}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={18} className="text-purple-500" />
+                  <h3 className={`font-bold ${textPrimary}`}>Ask AI</h3>
+                </div>
+                <button
+                  onClick={() => setActiveAiItemId(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-4 flex flex-col gap-4 overflow-y-auto min-h-0">
+                <div className="flex flex-wrap gap-2">
+                  {["Explain", "Summarize", "Fix Grammar", "Extract Key Points"].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => {
+                        setAiPrompt(q);
+                        handleAskAi(activeAiItemId, q);
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        dk ? "border-white/10 bg-white/5 hover:bg-white/10 text-gray-300" : "border-black/10 bg-black/5 hover:bg-black/10 text-gray-700"
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className={`text-xs font-bold uppercase tracking-wider ${textSecondary}`}>Model</label>
+                  <select
+                    value={aiSelectedModel}
+                    onChange={(e) => setAiSelectedModel(e.target.value)}
+                    className={`w-full p-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${
+                      dk ? "bg-black/40 border-white/10 text-white" : "bg-white border-black/10 text-gray-900"
+                    }`}
+                  >
+                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                    <option value="groq/compound-mini">groq/compound-mini</option>
+                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                    <option value="gemma2-9b-it">gemma2-9b-it</option>
+                    <option value="qwen/qwen3-32b">qwen/qwen3-32b</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2 flex-1 min-h-0">
+                  <label className={`text-xs font-bold uppercase tracking-wider ${textSecondary}`}>Question</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Ask a question about this item..."
+                      className={`flex-1 p-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${
+                        dk ? "bg-black/40 border-white/10 text-white" : "bg-white border-black/10 text-gray-900"
+                      }`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleAskAi(activeAiItemId, aiPrompt);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => handleAskAi(activeAiItemId, aiPrompt)}
+                      disabled={aiLoading || !aiPrompt.trim()}
+                      className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
+                        aiLoading || !aiPrompt.trim()
+                          ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
+                          : "bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                      }`}
+                    >
+                      {aiLoading ? "Thinking..." : "Ask"}
+                    </button>
+                  </div>
+                </div>
+
+                {aiResponse && (
+                  <div className={`mt-2 p-4 rounded-xl border overflow-y-auto max-h-64 whitespace-pre-wrap text-sm leading-relaxed ${
+                    dk ? "bg-purple-900/10 border-purple-500/20 text-gray-200" : "bg-purple-50 border-purple-200 text-gray-800"
+                  }`}>
+                    {aiResponse}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

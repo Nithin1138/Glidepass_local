@@ -8,7 +8,8 @@ import {
   touchActiveUser,
   getActiveUsersCount,
   updateRoomPermissions,
-  updateRoomExpiration
+  updateRoomExpiration,
+  updateClipboardItemTitle
 } from "@/lib/db";
 import crypto from "crypto";
 
@@ -16,8 +17,8 @@ export const dynamic = "force-dynamic";
 
 // Helper to generate a unique room code
 function generateRoomCode(): string {
-  // Generate 6 uppercase alphanumeric characters
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Exclude confusing chars like I, O, 1, 0
+  // Generate 6 digit characters
+  const chars = "0123456789";
   let code = "";
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -136,6 +137,28 @@ export async function POST(req: NextRequest) {
       }
 
       await deleteClipboardItem(itemId);
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "edit-item") {
+      const { itemId, roomCode, sessionId, title } = body;
+
+      if (!itemId || !roomCode || !sessionId || title === undefined) {
+        return NextResponse.json({ success: false, error: "itemId, roomCode, sessionId, and title are required" }, { status: 400 });
+      }
+
+      const room = await getClipboardRoom(roomCode.toUpperCase());
+      if (!room) {
+        return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
+      }
+
+      // Verify permissions: only room host or members with permission (but let's restrict title edits to the host or members if everyone can add)
+      if (!room.allowAllMembersToAdd && room.hostSessionId !== sessionId) {
+        return NextResponse.json({ success: false, error: "Only the room host can edit items" }, { status: 403 });
+      }
+
+      await updateClipboardItemTitle(itemId, title);
 
       return NextResponse.json({ success: true });
     }
