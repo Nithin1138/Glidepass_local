@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🚀 Installing LANpad for macOS (v1.3.3)..."
+echo "🚀 Installing LANpad for macOS (v1.3.5)..."
 echo ""
 echo "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:"
 echo "This installer executes a remote script to download and install LANpad."
@@ -17,7 +17,7 @@ echo "data security issues, or system disruption."
 echo "By continuing, you agree that you use this software at your own risk."
 echo ""
 
-TAG_URL="https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad_macOS.dmg"
+TAG_URL="https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.5/LANpad_macOS.dmg"
 LATEST_URL="https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg"
 FALLBACK_URL="https://lanpad.app/api/download?platform=mac"
 
@@ -42,7 +42,7 @@ done
 if [ "$DOWNLOAD_SUCCESS" = false ] || [ ! -f /tmp/LANpad_macOS.dmg ]; then
     echo "❌ Error: Could not download LANpad macOS DMG."
     echo "Your network proxy or university campus firewall blocked the download."
-    echo "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.3"
+    echo "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.5"
     exit 1
 fi
 

@@ -1,7 +1,7 @@
-# LANpad Windows Installer Script (Release v1.3.4)
+# LANpad Windows Installer Script (Release v1.3.5)
 $ErrorActionPreference = 'Stop'
 
-Write-Host "🚀 Installing LANpad for Windows (v1.3.4)..." -ForegroundColor Green
+Write-Host "🚀 Installing LANpad for Windows (v1.3.5)..." -ForegroundColor Green
 Write-Host ""
 Write-Host "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:" -ForegroundColor Yellow
 Write-Host "This installer executes a remote script to download and install LANpad." -ForegroundColor Yellow
@@ -20,7 +20,7 @@ Write-Host "By continuing, you agree that you use this software at your own risk
 Write-Host ""
 
 # Define mirrors (downloading full application package with all required DLLs)
-$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.4/LANpad-Windows.zip"
+$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.5/LANpad-Windows.zip"
 $LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
 $FallbackUrl = "https://lanpad.app/api/download?platform=windows"
 
@@ -42,8 +42,15 @@ $Downloaded = $false
 
 foreach ($Url in @($TagUrl, $LatestUrl, $FallbackUrl)) {
     try {
+        if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue }
         Invoke-WebRequest -Uri $Url -OutFile $ZipPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         if (Test-Path $ZipPath) {
+            $FileLength = (Get-Item $ZipPath).Length
+            if ($FileLength -lt 500KB) {
+                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
+                Write-Warning "Package from $Url is too small ($FileLength bytes). Trying next mirror..."
+                continue
+            }
             $ContentHeader = Get-Content -Path $ZipPath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
             if ($ContentHeader -match "<!DOCTYPE" -or $ContentHeader -match "<html" -or $ContentHeader -match "var strBlockCategory") {
                 Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
@@ -59,9 +66,9 @@ foreach ($Url in @($TagUrl, $LatestUrl, $FallbackUrl)) {
 }
 
 if (-not $Downloaded -or -not (Test-Path $ZipPath)) {
-    Write-Host "❌ Installation Failed: Could not download LANpad application bundle." -ForegroundColor Red
+    Write-Host "❌ Installation Failed: Could not download complete LANpad application bundle." -ForegroundColor Red
     Write-Host "Your network proxy or university campus firewall blocked the download." -ForegroundColor Red
-    Write-Host "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.4" -ForegroundColor Yellow
+    Write-Host "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.5" -ForegroundColor Yellow
     exit 1
 }
 
@@ -82,8 +89,8 @@ try {
     Write-Warning "Failed to extract ZIP package: $_"
 }
 
-if (-not (Test-Path $ExePath)) {
-    Write-Host "❌ Installation Failed: Could not find LANpad.exe inside extracted directory $InstallDir" -ForegroundColor Red
+if (-not (Test-Path $ExePath) -or (Get-Item $ExePath).Length -lt 100KB) {
+    Write-Host "❌ Installation Failed: Could not find valid LANpad.exe inside extracted directory $InstallDir" -ForegroundColor Red
     exit 1
 }
 
@@ -97,9 +104,11 @@ try {
     if (Test-Path $DesktopPath) {
         $WshShell = New-Object -ComObject WScript.Shell
         $ShortcutPath = Join-Path $DesktopPath "LANpad.lnk"
+        if (Test-Path $ShortcutPath) { Remove-Item -Path $ShortcutPath -Force -ErrorAction SilentlyContinue }
         $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
         $Shortcut.TargetPath = $ExePath
         $Shortcut.WorkingDirectory = $InstallDir
+        $Shortcut.IconLocation = "$ExePath,0"
         $Shortcut.Save()
         Write-Host "✅ Installed successfully! Double-click the LANpad icon on your Desktop to start." -ForegroundColor Green
     } else {

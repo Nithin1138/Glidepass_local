@@ -1,5 +1,5 @@
 # ============================================================
-#   LANpad Installer for Windows (PowerShell - Release v1.3.4)
+#   LANpad Installer for Windows (PowerShell - Release v1.3.5)
 #   https://github.com/Nithin1138/Glidepass_local
 # ============================================================
 #   Run with:
@@ -76,15 +76,21 @@ if (Test-Path $InstallDir) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
 
-$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.4/LANpad-Windows.zip"
+$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.5/LANpad-Windows.zip"
 $LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
 
 $Downloaded = $false
 
 foreach ($url in @($TagUrl, $LatestUrl)) {
     try {
+        if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue }
         Invoke-WebRequest -Uri $url -OutFile $ZipPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         if (Test-Path $ZipPath) {
+            $FileLength = (Get-Item $ZipPath).Length
+            if ($FileLength -lt 500KB) {
+                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
+                continue
+            }
             $header = Get-Content -Path $ZipPath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
             if ($header -match "<!DOCTYPE" -or $header -match "<html") {
                 Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
@@ -98,7 +104,7 @@ foreach ($url in @($TagUrl, $LatestUrl)) {
 
 if (-not $Downloaded -or -not (Test-Path $ZipPath)) {
     Write-Fail "Could not download LANpad-Windows.zip package from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.4" -ForegroundColor Yellow
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.5" -ForegroundColor Yellow
     exit 1
 }
 
