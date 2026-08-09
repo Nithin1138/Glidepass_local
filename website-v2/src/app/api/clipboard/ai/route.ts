@@ -4,10 +4,10 @@ import { getClipboardItemById } from "@/lib/db";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { itemId, prompt, model } = body;
+    const { itemId, prompt, history, model } = body;
 
-    if (!itemId || !prompt || !model) {
-      return NextResponse.json({ success: false, error: "itemId, prompt, and model are required" }, { status: 400 });
+    if (!itemId || !prompt) {
+      return NextResponse.json({ success: false, error: "itemId and prompt are required" }, { status: 400 });
     }
 
     if (!process.env.GROQ_API_KEY) {
@@ -35,32 +35,71 @@ export async function POST(req: Request) {
         }
       }
     } catch (e) {
-      // It's just plain text, do nothing
+      // It's plain text
     }
 
-    const systemPrompt = `You are a helpful assistant. You will be provided with the contents of a clipboard item. Answer the user's question based on this content.\n\nClipboard Item Content:\n${textContent}`;
+    const systemPrompt = `You are a world-class, professional AI assistant built into LANpad.
+Your response MUST be concise, professional, structured, and directly answer the user's request.
+Do NOT start with conversational meta-introductions or filler like "Sure!", "Here is...", "Alright!", or "Based on the content provided...".
+Start immediately with a clear summary heading or bold takeaway.
+Format key terms, section headings, and concepts using clean Markdown bolding (**Term:**), bullet points, and code blocks where appropriate.
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+Clipboard Item Context:
+Title: ${item.title}
+Content:
+${textContent}`;
+
+    // Format chat history turns if provided
+    const formattedHistory = Array.isArray(history)
+      ? history.map((msg: any) => ({
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: String(msg.content)
+        }))
+      : [];
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...formattedHistory,
+      { role: "user", content: prompt }
+    ];
+
+    const targetModel = model || "llama-3.3-70b-versatile";
+
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
+        model: targetModel,
+        messages,
+        temperature: 0.5,
         max_tokens: 2048,
       })
     });
 
+    // Fallback model if primary model fails
+    if (!response.ok && targetModel !== "llama-3.1-8b-instant") {
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages,
+          temperature: 0.5,
+          max_tokens: 2048,
+        })
+      });
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Groq API error:", errorText);
-      return NextResponse.json({ success: false, error: "Failed to generate AI response. Make sure the model exists and your API key is correct." }, { status: response.status });
+      return NextResponse.json({ success: false, error: "Failed to generate AI response. Please check your GROQ_API_KEY." }, { status: response.status });
     }
 
     const data = await response.json();

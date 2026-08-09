@@ -29,7 +29,11 @@ import {
   FileCode,
   Search,
   Pen,
-  Edit3
+  Edit3,
+  Send,
+  Bot,
+  User,
+  RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 
@@ -48,6 +52,105 @@ interface ClipboardItem {
   content: string; // Plain text or JSON string for files: { isFile: true, fileName: string, fileType: string, fileSize: number, data: string }
   creatorSessionId?: string;
   createdAt?: string;
+}
+
+function FormattedMarkdown({ content, dk }: { content: string; dk: boolean }) {
+  const parseInlineMarkdown = (text: string) => {
+    const tokens = [];
+    const regex = /(\*\*.*?\*\*|`.*?`)/g;
+    let lastIdx = 0;
+    let m;
+
+    while ((m = regex.exec(text)) !== null) {
+      if (m.index > lastIdx) {
+        tokens.push(text.substring(lastIdx, m.index));
+      }
+      const val = m[0];
+      if (val.startsWith('**') && val.endsWith('**')) {
+        tokens.push(
+          <strong key={m.index} className={`font-extrabold ${dk ? "text-purple-300" : "text-purple-950 font-bold"}`}>
+            {val.slice(2, -2)}
+          </strong>
+        );
+      } else if (val.startsWith('`') && val.endsWith('`')) {
+        tokens.push(
+          <code key={m.index} className={`px-1.5 py-0.5 rounded font-mono text-[11px] ${dk ? "bg-white/10 text-emerald-300" : "bg-purple-100 text-purple-900"}`}>
+            {val.slice(1, -1)}
+          </code>
+        );
+      }
+      lastIdx = regex.lastIndex;
+    }
+    if (lastIdx < text.length) {
+      tokens.push(text.substring(lastIdx));
+    }
+    return tokens;
+  };
+
+  const renderFormattedText = (rawText: string) => {
+    const codeBlockRegex = /```([\s\S]*?)```/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(rawText)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', value: rawText.substring(lastIndex, match.index) });
+      }
+      parts.push({ type: 'codeblock', value: match[1].trim() });
+      lastIndex = codeBlockRegex.lastIndex;
+    }
+    if (lastIndex < rawText.length) {
+      parts.push({ type: 'text', value: rawText.substring(lastIndex) });
+    }
+
+    return parts.map((part, pIdx) => {
+      if (part.type === 'codeblock') {
+        return (
+          <div key={pIdx} className={`my-2.5 p-3 rounded-xl font-mono text-xs overflow-x-auto border ${dk ? "bg-black/70 border-white/10 text-emerald-400" : "bg-slate-900 border-slate-800 text-emerald-300 shadow-inner"}`}>
+            <pre><code>{part.value}</code></pre>
+          </div>
+        );
+      }
+
+      const lines = part.value.split('\n');
+      return (
+        <div key={pIdx} className="space-y-2">
+          {lines.map((line, lIdx) => {
+            const trimmed = line.trim();
+            if (!trimmed) return <div key={lIdx} className="h-1" />;
+
+            if (/^#{1,3}\s+/.test(trimmed)) {
+              const headingText = trimmed.replace(/^#{1,3}\s+/, '');
+              return (
+                <h4 key={lIdx} className={`font-bold text-sm md:text-base mt-3 mb-1 tracking-wide ${dk ? "text-purple-300 border-b border-purple-500/20 pb-1" : "text-purple-900 border-b border-purple-200 pb-1"}`}>
+                  {parseInlineMarkdown(headingText)}
+                </h4>
+              );
+            }
+
+            if (/^[-*•]\s+/.test(trimmed) || /^\d+\.\s+/.test(trimmed)) {
+              const listText = trimmed.replace(/^([-*•]|\d+\.)\s+/, '');
+              return (
+                <div key={lIdx} className="flex items-start gap-2.5 pl-1 my-1">
+                  <span className="text-purple-500 font-bold shrink-0 mt-0.5">•</span>
+                  <div className="flex-1 leading-relaxed">{parseInlineMarkdown(listText)}</div>
+                </div>
+              );
+            }
+
+            return (
+              <p key={lIdx} className="leading-relaxed">
+                {parseInlineMarkdown(line)}
+              </p>
+            );
+          })}
+        </div>
+      );
+    });
+  };
+
+  return <div className="text-xs md:text-sm">{renderFormattedText(content)}</div>;
 }
 
 export default function ClipboardPage() {
@@ -103,12 +206,17 @@ export default function ClipboardPage() {
   const [editingContentItemId, setEditingContentItemId] = useState<string | null>(null);
   const [editContentInput, setEditContentInput] = useState("");
 
-  // AI States
+  // AI Interactive Chat States
+  interface ChatMessage {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+  }
   const [activeAiItemId, setActiveAiItemId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [aiPrompt, setAiPrompt] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSelectedModel, setAiSelectedModel] = useState("llama-3.1-8b-instant");
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Expiration countdown
   const [timeLeft, setTimeLeft] = useState("");
@@ -662,31 +770,69 @@ export default function ClipboardPage() {
     }
   };
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   const handleAskAi = async (itemId: string, promptText: string) => {
-    if (!promptText.trim()) return;
+    if (!promptText.trim() || aiLoading) return;
+    const userMsg: ChatMessage = {
+      id: Math.random().toString(36).substring(2),
+      role: "user",
+      content: promptText.trim()
+    };
+
+    const updatedMessages = [...chatMessages, userMsg];
+    setChatMessages(updatedMessages);
+    setAiPrompt("");
     setAiLoading(true);
-    setAiResponse("");
+    scrollToBottom();
+
     try {
       const res = await fetch("/api/clipboard/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId,
-          prompt: promptText,
-          model: aiSelectedModel
+          prompt: promptText.trim(),
+          history: chatMessages.map(m => ({ role: m.role, content: m.content }))
         })
       });
       const data = await res.json();
       if (data.success) {
-        setAiResponse(data.response);
+        setChatMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(2),
+            role: "assistant",
+            content: data.response
+          }
+        ]);
       } else {
-        setAiResponse(`Error: ${data.error || "Failed to get AI response."}`);
+        setChatMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(2),
+            role: "assistant",
+            content: `**Error:** ${data.error || "Failed to generate AI response."}`
+          }
+        ]);
       }
     } catch (e: any) {
       console.error(e);
-      setAiResponse("Error: Network request failed.");
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(36).substring(2),
+          role: "assistant",
+          content: "**Error:** Network request failed. Please try again."
+        }
+      ]);
     } finally {
       setAiLoading(false);
+      scrollToBottom();
     }
   };
 
@@ -1440,8 +1586,8 @@ export default function ClipboardPage() {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setActiveAiItemId(item.id);
+                                          setChatMessages([]);
                                           setAiPrompt("");
-                                          setAiResponse("");
                                         }}
                                         className="text-gray-400 hover:text-purple-500 transition-colors shrink-0"
                                         title="Ask AI"
@@ -1624,110 +1770,190 @@ export default function ClipboardPage() {
 
       </main>
 
-      {/* AI Modal */}
+      {/* Interactive AI Chat Modal */}
       <AnimatePresence>
         {activeAiItemId && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/70 backdrop-blur-md"
             onClick={() => setActiveAiItemId(null)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] ${cardBg} border ${borderLight}`}
+              className={`w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[720px] ${cardBg} border ${borderLight}`}
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={18} className="text-purple-500" />
-                  <h3 className={`font-bold ${textPrimary}`}>Ask AI</h3>
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 px-5 border-b border-white/10 bg-black/10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className={`font-bold text-base md:text-lg ${textPrimary}`}>LANpad AI Assistant</h3>
+                    <p className={`text-[11px] truncate max-w-[280px] sm:max-w-md ${textSecondary}`}>
+                      Context: {items.find(i => i.id === activeAiItemId)?.title || "Clipboard Item"}
+                    </p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setActiveAiItemId(null)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <X size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {chatMessages.length > 0 && (
+                    <button
+                      onClick={() => setChatMessages([])}
+                      className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                      title="Clear chat thread"
+                    >
+                      <RotateCcw size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setActiveAiItemId(null)}
+                    className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
-              <div className="p-4 flex flex-col gap-4 overflow-y-auto min-h-0">
-                <div className="flex flex-wrap gap-2">
-                  {["Explain", "Summarize", "Fix Grammar", "Extract Key Points"].map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => {
-                        setAiPrompt(q);
-                        handleAskAi(activeAiItemId, q);
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                        dk ? "border-white/10 bg-white/5 hover:bg-white/10 text-gray-300" : "border-black/10 bg-black/5 hover:bg-black/10 text-gray-700"
-                      }`}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
+              {/* Chat Thread Messages Container */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0 scrollbar-thin">
+                {chatMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                    <div className="p-4 rounded-3xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                      <Sparkles size={36} />
+                    </div>
+                    <div>
+                      <h4 className={`font-bold text-base ${textPrimary}`}>How can I help with this clipboard item?</h4>
+                      <p className={`text-xs mt-1 max-w-sm ${textSecondary}`}>
+                        Ask any question or pick a quick suggestion below:
+                      </p>
+                    </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className={`text-xs font-bold uppercase tracking-wider ${textSecondary}`}>Model</label>
-                  <select
-                    value={aiSelectedModel}
-                    onChange={(e) => setAiSelectedModel(e.target.value)}
-                    className={`w-full p-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${
-                      dk ? "bg-black/40 border-white/10 text-white" : "bg-white border-black/10 text-gray-900"
-                    }`}
-                  >
-                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                    <option value="groq/compound-mini">groq/compound-mini</option>
-                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                    <option value="qwen/qwen3-32b">qwen/qwen3-32b</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2 flex-1 min-h-0">
-                  <label className={`text-xs font-bold uppercase tracking-wider ${textSecondary}`}>Question</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Ask a question about this item..."
-                      className={`flex-1 p-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${
-                        dk ? "bg-black/40 border-white/10 text-white" : "bg-white border-black/10 text-gray-900"
-                      }`}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleAskAi(activeAiItemId, aiPrompt);
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={() => handleAskAi(activeAiItemId, aiPrompt)}
-                      disabled={aiLoading || !aiPrompt.trim()}
-                      className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
-                        aiLoading || !aiPrompt.trim()
-                          ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-                          : "bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]"
-                      }`}
-                    >
-                      {aiLoading ? "Thinking..." : "Ask"}
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2 max-w-md pt-2">
+                      {["Explain this item", "Summarize key points", "Fix grammar & tone", "Extract key technical details"].map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => handleAskAi(activeAiItemId, q)}
+                          className={`text-xs px-3.5 py-2 rounded-xl border font-medium transition-all ${
+                            dk 
+                              ? "border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200" 
+                              : "border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-900"
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        {msg.role === "assistant" && (
+                          <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0 mt-1">
+                            <Sparkles size={16} />
+                          </div>
+                        )}
 
-                {aiResponse && (
-                  <div className={`mt-2 p-4 rounded-xl border overflow-y-auto max-h-64 whitespace-pre-wrap text-sm leading-relaxed ${
-                    dk ? "bg-purple-900/10 border-purple-500/20 text-gray-200" : "bg-purple-50 border-purple-200 text-gray-800"
-                  }`}>
-                    {aiResponse}
+                        <div
+                          className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                            msg.role === "user"
+                              ? "bg-purple-600 text-white rounded-tr-none"
+                              : `${dk ? "bg-white/5 border border-white/10 text-gray-100" : "bg-white border border-gray-200 text-gray-900"} rounded-tl-none`
+                          }`}
+                        >
+                          {msg.role === "user" ? (
+                            <div className="text-xs md:text-sm font-medium whitespace-pre-wrap">{msg.content}</div>
+                          ) : (
+                            <FormattedMarkdown content={msg.content} dk={dk} />
+                          )}
+                        </div>
+
+                        {msg.role === "user" && (
+                          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white shrink-0 mt-1 shadow-md">
+                            <User size={16} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {aiLoading && (
+                      <div className="flex gap-3 justify-start items-center">
+                        <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
+                          <Sparkles size={16} className="animate-spin" />
+                        </div>
+                        <div className={`rounded-2xl px-4 py-3 border text-xs font-medium ${
+                          dk ? "bg-white/5 border-white/10 text-purple-300" : "bg-purple-50 border-purple-200 text-purple-900"
+                        }`}>
+                          <span className="inline-flex gap-1 items-center">
+                            AI is analyzing...
+                            <span className="animate-pulse">●</span>
+                            <span className="animate-pulse delay-100">●</span>
+                            <span className="animate-pulse delay-200">●</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatBottomRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Chat Input Bar */}
+              <div className="p-3 md:p-4 border-t border-white/10 bg-black/10 flex flex-col gap-2">
+                {chatMessages.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {["Explain more", "Summarize", "Key takeaways"].map((chip) => (
+                      <button
+                        key={chip}
+                        disabled={aiLoading}
+                        onClick={() => handleAskAi(activeAiItemId, chip)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+                          dk ? "border-white/10 bg-white/5 hover:bg-white/10 text-gray-300" : "border-black/10 bg-black/5 hover:bg-black/10 text-gray-700"
+                        }`}
+                      >
+                        {chip}
+                      </button>
+                    ))}
                   </div>
                 )}
+                
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Ask a question or follow-up..."
+                    className={`flex-1 p-3 px-4 rounded-2xl border text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${
+                      dk ? "bg-black/40 border-white/10 text-white placeholder:text-gray-500" : "bg-white border-black/10 text-gray-900 placeholder:text-gray-400"
+                    }`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAskAi(activeAiItemId, aiPrompt);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => handleAskAi(activeAiItemId, aiPrompt)}
+                    disabled={aiLoading || !aiPrompt.trim()}
+                    className={`px-4 rounded-2xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                      aiLoading || !aiPrompt.trim()
+                        ? "bg-gray-500/30 text-gray-400 cursor-not-allowed"
+                        : "bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                    }`}
+                  >
+                    <span>Send</span>
+                    <Send size={14} />
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
