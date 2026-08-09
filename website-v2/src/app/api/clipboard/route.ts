@@ -9,7 +9,9 @@ import {
   getActiveUsersCount,
   updateRoomPermissions,
   updateRoomExpiration,
-  updateClipboardItemTitle
+  updateClipboardItemTitle,
+  updateClipboardItemContent,
+  getClipboardItemById
 } from "@/lib/db";
 import crypto from "crypto";
 
@@ -111,7 +113,8 @@ export async function POST(req: NextRequest) {
         id: itemId,
         roomCode: roomCode.toUpperCase(),
         title,
-        content
+        content,
+        creatorSessionId: sessionId
       };
 
       await addClipboardItem(newItem);
@@ -159,6 +162,33 @@ export async function POST(req: NextRequest) {
       }
 
       await updateClipboardItemTitle(itemId, title);
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "edit-item-content") {
+      const { itemId, roomCode, sessionId, content } = body;
+
+      if (!itemId || !roomCode || !sessionId || content === undefined) {
+        return NextResponse.json({ success: false, error: "itemId, roomCode, sessionId, and content are required" }, { status: 400 });
+      }
+
+      const room = await getClipboardRoom(roomCode.toUpperCase());
+      if (!room) {
+        return NextResponse.json({ success: false, error: "Room not found or expired" }, { status: 404 });
+      }
+
+      const item = await getClipboardItemById(itemId);
+      if (!item) {
+        return NextResponse.json({ success: false, error: "Item not found" }, { status: 404 });
+      }
+
+      // Verify permissions: only the item creator or the room host can edit the content
+      if (item.creatorSessionId !== sessionId && room.hostSessionId !== sessionId) {
+        return NextResponse.json({ success: false, error: "Only the creator or the room host can edit this item's content" }, { status: 403 });
+      }
+
+      await updateClipboardItemContent(itemId, content);
 
       return NextResponse.json({ success: true });
     }

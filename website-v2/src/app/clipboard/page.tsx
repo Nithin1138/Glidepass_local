@@ -28,7 +28,8 @@ import {
   FileSpreadsheet,
   FileCode,
   Search,
-  Pen
+  Pen,
+  Edit3
 } from "lucide-react";
 import Link from "next/link";
 
@@ -45,6 +46,7 @@ interface ClipboardItem {
   roomCode: string;
   title: string;
   content: string; // Plain text or JSON string for files: { isFile: true, fileName: string, fileType: string, fileSize: number, data: string }
+  creatorSessionId?: string;
   createdAt?: string;
 }
 
@@ -98,6 +100,8 @@ export default function ClipboardPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editTitleInput, setEditTitleInput] = useState("");
+  const [editingContentItemId, setEditingContentItemId] = useState<string | null>(null);
+  const [editContentInput, setEditContentInput] = useState("");
 
   // AI States
   const [activeAiItemId, setActiveAiItemId] = useState<string | null>(null);
@@ -619,11 +623,42 @@ export default function ClipboardPage() {
         setEditingItemId(null);
         fetchRoomDetails(currentRoom.code, true);
       } else {
-        setError(data.error || "Failed to edit title");
+        setError(data.error || "Failed to update item title");
       }
     } catch (e: any) {
       console.error(e);
-      setError("Failed to edit clipboard item title.");
+      setError("Failed to update clipboard item title.");
+    }
+  };
+
+  const handleEditContentSubmit = async (itemId: string) => {
+    if (!currentRoom) return;
+    if (editContentInput.trim() === "") {
+      setEditingContentItemId(null);
+      return;
+    }
+    try {
+      const res = await fetch("/api/clipboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "edit-item-content",
+          itemId,
+          roomCode: currentRoom.code,
+          sessionId,
+          content: editContentInput.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingContentItemId(null);
+        fetchRoomDetails(currentRoom.code, true);
+      } else {
+        setError(data.error || "Failed to update item content");
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError("Failed to update clipboard item content.");
     }
   };
 
@@ -1434,6 +1469,24 @@ export default function ClipboardPage() {
                                           <Pen size={13} />
                                         </button>
                                       )}
+                                      {!fileItem && (item.creatorSessionId === sessionId || isHost) && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (editingContentItemId === item.id) {
+                                              handleEditContentSubmit(item.id);
+                                            } else {
+                                              setEditContentInput(item.content);
+                                              setEditingContentItemId(item.id);
+                                              if (!isExpanded) toggleExpand(item.id);
+                                            }
+                                          }}
+                                          className={`${editingContentItemId === item.id ? "text-[#468FEA] hover:text-[#3b7dc9]" : "text-gray-400 hover:text-emerald-500"} transition-colors shrink-0`}
+                                          title={editingContentItemId === item.id ? "Save Content" : "Edit Content"}
+                                        >
+                                          {editingContentItemId === item.id ? <Check size={13} /> : <Edit3 size={13} />}
+                                        </button>
+                                      )}
                                     </>
                                   )}
 
@@ -1510,11 +1563,46 @@ export default function ClipboardPage() {
                                         <div className={`rounded-[16px] border p-4 overflow-hidden ${
                                           dk ? "border-[#468FEA]/25 bg-black/40" : "border-[#468FEA]/20 bg-[#468FEA]/5"
                                         }`}>
-                                          <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
-                                            dk ? "text-[#a5d6ff]" : "text-gray-800"
-                                          }`}>
-                                            <code className="theme-adaptive">{item.content}</code>
-                                          </pre>
+                                          {editingContentItemId === item.id ? (
+                                            <div className="flex flex-col gap-2">
+                                              <textarea
+                                                autoFocus
+                                                value={editContentInput}
+                                                onChange={(e) => setEditContentInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                                    e.preventDefault();
+                                                    handleEditContentSubmit(item.id);
+                                                  } else if (e.key === "Escape") {
+                                                    setEditingContentItemId(null);
+                                                  }
+                                                }}
+                                                className={`w-full h-32 p-3 text-[11px] font-mono rounded-xl border focus:outline-none resize-none ${
+                                                  dk ? "bg-black/50 border-[#468FEA]/40 text-[#a5d6ff]" : "bg-white/80 border-[#468FEA]/30 text-gray-800"
+                                                }`}
+                                              />
+                                              <div className="flex justify-end gap-2 mt-1">
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); setEditingContentItemId(null); }}
+                                                  className={`px-3 py-1 text-xs rounded border transition-colors ${dk ? "border-gray-600 text-gray-400 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100"}`}
+                                                >
+                                                  Cancel
+                                                </button>
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); handleEditContentSubmit(item.id); }}
+                                                  className="px-3 py-1 text-xs rounded bg-[#468FEA] text-white hover:bg-[#3b7dc9] transition-colors"
+                                                >
+                                                  Save (Cmd+Enter)
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <pre className={`theme-adaptive text-[11px] font-mono overflow-x-auto text-left max-h-60 scrollbar-none leading-relaxed select-all ${
+                                              dk ? "text-[#a5d6ff]" : "text-gray-800"
+                                            }`}>
+                                              <code className="theme-adaptive">{item.content}</code>
+                                            </pre>
+                                          )}
                                         </div>
                                       )}
                                     </div>

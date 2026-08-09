@@ -480,9 +480,16 @@ export async function initDb() {
         room_code TEXT NOT NULL,
         title TEXT NOT NULL,
         content TEXT NOT NULL,
+        creator_session_id TEXT,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    try {
+      await client.query("ALTER TABLE vit_clipboard_items ADD COLUMN IF NOT EXISTS creator_session_id TEXT;");
+    } catch(e) {
+      console.error("Failed to add column creator_session_id to vit_clipboard_items:", e);
+    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS vit_clipboard_active_users (
@@ -2553,6 +2560,7 @@ export interface ClipboardItem {
   roomCode: string;
   title: string;
   content: string;
+  creatorSessionId?: string;
   createdAt?: string;
 }
 
@@ -2628,8 +2636,8 @@ export async function addClipboardItem(item: ClipboardItem): Promise<void> {
   if (pool) {
     await initDb();
     await pool.query(
-      "INSERT INTO vit_clipboard_items (id, room_code, title, content) VALUES ($1, $2, $3, $4)",
-      [item.id, item.roomCode, item.title, item.content]
+      "INSERT INTO vit_clipboard_items (id, room_code, title, content, creator_session_id) VALUES ($1, $2, $3, $4, $5)",
+      [item.id, item.roomCode, item.title, item.content, item.creatorSessionId || null]
     );
   } else {
     const data = await readClipboardFile();
@@ -2646,7 +2654,7 @@ export async function getClipboardItems(roomCode: string): Promise<ClipboardItem
   if (pool) {
     await initDb();
     const res = await pool.query(
-      `SELECT id, room_code as "roomCode", title, content, created_at as "createdAt" 
+      `SELECT id, room_code as "roomCode", title, content, creator_session_id as "creatorSessionId", created_at as "createdAt" 
        FROM vit_clipboard_items WHERE room_code = $1 ORDER BY created_at DESC`,
       [roomCode]
     );
@@ -2709,11 +2717,25 @@ export async function updateClipboardItemTitle(id: string, title: string): Promi
   }
 }
 
+export async function updateClipboardItemContent(id: string, content: string): Promise<void> {
+  if (pool) {
+    await initDb();
+    await pool.query("UPDATE vit_clipboard_items SET content = $1 WHERE id = $2", [content, id]);
+  } else {
+    const data = await readClipboardFile();
+    const item = data.items.find(i => i.id === id);
+    if (item) {
+      item.content = content;
+      await writeClipboardFile(data);
+    }
+  }
+}
+
 export async function getClipboardItemById(id: string): Promise<ClipboardItem | null> {
   if (pool) {
     await initDb();
     const res = await pool.query(
-      `SELECT id, room_code as "roomCode", title, content, created_at as "createdAt" 
+      `SELECT id, room_code as "roomCode", title, content, creator_session_id as "creatorSessionId", created_at as "createdAt" 
        FROM vit_clipboard_items WHERE id = $1`,
       [id]
     );
