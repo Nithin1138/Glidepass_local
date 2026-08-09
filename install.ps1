@@ -1,5 +1,5 @@
 # ============================================================
-#   LANpad Installer for Windows (PowerShell)
+#   LANpad Installer for Windows (PowerShell - Release v1.3.4)
 #   https://github.com/Nithin1138/Glidepass_local
 # ============================================================
 #   Run with:
@@ -7,8 +7,9 @@
 # ============================================================
 
 $repo  = "Nithin1138/Glidepass_local"
-$asset = "LANpad.exe"
-$dest  = "$env:USERPROFILE\Downloads\LANpad.exe"
+$InstallDir = "$env:LOCALAPPDATA\LANpad"
+$ZipPath = Join-Path $InstallDir "LANpad-Windows.zip"
+$ExePath = Join-Path $InstallDir "LANpad.exe"
 
 $ErrorActionPreference = "Stop"
 
@@ -58,27 +59,35 @@ Write-Host "  ──────────────────────
 Write-Host ""
 
 # ── System Check ─────────────────────────────────────────────
-Write-Step 1 3 "Checking system..."
+Write-Step 1 4 "Checking system..."
 $os = [System.Environment]::OSVersion.VersionString
 Write-Ok "Windows detected ($os)"
 Start-Sleep -Milliseconds 300
 
-# ── Fetch Release ─────────────────────────────────────────────
+# ── Fetch Release Package ────────────────────────────────────────
 Write-Host ""
-Write-Step 2 3 "Downloading LANpad Windows Executable..."
+Write-Step 2 4 "Downloading LANpad application release bundle..."
 
-$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad.exe"
-$LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+if (Test-Path $InstallDir) {
+    Get-Process -Name "LANpad" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name "lanpad" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 1
+} else {
+    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+}
+
+$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.4/LANpad-Windows.zip"
+$LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
 
 $Downloaded = $false
 
 foreach ($url in @($TagUrl, $LatestUrl)) {
     try {
-        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        if (Test-Path $dest) {
-            $header = Get-Content -Path $dest -Raw -TotalCount 10 -ErrorAction SilentlyContinue
+        Invoke-WebRequest -Uri $url -OutFile $ZipPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        if (Test-Path $ZipPath) {
+            $header = Get-Content -Path $ZipPath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
             if ($header -match "<!DOCTYPE" -or $header -match "<html") {
-                Remove-Item -Path $dest -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
                 continue
             }
             $Downloaded = $true
@@ -87,20 +96,40 @@ foreach ($url in @($TagUrl, $LatestUrl)) {
     } catch {}
 }
 
-if (-not $Downloaded -or -not (Test-Path $dest)) {
-    Write-Fail "Could not download LANpad.exe from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.3" -ForegroundColor Yellow
+if (-not $Downloaded -or -not (Test-Path $ZipPath)) {
+    Write-Fail "Could not download LANpad-Windows.zip package from GitHub Releases"
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.4" -ForegroundColor Yellow
     exit 1
 }
 
-$actualMB = [math]::Round((Get-Item $dest).Length / 1MB, 1)
-Write-Ok "Downloaded LANpad.exe ($actualMB MB)"
+Write-Ok "Downloaded application release package"
+Start-Sleep -Milliseconds 300
+
+# ── Extract Package ──────────────────────────────────────────
+Write-Host ""
+Write-Step 3 4 "Extracting application files and plugin DLLs..."
+try {
+    Expand-Archive -Path $ZipPath -DestinationPath $InstallDir -Force
+    Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
+
+    if (-not (Test-Path $ExePath)) {
+        $AltExe = Join-Path $InstallDir "lanpad.exe"
+        if (Test-Path $AltExe) {
+            $ExePath = $AltExe
+        }
+    }
+    Write-Ok "Extracted binaries and plugin dependencies"
+} catch {
+    Write-Fail "Extraction failed: $_"
+    exit 1
+}
+
 Start-Sleep -Milliseconds 300
 
 # ── Launch ───────────────────────────────────────────────────
 Write-Host ""
-Write-Step 3 3 "Launching LANpad..."
-Start-Process $dest
+Write-Step 4 4 "Launching LANpad..."
+Start-Process $ExePath
 Start-Sleep -Milliseconds 800
 
 Write-Host ""

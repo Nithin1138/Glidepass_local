@@ -194,8 +194,8 @@ jobs:
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.3.3' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'LANpad Desktop Release v1.3.3' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.3.4' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'LANpad Desktop Release v1.3.4' }}
           files: |
             release-artifacts/mac/LANpad_macOS.dmg
             release-artifacts/win/LANpad.exe

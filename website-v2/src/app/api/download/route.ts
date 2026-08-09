@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
   // Redirect to GitHub Releases CDN for super-fast downloads and zero Vercel bandwidth consumption
   if (redirectUrl.includes("lanpad.app") || redirectUrl.includes("vercel.app") || !redirectUrl.startsWith("http")) {
     redirectUrl = platform === "windows"
-      ? "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+      ? "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
       : "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg";
   }
 
