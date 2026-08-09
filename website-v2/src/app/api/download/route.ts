@@ -124,11 +124,11 @@ export async function GET(request: NextRequest) {
     ? downloadUrl
     : new URL(downloadUrl, request.nextUrl.origin).toString();
 
-  // If redirecting to our own domains, redirect to raw.githubusercontent.com CDN for super-fast downloads and zero Vercel bandwidth consumption
+  // Redirect to GitHub Releases CDN for super-fast downloads and zero Vercel bandwidth consumption
   if (redirectUrl.includes("lanpad.app") || redirectUrl.includes("vercel.app") || !redirectUrl.startsWith("http")) {
     redirectUrl = platform === "windows"
-      ? "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/website-v2/public/downloads/LANpad.exe"
-      : "https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/website-v2/public/downloads/LANpad_macOS.dmg";
+      ? "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+      : "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg";
   }
 
   const response = NextResponse.redirect(redirectUrl, 302);

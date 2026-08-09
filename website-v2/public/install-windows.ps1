@@ -19,12 +19,13 @@ Write-Host "data security issues, or system disruption." -ForegroundColor Yellow
 Write-Host "By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
 Write-Host ""
 
-# Define paths (uses telemetry redirect for counts)
-$DownloadUrl = "https://lanpad.app/api/download?platform=windows"
+# Define paths
+$PrimaryUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+$FallbackUrl = "https://lanpad.app/api/download?platform=windows"
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
 $ExePath = Join-Path $InstallDir "LANpad.exe"
 
-# 1. Download the exe directly
+# 1. Prepare installation directory & process management
 Write-Host "📥 Downloading LANpad executable..." -ForegroundColor Cyan
 if (Test-Path $InstallDir) {
     # Force stop any running LANpad processes so we can overwrite
@@ -34,7 +35,32 @@ if (Test-Path $InstallDir) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
 
-Invoke-WebRequest -Uri $DownloadUrl -OutFile $ExePath -UseBasicParsing
+$Downloaded = $false
+
+foreach ($Url in @($PrimaryUrl, $FallbackUrl)) {
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $ExePath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        if (Test-Path $ExePath) {
+            $ContentHeader = Get-Content -Path $ExePath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
+            if ($ContentHeader -match "<!DOCTYPE" -or $ContentHeader -match "<html" -or $ContentHeader -match "var strBlockCategory") {
+                Remove-Item -Path $ExePath -Force -ErrorAction SilentlyContinue
+                Write-Warning "Received HTML block/error page from $Url. Trying next mirror..."
+                continue
+            }
+            $Downloaded = $true
+            break
+        }
+    } catch {
+        Write-Warning "Download from $Url failed: $_"
+    }
+}
+
+if (-not $Downloaded -or -not (Test-Path $ExePath)) {
+    Write-Host "❌ Installation Failed: Could not download LANpad binary executable." -ForegroundColor Red
+    Write-Host "The network proxy, firewall, or server returned an error or block page instead of the application installer." -ForegroundColor Red
+    Write-Host "Please download LANpad directly from: https://github.com/Nithin1138/Glidepass_local/releases" -ForegroundColor Yellow
+    exit 1
+}
 
 # 2. Create Desktop Shortcut
 try {

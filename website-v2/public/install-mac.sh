@@ -17,19 +17,44 @@ echo "data security issues, or system disruption."
 echo "By continuing, you agree that you use this software at your own risk."
 echo ""
 
-# Production download URL for the packaged DMG installer (logs telemetry)
-DOWNLOAD_URL="https://lanpad.app/api/download?platform=mac"
+PRIMARY_URL="https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg"
+FALLBACK_URL="https://lanpad.app/api/download?platform=mac"
 
 echo "📥 Downloading LANpad DMG..."
-curl -L -# -o /tmp/LANpad_macOS.dmg "$DOWNLOAD_URL"
+DOWNLOAD_SUCCESS=false
 
-echo "💿 Mounting DMG..."
-MOUNT_OUT=$(hdiutil attach /tmp/LANpad_macOS.dmg -nobrowse)
+for URL in "$PRIMARY_URL" "$FALLBACK_URL"; do
+    rm -f /tmp/LANpad_macOS.dmg
+    if curl -sL -f -o /tmp/LANpad_macOS.dmg "$URL"; then
+        if [ -f /tmp/LANpad_macOS.dmg ]; then
+            # Verify file is not HTML page
+            if grep -q -i "<!DOCTYPE" /tmp/LANpad_macOS.dmg 2>/dev/null || grep -q -i "<html" /tmp/LANpad_macOS.dmg 2>/dev/null; then
+                rm -f /tmp/LANpad_macOS.dmg
+                echo "⚠️ Download returned an HTML error/block page from $URL. Trying next mirror..."
+                continue
+            fi
+            DOWNLOAD_SUCCESS=true
+            break
+        fi
+    fi
+done
+
+if [ "$DOWNLOAD_SUCCESS" = false ] || [ ! -f /tmp/LANpad_macOS.dmg ]; then
+    echo "❌ Error: Could not download LANpad macOS DMG."
+    echo "The network proxy, firewall, or server returned an error or block page."
+    echo "Please download LANpad directly from: https://github.com/Nithin1138/Glidepass_local/releases"
+    exit 1
+fi
+
+echo "CD Mounting DMG..."
+MOUNT_OUT=$(hdiutil attach /tmp/LANpad_macOS.dmg -nobrowse 2>&1)
 MOUNT_DIR=$(echo "$MOUNT_OUT" | grep -o '/Volumes/.*')
 
 if [ -z "$MOUNT_DIR" ]; then
     if [ -d "/Volumes/LANpad Installer" ]; then
         MOUNT_DIR="/Volumes/LANpad Installer"
+    elif [ -d "/Volumes/LANpad" ]; then
+        MOUNT_DIR="/Volumes/LANpad"
     else
         echo "❌ Error: Could not mount DMG."
         rm -f /tmp/LANpad_macOS.dmg
@@ -59,4 +84,3 @@ else
     echo "❌ Installation failed: LANpad.app was not found in the installer package."
     exit 1
 fi
-

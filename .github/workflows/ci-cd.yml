@@ -1,4 +1,4 @@
-name: GlidePass CI/CD Pipeline
+name: GlidePass & LANpad CI/CD Pipeline
 
 on:
   push:
@@ -63,7 +63,6 @@ jobs:
           cd website-v2
           npm run build
         env:
-          # Ensure build succeeds without failing on external API connection warnings during build phase
           NEXT_TELEMETRY_DISABLED: 1
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/glidepass"
 
@@ -99,8 +98,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-client-apps:
-    name: Build Client Apps (${{ matrix.os }})
+  build-flutter-client-apps:
+    name: Build Flutter Client (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -111,42 +110,53 @@ jobs:
       - name: Checkout Codebase
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Java JDK
+        uses: actions/setup-java@v3
         with:
-          python-version: '3.10'
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Install dependencies
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
         run: |
-          pip install pyinstaller Pillow requests httpx fastapi uvicorn pyautogui pyperclip pystray qrcode pynput python-multipart
+          cd lanpad_mobile
+          flutter pub get
 
-      - name: Install macOS specific dependencies
+      - name: Build Flutter macOS Desktop App
         if: matrix.os == 'macos-latest'
         run: |
-          pip install rumps
+          cd lanpad_mobile
+          flutter build macos --release
 
-      - name: Build macOS Client & DMG
+      - name: Package macOS DMG
         if: matrix.os == 'macos-latest'
-        env:
-          CI: "true"
         run: |
-          chmod +x build_mac.sh make_dmg.sh
-          ./build_mac.sh
-          ./make_dmg.sh
+          hdiutil create -volname "LANpad" -srcfolder lanpad_mobile/build/macos/Build/Products/Release/lanpad.app -ov -format UDZO LANpad_macOS.dmg
 
-      - name: Build Windows Client Executable
+      - name: Build Flutter Windows Desktop App
         if: matrix.os == 'windows-latest'
-        env:
-          CI: "true"
         run: |
-          ./build_win.bat
+          cd lanpad_mobile
+          flutter build windows --release
+
+      - name: Package Windows Executable & Zip
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Copy-Item -Path "lanpad_mobile\build\windows\x64\runner\Release\lanpad.exe" -Destination "LANpad.exe" -Force
+          Compress-Archive -Path "lanpad_mobile\build\windows\x64\runner\Release\*" -DestinationPath "LANpad-Windows.zip" -Force
 
       - name: Upload macOS DMG Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: LANpad-macOS-DMG
-          path: LANpad_Installer.dmg
+          path: LANpad_macOS.dmg
           if-no-files-found: error
 
       - name: Upload Windows EXE Artifact
@@ -154,14 +164,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LANpad-Windows-EXE
-          path: dist/LANpad.exe
+          path: |
+            LANpad.exe
+            LANpad-Windows.zip
           if-no-files-found: error
 
   create-release:
-    name: Create GitHub Release
-    needs: build-client-apps
+    name: Create GitHub Production Release
+    needs: build-flutter-client-apps
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/checkall'
     permissions:
       contents: write
     steps:
@@ -170,19 +182,22 @@ jobs:
         with:
           name: LANpad-macOS-DMG
           path: release-artifacts/mac
-      
+
       - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
           name: LANpad-Windows-EXE
           path: release-artifacts/win
-          
+
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.2.0' }}
+          name: LANpad Desktop Flutter Production Release v1.2.0
           files: |
-            release-artifacts/mac/LANpad_Installer.dmg
+            release-artifacts/mac/LANpad_macOS.dmg
             release-artifacts/win/LANpad.exe
+            release-artifacts/win/LANpad-Windows.zip
           draft: false
           prerelease: false
           generate_release_notes: true
