@@ -5,6 +5,13 @@ import Carbon
 @main
 class AppDelegate: FlutterAppDelegate {
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    return false
+  }
+
+  override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    if !flag {
+      mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    }
     return true
   }
 
@@ -33,10 +40,28 @@ class AppDelegate: FlutterAppDelegate {
           NSWorkspace.shared.open(url)
         }
         result(true)
+      } else if call.method == "checkInputMonitoring" {
+        result(self.checkInputMonitoring())
+      } else if call.method == "checkFullDiskAccess" {
+        result(self.checkFullDiskAccess())
       } else {
         result(FlutterMethodNotImplemented)
       }
     }
+  }
+
+  private func checkInputMonitoring() -> Bool {
+    if #available(macOS 10.15, *) {
+        return CGPreflightListenEventAccess()
+    } else {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
+        return AXIsProcessTrustedWithOptions(options)
+    }
+  }
+
+  private func checkFullDiskAccess() -> Bool {
+    let path = "/Library/Application Support/com.apple.TCC/TCC.db"
+    return FileManager.default.isReadableFile(atPath: path)
   }
 
   private func simulateTyping(text: String) {

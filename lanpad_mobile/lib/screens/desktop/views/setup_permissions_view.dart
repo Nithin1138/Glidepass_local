@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import '../desktop_theme.dart';
 import '../desktop_state.dart';
 
@@ -36,6 +37,22 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
 
   void _startLatencyPing() {
     _latencyTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      // 1. Check Permissions natively
+      if (Platform.isMacOS && mounted) {
+        const platform = MethodChannel('lanpad/system');
+        try {
+          final bool inputMon = await platform.invokeMethod('checkInputMonitoring');
+          final bool fda = await platform.invokeMethod('checkFullDiskAccess');
+          if (mounted) {
+            setState(() {
+              _inputMonitoringGranted = inputMon;
+              _fullDiskAccessGranted = fda;
+            });
+          }
+        } catch (_) {}
+      }
+
+      // 2. Ping Latency
       final url = widget.state.connectionService.serverUrl;
       if (url != null && mounted) {
         try {
@@ -120,38 +137,10 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
                       enabled: true,
                       isPrimaryAction: !_inputMonitoringGranted,
                       onPressed: () async {
-                        if (_inputMonitoringGranted) {
-                          setState(() => _inputMonitoringGranted = false);
-                          s.onShowToast('Input Monitoring Permission Revoked');
-                        } else {
-                          if (Platform.isMacOS) {
-                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
-                            }
-                          }
-                          final granted = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: kSurfaceContainer,
-                              title: Text('Confirm Input Monitoring', style: GoogleFonts.outfit(color: kOnSurface)),
-                              content: Text('Please verify if you have checked the LANpad option under Input Monitoring in System Settings.', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: Text('Not yet', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(backgroundColor: kPrimary, foregroundColor: kSurfaceLowest),
-                                  child: Text('Yes, I granted it', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (granted == true) {
-                            setState(() => _inputMonitoringGranted = true);
-                            s.onShowToast('Input Monitoring Permission Enabled');
+                        if (Platform.isMacOS) {
+                          final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
                           }
                         }
                       },
@@ -169,38 +158,10 @@ class _SetupPermissionsViewState extends State<SetupPermissionsView> {
                       enabled: true,
                       isPrimaryAction: false,
                       onPressed: () async {
-                        if (_fullDiskAccessGranted) {
-                          setState(() => _fullDiskAccessGranted = false);
-                          s.onShowToast('Full Disk Access Revoked');
-                        } else {
-                          if (Platform.isMacOS) {
-                            final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
-                            }
-                          }
-                          final granted = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: kSurfaceContainer,
-                              title: Text('Confirm Full Disk Access', style: GoogleFonts.outfit(color: kOnSurface)),
-                              content: Text('Please verify if you have enabled Full Disk Access for LANpad in System Settings.', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: Text('Not yet', style: GoogleFonts.inter(color: kOnSurfaceVariant)),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(backgroundColor: kPrimary, foregroundColor: kSurfaceLowest),
-                                  child: Text('Yes, I granted it', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (granted == true) {
-                            setState(() => _fullDiskAccessGranted = true);
-                            s.onShowToast('Full Disk Access Granted');
+                        if (Platform.isMacOS) {
+                          final uri = Uri.parse('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
                           }
                         }
                       },

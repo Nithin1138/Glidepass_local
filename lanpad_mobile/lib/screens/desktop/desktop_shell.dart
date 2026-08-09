@@ -59,7 +59,7 @@ class DesktopShell extends StatefulWidget {
   State<DesktopShell> createState() => _DesktopShellState();
 }
 
-class _DesktopShellState extends State<DesktopShell> with WindowListener {
+class _DesktopShellState extends State<DesktopShell> with WindowListener, WidgetsBindingObserver {
   // ── Services ──────────────────────────────────────────────────────
   final ServerService _serverService = ServerService();
   final TunnelService _tunnelService = TunnelService();
@@ -134,6 +134,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     DesktopThemeManager.instance.init().then((_) {
       if (mounted) setState(() {});
     });
@@ -319,7 +320,16 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     _remoteHubPollTimer?.cancel();
     DesktopThemeManager.instance.removeListener(_onThemeChanged);
     AppTheme.themeModeNotifier.removeListener(_onThemeChanged);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didAppLifecycleStateChange(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _serverService.stopServer();
+      _tunnelService.stopTunnel();
+    }
   }
 
   @override
@@ -333,7 +343,11 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener {
     if (needsActivation) {
       _showToast("License is required to continue. Please activate.");
     } else {
-      await windowManager.destroy();
+      if (Platform.isMacOS) {
+        await windowManager.hide();
+      } else {
+        await windowManager.hide(); // Or handle other platforms similarly
+      }
     }
   }
 

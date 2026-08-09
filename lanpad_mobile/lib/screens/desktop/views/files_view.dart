@@ -537,7 +537,7 @@ class _DropZone extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.sync_rounded, color: kSecondary, size: 16),
+                        _SpinningSyncIcon(color: kSecondary, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           'TRANSFERRING...',
@@ -791,4 +791,37 @@ class _OfflinePrompt extends StatelessWidget {
       ),
     ]),
   );
+}
+
+class _SpinningSyncIcon extends StatefulWidget {
+  final Color color;
+  final double size;
+  const _SpinningSyncIcon({required this.color, required this.size});
+
+  @override
+  _SpinningSyncIconState createState() => _SpinningSyncIconState();
+}
+
+class _SpinningSyncIconState extends State<_SpinningSyncIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: Icon(Icons.sync_rounded, color: widget.color, size: widget.size),
+    );
+  }
 }
