@@ -38,7 +38,7 @@ bool FlutterWindow::OnCreate() {
   channel->SetMethodCallHandler(
       [](const flutter::MethodCall<>& call,
          std::unique_ptr<flutter::MethodResult<>> result) {
-        if (call.method() == "simulateTyping") {
+        if (call.method_name() == "simulateTyping") {
           const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
           std::string text = "";
           if (arguments) {
