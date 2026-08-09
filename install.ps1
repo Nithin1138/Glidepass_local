@@ -3,7 +3,7 @@
 #   https://github.com/Nithin1138/Glidepass_local
 # ============================================================
 #   Run with:
-#   irm https://raw.githubusercontent.com/Nithin1138/Glidepass_local/checkall/install.ps1 | iex
+#   powershell -c "irm https://raw.githubusercontent.com/Nithin1138/Glidepass_local/main/install.ps1 | iex"
 # ============================================================
 
 $repo  = "Nithin1138/Glidepass_local"
@@ -56,80 +56,50 @@ Write-Host "    - Source: https://github.com/$repo" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  ────────────────────────────────────────────────────" -ForegroundColor DarkGray
 Write-Host ""
-Read-Host "  Press ENTER to accept and continue, or Ctrl+C to cancel"
-Write-Host ""
 
 # ── System Check ─────────────────────────────────────────────
-Write-Step 1 4 "Checking system..."
+Write-Step 1 3 "Checking system..."
 $os = [System.Environment]::OSVersion.VersionString
-Write-Ok "Windows detected  ($os)"
+Write-Ok "Windows detected ($os)"
 Start-Sleep -Milliseconds 300
 
 # ── Fetch Release ─────────────────────────────────────────────
 Write-Host ""
-Write-Step 2 4 "Fetching latest release from GitHub..."
-$api = "https://api.github.com/repos/$repo/releases/latest"
-$release = Invoke-RestMethod -Uri $api -UseBasicParsing
-$fileAsset = $release.assets | Where-Object { $_.name -eq $asset } | Select-Object -First 1
-$version = $release.tag_name
+Write-Step 2 3 "Downloading LANpad Windows Executable..."
 
-if (-not $fileAsset) {
-    Write-Fail "Could not find $asset in release $version"
-    Write-Host "  Download manually: https://github.com/$repo/releases/latest" -ForegroundColor DarkGray
+$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad.exe"
+$LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+
+$Downloaded = $false
+
+foreach ($url in @($TagUrl, $LatestUrl)) {
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        if (Test-Path $dest) {
+            $header = Get-Content -Path $dest -Raw -TotalCount 10 -ErrorAction SilentlyContinue
+            if ($header -match "<!DOCTYPE" -or $header -match "<html") {
+                Remove-Item -Path $dest -Force -ErrorAction SilentlyContinue
+                continue
+            }
+            $Downloaded = $true
+            break
+        }
+    } catch {}
+}
+
+if (-not $Downloaded -or -not (Test-Path $dest)) {
+    Write-Fail "Could not download LANpad.exe from GitHub Releases"
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.3" -ForegroundColor Yellow
     exit 1
 }
 
-$sizeMB = [math]::Round($fileAsset.size / 1MB, 1)
-Write-Ok "Found version $version  ($sizeMB MB)"
-Start-Sleep -Milliseconds 300
-
-# ── Download with Progress ────────────────────────────────────
-Write-Host ""
-Write-Step 3 4 "Downloading LANpad $version..."
-Write-Host ""
-
-$url = $fileAsset.browser_download_url
-$webClient = New-Object System.Net.WebClient
-$startTime = Get-Date
-
-# Register progress event for real-time tracking
-$progressHandler = Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action {
-    $pct     = $Event.SourceEventArgs.ProgressPercentage
-    $dlMB    = [math]::Round($Event.SourceEventArgs.BytesReceived / 1MB, 1)
-    $totalMB = [math]::Round($Event.SourceEventArgs.TotalBytesToReceive / 1MB, 1)
-    $elapsed = (Get-Date) - $global:dlStart
-    $speed   = if ($elapsed.TotalSeconds -gt 0) { [math]::Round($dlMB / $elapsed.TotalSeconds, 1) } else { 0 }
-    $eta     = if ($speed -gt 0) { [math]::Round(($totalMB - $dlMB) / $speed) } else { "?" }
-    Write-Progress -Activity "Downloading LANpad" `
-        -Status "$dlMB MB / $totalMB MB  |  $speed MB/s  |  ETA: ${eta}s" `
-        -PercentComplete $pct
-}
-
-$completedHandler = Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted -Action {
-    $global:dlDone = $true
-}
-
-$global:dlStart = $startTime
-$global:dlDone  = $false
-
-$webClient.DownloadFileAsync([uri]$url, $dest)
-
-# Poll until done
-while (-not $global:dlDone) { Start-Sleep -Milliseconds 200 }
-
-Write-Progress -Activity "Downloading LANpad" -Completed
-Unregister-Event -SourceIdentifier $progressHandler.Name -ErrorAction SilentlyContinue
-Unregister-Event -SourceIdentifier $completedHandler.Name -ErrorAction SilentlyContinue
-$webClient.Dispose()
-
-$elapsed = [math]::Round(((Get-Date) - $startTime).TotalSeconds, 1)
 $actualMB = [math]::Round((Get-Item $dest).Length / 1MB, 1)
-Write-Ok "Downloaded successfully  ($actualMB MB in ${elapsed}s)"
+Write-Ok "Downloaded LANpad.exe ($actualMB MB)"
 Start-Sleep -Milliseconds 300
 
 # ── Launch ───────────────────────────────────────────────────
 Write-Host ""
-Write-Step 4 4 "Launching LANpad $version..."
+Write-Step 3 3 "Launching LANpad..."
 Start-Process $dest
 Start-Sleep -Milliseconds 800
 
@@ -138,7 +108,7 @@ Write-Host "  ──────────────────────
 Write-Host ""
 Write-Host "  " -NoNewline
 Write-Host ([char]10003) -ForegroundColor Green -NoNewline
-Write-Host " LANpad $version installed and running!" -ForegroundColor White
+Write-Host " LANpad installed and running!" -ForegroundColor White
 Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor DarkGray
 Write-Host "    1. Let LANpad launch — it appears in your system tray" -ForegroundColor DarkGray
