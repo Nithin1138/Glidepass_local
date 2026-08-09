@@ -1,7 +1,7 @@
-# LANpad Windows Installer Script
+# LANpad Windows Installer Script (Release v1.3.3)
 $ErrorActionPreference = 'Stop'
 
-Write-Host "🚀 Installing LANpad for Windows..." -ForegroundColor Green
+Write-Host "🚀 Installing LANpad for Windows (v1.3.3)..." -ForegroundColor Green
 Write-Host ""
 Write-Host "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:" -ForegroundColor Yellow
 Write-Host "This installer executes a remote script to download and install LANpad." -ForegroundColor Yellow
@@ -19,9 +19,11 @@ Write-Host "data security issues, or system disruption." -ForegroundColor Yellow
 Write-Host "By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
 Write-Host ""
 
-# Define paths
-$PrimaryUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
+# Define mirrors
+$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad.exe"
+$LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad.exe"
 $FallbackUrl = "https://lanpad.app/api/download?platform=windows"
+
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
 $ExePath = Join-Path $InstallDir "LANpad.exe"
 
@@ -37,14 +39,14 @@ if (Test-Path $InstallDir) {
 
 $Downloaded = $false
 
-foreach ($Url in @($PrimaryUrl, $FallbackUrl)) {
+foreach ($Url in @($TagUrl, $LatestUrl, $FallbackUrl)) {
     try {
         Invoke-WebRequest -Uri $Url -OutFile $ExePath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         if (Test-Path $ExePath) {
             $ContentHeader = Get-Content -Path $ExePath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
             if ($ContentHeader -match "<!DOCTYPE" -or $ContentHeader -match "<html" -or $ContentHeader -match "var strBlockCategory") {
                 Remove-Item -Path $ExePath -Force -ErrorAction SilentlyContinue
-                Write-Warning "Received HTML block/error page from $Url. Trying next mirror..."
+                Write-Warning "Network/Firewall returned HTML block page from $Url. Trying next mirror..."
                 continue
             }
             $Downloaded = $true
@@ -57,8 +59,8 @@ foreach ($Url in @($PrimaryUrl, $FallbackUrl)) {
 
 if (-not $Downloaded -or -not (Test-Path $ExePath)) {
     Write-Host "❌ Installation Failed: Could not download LANpad binary executable." -ForegroundColor Red
-    Write-Host "The network proxy, firewall, or server returned an error or block page instead of the application installer." -ForegroundColor Red
-    Write-Host "Please download LANpad directly from: https://github.com/Nithin1138/Glidepass_local/releases" -ForegroundColor Yellow
+    Write-Host "Your network proxy or university campus firewall blocked the download." -ForegroundColor Red
+    Write-Host "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.3" -ForegroundColor Yellow
     exit 1
 }
 

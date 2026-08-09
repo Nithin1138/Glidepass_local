@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🚀 Installing LANpad for macOS..."
+echo "🚀 Installing LANpad for macOS (v1.3.3)..."
 echo ""
 echo "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:"
 echo "This installer executes a remote script to download and install LANpad."
@@ -17,17 +17,17 @@ echo "data security issues, or system disruption."
 echo "By continuing, you agree that you use this software at your own risk."
 echo ""
 
-PRIMARY_URL="https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg"
+TAG_URL="https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad_macOS.dmg"
+LATEST_URL="https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad_macOS.dmg"
 FALLBACK_URL="https://lanpad.app/api/download?platform=mac"
 
 echo "📥 Downloading LANpad DMG..."
 DOWNLOAD_SUCCESS=false
 
-for URL in "$PRIMARY_URL" "$FALLBACK_URL"; do
+for URL in "$TAG_URL" "$LATEST_URL" "$FALLBACK_URL"; do
     rm -f /tmp/LANpad_macOS.dmg
     if curl -sL -f -o /tmp/LANpad_macOS.dmg "$URL"; then
         if [ -f /tmp/LANpad_macOS.dmg ]; then
-            # Verify file is not HTML page
             if grep -q -i "<!DOCTYPE" /tmp/LANpad_macOS.dmg 2>/dev/null || grep -q -i "<html" /tmp/LANpad_macOS.dmg 2>/dev/null; then
                 rm -f /tmp/LANpad_macOS.dmg
                 echo "⚠️ Download returned an HTML error/block page from $URL. Trying next mirror..."
@@ -41,8 +41,8 @@ done
 
 if [ "$DOWNLOAD_SUCCESS" = false ] || [ ! -f /tmp/LANpad_macOS.dmg ]; then
     echo "❌ Error: Could not download LANpad macOS DMG."
-    echo "The network proxy, firewall, or server returned an error or block page."
-    echo "Please download LANpad directly from: https://github.com/Nithin1138/Glidepass_local/releases"
+    echo "Your network proxy or university campus firewall blocked the download."
+    echo "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.3"
     exit 1
 fi
 
