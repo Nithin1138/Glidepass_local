@@ -1,119 +1,104 @@
-# LANpad Windows Installer Script (Release v1.3.5)
-$ErrorActionPreference = 'Stop'
+# LANpad Windows Installer Script
+$ErrorActionPreference = 'SilentlyContinue'
 
-Write-Host "🚀 Installing LANpad for Windows (v1.3.5)..." -ForegroundColor Green
+Write-Host "Installing LANpad for Windows..." -ForegroundColor Green
 Write-Host ""
-Write-Host "⚠️  SECURITY NOTICE & TRUST DISCLOSURE:" -ForegroundColor Yellow
-Write-Host "This installer executes a remote script to download and install LANpad." -ForegroundColor Yellow
-Write-Host "While this script is provided by the LANpad project for convenience," -ForegroundColor Yellow
-Write-Host "running scripts directly from the internet is a potential security risk." -ForegroundColor Yellow
-Write-Host "You should always review the source code of this script at:" -ForegroundColor Yellow
-Write-Host "https://github.com/Nithin1138/Glidepass_local/blob/main/website-v2/public/install-windows.ps1" -ForegroundColor Yellow
-Write-Host "before executing it." -ForegroundColor Yellow
+Write-Host "  LEGAL DISCLAIMER:" -ForegroundColor Yellow
+Write-Host "  LANpad is provided AS IS without warranty of any kind." -ForegroundColor Yellow
+Write-Host "  The developers, contributors, and founders assume NO liability or responsibility" -ForegroundColor Yellow
+Write-Host "  for any misuse of this tool, including academic misconduct, policy violations," -ForegroundColor Yellow
+Write-Host "  data security issues, or system disruption." -ForegroundColor Yellow
+Write-Host "  By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "⚠️  LEGAL DISCLAIMER:" -ForegroundColor Yellow
-Write-Host "LANpad is provided AS IS without warranty of any kind." -ForegroundColor Yellow
-Write-Host "The developers, contributors, and founders assume NO liability or responsibility" -ForegroundColor Yellow
-Write-Host "for any misuse of this tool, including academic misconduct, policy violations," -ForegroundColor Yellow
-Write-Host "data security issues, or system disruption." -ForegroundColor Yellow
-Write-Host "By continuing, you agree that you use this software at your own risk." -ForegroundColor Yellow
-Write-Host ""
-
-# Define mirrors (downloading full application package with all required DLLs)
-$TagUrl = "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.5/LANpad-Windows.zip"
-$LatestUrl = "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
-$FallbackUrl = "https://lanpad.app/api/download?platform=windows"
 
 $InstallDir = "$env:LOCALAPPDATA\LANpad"
 $ZipPath = Join-Path $InstallDir "LANpad-Windows.zip"
 $ExePath = Join-Path $InstallDir "LANpad.exe"
 
-# 1. Prepare installation directory & process management
-Write-Host "📥 Downloading LANpad release bundle..." -ForegroundColor Cyan
+# Stop running processes
 if (Test-Path $InstallDir) {
-    Get-Process -Name "LANpad" -ErrorAction SilentlyContinue | Stop-Process -Force
-    Get-Process -Name "lanpad" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name "LANpad" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "lanpad" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
 } else {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
 
+# Try release mirrors in order (from newest to oldest stable)
+$Mirrors = @(
+    "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.4/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.3/LANpad-Windows.zip"
+)
+
+Write-Host "  Downloading LANpad release bundle..." -ForegroundColor Cyan
 $Downloaded = $false
 
-foreach ($Url in @($TagUrl, $LatestUrl, $FallbackUrl)) {
+foreach ($Url in $Mirrors) {
     try {
         if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue }
-        Invoke-WebRequest -Uri $Url -OutFile $ZipPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        if (Test-Path $ZipPath) {
-            $FileLength = (Get-Item $ZipPath).Length
-            if ($FileLength -lt 500KB) {
-                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
-                Write-Warning "Package from $Url is too small ($FileLength bytes). Trying next mirror..."
-                continue
-            }
-            $ContentHeader = Get-Content -Path $ZipPath -Raw -TotalCount 10 -ErrorAction SilentlyContinue
-            if ($ContentHeader -match "<!DOCTYPE" -or $ContentHeader -match "<html" -or $ContentHeader -match "var strBlockCategory") {
-                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
-                Write-Warning "Network/Firewall returned HTML block page from $Url. Trying next mirror..."
-                continue
-            }
+        Write-Host "  Trying: $Url" -ForegroundColor DarkGray
+        Invoke-WebRequest -Uri $Url -OutFile $ZipPath -UseBasicParsing -TimeoutSec 60 `
+            -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        if ((Test-Path $ZipPath) -and ((Get-Item $ZipPath -ErrorAction SilentlyContinue).Length -gt 500000)) {
             $Downloaded = $true
+            Write-Host "  Download complete!" -ForegroundColor Green
             break
         }
     } catch {
-        Write-Warning "Download from $Url failed: $_"
+        Write-Host "  Failed from this mirror, trying next..." -ForegroundColor DarkGray
     }
 }
 
-if (-not $Downloaded -or -not (Test-Path $ZipPath)) {
-    Write-Host "❌ Installation Failed: Could not download complete LANpad application bundle." -ForegroundColor Red
-    Write-Host "Your network proxy or university campus firewall blocked the download." -ForegroundColor Red
-    Write-Host "Please download LANpad directly from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.5" -ForegroundColor Yellow
+if (-not $Downloaded) {
+    Write-Host "" 
+    Write-Host "  ERROR: Could not download LANpad from any mirror." -ForegroundColor Red
+    Write-Host "  This may be due to your network or firewall blocking GitHub." -ForegroundColor Red
+    Write-Host "  Please download manually from:" -ForegroundColor Yellow
+    Write-Host "  https://github.com/Nithin1138/Glidepass_local/releases/latest" -ForegroundColor Cyan
+    if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue }
     exit 1
 }
 
-# 2. Extract zip containing LANpad.exe and all required DLL plugins
-Write-Host "📦 Extracting application files and DLL plugins..." -ForegroundColor Cyan
+# Extract
+Write-Host "  Extracting files..." -ForegroundColor Cyan
 try {
     Expand-Archive -Path $ZipPath -DestinationPath $InstallDir -Force
     Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
-
-    # Ensure executable exists (check LANpad.exe or lanpad.exe)
-    if (-not (Test-Path $ExePath)) {
-        $AltExe = Join-Path $InstallDir "lanpad.exe"
-        if (Test-Path $AltExe) {
-            $ExePath = $AltExe
-        }
-    }
 } catch {
-    Write-Warning "Failed to extract ZIP package: $_"
-}
-
-if (-not (Test-Path $ExePath) -or (Get-Item $ExePath).Length -lt 100KB) {
-    Write-Host "❌ Installation Failed: Could not find valid LANpad.exe inside extracted directory $InstallDir" -ForegroundColor Red
+    Write-Host "  ERROR: Failed to extract package." -ForegroundColor Red
     exit 1
 }
 
-# 3. Create Desktop Shortcut
+# Find executable
+if (-not (Test-Path $ExePath)) {
+    $AltExe = Join-Path $InstallDir "lanpad.exe"
+    if (Test-Path $AltExe) { $ExePath = $AltExe }
+}
+
+if (-not (Test-Path $ExePath)) {
+    Write-Host "  ERROR: LANpad.exe not found after extraction." -ForegroundColor Red
+    exit 1
+}
+
+# Create Desktop Shortcut
 try {
-    Write-Host "✨ Creating Desktop Shortcut..." -ForegroundColor Cyan
-    $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
-    if (-not $DesktopPath -or -not (Test-Path $DesktopPath)) {
-        $DesktopPath = "$env:USERPROFILE\Desktop"
-    }
+    $DesktopPath = [System.Environment]::GetFolderPath("Desktop")
+    if (-not (Test-Path $DesktopPath)) { $DesktopPath = "$env:USERPROFILE\Desktop" }
     if (Test-Path $DesktopPath) {
         $WshShell = New-Object -ComObject WScript.Shell
-        $ShortcutPath = Join-Path $DesktopPath "LANpad.lnk"
-        if (Test-Path $ShortcutPath) { Remove-Item -Path $ShortcutPath -Force -ErrorAction SilentlyContinue }
-        $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+        $Shortcut = $WshShell.CreateShortcut((Join-Path $DesktopPath "LANpad.lnk"))
         $Shortcut.TargetPath = $ExePath
         $Shortcut.WorkingDirectory = $InstallDir
         $Shortcut.IconLocation = "$ExePath,0"
         $Shortcut.Save()
-        Write-Host "✅ Installed successfully! Double-click the LANpad icon on your Desktop to start." -ForegroundColor Green
-    } else {
-        Write-Warning "Could not locate Desktop folder. LANpad is installed at $ExePath"
     }
-} catch {
-    Write-Warning "Unable to create Desktop shortcut: $_. You can run LANpad directly from $ExePath"
-}
+} catch { }
+
+Write-Host ""
+Write-Host "  LANpad installed successfully!" -ForegroundColor Green
+Write-Host "  Launching LANpad..." -ForegroundColor Cyan
+Start-Process $ExePath
+Write-Host ""
+Write-Host "  Double-click the LANpad icon on your Desktop anytime to start." -ForegroundColor DarkGray
+Write-Host ""
