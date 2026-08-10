@@ -1234,27 +1234,29 @@ export default function ClipboardPage() {
           /* ──────── INSIDE ACTIVE ROOM ──────── */
           <div className="flex-1 flex flex-col lg:flex-row gap-6 lg:gap-8 w-full min-h-0">
             
-            {/* Sidebar Info & Controls */}
-            <div className="w-full lg:w-96 shrink-0 space-y-4 lg:sticky lg:top-20 h-fit">
-              <div className={`p-6 rounded-[28px] border ${borderLight} ${clayBg} space-y-5 shadow-lg`}>
+            {/* Sidebar Info & Controls (Fixed / Pinned on desktop) */}
+            <div className="w-full lg:w-[400px] shrink-0 space-y-4 lg:sticky lg:top-24 self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto pr-1">
+              
+              {/* Card 1: Active Clipboard Room Status */}
+              <div className={`p-5 rounded-[24px] border ${borderLight} ${clayBg} space-y-4 shadow-lg`}>
                 
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#F28500] mb-1.5">Active Clipboard</div>
-                  <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#F28500] mb-1">Active Clipboard</div>
+                  <div className="flex items-center justify-between gap-2">
                     <h2 className="text-2xl font-black font-mono tracking-wider">{currentRoom.code}</h2>
                     <button 
                       onClick={copyRoomCode}
-                      className={`p-2 rounded-xl border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 hover:border-[#468FEA] transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-bold`}
+                      className={`px-3 py-1.5 rounded-xl border ${borderLight} hover:bg-black/5 dark:hover:bg-white/5 hover:border-[#468FEA] transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-extrabold shadow-sm active:scale-95`}
                       title="Copy Share Link"
                     >
                       {copiedCode ? (
                         <>
-                          <Check size={12} className="text-emerald-500" />
+                          <Check size={13} className="text-emerald-500" />
                           <span className="text-emerald-500">Copied!</span>
                         </>
                       ) : (
                         <>
-                          <Copy size={12} className="text-gray-400" />
+                          <Copy size={13} className="text-[#468FEA]" />
                           <span>Copy Link</span>
                         </>
                       )}
@@ -1264,31 +1266,31 @@ export default function ClipboardPage() {
 
                 <div className="h-px bg-black/10 dark:bg-white/10" />
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Expires In</div>
+                    <div className={`text-[10px] font-extrabold ${textSecondary} uppercase tracking-wider`}>Expires In</div>
                     <div className="font-bold flex items-center gap-1 mt-1 text-[#F28500]">
                       <Clock size={12} />
-                      {timeLeft}
+                      <span className="text-[11px] font-mono">{timeLeft}</span>
                     </div>
                     {isHost && (
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1 mt-1">
                         {!hasExtended ? (
                           <button
                             onClick={() => extendRoomTime(30)}
-                            className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#F28500]/10 text-[#F28500] hover:bg-[#F28500]/20 transition-all border border-[#F28500]/20 cursor-pointer animate-pulse"
+                            className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold bg-[#F28500]/10 text-[#F28500] hover:bg-[#F28500]/20 transition-all border border-[#F28500]/20 cursor-pointer animate-pulse"
                             title="Extend room by 30 mins"
                           >
                             +30m
                           </button>
                         ) : (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none whitespace-nowrap">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-[#468FEA]/10 text-[#468FEA] border border-[#468FEA]/20 select-none whitespace-nowrap">
                             Extended ✓
                           </span>
                         )}
                         <button
                           onClick={() => alert("Custom extensions beyond 24 hours require a premium subscription to cover production and cloud resource costs.")}
-                          className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-white transition-all border border-transparent cursor-pointer"
+                          className="px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-white transition-all border border-transparent cursor-pointer"
                           title="Request custom extension duration"
                         >
                           Custom
@@ -1296,58 +1298,58 @@ export default function ClipboardPage() {
                       </div>
                     )}
                   </div>
+
                   <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Active Users</div>
+                    <div className={`text-[10px] font-extrabold ${textSecondary} uppercase tracking-wider`}>Active Users</div>
                     <div className="font-bold flex items-center gap-1 mt-1 text-emerald-500">
                       <Users size={12} />
-                      <span>{activeUsers} active</span>
+                      <span className="text-[11px]">{activeUsers} active</span>
                     </div>
                   </div>
-                  <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase tracking-wider`}>Your Profile</div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="font-bold text-xs">{isHost ? "Host 👑" : "Member"}</span>
-                      <span className="text-gray-400">•</span>
-                      {isEditingName ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="text"
-                            value={nameInput}
-                            onChange={(e) => setNameInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter") saveDisplayName(); }}
-                            autoFocus
-                            className={`px-1.5 py-0.5 text-xs rounded border ${borderLight} bg-black/10 dark:bg-white/10 w-24 focus:outline-none font-semibold`}
-                          />
-                          <button
-                            type="button"
-                            onClick={saveDisplayName}
-                            className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition-colors cursor-pointer"
-                            title="Save display name"
-                          >
-                            <Check size={10} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 group">
-                          <span className="font-extrabold text-xs text-[#468FEA]">{displayName}</span>
-                          <button
-                            type="button"
-                            onClick={() => { setNameInput(displayName); setIsEditingName(true); }}
-                            className="opacity-60 group-hover:opacity-100 p-0.5 hover:text-[#468FEA] transition-all cursor-pointer"
-                            title="Click to edit your display name"
-                          >
-                            <Pen size={10} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+
+                  <div className="min-w-0">
+                    <div className={`text-[10px] font-extrabold ${textSecondary} uppercase tracking-wider`}>Your Profile</div>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input
+                          type="text"
+                          value={nameInput}
+                          onChange={(e) => setNameInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveDisplayName(); }}
+                          autoFocus
+                          className={`px-1.5 py-0.5 text-xs rounded-lg border ${borderLight} bg-black/10 dark:bg-white/10 w-24 focus:outline-none font-bold`}
+                        />
+                        <button
+                          type="button"
+                          onClick={saveDisplayName}
+                          className="p-1 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors cursor-pointer"
+                          title="Save display name"
+                        >
+                          <Check size={11} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 mt-1 group">
+                        <span className="font-extrabold text-xs text-[#468FEA] truncate max-w-[85px]">{displayName}</span>
+                        <span className="text-gray-400 text-[10px]">•</span>
+                        <span className="text-[10px] font-bold text-gray-500">{isHost ? "Host 👑" : "Member"}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setNameInput(displayName); setIsEditingName(true); }}
+                          className="opacity-70 group-hover:opacity-100 p-0.5 hover:text-[#468FEA] transition-all cursor-pointer ml-0.5"
+                          title="Click to edit your display name"
+                        >
+                          <Pen size={10} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 text-xs">
                   <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase tracking-wider`}>Room Write Permissions</div>
-                    <div className="flex items-center justify-between mt-2 p-2.5 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                    <div className={`text-[10px] font-extrabold ${textSecondary} uppercase tracking-wider mb-1.5`}>Room Write Permissions</div>
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
                       <div className="flex items-center gap-2">
                         {currentRoom.allowAllMembersToAdd ? (
                           <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
@@ -1400,10 +1402,10 @@ export default function ClipboardPage() {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <button 
                     onClick={handleLeaveRoom}
-                    className="w-full py-2.5 rounded-xl border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full py-2 rounded-xl border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     <LogOut size={13} />
                     Leave Room
@@ -1412,52 +1414,56 @@ export default function ClipboardPage() {
 
               </div>
 
-              {/* Add Item Form (Visible if allowed) */}
+              {/* Card 2: Add Item Form (Visible if allowed) */}
               {canAddItems ? (
-                <div className={`p-6 rounded-[28px] border ${borderLight} ${clayBg} space-y-4 shadow-lg`}>
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
-                      
-                      {/* Direct Paste Clipboard Button */}
-                      <button
-                        type="button"
-                        onClick={handlePasteClipboard}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[9px] font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
-                        title="Paste text, copied images, or files directly from system clipboard"
-                      >
-                        <Clipboard size={11} />
-                        <span>Paste Clipboard</span>
-                      </button>
-                    </div>
-
+                <div className={`p-5 rounded-[24px] border ${borderLight} ${clayBg} space-y-4 shadow-lg`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
+                    
                     {/* Mode Toggle */}
-                    <div className="flex rounded-lg border border-black/10 dark:border-white/10 overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-[9px] font-bold">
+                    <div className="flex rounded-xl border border-black/10 dark:border-white/10 overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-[9px] font-bold">
                       <button
                         type="button"
                         onClick={() => { setUploadMode("text"); setError(""); }}
-                        className={`px-2 py-1 rounded transition-all cursor-pointer ${uploadMode === "text" ? "bg-[#468FEA] text-white" : "text-gray-400"}`}
+                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${uploadMode === "text" ? "bg-[#468FEA] text-white shadow-sm" : "text-gray-400"}`}
                       >
                         Text/Code
                       </button>
                       <button
                         type="button"
                         onClick={() => { setUploadMode("file"); setError(""); }}
-                        className={`px-2 py-1 rounded transition-all cursor-pointer ${uploadMode === "file" ? "bg-[#F28500] text-white" : "text-gray-400"}`}
+                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${uploadMode === "file" ? "bg-[#F28500] text-white shadow-sm" : "text-gray-400"}`}
                       >
                         File/Image ({stagedFiles.length})
                       </button>
                     </div>
                   </div>
+
+                  {/* Direct Paste Clipboard Bar */}
+                  <div className="flex items-center justify-between p-2 rounded-xl border border-purple-500/20 bg-purple-500/5">
+                    <div className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                      <Sparkles size={12} />
+                      <span>Quick Clipboard Sync</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePasteClipboard}
+                      className="flex items-center gap-1 px-3 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[10px] font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                      title="Paste text, copied images, or files directly from system clipboard"
+                    >
+                      <Clipboard size={12} />
+                      <span>Paste Clipboard</span>
+                    </button>
+                  </div>
                   
-                  <form onSubmit={handleAddItem} className="space-y-4">
+                  <form onSubmit={handleAddItem} className="space-y-3.5">
                     <div>
                       <input 
                         type="text" 
                         placeholder={uploadMode === "text" ? "Title (optional)" : "File Display Title (optional)"}
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
-                        className={`w-full px-3 py-2.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA]`}
+                        className={`w-full px-3 py-2.5 text-xs rounded-xl border ${borderLight} bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[#468FEA] font-semibold`}
                       />
                     </div>
 
