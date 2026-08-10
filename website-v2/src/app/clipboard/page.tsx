@@ -192,8 +192,7 @@ export default function ClipboardPage() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // File Upload States
-  const [stagedFile, setStagedFile] = useState<File | null>(null);
-  const [stagedFileBase64, setStagedFileBase64] = useState<string>("");
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -358,7 +357,7 @@ export default function ClipboardPage() {
           const file = item.getAsFile();
           if (file) {
             setUploadMode("file");
-            stageFile(file);
+            stageFiles([file]);
             e.preventDefault();
             break;
           }
@@ -489,33 +488,32 @@ export default function ClipboardPage() {
     joinRoom(roomCodeInput.trim().toUpperCase());
   };
 
-  // Convert staged file and stage it
-  const stageFile = (file: File) => {
-    // 100MB limit check
-    const limitBytes = 100 * 1024 * 1024;
-    if (file.size > limitBytes) {
-      setError("File exceeds 100MB limit. Please choose a smaller file.");
-      return;
+  // Convert staged files and stage them
+  const stageFiles = (files: FileList | File[]) => {
+    const limitBytes = 25 * 1024 * 1024;
+    const fileArray = Array.from(files);
+    const validFiles: File[] = [];
+
+    for (const file of fileArray) {
+      if (file.size > limitBytes) {
+        setError(`File "${file.name}" exceeds 25MB limit.`);
+        continue;
+      }
+      validFiles.push(file);
     }
 
-    setStagedFile(file);
-    setError("");
-    if (!newTitle) {
-      setNewTitle(file.name);
-    }
-
-    // Instant local object URL for preview (zero CPU time/memory footprint)
-    if (file.type.startsWith("image/")) {
-      const previewUrl = URL.createObjectURL(file);
-      setStagedFileBase64(previewUrl);
-    } else {
-      setStagedFileBase64("");
+    if (validFiles.length > 0) {
+      setStagedFiles(prev => [...prev, ...validFiles]);
+      setError("");
+      if (!newTitle) {
+        setNewTitle(validFiles.length === 1 ? validFiles[0].name : `${validFiles.length} files staged`);
+      }
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      stageFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      stageFiles(e.target.files);
     }
   };
 
@@ -534,17 +532,149 @@ export default function ClipboardPage() {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      stageFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setUploadMode("file");
+      stageFiles(e.dataTransfer.files);
     }
   };
 
-  const clearStagedFile = () => {
-    setStagedFile(null);
-    setStagedFileBase64("");
+  const removeStagedFile = (index: number) => {
+    setStagedFiles(prev => {
+      const updated = prev.filter((_, idx) => idx !== index);
+      if (updated.length === 0 && fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return updated;
+    });
+  };
+
+  const clearStagedFiles = () => {
+    setStagedFiles([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  // Direct Clipboard Paste handler (Text, Images, Files)
+  const handlePasteClipboard = async () => {
+    try {
+      setError("");
+      if (navigator.clipboard && navigator.clipboard.read) {
+        try {
+          const items = await navigator.clipboard.read();
+          const pastedFiles: File[] = [];
+          let pastedText = "";
+
+          for (const item of items) {
+            for (const type of item.types) {
+              if (type.startsWith("image/") || type.startsWith("application/")) {
+                const blob = await item.getType(type);
+                const ext = type.split("/")[1] || "png";
+                const file = new window.File([blob], `clipboard_${Date.now()}.${ext}`, { type });
+                pastedFiles.push(file);
+              } else if (type === "text/plain") {
+                const blob = await item.getType(type);
+                pastedText = await blob.text();
+              }
+            }
+          }
+
+          if (pastedFiles.length > 0) {
+            setUploadMode("file");
+            stageFiles(pastedFiles);
+            return;
+          } else if (pastedText) {
+            setUploadMode("text");
+            setNewContent(pastedText);
+            return;
+          }
+        } catch (clipErr) {
+          // Fallback to readText if read() permission is denied
+        }
+      }
+
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setUploadMode("text");
+          setNewContent(text);
+          return;
+        }
+      }
+
+      setError("No content found in clipboard or clipboard access denied.");
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to read clipboard. You can paste using Ctrl+V.");
+    }
+  };
+
+  const uploadSingleFile = (file: File, displayTitle: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const uploadId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const CHUNK_SIZE = 2 * 1024 * 1024;
+      const totalSize = file.size;
+      const totalChunks = Math.max(1, Math.ceil(totalSize / CHUNK_SIZE));
+      let currentChunk = 0;
+
+      const uploadNextChunk = () => {
+        const start = currentChunk * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, totalSize);
+        const chunk = file.slice(start, end);
+
+        const queryParams = new URLSearchParams({
+          roomCode: currentRoom!.code,
+          title: displayTitle,
+          sessionId: sessionId,
+          fileName: file.name,
+          fileType: file.type || "application/octet-stream",
+          fileSize: totalSize.toString(),
+          uploadId: uploadId,
+          chunkIndex: currentChunk.toString(),
+          totalChunks: totalChunks.toString()
+        });
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const bytesDone = currentChunk * CHUNK_SIZE + event.loaded;
+            setUploadProgress(Math.min(98, Math.round((bytesDone / totalSize) * 100)));
+          }
+        };
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+              if (currentChunk < totalChunks - 1) {
+                currentChunk++;
+                uploadNextChunk();
+              } else {
+                setUploadProgress(100);
+                resolve(true);
+              }
+            } else {
+              setError(data.error || `Upload failed for ${file.name}`);
+              resolve(false);
+            }
+          } catch (e) {
+            setError(`Upload error for ${file.name}`);
+            resolve(false);
+          }
+        };
+
+        xhr.onerror = () => {
+          setError(`Network error uploading ${file.name}`);
+          resolve(false);
+        };
+
+        xhr.send(chunk);
+      };
+
+      uploadNextChunk();
+    });
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
@@ -590,95 +720,25 @@ export default function ClipboardPage() {
         setAddingItem(false);
       }
     } else {
-      if (!stagedFile) {
-        setError("Please select or drop a file to upload.");
-        setAddingItem(false);
-        return;
-      }
-      if (!finalTitle) finalTitle = stagedFile.name;
-
-      // 25 MB guard — chunks go to DB (not disk), so no /tmp issues
-      const MAX_FILE_BYTES = 25 * 1024 * 1024;
-      if (stagedFile.size > MAX_FILE_BYTES) {
-        setError("File exceeds the 25 MB limit for clipboard rooms.");
+      if (stagedFiles.length === 0) {
+        setError("Please select, drop, or paste files to upload.");
         setAddingItem(false);
         return;
       }
 
-      // Chunk size: 2 MB binary = ~2.7 MB base64 → stays under Vercel's 4.5 MB cap
-      const uploadId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const CHUNK_SIZE = 2 * 1024 * 1024;
-      const totalSize = stagedFile.size;
-      const totalChunks = Math.max(1, Math.ceil(totalSize / CHUNK_SIZE));
-      let currentChunk = 0;
+      for (let i = 0; i < stagedFiles.length; i++) {
+        const file = stagedFiles[i];
+        const itemTitle = stagedFiles.length === 1 && finalTitle ? finalTitle : file.name;
+        const success = await uploadSingleFile(file, itemTitle);
+        if (!success) break;
+      }
 
-      const uploadNextChunk = () => {
-        const start = currentChunk * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, totalSize);
-        const chunk = stagedFile.slice(start, end);
-
-        const queryParams = new URLSearchParams({
-          roomCode: currentRoom.code,
-          title: finalTitle,
-          sessionId: sessionId,
-          fileName: stagedFile.name,
-          fileType: stagedFile.type || "application/octet-stream",
-          fileSize: totalSize.toString(),
-          uploadId: uploadId,
-          chunkIndex: currentChunk.toString(),
-          totalChunks: totalChunks.toString()
-        });
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `/api/clipboard/upload?${queryParams.toString()}`);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const bytesDone = currentChunk * CHUNK_SIZE + event.loaded;
-            setUploadProgress(Math.min(98, Math.round((bytesDone / totalSize) * 100)));
-          }
-        };
-
-        xhr.onload = () => {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
-              if (currentChunk < totalChunks - 1) {
-                currentChunk++;
-                uploadNextChunk();
-              } else {
-                setUploadProgress(100);
-                setTimeout(() => {
-                  setAddingItem(false);
-                  setUploadProgress(null);
-                  setNewTitle("");
-                  setNewContent("");
-                  clearStagedFile();
-                  fetchRoomDetails(currentRoom.code);
-                }, 400);
-              }
-            } else {
-              setAddingItem(false);
-              setUploadProgress(null);
-              setError(data.error || `Upload failed at chunk ${currentChunk + 1}`);
-            }
-          } catch {
-            setAddingItem(false);
-            setUploadProgress(null);
-            setError(`Upload failed: invalid server response (${xhr.status})`);
-          }
-        };
-
-        xhr.onerror = () => {
-          setAddingItem(false);
-          setUploadProgress(null);
-          setError("Upload failed: network error.");
-        };
-
-        xhr.send(chunk);
-      };
-
-      uploadNextChunk();
+      setAddingItem(false);
+      setUploadProgress(null);
+      setNewTitle("");
+      setNewContent("");
+      clearStagedFiles();
+      fetchRoomDetails(currentRoom.code);
     }
   };
 
@@ -839,7 +899,7 @@ export default function ClipboardPage() {
   const handleLeaveRoom = () => {
     setCurrentRoom(null);
     setItems([]);
-    clearStagedFile();
+    clearStagedFiles();
     localStorage.removeItem("glidepass_active_room_code"); // Clear active room on exit/expiry
     window.history.replaceState(null, "", window.location.pathname);
   };
@@ -1280,9 +1340,22 @@ export default function ClipboardPage() {
               {/* Add Item Form (Visible if allowed) */}
               {canAddItems ? (
                 <div className={`p-6 rounded-[28px] border ${borderLight} ${clayBg} space-y-4 shadow-lg`}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
-                    
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#468FEA]">Add to Clipboard</div>
+                      
+                      {/* Direct Paste Clipboard Button */}
+                      <button
+                        type="button"
+                        onClick={handlePasteClipboard}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[9px] font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                        title="Paste text, copied images, or files directly from system clipboard"
+                      >
+                        <Clipboard size={11} />
+                        <span>Paste Clipboard</span>
+                      </button>
+                    </div>
+
                     {/* Mode Toggle */}
                     <div className="flex rounded-lg border border-black/10 dark:border-white/10 overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-[9px] font-bold">
                       <button
@@ -1297,7 +1370,7 @@ export default function ClipboardPage() {
                         onClick={() => { setUploadMode("file"); setError(""); }}
                         className={`px-2 py-1 rounded transition-all cursor-pointer ${uploadMode === "file" ? "bg-[#F28500] text-white" : "text-gray-400"}`}
                       >
-                        File/Image
+                        File/Image ({stagedFiles.length})
                       </button>
                     </div>
                   </div>
@@ -1317,7 +1390,7 @@ export default function ClipboardPage() {
                       <div>
                         <textarea 
                           rows={5}
-                          placeholder="Paste content here..." 
+                          placeholder="Paste content here or click 'Paste Clipboard' above..." 
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
                           required
@@ -1345,32 +1418,49 @@ export default function ClipboardPage() {
                             onChange={handleFileChange}
                             className="hidden"
                             accept="*/*"
+                            multiple
                           />
                           <UploadCloud size={28} className={dragActive ? "text-[#F28500]" : "text-gray-400"} />
                           <div className="text-[10px] font-bold">
-                            Drag & drop file or <span className="text-[#468FEA] hover:underline">browse</span>
+                            Drag & drop file(s) or <span className="text-[#468FEA] hover:underline">browse multiple</span>
                           </div>
                           <div className="text-[8px] text-gray-500 leading-normal">
-                            Supports PDF, DOCX, ZIP, PNG, JPG, etc. (Max 100MB)
+                            Supports PDF, DOCX, ZIP, PNG, JPG, etc. Select multiple images/files or paste directly!
                           </div>
                         </div>
 
-                        {stagedFile && (
-                          <div className="flex items-center justify-between p-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {getFileIcon(stagedFile.type, stagedFile.name)}
-                              <div className="min-w-0">
-                                <div className="text-[10px] font-bold truncate">{stagedFile.name}</div>
-                                <div className="text-[8px] text-gray-500">{formatBytes(stagedFile.size)}</div>
-                              </div>
+                        {stagedFiles.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[9px] font-bold text-gray-400">
+                              <span>Staged Items ({stagedFiles.length})</span>
+                              <button
+                                type="button"
+                                onClick={clearStagedFiles}
+                                className="hover:text-rose-500 transition-colors cursor-pointer"
+                              >
+                                Clear All
+                              </button>
                             </div>
-                            <button 
-                              type="button"
-                              onClick={clearStagedFile}
-                              className="p-1 hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <X size={14} />
-                            </button>
+                            <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                              {stagedFiles.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {getFileIcon(file.type, file.name)}
+                                    <div className="min-w-0">
+                                      <div className="text-[10px] font-bold truncate">{file.name}</div>
+                                      <div className="text-[8px] text-gray-500">{formatBytes(file.size)}</div>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    type="button"
+                                    onClick={() => removeStagedFile(idx)}
+                                    className="p-1 hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1393,7 +1483,7 @@ export default function ClipboardPage() {
 
                     <button 
                       type="submit"
-                      disabled={addingItem || (uploadMode === "text" ? !newContent.trim() : !stagedFile)}
+                      disabled={addingItem || (uploadMode === "text" ? !newContent.trim() : stagedFiles.length === 0)}
                       className={`w-full py-2.5 rounded-xl text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer ${
                         uploadMode === "text" ? "bg-[#468FEA] hover:bg-[#3b7dc9]" : "bg-[#F28500] hover:bg-[#d97700]"
                       }`}
