@@ -1,5 +1,5 @@
 # ============================================================
-#   LANpad Installer for Windows (PowerShell - Release v1.3.6)
+#   LANpad Installer for Windows (PowerShell - Release v1.3.7)
 #   https://github.com/Nithin1138/Glidepass_local
 # ============================================================
 #   Run with:
@@ -77,10 +77,10 @@ if (Test-Path $InstallDir) {
 }
 
 $Mirrors = @(
-    "https://github.com/$repo/releases/download/v1.3.6/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/download/v1.3.7/LANpad-Windows.zip",
     "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/download/v1.3.4/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/download/v1.3.3/LANpad-Windows.zip"
+    "https://github.com/$repo/releases/download/v1.3.6/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/download/v1.3.4/LANpad-Windows.zip"
 )
 
 $Downloaded = $false
@@ -108,18 +108,29 @@ foreach ($url in $Mirrors) {
 
 if (-not $Downloaded) {
     Write-Fail "Could not download LANpad package from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.6" -ForegroundColor Yellow
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.7" -ForegroundColor Yellow
     exit 1
 }
 
 Start-Sleep -Milliseconds 300
 
-# ── Extract Package ──────────────────────────────────────────
+# ── Extract & Flatten Package ──────────────────────────────────
 Write-Host ""
 Write-Step 3 4 "Extracting application files and plugin DLLs..."
 try {
+    # Clean old binaries
+    Get-ChildItem -Path $InstallDir | Where-Object { $_.FullName -ne $ZipPath } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
     Expand-Archive -Path $ZipPath -DestinationPath $InstallDir -Force
     Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
+
+    # Move files out of subfolder if zip contained top-level folder
+    $SubExe = Get-ChildItem -Path $InstallDir -Filter "LANpad.exe" -Recurse | Select-Object -First 1
+    if ($SubExe -and ($SubExe.DirectoryName -ne $InstallDir)) {
+        $SubDir = $SubExe.DirectoryName
+        Get-ChildItem -Path $SubDir | Move-Item -Destination $InstallDir -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $SubDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     if (-not (Test-Path $ExePath)) {
         $AltExe = Join-Path $InstallDir "lanpad.exe"
