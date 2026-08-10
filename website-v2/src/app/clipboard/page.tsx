@@ -205,6 +205,29 @@ export default function ClipboardPage() {
   const [editingContentItemId, setEditingContentItemId] = useState<string | null>(null);
   const [editContentInput, setEditContentInput] = useState("");
 
+  // User Display Name state
+  const [displayName, setDisplayName] = useState<string>("Nithin");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("Nithin");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("glidepass_user_display_name");
+    if (savedName) {
+      setDisplayName(savedName);
+      setNameInput(savedName);
+    } else {
+      localStorage.setItem("glidepass_user_display_name", "Nithin");
+    }
+  }, []);
+
+  const saveDisplayName = () => {
+    const trimmed = nameInput.trim() || "Nithin";
+    setDisplayName(trimmed);
+    setNameInput(trimmed);
+    localStorage.setItem("glidepass_user_display_name", trimmed);
+    setIsEditingName(false);
+  };
+
   // AI Interactive Chat States
   interface ChatMessage {
     id: string;
@@ -1281,47 +1304,99 @@ export default function ClipboardPage() {
                     </div>
                   </div>
                   <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Your Role</div>
-                    <div className="font-bold mt-1">{isHost ? "Room Host 👑" : "Member"}</div>
+                    <div className={`text-[10px] font-bold ${textSecondary} uppercase tracking-wider`}>Your Profile</div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="font-bold text-xs">{isHost ? "Host 👑" : "Member"}</span>
+                      <span className="text-gray-400">•</span>
+                      {isEditingName ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={nameInput}
+                            onChange={(e) => setNameInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveDisplayName(); }}
+                            autoFocus
+                            className={`px-1.5 py-0.5 text-xs rounded border ${borderLight} bg-black/10 dark:bg-white/10 w-24 focus:outline-none font-semibold`}
+                          />
+                          <button
+                            type="button"
+                            onClick={saveDisplayName}
+                            className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition-colors cursor-pointer"
+                            title="Save display name"
+                          >
+                            <Check size={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 group">
+                          <span className="font-extrabold text-xs text-[#468FEA]">{displayName}</span>
+                          <button
+                            type="button"
+                            onClick={() => { setNameInput(displayName); setIsEditingName(true); }}
+                            className="opacity-60 group-hover:opacity-100 p-0.5 hover:text-[#468FEA] transition-all cursor-pointer"
+                            title="Click to edit your display name"
+                          >
+                            <Pen size={10} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 text-xs">
                   <div>
-                    <div className={`text-[10px] font-bold ${textSecondary} uppercase`}>Permissions</div>
-                    {isHost ? (
-                      <button
-                        onClick={toggleRoomPermissions}
-                        className="font-bold flex items-center gap-1.5 mt-1 hover:opacity-80 transition-opacity text-left cursor-pointer"
-                        title="Click to toggle permissions"
-                      >
+                    <div className={`text-[10px] font-bold ${textSecondary} uppercase tracking-wider`}>Room Write Permissions</div>
+                    <div className="flex items-center justify-between mt-2 p-2.5 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                      <div className="flex items-center gap-2">
                         {currentRoom.allowAllMembersToAdd ? (
-                          <>
-                            <Unlock size={12} className="text-emerald-500" />
-                            <span className="text-emerald-500">Everyone can add (Toggle)</span>
-                          </>
+                          <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <Unlock size={14} />
+                          </div>
                         ) : (
-                          <>
-                            <Lock size={12} className="text-[#F28500]" />
-                            <span className="text-[#F28500]">Only host can add (Toggle)</span>
-                          </>
+                          <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <Lock size={14} />
+                          </div>
                         )}
-                      </button>
-                    ) : (
-                      <div className="font-bold flex items-center gap-1.5 mt-1">
-                        {currentRoom.allowAllMembersToAdd ? (
-                          <>
-                            <Unlock size={12} className="text-emerald-500" />
-                            <span className="text-emerald-500">Everyone can add</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock size={12} className="text-[#F28500]" />
-                            <span className="text-[#F28500]">Only host can add</span>
-                          </>
-                        )}
+                        <div>
+                          <div className="text-xs font-extrabold">
+                            {currentRoom.allowAllMembersToAdd ? "Everyone Can Add" : "Only Host Can Add"}
+                          </div>
+                          <div className="text-[9px] text-gray-400 leading-none">
+                            {currentRoom.allowAllMembersToAdd ? "All room members can contribute items" : "Restricted: Only host can add items"}
+                          </div>
+                        </div>
                       </div>
-                    )}
+
+                      {isHost ? (
+                        <button
+                          type="button"
+                          onClick={toggleRoomPermissions}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            currentRoom.allowAllMembersToAdd ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]" : "bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                          }`}
+                          title="Click to toggle write permissions for all room members"
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                              currentRoom.allowAllMembersToAdd ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          >
+                            {currentRoom.allowAllMembersToAdd ? (
+                              <Unlock size={10} className="text-emerald-600" />
+                            ) : (
+                              <Lock size={10} className="text-amber-600" />
+                            )}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          currentRoom.allowAllMembersToAdd ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                        }`}>
+                          {currentRoom.allowAllMembersToAdd ? "Unlocked" : "Locked"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
