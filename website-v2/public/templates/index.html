@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LANpad Mobile Command</title>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap"></noscript>
     <style>
         :root {
             --bg-color: #050505;
@@ -30,15 +31,17 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html, body {
+            min-height: 100%;
+            width: 100%;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            min-height: 100vh;
-            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            overflow-x: hidden;
         }
 
         #app-wrapper {
@@ -53,7 +56,7 @@
 
         .view {
             width: 100%;
-            flex: 1;
+            min-height: 100vh;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -61,6 +64,7 @@
             flex-direction: column;
             padding: 15px;
             /* Reduced padding */
+            box-sizing: border-box;
         }
 
         .view.active {
@@ -203,8 +207,11 @@
             justify-content: center;
             text-align: center;
             flex: 1;
+            min-height: 100vh;
             gap: 24px;
             z-index: 1;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
 
         .logo-stack {
@@ -248,20 +255,20 @@
             background: linear-gradient(135deg, var(--accent-color) 0%, #009BF5 100%);
             color: #ffffff;
             border: none;
-            padding: 18px;
-            border-radius: 16px;
+            padding: 14px 20px;
+            border-radius: 14px;
             font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 1rem;
-            letter-spacing: 0.1em;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-top: 20px;
-            box-shadow: 0 10px 30px var(--accent-glow), inset 0 2px 4px rgba(255,255,255,0.2);
+            gap: 10px;
+            margin-top: 16px;
+            box-shadow: 0 8px 24px var(--accent-glow), inset 0 2px 4px rgba(255,255,255,0.2);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -647,7 +654,30 @@
 <body>
     <div id="app-wrapper">
         <!-- Initial View -->
-        <div id="initial-view" class="view active" style="overflow: hidden; position: relative;">
+        <div id="initial-view" class="view active" style="position: relative;">
+            <!-- Status Pill Switcher at Top Left -->
+            <div id="switch-conn-pill-container" style="display: none; position: absolute; top: 20px; left: 20px; z-index: 10; align-items: center; gap: 8px;">
+                <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+                    <span id="switch-conn-status-dot" style="width: 5px; height: 5px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 6px #3b82f6;"></span>
+                    <span id="switch-conn-text" style="color: var(--text-muted);">Connection: Hybrid</span>
+                </div>
+                <div id="switch-conn-btn" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.2s;" title="Switch Connection">
+                    <i data-lucide="refresh-cw" size="16" style="color: var(--text-main);"></i>
+                </div>
+            </div>
+
+            <div id="support-button-home" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="window.location.href='https://lanpad.app/support'">
+                <i data-lucide="help-circle" style="color: var(--text-main);"></i>
+            </div>
+            <div id="files-button-home" style="position: absolute; top: 72px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/files' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
+                <i data-lucide="folder-up" style="color: var(--text-main);"></i>
+            </div>
+            <div id="extra-button-home" style="position: absolute; top: 124px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" title="Exam Command Center" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/exam' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
+                <i id="extra-button-icon" data-lucide="shield-alert" style="color: var(--text-main);"></i>
+            </div>
+            <div id="notification-toggle-home" style="display: none; position: absolute; top: 20px; right: 75px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                <i id="notification-icon-home" data-lucide="bell" size="20"></i>
+            </div>
             <div class="space-bg">
                 <div class="nebula"></div>
                 <div class="stars layer1"></div>
@@ -667,32 +697,154 @@
                     <h1>Linked Up</h1>
                     <p>Connected to laptop command center. Ready to bridge your data.</p>
                 </div>
-                <button class="connect-btn-main" id="launch-btn">
+                
+                <!-- Action Buttons Stacked Vertically but Close -->
+                <button class="connect-btn-main" id="launch-btn" style="margin-top: 24px; width: 100%;">
                     <span>ENTER COMMAND CENTER</span>
                     <i data-lucide="chevron-right" size="20"></i>
                 </button>
-                <button class="connect-btn-main" id="vit-btn"
-                    style="margin-top: 15px; background: rgba(72, 187, 120, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color);">
-                    <span>VIT-AP (Today's code)</span>
-                    <i data-lucide="code" size="20"></i>
+                <button class="connect-btn-main" id="resources-btn"
+                    style="margin-top: 12px; width: 100%; background: rgba(0, 119, 192, 0.12); border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none;">
+                    <span>Browse Resources</span>
+                    <i data-lucide="compass" size="20"></i>
                 </button>
             </div>
         </div>
 
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
         lucide.createIcons();
 
+        // Notification Settings Logic
+        const notifBtn = document.getElementById('notification-toggle-home');
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            toast.style.transform = 'translateX(-50%) scale(1.05)';
+            setTimeout(() => toast.style.transform = 'translateX(-50%) scale(1)', 150);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateX(-50%)';
+            }, 2500);
+        }
+
+        function updateHomeNotificationUI() {
+            const enabled = localStorage.getItem('lanpad_notifications') === 'true';
+            if (enabled) {
+                notifBtn.innerHTML = `<i id="notification-icon-home" data-lucide="bell" size="20" style="color: var(--accent-color);"></i>`;
+                notifBtn.style.borderColor = 'var(--accent-color)';
+                notifBtn.style.boxShadow = '0 0 10px var(--accent-glow)';
+            } else {
+                notifBtn.innerHTML = `<i id="notification-icon-home" data-lucide="bell-off" size="20" style="color: var(--text-muted);"></i>`;
+                notifBtn.style.borderColor = 'var(--border-color)';
+                notifBtn.style.boxShadow = 'none';
+            }
+            lucide.createIcons();
+        }
+
+        if (notifBtn) {
+            notifBtn.addEventListener('click', () => {
+                const currentlyEnabled = localStorage.getItem('lanpad_notifications') !== 'false';
+                const nextState = !currentlyEnabled;
+                localStorage.setItem('lanpad_notifications', nextState ? 'true' : 'false');
+                updateHomeNotificationUI();
+
+                if (nextState) {
+                    if ('Notification' in window) {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                showToast('Notifications enabled!');
+                                localStorage.setItem('lanpad_notifications_asked', 'true');
+                            } else if (permission === 'denied') {
+                                showToast('Audio & Vibe active (Push blocked by browser settings).', 'success');
+                                localStorage.setItem('lanpad_notifications_asked', 'true');
+                            }
+                        });
+                    } else {
+                        showToast('Audio & Vibe active (Push unsupported on HTTP).', 'success');
+                        localStorage.setItem('lanpad_notifications_asked', 'true');
+                    }
+                } else {
+                    showToast('Notifications disabled.');
+                }
+            });
+        }
+
+        // Extract and save session ID (sid) from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        let sid = urlParams.get('sid') || sessionStorage.getItem('sid') || '';
+        if (sid) {
+            sessionStorage.setItem('sid', sid);
+        }
+
+        updateHomeNotificationUI();
+
         const launchBtn = document.getElementById('launch-btn');
         launchBtn.addEventListener('click', () => {
-            window.location.href = '/center';
+            const s = sessionStorage.getItem('sid') || '';
+            window.location.href = '/center' + (s ? '?sid=' + encodeURIComponent(s) : '');
         });
 
-        const vitBtn = document.getElementById('vit-btn');
-        vitBtn.addEventListener('click', () => {
-            window.location.href = '/vitcodes';
+        const resourcesBtn = document.getElementById('resources-btn');
+        resourcesBtn.addEventListener('click', () => {
+            const s = sessionStorage.getItem('sid') || '';
+            window.location.href = '/resources' + (s ? '?sid=' + encodeURIComponent(s) : '');
         });
+
+        // Connection Info & Switcher
+        async function initConnectionSwitcher() {
+            try {
+                const s = sessionStorage.getItem('sid') || '';
+                const response = await fetch(`/api/connection/info?_t=${Date.now()}`);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const pillContainer = document.getElementById('switch-conn-pill-container');
+                    const switchBtn = document.getElementById('switch-conn-btn');
+                    const switchText = document.getElementById('switch-conn-text');
+                    const statusDot = document.getElementById('switch-conn-status-dot');
+                    const hostname = window.location.hostname;
+                    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+                    
+                    if (isLocal) {
+                        if (data.tunnel_url) {
+                            switchText.innerHTML = 'Connection: <strong style="color:var(--text-main)">LAN Direct</strong>';
+                            if (statusDot) {
+                                statusDot.style.backgroundColor = '#00F59B';
+                                statusDot.style.boxShadow = '0 0 8px #00F59B';
+                            }
+                            pillContainer.style.display = 'flex';
+                            switchBtn.style.display = 'flex';
+                            switchBtn.title = 'Switch to Hybrid Tunnel';
+                            switchBtn.addEventListener('click', () => {
+                                window.location.href = data.tunnel_url + (s ? '?sid=' + encodeURIComponent(s) : '');
+                            });
+                        }
+                    } else {
+                        if (data.lan_ip) {
+                            switchText.innerHTML = 'Connection: <strong style="color:var(--text-main)">Hybrid Tunnel</strong>';
+                            if (statusDot) {
+                                statusDot.style.backgroundColor = '#3b82f6';
+                                statusDot.style.boxShadow = '0 0 8px #3b82f6';
+                            }
+                            pillContainer.style.display = 'flex';
+                            switchBtn.style.display = 'flex';
+                            switchBtn.title = 'Switch to LAN Direct';
+                            switchBtn.addEventListener('click', () => {
+                                window.location.href = `http://${data.lan_ip}:8000/` + (s ? `?sid=${encodeURIComponent(s)}` : '');
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load connection info switcher:', e);
+            }
+        }
+        initConnectionSwitcher();
 
         // Connect to active status websocket
         function connectWebSocket() {

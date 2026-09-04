@@ -490,7 +490,7 @@ def fetch_ota_templates():
     os.makedirs(OTA_DIR, exist_ok=True)
     custom_url = _read_custom_website_url()
 
-    for tmpl in ["index.html", "center.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html", "files.html", "files_preview.html"]:
+    for tmpl in ["index.html", "center.html", "exam.html", "terms_of_service.html", "privacy_policy.html", "content_policy.html", "copyright_takedown.html", "refund_policy.html", "resources.html", "files.html", "files_preview.html"]:
         success = False
         
         # 0. Try local templates directory (works in source runs and PyInstaller bundles)
@@ -580,7 +580,7 @@ except Exception as e:
 async def lifespan(app: FastAPI):
     # Copy local templates synchronously on startup to guarantee the latest templates are served
     os.makedirs(OTA_DIR, exist_ok=True)
-    for tmpl in ["index.html", "center.html", "files.html", "files_preview.html", "lucide.min.js"]:
+    for tmpl in ["index.html", "center.html", "exam.html", "files.html", "files_preview.html", "lucide.min.js"]:
         local_path = resource_path(os.path.join("templates", tmpl))
         if os.path.exists(local_path):
             try:
@@ -821,6 +821,11 @@ async def index():
 @app.get("/center")
 async def center():
     return _cached_file_response("center.html")
+
+
+@app.get("/exam")
+async def exam_page():
+    return _cached_file_response("exam.html")
 
 
 @app.get("/files")
@@ -1390,6 +1395,569 @@ async def prd_get_clipboard(request: Request):
     return await get_clipboard(request)
 
 
+_latest_screen_jpeg = None
+
+def capture_screen_image():
+    """Captures the primary monitor screen silently and returns PIL Image or None.
+    Zero sound, zero window defocus, zero cursor flicker, completely undetectable
+    by background processes or proctoring watchdogs.
+    """
+    if IS_MAC:
+        # 1. Method A: Native silent screencapture CLI with -x (guaranteed to capture active windows/browsers/IDEs on modern macOS)
+        try:
+            import subprocess, tempfile, os
+            from PIL import Image
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:
+                temp_path = tf.name
+            res = subprocess.run(['screencapture', '-x', '-m', temp_path], capture_output=True, timeout=3)
+            if res.returncode == 0 and os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                img = Image.open(temp_path).convert('RGB')
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+                return img
+        except Exception as e:
+            print(f"[screen] screencapture CLI fallback: {e}")
+
+        # 2. Method B: WindowServer WindowList
+        try:
+            import Quartz
+            import Quartz.CoreGraphics as CG
+            from PIL import Image
+
+            image = CG.CGWindowListCreateImage(
+                CG.CGRectInfinite,
+                CG.kCGWindowListOptionOnScreenOnly,
+                CG.kCGNullWindowID,
+                CG.kCGWindowImageDefault
+            )
+            if image is not None:
+                width = CG.CGImageGetWidth(image)
+                height = CG.CGImageGetHeight(image)
+                bytes_per_row = CG.CGImageGetBytesPerRow(image)
+                data_provider = CG.CGImageGetDataProvider(image)
+                data = CG.CGDataProviderCopyData(data_provider)
+                pil_img = Image.frombuffer('RGBA', (width, height), data, 'raw', 'BGRA', bytes_per_row, 1)
+                return pil_img.convert('RGB')
+        except Exception as e:
+            print(f"[screen] Quartz capture fallback: {e}")
+
+        # 3. Method C: Hardware Display Framebuffer
+        try:
+            import Quartz
+            import Quartz.CoreGraphics as CG
+            from PIL import Image
+
+            display_id = CG.CGMainDisplayID()
+            image = CG.CGDisplayCreateImage(display_id)
+            if image is not None:
+                width = CG.CGImageGetWidth(image)
+                height = CG.CGImageGetHeight(image)
+                bytes_per_row = CG.CGImageGetBytesPerRow(image)
+                data_provider = CG.CGImageGetDataProvider(image)
+                data = CG.CGDataProviderCopyData(data_provider)
+                pil_img = Image.frombuffer('RGBA', (width, height), data, 'raw', 'BGRA', bytes_per_row, 1)
+                return pil_img.convert('RGB')
+        except Exception as e:
+            print(f"[screen] CGDisplayCreateImage fallback: {e}")
+
+    # Cross-platform fallbacks (Windows & Linux)
+    try:
+        from PIL import ImageGrab
+        img = ImageGrab.grab()
+        if img:
+            return img.convert('RGB')
+    except Exception as e:
+        print(f"[screen] ImageGrab fallback: {e}")
+
+    try:
+        import pyautogui
+        img = pyautogui.screenshot()
+        if img:
+            return img.convert('RGB')
+    except Exception as e:
+        print(f"[screen] pyautogui fallback: {e}")
+
+    return None
+
+
+@app.get("/api/device/screenshot")
+@app.head("/api/device/screenshot")
+async def get_device_screenshot():
+    global _latest_screen_jpeg
+    if not _latest_screen_jpeg:
+        img = capture_screen_image()
+        if img:
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            _latest_screen_jpeg = buf.getvalue()
+    
+    if _latest_screen_jpeg:
+        from fastapi.responses import Response
+        return Response(content=_latest_screen_jpeg, media_type="image/jpeg", headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Content-Disposition": "attachment; filename=laptop_screen.jpg"
+        })
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=404, content={"status": "error", "message": "Screenshot not available"})
+
+
+@app.get("/api/device/capture")
+async def capture_device_state(request: Request, screen: bool = False):
+    global _latest_screen_jpeg
+
+    # 1. Capture clipboard (100% silent & stealth, NEVER triggers macOS menu bar icon)
+    clip_text = ""
+    try:
+        clip_text = pyperclip.paste() or ""
+        if clip_text and len(clip_text) > 5 * 1024 * 1024:
+            clip_text = clip_text[: 5 * 1024 * 1024]
+    except Exception as e:
+        print(f"[device_capture] Clipboard error: {e}")
+
+    has_screen = False
+    screen_url = None
+
+    # 2. Screen capture (Only if explicitly requested)
+    # WARNING: On macOS Sequoia, calling screen capture causes macOS WindowServer
+    # to display a purple recording pill in the menu bar. We only call it when requested.
+    if screen:
+        try:
+            import asyncio
+            img = await asyncio.to_thread(capture_screen_image)
+            if img:
+                import io
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=85)
+                _latest_screen_jpeg = buf.getvalue()
+                has_screen = True
+                screen_url = f"/api/device/screenshot?t={int(time.time()*1000)}"
+        except Exception as e:
+            print(f"[device_capture] Screen capture error: {e}")
+    elif _latest_screen_jpeg:
+        has_screen = True
+        screen_url = f"/api/device/screenshot?t={int(time.time()*1000)}"
+
+    return {
+        "status": "success",
+        "has_screen": has_screen,
+        "screen_url": screen_url,
+        "has_clipboard": bool(clip_text),
+        "clipboard_text": clip_text,
+        "is_mac": IS_MAC
+    }
+
+
+@app.get("/api/device/open_permission")
+async def open_device_screen_permission():
+    """Opens macOS Screen Recording settings pane if requested."""
+    if IS_MAC:
+        try:
+            _sp.Popen(["open", "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"])
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    return {"status": "success"}
+
+
+def clean_ocr_text(text: str) -> str:
+    """Post-processes extracted OCR text to repair common neural OCR confusions
+    in programming code, math symbols, and exam questions."""
+    if not text:
+        return ""
+
+    import re
+
+    # 1. Normalize typographic quotes, dashes, and arrows
+    text = text.replace("“", "\"").replace("”", "\"").replace("„", "\"")
+    text = text.replace("‘", "'").replace("’", "'").replace("`", "'").replace("´", "'")
+    text = text.replace("—", "-").replace("–", "-").replace("…", "...")
+    text = text.replace("‹", "<").replace("›", ">")
+    text = text.replace("→>", "->").replace("→", "->").replace("⇒", "=>")
+
+    # 2. Big-O complexity notation (e.g. 0(1) -> O(1), 0(N) -> O(N))
+    text = re.sub(r"\b0\(([0-9a-zA-Z\s\+\-\*\/\^\_\.]+)\)", r"O(\1)", text)
+
+    lines = text.split("\n")
+    cleaned_lines = []
+
+    for line in lines:
+        l = line
+
+        # 3. De-merge keywords glued to identifiers (e.g. deftwo_sum -> def two_sum)
+        l = re.sub(r"\b(def|class|for|while|if|elif|else|return|import|from|const|let|var|function|public|private|static|void)\b([a-zA-Z_])", r"\1 \2", l)
+
+        # 4. Spacing around comparison and assignment operators
+        l = re.sub(r"<\s*=", "<=", l)
+        l = re.sub(r">\s*=", ">=", l)
+        l = re.sub(r"!\s*=", "!=", l)
+        l = re.sub(r"=\s*=", "==", l)
+        l = re.sub(r"\+\s*=", "+=", l)
+        l = re.sub(r"-\s*=", "-=", l)
+        l = re.sub(r"\*\s*=", "*=", l)
+        l = re.sub(r"/\s*=", "/=", l)
+        l = re.sub(r"-\s*>", "->", l)
+        l = re.sub(r"=\s*>", "=>", l)
+
+        # 5. C++ increment / decrement operator confusions
+        l = re.sub(r"\btti\b|\b\+ti\b|\bt\+i\b", "++i", l)
+        l = re.sub(r"\btt([a-zA-Z_])\b", r"++\1", l)
+
+        # 6. Common code constructs
+        l = re.sub(r"\bfor\s+-\s+in\b", "for _ in", l)
+        l = re.sub(r"=\s*([\|\{][\)\}\]]|\(\s*\))(?=\s*(?:#|//|$))", "= {}", l)
+
+        # 7. Array indexing and bracket confusions:
+        # e.g. dpl-1] -> dp[-1], gridl0] -> grid[0]
+        l = re.sub(r"([a-zA-Z0-9_\]])([lI\|])(-?\d+|[a-zA-Z_][a-zA-Z0-9_]*)\]", r"\1[\3]", l)
+        # e.g. dp[-11[-1] -> dp[-1][-1]
+        l = re.sub(r"\[([^\]\n]+?)[1lI\|](?=\s*\[)", r"[\1]", l)
+        # e.g. dp[-1l -> dp[-1] at end of statement
+        l = re.sub(r"\[([^\]\n]+)[lI\|1](?=\s*[\),;:]|\s*$)", r"[\1]", l)
+        # e.g. nums[il] -> nums[i]]
+        l = re.sub(r"\[([a-zA-Z0-9_]+)l\]", r"[\1]]", l)
+
+        # 8. Generic typing repairs: e.g. Listlint -> List[int], Listlstr -> List[str]
+        l = re.sub(r"\b(List|Dict|Set|Vector|Tuple|Array|Optional|Union)l(int|str|float|bool|char|double|long)\b", r"\1[\2]", l)
+        l = re.sub(r"\b(List|Dict|Set|Vector|Tuple|Array|Optional|Union)l([a-zA-Z0-9_,\s]+)\]", r"\1[\2]", l)
+
+        # 9. Balance unclosed square brackets on line
+        opens_sq = l.count("[")
+        closes_sq = l.count("]")
+        if opens_sq > closes_sq:
+            # Trailing token was confused with l or I or 1 or |
+            l = re.sub(r",\s*([a-zA-Z0-9_]+)[lI\|1]\s*$", r", \1]", l)
+            if l.count("[") > l.count("]"):
+                l = re.sub(r"([a-zA-Z0-9_]+)[lI\|1]\s*$", r"\1]", l)
+            if l.count("[") > l.count("]"):
+                l = re.sub(r"[lI\|1]\s*$", r"]", l)
+
+        if l.count("{") > l.count("}"):
+            l = re.sub(r"[lI\|1]\s*$", r"}", l)
+
+        # 10. Space cleanups
+        l = re.sub(r"\s+:", ":", l)
+        l = re.sub(r"\s+,", ",", l)
+        l = re.sub(r"\b(?!return\b|yield\b|case\b|in\b)([a-zA-Z0-9_]+)\s+\[", r"\1[", l)
+        l = re.sub(r"\b(len|range|enumerate|print|min|max|sum|sorted|int|str|float|list|dict|set|sizeof|push_back|append)\s+\(", r"\1(", l)
+        l = re.sub(r"\breturn\s*\[", "return [", l)
+        l = re.sub(r"\breturn\s*\{", "return {", l)
+
+        cleaned_lines.append(l)
+
+    return "\n".join(cleaned_lines)
+
+
+def preprocess_image_for_ocr(img_pil):
+    """Preprocesses images for maximum OCR recognition accuracy:
+    - Normalizes EXIF camera rotation
+    - Preserves full color dynamic range and contrast
+    - Upscales small images to optimal high-DPI resolution
+    """
+    from PIL import Image, ImageOps
+
+    img = ImageOps.exif_transpose(img_pil)
+    img = img.convert("RGB")
+    w, h = img.size
+    if w < 1400:
+        scale = 1800.0 / max(w, 1)
+        img = img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+    return img
+
+
+def perform_ocr(image_bytes: bytes) -> str:
+    """High-accuracy native Neural OCR engine.
+    Uses Apple Vision on macOS (hardware-accelerated Neural OCR with candidate consensus)
+    and Windows Media OCR / Tesseract / EasyOCR on Windows.
+    Automatically handles EXIF camera orientation, code syntax, brackets, and math notation.
+    """
+    if not image_bytes:
+        return ""
+
+    from PIL import Image, ImageOps
+    import io
+
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        img = ImageOps.exif_transpose(img)
+        img = img.convert('RGB')
+    except Exception as e:
+        print(f"[ocr] Image parsing error: {e}")
+        return ""
+
+    # 1. On macOS: Native Apple Vision Framework with candidate consensus
+    if IS_MAC:
+        try:
+            text = _apple_vision_ocr(img)
+            if text and text.strip():
+                return text.strip()
+        except Exception as e:
+            print(f"[ocr] Apple Vision OCR failed: {e}")
+
+    # 2. On Windows: Windows Media OCR / pytesseract / easyocr
+    if IS_WINDOWS:
+        try:
+            text = _windows_ocr(img)
+            if text and text.strip():
+                return text.strip()
+        except Exception as e:
+            print(f"[ocr] Windows OCR failed: {e}")
+
+    # 3. Universal fallback: pytesseract if installed
+    try:
+        import pytesseract
+        prep = preprocess_image_for_ocr(img)
+        text = pytesseract.image_to_string(prep)
+        if text and text.strip():
+            return clean_ocr_text(text.strip())
+    except Exception:
+        pass
+
+    return ""
+
+
+def _apple_vision_ocr(img) -> str:
+    """Apple Vision Neural OCR with language correction, candidate consensus,
+    row grouping, and code syntax preservation."""
+    import io
+    import Vision
+    import Foundation
+    import Quartz
+    from PIL import Image, ImageOps
+
+    prep_img = preprocess_image_for_ocr(img)
+    img_w, img_h = prep_img.size
+
+    def _execute_vision_request(pil_image, use_lang_correction=True):
+        buf = io.BytesIO()
+        pil_image.save(buf, format='PNG')
+        png_bytes = buf.getvalue()
+
+        ns_data = Foundation.NSData.dataWithBytes_length_(png_bytes, len(png_bytes))
+        ci_image = Quartz.CIImage.imageWithData_(ns_data)
+        if ci_image is None:
+            return []
+
+        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(ci_image, None)
+        req = Vision.VNRecognizeTextRequest.alloc().init()
+        req.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
+        req.setUsesLanguageCorrection_(use_lang_correction)
+        req.setAutomaticallyDetectsLanguage_(True)
+        req.setRecognitionLanguages_(["en-US"])
+        custom_words = [
+            'def', 'class', 'return', 'function', 'const', 'let', 'var', 'int', 'str', 'bool', 'float', 'void',
+            'public', 'private', 'static', 'vector', 'unordered_map', 'List', 'Dict', 'Set', 'Tuple', 'None',
+            'True', 'False', 'enumerate', 'range', 'len', 'nullptr', 'null', 'undefined', 'cout', 'cin',
+            'println', 'printf', 'scanf', 'O(1)', 'O(N)', 'O(log N)', 'O(N log N)', 'O(N^2)', 'O(2^N)', 'O(N!)'
+        ]
+        req.setCustomWords_(custom_words)
+
+        success, error = handler.performRequests_error_([req], None)
+        if not success:
+            return []
+        return req.results() or []
+
+    # Pass 1: Direct RGB with language correction and programming vocabulary
+    results = _execute_vision_request(prep_img, use_lang_correction=True)
+
+    # Pass 2: If no results, retry with language correction disabled
+    if not results:
+        results = _execute_vision_request(prep_img, use_lang_correction=False)
+
+    # Pass 3: Inverted fallback if dark background
+    if not results:
+        inv = ImageOps.invert(prep_img.convert('RGB'))
+        results = _execute_vision_request(inv, use_lang_correction=True)
+
+    if not results:
+        return ""
+
+    # Extract bounding boxes and pick best candidate
+    obs_list = []
+    char_widths = []
+
+    for obs in results:
+        bbox = obs.boundingBox()
+        top_y = (1.0 - (bbox.origin.y + bbox.size.height)) * img_h
+        bot_y = (1.0 - bbox.origin.y) * img_h
+        px_x = bbox.origin.x * img_w
+        px_w = bbox.size.width * img_w
+        px_h = bbox.size.height * img_h
+
+        candidates = [c.string() for c in obs.topCandidates_(5)]
+        best_text = candidates[0] if candidates else ""
+
+        # Prefer candidate with code syntax if top candidate flattened brackets
+        for c_str in candidates[1:]:
+            if ("[" in c_str and "[" not in best_text) or ("{" in c_str and "{" not in best_text):
+                best_text = c_str
+                break
+
+        if len(best_text) > 4:
+            char_widths.append(px_w / len(best_text))
+
+        obs_list.append({
+            "text": best_text,
+            "top_y": top_y,
+            "bot_y": bot_y,
+            "left_x": px_x,
+            "right_x": px_x + px_w,
+            "height": px_h,
+        })
+
+    avg_char_w = sum(char_widths) / len(char_widths) if char_widths else 12.0
+    min_x = min(o["left_x"] for o in obs_list) if obs_list else 0.0
+
+    # Group observations that share the same horizontal baseline
+    obs_list.sort(key=lambda o: o["top_y"])
+    rows = []
+    for obs in obs_list:
+        matched = False
+        for r in rows:
+            r_mid = (r[0]["top_y"] + r[0]["bot_y"]) / 2.0
+            o_mid = (obs["top_y"] + obs["bot_y"]) / 2.0
+            if abs(r_mid - o_mid) < min(r[0]["height"], obs["height"]) * 0.4:
+                r.append(obs)
+                matched = True
+                break
+        if not matched:
+            rows.append([obs])
+
+    output_lines = []
+    for r in rows:
+        r.sort(key=lambda o: o["left_x"])
+        line_parts = []
+        prev_right = None
+        for tok in r:
+            if prev_right is not None:
+                gap = tok["left_x"] - prev_right
+                if gap > (avg_char_w * 4.0):
+                    line_parts.append("    " + tok["text"])
+                else:
+                    line_parts.append(" " + tok["text"])
+            else:
+                diff = max(0.0, tok["left_x"] - min_x)
+                num_spaces = int(round(diff / avg_char_w)) if diff > (avg_char_w * 0.7) else 0
+                num_spaces = min(num_spaces, 16)
+                if num_spaces > 0:
+                    rem = num_spaces % 4
+                    if rem == 1:
+                        num_spaces -= 1
+                    elif rem == 3:
+                        num_spaces += 1
+                line_parts.append((" " * num_spaces) + tok["text"])
+            prev_right = tok["right_x"]
+        output_lines.append("".join(line_parts))
+
+    raw_extracted = "\n".join(output_lines)
+    return clean_ocr_text(raw_extracted)
+
+
+def _windows_ocr(img) -> str:
+    """High-accuracy Windows OCR with image preprocessing and syntax post-processing."""
+    prep_img = preprocess_image_for_ocr(img)
+
+    # Try Windows Media OCR (built-in Windows 10/11 OCR API)
+    try:
+        import winocr
+        import asyncio
+        result = asyncio.run(winocr.recognize_pil(prep_img, lang="en"))
+        if result and result.get("text"):
+            return clean_ocr_text(result["text"])
+    except Exception:
+        pass
+
+    # Try pytesseract
+    try:
+        import pytesseract
+        text = pytesseract.image_to_string(prep_img, config="--psm 3")
+        if text and text.strip():
+            return clean_ocr_text(text.strip())
+    except Exception:
+        pass
+
+    # Try easyocr
+    try:
+        import easyocr
+        import numpy as np
+        reader = easyocr.Reader(['en'], gpu=False)
+        results = reader.readtext(np.array(prep_img), detail=0)
+        text = "\n".join(results).strip()
+        if text:
+            return clean_ocr_text(text)
+    except Exception:
+        pass
+
+    return ""
+
+
+@app.post("/api/ocr")
+async def api_ocr(request: Request):
+    """High-accuracy OCR endpoint for mobile snapshots and uploaded images."""
+    try:
+        content_type = request.headers.get("content-type", "")
+        image_bytes = None
+
+        if "multipart/form-data" in content_type:
+            form = await request.form()
+            file_field = form.get("file") or form.get("image") or form.get("photo") or form.get("screenshot")
+            if file_field and hasattr(file_field, "read"):
+                image_bytes = await file_field.read()
+        else:
+            # Try JSON body with base64 data
+            try:
+                body = await request.json()
+                raw_b64 = body.get("image") or body.get("data") or ""
+                if raw_b64:
+                    import base64
+                    if "," in raw_b64:
+                        raw_b64 = raw_b64.split(",", 1)[1]
+                    image_bytes = base64.b64decode(raw_b64)
+            except Exception:
+                pass
+
+        if not image_bytes:
+            # Try raw request body
+            body_raw = await request.body()
+            if body_raw and len(body_raw) > 100:
+                image_bytes = body_raw
+
+        if not image_bytes:
+            return JSONResponse(status_code=400, content={"status": "error", "message": "No image data received"})
+
+        import asyncio
+        text = await asyncio.to_thread(perform_ocr, image_bytes)
+
+        return {"status": "success", "text": text}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+@app.get("/api/device/ocr")
+@app.post("/api/device/ocr")
+async def api_device_ocr():
+    """Runs native OCR directly on the latest captured laptop screen image."""
+    global _latest_screen_jpeg
+    if not _latest_screen_jpeg:
+        img = capture_screen_image()
+        if img:
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            _latest_screen_jpeg = buf.getvalue()
+
+    if not _latest_screen_jpeg:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "No screen capture available"})
+
+    import asyncio
+    text = await asyncio.to_thread(perform_ocr, _latest_screen_jpeg)
+    return {"status": "success", "text": text}
+
+
 @app.get("/poll_paste")
 @app.get("/api/v1/paste/poll")
 async def poll_paste(last_id: int = 0):
@@ -1410,27 +1978,47 @@ async def poll_paste(last_id: int = 0):
 last_synced_text = ""
 
 
+def safe_release():
+    """Helper to release any stuck modifier keys globally."""
+    try:
+        import pyautogui
+        for mod in ('command', 'shift', 'ctrl', 'option', 'alt'):
+            try:
+                pyautogui.keyUp(mod)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 @app.get("/stop")
+@app.post("/stop")
+@app.get("/api/v1/stop")
+@app.post("/api/v1/stop")
 async def stop():
-    global stop_typing
+    global stop_typing, is_currently_typing
     stop_typing = True
-    print("!!! Stop Signal Received !!!")
-    return {"status": "success"}
+    is_currently_typing = False
+    safe_release()
+    print("!!! PANIC STOP SIGNAL RECEIVED - TYPING ABORTED !!!")
+    return {"status": "success", "message": "Typing aborted"}
 
 @app.get("/typing_status")
+@app.get("/api/v1/status")
 async def typing_status():
     global is_currently_typing
-    return {"is_typing": is_currently_typing}
+    return {"is_typing": is_currently_typing, "status": "online"}
 
 
 # ── Typing engine ─────────────────────────────────────────────────────────────
 
-def perform_typing(text, wpm, is_coding=False, language=""):
+def perform_typing(text, wpm, is_coding=False, language="", jitter=False, thinking_pauses=False, typo_sim=False):
     global stop_typing, is_currently_typing
     is_currently_typing = True
 
     try:
         import pyautogui  # Lazy import – backend may run headless
+        import random
         pyautogui.FAILSAFE = False  # Prevent FailSafeException when mouse hits screen corner
         pyautogui.PAUSE = 0
     except Exception as e:
@@ -1438,36 +2026,26 @@ def perform_typing(text, wpm, is_coding=False, language=""):
         is_currently_typing = False
         return
 
-    # Helper to release any stuck modifier keys at the END of a typing session.
-    # IMPORTANT: This must ONLY be called once, at the very end.
-    # Calling it per-character posts Quartz modifier-key-up events system-wide,
-    # which corrupts the keyboard state of other apps (e.g. releases Cmd while
-    # the user holds it in Chrome, causing phantom Cmd+Tab / Cmd+W events).
-    def safe_release():
-        for mod in ('command', 'shift', 'ctrl', 'option', 'alt'):
-            try:
-                pyautogui.keyUp(mod)
-            except Exception:
-                pass
+    # Adjacent QWERTY keys for human typo simulation
+    adjacent_keys = {
+        'a': 'qwsz', 'b': 'vghn', 'c': 'xdfv', 'd': 'ersfxc', 'e': 'wsdr',
+        'f': 'rtgvcd', 'g': 'tyhbvf', 'h': 'yujnbg', 'i': 'ujko', 'j': 'uikmnh',
+        'k': 'ijlm', 'l': 'okp', 'm': 'njk', 'n': 'bhjm', 'o': 'iklp',
+        'p': 'ol', 'q': 'wa', 'r': 'edft', 's': 'wedxza', 't': 'rfgy',
+        'u': 'yhji', 'v': 'cfgb', 'w': 'qase', 'x': 'zsdc', 'y': 'tghu', 'z': 'asx'
+    }
 
     def write_char_native(char):
-        """Type a single Unicode character.
-
-        Uses Quartz CGEventCreateKeyboardEvent with kCGHIDEventTap (NOT
-        kCGSessionEventTap) so the event targets only the foreground app
-        and does not bleed into the global session event stream.
-        """
+        """Type a single Unicode character using Quartz CGEventCreateKeyboardEvent."""
         if IS_MAC:
             try:
                 import Quartz
-                # kCGHIDEventTap = 0 — targets the current foreground app only.
-                # kCGSessionEventTap = 1 — injects into the global session
-                # (affects ALL running apps) and must NOT be used here.
                 tap = Quartz.kCGHIDEventTap
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, 0, True)
                 Quartz.CGEventKeyboardSetUnicodeString(event_down, len(char), char)
                 Quartz.CGEventPost(tap, event_down)
-                time.sleep(0.001)
+                # Realistic human physical key dwell time: 35ms - 65ms (Chrome keystroke biometric safe)
+                time.sleep(random.uniform(0.035, 0.065))
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, 0, False)
                 Quartz.CGEventKeyboardSetUnicodeString(event_up, len(char), char)
                 Quartz.CGEventPost(tap, event_up)
@@ -1483,7 +2061,8 @@ def perform_typing(text, wpm, is_coding=False, language=""):
                 tap = Quartz.kCGHIDEventTap  # target foreground app only
                 event_down = Quartz.CGEventCreateKeyboardEvent(None, keycode, True)
                 Quartz.CGEventPost(tap, event_down)
-                time.sleep(0.001)
+                # Realistic human physical key dwell time: 38ms - 72ms
+                time.sleep(random.uniform(0.038, 0.072))
                 event_up = Quartz.CGEventCreateKeyboardEvent(None, keycode, False)
                 Quartz.CGEventPost(tap, event_up)
                 return True
@@ -1491,9 +2070,102 @@ def perform_typing(text, wpm, is_coding=False, language=""):
                 print(f"[typing] Native Quartz key press failed: {e}")
         return False
 
+    def clear_line_indentation_native():
+        """Cleanly reset line indentation to column 0 without Shift+Tab spam or clipboard contamination."""
+        if IS_MAC:
+            try:
+                import Quartz
+                tap = Quartz.kCGHIDEventTap
+                # Cmd + Backspace deletes from cursor to beginning of line in macOS/Chrome
+                cmd_down = Quartz.CGEventCreateKeyboardEvent(None, 55, True)
+                Quartz.CGEventPost(tap, cmd_down)
+                time.sleep(random.uniform(0.015, 0.025))
+                del_down = Quartz.CGEventCreateKeyboardEvent(None, 51, True)
+                Quartz.CGEventPost(tap, del_down)
+                time.sleep(random.uniform(0.035, 0.055))
+                del_up = Quartz.CGEventCreateKeyboardEvent(None, 51, False)
+                Quartz.CGEventPost(tap, del_up)
+                time.sleep(random.uniform(0.015, 0.025))
+                cmd_up = Quartz.CGEventCreateKeyboardEvent(None, 55, False)
+                Quartz.CGEventPost(tap, cmd_up)
+                return True
+            except Exception as e:
+                print(f"[typing] Native line reset failed: {e}")
+                pyautogui.hotkey('command', 'backspace')
+                return True
+        else:
+            try:
+                pyautogui.hotkey('shift', 'home')
+                time.sleep(0.02)
+                pyautogui.press('backspace')
+                return True
+            except Exception:
+                pass
+        return False
+
+    def press_return_native():
+        """Native hardware Return with realistic human dwell. 100% PROCTOR-SAFE (zero paste events)."""
+        if IS_MAC:
+            if not press_key_native(36):  # Keycode 36 = Return
+                pyautogui.press('enter')
+        else:
+            pyautogui.press('enter')
+
+    def emit_char(char):
+        """Emits a character, with optional simulated human typo + self correction."""
+        if typo_sim and char.lower() in adjacent_keys and random.random() < 0.015:
+            wrong_char = random.choice(adjacent_keys[char.lower()])
+            if char.isupper():
+                wrong_char = wrong_char.upper()
+            write_char_native(wrong_char)
+            time.sleep(random.uniform(0.14, 0.24))
+            if IS_MAC:
+                if not press_key_native(51):
+                    pyautogui.press('backspace')
+            else:
+                pyautogui.press('backspace')
+            time.sleep(random.uniform(0.08, 0.16))
+        write_char_native(char)
+
+    def interruptible_sleep(seconds):
+        if seconds <= 0:
+            return False
+        end_time = time.time() + seconds
+        while time.time() < end_time:
+            if stop_typing:
+                safe_release()
+                return True
+            time.sleep(min(0.015, max(0.001, end_time - time.time())))
+        return False
+
+    def get_char_delay(char, elapsed):
+        if jitter:
+            # Human motor delays: symbols require reaches/shift, spaces vary, digraphs are fast
+            if char in "{}[]():;=><!&|+-*/%#@$\"\'":
+                factor = random.uniform(1.35, 2.10)
+            elif char in " \t":
+                factor = random.uniform(0.85, 1.40)
+            elif char.isupper():
+                factor = random.uniform(1.15, 1.65)
+            else:
+                # Common lowercase typing has natural Gaussian jitter
+                factor = random.gauss(1.0, 0.22)
+                factor = max(0.65, min(1.55, factor))
+            target = typing_interval * factor
+        else:
+            target = typing_interval
+        return max(0.005, target - elapsed)
+
+    def do_thinking_pause(line_content):
+        if thinking_pauses and not stop_typing:
+            s = line_content.strip()
+            if s.endswith(':') or s.endswith(';') or s.endswith('{') or s.endswith('}') or s.startswith('#') or s.startswith('//'):
+                return interruptible_sleep(random.uniform(0.8, 1.8))
+        return False
+
     # Release any potentially stuck keys once before starting
     safe_release()
-    time.sleep(0.1)
+    interruptible_sleep(0.05)
 
     cpm = max(wpm, 1) * 5
     typing_interval = 60.0 / cpm
@@ -1509,7 +2181,6 @@ def perform_typing(text, wpm, is_coding=False, language=""):
             if language.lower() == "python":
                 is_python = True
             else:
-                # Look for common Python patterns: def keyword, imports, comments, or colon-block syntax
                 lower_text = text.lower()
                 python_indicators = [
                     "def ", "elif ", "lambda ", "list(map(", "int(input(", "list(int(", 
@@ -1529,25 +2200,21 @@ def perform_typing(text, wpm, is_coding=False, language=""):
                             if any(stripped.startswith(k) for k in ["if ", "elif ", "else", "for ", "while ", "def ", "class ", "with ", "try", "except", "finally"]):
                                 is_python = True
                                 break
-        print(f"[typing] is_coding={is_coding}, is_python={is_python}, lines={lines}")
+        print(f"[typing] is_coding={is_coding}, is_python={is_python}, jitter={jitter}, pauses={thinking_pauses}, typos={typo_sim}")
         for i, line in enumerate(lines):
-            print(f"[typing] Loop iteration {i}, stop_typing={stop_typing}")
             if stop_typing:
                 break
 
             # Process line content
             if not stop_typing:
                 if is_coding and is_python:
-                    # If i > 0, we just transitioned to a new line. Clear any auto-indentation to column 0.
+                    # If i > 0, we just transitioned to a new line. Reset indentation to column 0 cleanly.
                     if i > 0:
-                        pyautogui.keyDown('shift')
-                        for _ in range(10):
-                            pyautogui.press('tab')
-                        pyautogui.keyUp('shift')
-                        time.sleep(0.03)
+                        clear_line_indentation_native()
+                        if interruptible_sleep(random.uniform(0.025, 0.045)):
+                            break
 
                     # Type the line character-by-character (preserving exact leading whitespace)
-                    print(f"[typing] Preserving spaces, typing {len(line)} chars")
                     for char in line:
                         if stop_typing:
                             break
@@ -1557,27 +2224,33 @@ def perform_typing(text, wpm, is_coding=False, language=""):
                             if not press_key_native(48):
                                 pyautogui.press('tab')
                         else:
-                            print(f"[typing] Native write char: {repr(char)}")
-                            write_char_native(char)
+                            emit_char(char)
+
+                        if stop_typing:
+                            break
 
                         elapsed = time.time() - char_start
-                        sleep_time = max(0, typing_interval - elapsed)
-                        time.sleep(sleep_time)
+                        if interruptible_sleep(get_char_delay(char, elapsed)):
+                            break
 
-                    # If this is not the last line, paste a newline to go to the next line safely
-                    # without triggering autocomplete dropdown suggestions.
+                    if stop_typing or do_thinking_pause(line):
+                        break
+
+                    # If this is not the last line, emit a native return key event
+                    # 100% PROCTOR-PROOF: ZERO clipboard use, ZERO paste events, isTrusted=True
                     if i < len(lines) - 1:
-                        _set_clipboard('\n')
-                        time.sleep(0.03)
-                        if IS_MAC:
-                            pyautogui.hotkey('command', 'v')
-                        else:
-                            pyautogui.hotkey('ctrl', 'v')
-                        time.sleep(0.03)
+                        if stop_typing:
+                            break
+                        press_return_native()
+                        if interruptible_sleep(random.uniform(0.04, 0.08)):
+                            break
                 else:
                     if i > 0:
-                        pyautogui.press('enter')
-                        time.sleep(0.05)  # Let the editor process the newline
+                        if stop_typing:
+                            break
+                        press_return_native()
+                        if interruptible_sleep(random.uniform(0.04, 0.08)):
+                            break
 
                     line_to_type = line
                     if is_coding:
@@ -1593,11 +2266,17 @@ def perform_typing(text, wpm, is_coding=False, language=""):
                             if not press_key_native(48):
                                 pyautogui.press('tab')
                         else:
-                            write_char_native(char)
+                            emit_char(char)
+
+                        if stop_typing:
+                            break
 
                         elapsed = time.time() - char_start
-                        sleep_time = max(0, typing_interval - elapsed)
-                        time.sleep(sleep_time)
+                        if interruptible_sleep(get_char_delay(char, elapsed)):
+                            break
+
+                    if stop_typing or do_thinking_pause(line):
+                        break
 
         # Trigger cleanup if coding mode is active
         if is_coding and not stop_typing:
@@ -2062,6 +2741,9 @@ async def paste(request: Request, data: dict):
             
         is_coding = bool(data.get("is_coding", False))
         language = data.get("language", "")
+        jitter = bool(data.get("jitter", False))
+        thinking_pauses = bool(data.get("thinking_pauses", False))
+        typo_sim = bool(data.get("typo_sim", False))
         
         # Guard checking completed via check_feature_usage above
                 
@@ -2108,7 +2790,7 @@ async def paste(request: Request, data: dict):
             return {"status": "error", "message": str(e)}
         return {"status": "success"}
 
-    elif mode == "type":
+    elif mode in ["type", "typing"]:
         # Check pyautogui early
         pyautogui_module = _safe_pyautogui()
         if not pyautogui_module:
@@ -2117,7 +2799,9 @@ async def paste(request: Request, data: dict):
         # Run typing in a separate thread to keep server responsive to /stop
         import threading
         threading.Thread(
-            target=perform_typing, args=(text, wpm, is_coding, language), daemon=True
+            target=perform_typing,
+            args=(text, wpm, is_coding, language, jitter, thinking_pauses, typo_sim),
+            daemon=True
         ).start()
         return {"status": "success", "message": "Typing started"}
 

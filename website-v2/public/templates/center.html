@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LANpad Mobile Command</title>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap"></noscript>
     <style>
         :root {
             --bg-color: #050505;
@@ -30,15 +31,25 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html {
+            min-height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
         body {
+            min-height: 100%;
+            min-height: 100dvh;
+            width: 100%;
             background-color: var(--bg-color);
             color: var(--text-main);
-            min-height: 100vh;
-            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
 
         #app-wrapper {
@@ -46,6 +57,7 @@
             width: 100%;
             max-width: 450px;
             min-height: 100vh;
+            min-height: 100dvh;
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -54,23 +66,23 @@
         .view {
             width: 100%;
             min-height: 100vh;
+            min-height: 100dvh;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
             display: none;
             flex-direction: column;
             padding: 15px;
+            padding-bottom: 50px;
             box-sizing: border-box;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain;
+            touch-action: pan-y;
         }
 
         .view.active {
             opacity: 1;
             pointer-events: auto;
             display: flex;
-            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .aurora-container {
@@ -135,7 +147,7 @@
             }
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform: none;
             }
         }
 
@@ -201,6 +213,7 @@
             box-shadow: 0 10px 30px var(--accent-glow);
         }
 
+        /* Command Center View */
         .command-center {
             display: flex;
             flex-direction: column;
@@ -243,7 +256,7 @@
             border: 1px solid var(--border-color);
             backdrop-filter: blur(20px) saturate(150%);
             -webkit-backdrop-filter: blur(20px) saturate(150%);
-            padding: 12px 16px;
+            padding: 9px 12px;
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -251,7 +264,7 @@
             gap: 8px;
             flex: 1;
             color: var(--text-muted);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
             letter-spacing: 0.05em;
             text-transform: uppercase;
@@ -286,7 +299,7 @@
         .textarea-wrapper {
             position: relative;
             min-height: 160px;
-            max-height: 220px;
+            max-height: 200px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             backdrop-filter: blur(20px) saturate(150%);
@@ -347,8 +360,8 @@
             background: transparent;
             border: none;
             color: var(--text-main);
-            font-size: 1.1rem;
-            line-height: 1.6;
+            font-size: 0.9rem;
+            line-height: 1.5;
             resize: none;
             outline: none;
         }
@@ -384,7 +397,7 @@
             backdrop-filter: blur(20px) saturate(150%);
             -webkit-backdrop-filter: blur(20px) saturate(150%);
             border-radius: 12px;
-            padding: 10px;
+            padding: 8px 10px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
@@ -419,12 +432,12 @@
             align-items: center;
             gap: 6px;
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.7rem;
             color: #fff;
         }
 
         .mode-card p {
-            font-size: 0.65rem;
+            font-size: 0.58rem;
             color: var(--text-muted);
         }
 
@@ -437,14 +450,20 @@
             padding: 0;
             margin-top: 0;
             margin-bottom: 0;
+            touch-action: pan-y;
         }
 
         .wpm-selector-row.show {
-            max-height: 160px;
+            max-height: 200px;
             opacity: 1;
             padding: 5px 0;
             margin-top: 8px;
             margin-bottom: 12px;
+            touch-action: pan-y;
+        }
+
+        #wpm-slider {
+            touch-action: pan-y;
         }
 
         /* Custom Switch Toggle Styles */
@@ -560,11 +579,11 @@
             background: linear-gradient(135deg, var(--accent-color) 0%, #009BF5 100%);
             color: #ffffff;
             border: none;
-            padding: 20px;
+            padding: 14px 18px;
             border-radius: 18px;
             font-family: var(--font-display);
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.85rem;
             letter-spacing: 0.1em;
             text-transform: uppercase;
             cursor: pointer;
@@ -592,9 +611,9 @@
             backdrop-filter: blur(20px) saturate(150%);
             -webkit-backdrop-filter: blur(20px) saturate(150%);
             color: var(--text-main);
-            padding: 14px;
+            padding: 10px 14px;
             border-radius: 14px;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             font-weight: 700;
             cursor: pointer;
             display: flex;
@@ -688,25 +707,32 @@
 </head>
 
 <body>
-    <div id="app-wrapper">
+<div id="app-wrapper">
         <!-- Command Center View -->
         <div id="command-center-view" class="view active">
             <div class="command-center">
                 <header>
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
                         <div class="top-label" style="display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0;">
                             <button id="back-btn" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; padding: 0;">
                                 <i data-lucide="arrow-left" size="14"></i>
                             </button>
-                            <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-color);">
-                                COMMAND CENTER
-                            </span>
-                        </div>
-                        <button id="refill-btn" style="display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: var(--accent-color); padding: 3px 6px; font-size: 0.58rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; position: relative; flex-shrink: 0;">
-                            <i data-lucide="rotate-ccw" size="10"></i>
-                            <span>Refill</span>
-                        </button>
-                    </div>
+                             <span id="center-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-color);">
+                                 COMMAND CENTER
+                             </span>
+                          </div>
+                          <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                              <button id="history-toggle-btn" style="display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: var(--accent-color); padding: 3px 6px; font-size: 0.58rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                                  <i data-lucide="history" size="10"></i>
+                                  <span>History</span>
+                              </button>
+                              <button id="refill-btn" style="display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: var(--accent-color); padding: 3px 6px; font-size: 0.58rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                                  <i data-lucide="rotate-ccw" size="10"></i>
+                                  <span>Refill</span>
+                              </button>
+                          </div>
+                      </div>
+                 </header>
                     <div class="controls-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div class="header-btn" id="live-sync-toggle" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                             <i data-lucide="refresh-cw" size="16"></i>
@@ -744,24 +770,24 @@
                         </div>
                         <p>Instant paste</p>
                     </div>
-                    <div class="mode-card" id="inject-mode">
-                        <div class="mode-header">
-                            <div class="mode-title">
-                                <i data-lucide="align-left" size="18"></i>
-                                <span>Inline</span>
-                            </div>
-                        </div>
-                        <p>One line flash</p>
-                    </div>
-                    <div class="mode-card" id="typing-mode">
-                        <div class="mode-header">
-                            <div class="mode-title">
-                                <i data-lucide="keyboard" size="18"></i>
-                                <span>Typing</span>
-                            </div>
-                        </div>
-                        <p>Human simulation</p>
-                    </div>
+                     <div class="mode-card" id="inject-mode">
+                         <div class="mode-header">
+                             <div class="mode-title">
+                                 <i data-lucide="align-left" size="18"></i>
+                                 <span>Inline</span>
+                             </div>
+                         </div>
+                         <p>One line flash</p>
+                     </div>
+                     <div class="mode-card" id="typing-mode">
+                         <div class="mode-header">
+                             <div class="mode-title">
+                                 <i data-lucide="keyboard" size="18"></i>
+                                 <span>Typing</span>
+                             </div>
+                         </div>
+                         <p>Human simulation</p>
+                     </div>
                 </div>
 
                 <!-- Horizontal WPM Selector -->
@@ -847,6 +873,24 @@
                 <button id="modal-dismiss-btn" style="width: 100%; background: none; border: none; color: var(--text-muted); padding: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem; margin-top: 4px;">
                     Dismiss
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved History Drawer -->
+    <div id="history-drawer" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: flex-end; z-index: 2200; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+        <!-- Backdrop close area -->
+        <div style="position: absolute; inset: 0; z-index: 1;" onclick="document.getElementById('history-drawer').style.display = 'none';"></div>
+        <div style="position: relative; z-index: 2; background: #0b0b0b; border-top: 1px solid var(--border-color); border-radius: 24px 24px 0 0; padding: 24px; max-height: 80%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="history" style="color: var(--accent-color);"></i>
+                    <span>Saved History</span>
+                </h2>
+                <button onclick="document.getElementById('history-drawer').style.display = 'none';" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <div id="history-items-container" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                <!-- Items populated by JS -->
             </div>
         </div>
     </div>
@@ -947,7 +991,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/vitcodes';
+                    window.location.href = '/resources';
                 }
             });
         }
@@ -958,7 +1002,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/vitcodes';
+                    window.location.href = '/resources';
                 }
             }
         });
@@ -1003,6 +1047,9 @@
                 typingCard.classList.add('active');
                 wpmSelector.classList.add('show');
                 updateExpectedTime();
+                setTimeout(() => {
+                    wpmSelector.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 150);
             }
             updateSyncStatus();
         }
@@ -1508,6 +1555,56 @@
                 ws.close();
             };
         }
+        // History Drawer Logic
+        const historyDrawer = document.getElementById('history-drawer');
+        const historyToggleBtn = document.getElementById('history-toggle-btn');
+        const historyContainer = document.getElementById('history-items-container');
+
+        if (historyToggleBtn) {
+            historyToggleBtn.addEventListener('click', async () => {
+                historyDrawer.style.display = 'flex';
+                historyContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">Loading history...</div>';
+                try {
+                    const res = await fetch('/history');
+                    const data = await res.json();
+                    if (data.status === 'success' && data.history) {
+                        historyContainer.innerHTML = '';
+                        if (data.history.length === 0) {
+                            historyContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">No history items found.</div>';
+                            return;
+                        }
+                        data.history.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'history-item';
+                            div.style.cssText = 'background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: all 0.2s;';
+                            div.addEventListener('mouseenter', () => div.style.borderColor = 'var(--accent-color)');
+                            div.addEventListener('mouseleave', () => div.style.borderColor = 'var(--border-color)');
+                            
+                            const escapedContent = item.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            const escapedTitle = item.title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                            div.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">${escapedTitle}</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">${item.timestamp} (${item.mode})</span>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">${escapedContent}</p>
+                            `;
+                            div.addEventListener('click', () => {
+                                remoteText.value = item.content;
+                                remoteText.dispatchEvent(new Event('input'));
+                                historyDrawer.style.display = 'none';
+                                showToast('Snippet loaded from history!');
+                            });
+                            historyContainer.appendChild(div);
+                        });
+                    }
+                } catch (e) {
+                    historyContainer.innerHTML = '<div style="color: var(--red-status); font-size: 0.8rem; text-align: center; padding: 20px;">Failed to load history.</div>';
+                }
+            });
+        }
+
         connectWebSocket();
     </script>
 </body>
