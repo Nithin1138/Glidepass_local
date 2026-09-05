@@ -141,26 +141,43 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
     DesktopThemeManager.instance.addListener(_onThemeChanged);
     AppTheme.themeModeNotifier.addListener(_onThemeChanged);
 
+    bool wasServerReady = false;
+    bool wasServerRunning = false;
+
     _serverSub = _serverService.onStatusChanged.listen((_) {
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() {});
-        });
+      final isReady = _serverService.isServerReady;
+      final isRunning = _serverService.isRunning;
+
+      final readyChanged = (isReady != wasServerReady);
+      final runningChanged = (isRunning != wasServerRunning);
+
+      wasServerReady = isReady;
+      wasServerRunning = isRunning;
+
+      if (readyChanged || runningChanged) {
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() {});
+          });
+        }
+        _updateSystemTray();
       }
-      _updateSystemTray();
-      if (_serverService.isServerReady) {
-        _adminService.refresh(force: true);
+
+      if (isReady) {
+        if (readyChanged) {
+          _adminService.refresh(force: true);
+        }
         if (!_isConnectedToLocalService) {
           _isConnectedToLocalService = true;
           _syncConnectionServiceAndStartWS();
+          _startSessionTimer();
         }
-        _startSessionTimer();
-      } else if (!_serverService.isRunning) {
+      } else if (!isRunning) {
         if (_isConnectedToLocalService) {
           _isConnectedToLocalService = false;
           _webSocketService.disconnect();
+          _stopSessionTimer();
         }
-        _stopSessionTimer();
       }
     });
     _tunnelSub = _tunnelService.onStatusChanged.listen((_) {
@@ -208,38 +225,47 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
 
   Timer? _mobileUploadPollTimer;
   bool _isLocalUploadActive = false;
+  bool _isPollingUpload = false;
 
   void _startMobileUploadPolling() {
-    _mobileUploadPollTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) async {
-      if (!_serverService.isRunning || _isLocalUploadActive) return;
+    _mobileUploadPollTimer?.cancel();
+    // High performance adaptive polling: 1000ms idle, responsive when receiving
+    _mobileUploadPollTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
+      if (!_serverService.isRunning || _isLocalUploadActive || _isPollingUpload) return;
+      _isPollingUpload = true;
 
-      final res = await _apiService.fetchUploadProgress();
-      if (res['active'] == true && mounted) {
-        final modePrefix = res['mode'] == 'inbox' ? 'Receiving to Inbox' : 'Receiving';
-        final filename = res['filename'] ?? 'Unknown';
-        final copied = (res['written'] as num?)?.toDouble() ?? 0.0;
-        final total = (res['size'] as num?)?.toDouble() ?? 1.0;
-        final elapsed = DateTime.now().difference(
-          DateTime.fromMillisecondsSinceEpoch(((res['start_time'] as num) * 1000).toInt())
-        ).inSeconds;
+      try {
+        final res = await _apiService.fetchUploadProgress();
+        if (res['active'] == true && mounted) {
+          final modePrefix = res['mode'] == 'inbox' ? 'Receiving to Inbox' : 'Receiving';
+          final filename = res['filename'] ?? 'Unknown';
+          final copied = (res['written'] as num?)?.toDouble() ?? 0.0;
+          final total = (res['size'] as num?)?.toDouble() ?? 1.0;
+          final elapsed = DateTime.now().difference(
+            DateTime.fromMillisecondsSinceEpoch(((res['start_time'] as num) * 1000).toInt())
+          ).inSeconds;
 
-        final speedMbps = elapsed > 0 ? (copied * 8) / (elapsed * 1024 * 1024) : 0.0;
-        setState(() {
-          _isUploading = true;
-          _uploadProgressName = '$modePrefix: $filename';
-          _uploadProgress = total > 0 ? copied / total : 0;
-          _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
-          _uploadEta = speedMbps > 0
-              ? '${((total - copied) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
-              : 'calculating...';
-        });
-      } else if (_isUploading && !_isLocalUploadActive && mounted) {
-        setState(() {
-          _isUploading = false;
-          _uploadProgressName = '';
-          _uploadProgress = 0.0;
-        });
-        _loadFiles(); // Refresh files list when receiving completes
+          final speedMbps = elapsed > 0 ? (copied * 8) / (elapsed * 1024 * 1024) : 0.0;
+          setState(() {
+            _isUploading = true;
+            _uploadProgressName = '$modePrefix: $filename';
+            _uploadProgress = total > 0 ? copied / total : 0;
+            _uploadSpeed = '${speedMbps.toStringAsFixed(1)} Mbps';
+            _uploadEta = speedMbps > 0
+                ? '${((total - copied) * 8 / (speedMbps * 1024 * 1024)).round()}s remaining'
+                : 'calculating...';
+          });
+        } else if (_isUploading && !_isLocalUploadActive && mounted) {
+          setState(() {
+            _isUploading = false;
+            _uploadProgressName = '';
+            _uploadProgress = 0.0;
+          });
+          _loadFiles(); // Refresh files list when receiving completes
+        }
+      } catch (_) {
+      } finally {
+        _isPollingUpload = false;
       }
     });
   }
@@ -359,7 +385,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
     _sessionTimer?.cancel();
     _sessionSeconds = 0;
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _sessionSeconds++);
+      _sessionSeconds++;
     });
   }
 
@@ -401,9 +427,25 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
     }
   }
 
+  bool? _lastTrayRunning;
+  int _lastTrayHubCount = -1;
+  int _lastTrayFileCount = -1;
+
   Future<void> _updateSystemTray() async {
     if (!_trayInitialized) return;
     final isRunning = _serverService.isRunning;
+    final hubCount = _hubs.length;
+    final fileCount = _files.length;
+
+    if (_lastTrayRunning == isRunning &&
+        _lastTrayHubCount == hubCount &&
+        _lastTrayFileCount == fileCount) {
+      return;
+    }
+
+    _lastTrayRunning = isRunning;
+    _lastTrayHubCount = hubCount;
+    _lastTrayFileCount = fileCount;
 
     await _menu.buildFrom([
       MenuItemLabel(label: 'Server Status: ${isRunning ? 'Running 🟢' : 'Offline 🔴'}', enabled: false),

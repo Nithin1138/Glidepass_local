@@ -1,5 +1,5 @@
 #define MyAppName "LANpad"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.4.1"
 #define MyAppPublisher "GlidePass"
 #define MyAppURL "https://github.com/Nithin1138/Glidepass_local"
 #define MyAppExeName "lanpad.exe"
@@ -24,13 +24,13 @@ WizardStyle=modern
 PrivilegesRequired=lowest
 CloseApplications=force
 RestartApplications=no
-VersionInfoVersion=1.4.0.0
+VersionInfoVersion=1.4.1.0
 VersionInfoCompany=LANpad
 VersionInfoDescription=LANpad Desktop Controller & LAN Utility
-VersionInfoTextVersion=1.4.0
+VersionInfoTextVersion=1.4.1
 VersionInfoCopyright=Copyright (C) 2026 LANpad
 VersionInfoProductName=LANpad
-VersionInfoProductVersion=1.4.0.0
+VersionInfoProductVersion=1.4.1.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

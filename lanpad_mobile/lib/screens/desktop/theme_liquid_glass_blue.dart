@@ -1,5 +1,7 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../config/theme.dart';
@@ -149,72 +151,78 @@ class LiquidGlassPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tint = tintColor ?? kPrimary;
     final radius = BorderRadius.circular(borderRadius);
+    final bool isWindows = !kIsWeb && Platform.isWindows;
+    final double effectiveBlur = isWindows ? 0.0 : blur;
 
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: AppTheme.isDark
-                  ? [
-                      Colors.white.withValues(alpha: 0.11),
-                      tint.withValues(alpha: 0.05),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.85),
-                      Colors.white.withValues(alpha: 0.65),
-                    ],
-            ),
-            border: Border.all(
-              color: AppTheme.isDark
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.white.withValues(alpha: 0.6),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.35 : 0.08),
-                blurRadius: 40,
-                offset: const Offset(0, 18),
-              ),
-              BoxShadow(
-                color: tint.withValues(alpha: AppTheme.isDark ? 0.12 : 0.06),
-                blurRadius: 60,
-                spreadRadius: -10,
-              ),
-            ],
+    final panelBody = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: AppTheme.isDark
+              ? [
+                  Colors.white.withValues(alpha: isWindows ? 0.20 : 0.11),
+                  tint.withValues(alpha: isWindows ? 0.12 : 0.05),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.92),
+                  Colors.white.withValues(alpha: 0.80),
+                ],
+        ),
+        border: Border.all(
+          color: AppTheme.isDark
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.white.withValues(alpha: 0.6),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.35 : 0.08),
+            blurRadius: 40,
+            offset: const Offset(0, 18),
           ),
-          child: Stack(
-            children: [
-              // Specular highlight line along the top edge — the detail
-              // that sells "glass" over "translucent card".
-              Positioned(
-                top: 0,
-                left: borderRadius,
-                right: borderRadius,
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.0),
-                        Colors.white.withValues(alpha: AppTheme.isDark ? 0.5 : 0.9),
-                        Colors.white.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
+          BoxShadow(
+            color: tint.withValues(alpha: AppTheme.isDark ? 0.12 : 0.06),
+            blurRadius: 60,
+            spreadRadius: -10,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: borderRadius,
+            right: borderRadius,
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: AppTheme.isDark ? 0.5 : 0.9),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
                 ),
               ),
-              child,
-            ],
+            ),
           ),
-        ),
+          child,
+        ],
+      ),
+    );
+
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: radius,
+        child: effectiveBlur > 0
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: effectiveBlur, sigmaY: effectiveBlur),
+                child: panelBody,
+              )
+            : panelBody,
       ),
     );
   }

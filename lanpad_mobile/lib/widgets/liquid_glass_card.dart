@@ -1,4 +1,6 @@
+import 'dart:io' show Platform;
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
@@ -56,72 +58,79 @@ class LiquidGlassCard extends StatelessWidget {
         ),
     ];
 
-    return Container(
-      decoration: BoxDecoration(borderRadius: br, boxShadow: shadows),
-      child: ClipRRect(
-        borderRadius: br,
-        clipBehavior: Clip.antiAlias,
-        child: BackdropFilter(
-          // Stronger blur = more convincing frost. 24 is a good default;
-          // go to 30+ for busy backgrounds, down to 12-16 for subtle chips.
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Stack(
-            fit: StackFit.passthrough,
-            children: [
-              // Base tint — deliberately faint so blurred content shows through
-              Container(
-                padding: padding,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: liquidColor != null
-                        ? [
-                            liquidColor!.withOpacity(isDark ? 0.14 : 0.30),
-                            liquidColor!.withOpacity(isDark ? 0.06 : 0.16),
-                          ]
-                        : isDark
-                            ? [
-                                context.cardBg,
-                                context.cardBg.withOpacity(isDark ? 0.1 : 0.3),
-                              ]
-                            : [
-                                context.cardBg,
-                                context.cardBg.withOpacity(isDark ? 0.1 : 0.3),
-                              ],
+    final bool isWindows = !kIsWeb && Platform.isWindows;
+    final double effectiveBlur = isWindows ? 0.0 : blur;
+
+    final cardContent = Stack(
+      fit: StackFit.passthrough,
+      children: [
+        // Base tint — deliberately faint so blurred content shows through
+        Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: liquidColor != null
+                  ? [
+                      liquidColor!.withOpacity(isDark ? (isWindows ? 0.22 : 0.14) : 0.30),
+                      liquidColor!.withOpacity(isDark ? (isWindows ? 0.14 : 0.06) : 0.16),
+                    ]
+                  : isDark
+                      ? [
+                          context.cardBg.withOpacity(isWindows ? 0.85 : 0.4),
+                          context.cardBg.withOpacity(isWindows ? 0.70 : 0.2),
+                        ]
+                      : [
+                          context.cardBg.withOpacity(isWindows ? 0.95 : 0.6),
+                          context.cardBg.withOpacity(isWindows ? 0.85 : 0.4),
+                        ],
+            ),
+            borderRadius: br,
+            // Specular gradient border — THIS is what sells "glass"
+            border: borderColor != null
+                ? Border.all(color: borderColor!, width: 1.2)
+                : Border.all(
+                    color: context.borderColor, 
+                    width: 1.0,
                   ),
-                  borderRadius: br,
-                  // Specular gradient border — THIS is what sells "glass"
-                  border: borderColor != null
-                      ? Border.all(color: borderColor!, width: 1.2)
-                      : Border.all(
-                          color: context.borderColor, 
-                          width: 1.0,
-                        ),
-                ),
-                child: child,
-              ),
-              // Top inner-highlight sheen — thin bright line along the top edge,
-              // like light grazing the top of curved glass.
-              Positioned(
-                top: 0,
-                left: borderRadius * 0.4,
-                right: borderRadius * 0.4,
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withOpacity(isDark ? 0.5 : 0.8),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
+          child: child,
+        ),
+        // Top inner-highlight sheen — thin bright line along the top edge,
+        // like light grazing the top of curved glass.
+        Positioned(
+          top: 0,
+          left: borderRadius * 0.4,
+          right: borderRadius * 0.4,
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withOpacity(isDark ? 0.5 : 0.8),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return RepaintBoundary(
+      child: Container(
+        decoration: BoxDecoration(borderRadius: br, boxShadow: shadows),
+        child: ClipRRect(
+          borderRadius: br,
+          clipBehavior: Clip.antiAlias,
+          child: effectiveBlur > 0
+              ? BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: effectiveBlur, sigmaY: effectiveBlur),
+                  child: cardContent,
+                )
+              : cardContent,
         ),
       ),
     );

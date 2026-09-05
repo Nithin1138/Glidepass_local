@@ -1,7 +1,7 @@
-# LANpad Windows Installer Script (Release v1.4.0)
+# LANpad Windows Installer Script (Release v1.4.1)
 $ErrorActionPreference = 'Stop'
 
-Write-Host "Installing LANpad for Windows (v1.4.0)..." -ForegroundColor Green
+Write-Host "Installing LANpad for Windows (v1.4.1)..." -ForegroundColor Green
 Write-Host ""
 Write-Host "LEGAL DISCLAIMER:" -ForegroundColor Yellow
 Write-Host "LANpad is provided AS IS without warranty of any kind." -ForegroundColor Yellow
@@ -23,9 +23,9 @@ if (Test-Path $InstallDir) {
 
 # Release mirrors
 $Mirrors = @(
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.4.0/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.4.1/LANpad-Windows.zip",
     "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip",
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.9/LANpad-Windows.zip"
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.4.0/LANpad-Windows.zip"
 )
 
 Write-Host "Downloading LANpad application bundle..." -ForegroundColor Cyan
@@ -59,7 +59,7 @@ foreach ($Url in $Mirrors) {
 
 if (-not $Downloaded) {
     Write-Host "ERROR: Could not download LANpad application bundle." -ForegroundColor Red
-    Write-Host "Please download LANpad manually: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.4.0" -ForegroundColor Yellow
+    Write-Host "Please download LANpad manually: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.4.1" -ForegroundColor Yellow
     exit 1
 }
 

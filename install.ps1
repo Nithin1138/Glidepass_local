@@ -52,9 +52,9 @@ Write-Host ""
 Write-Step 2 4 "Downloading LANpad application release bundle..."
 
 $Mirrors = @(
-    "https://github.com/$repo/releases/download/v1.4.0/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/download/v1.4.1/LANpad-Windows.zip",
     "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/download/v1.3.9/LANpad-Windows.zip"
+    "https://github.com/$repo/releases/download/v1.4.0/LANpad-Windows.zip"
 )
 
 $Downloaded = $false
@@ -83,7 +83,7 @@ foreach ($url in $Mirrors) {
 
 if (-not $Downloaded) {
     Write-Fail "Could not download LANpad package from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.4.0" -ForegroundColor Yellow
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.4.1" -ForegroundColor Yellow
     exit 1
 }
 

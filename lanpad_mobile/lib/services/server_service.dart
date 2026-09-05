@@ -181,13 +181,18 @@ class ServerService {
     _stopTracking();
   }
 
+  HttpClient? _trackingClient;
+
   void _startTracking() {
     _statusTimer?.cancel();
-    _statusTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    _trackingClient?.close(force: true);
+    _trackingClient = HttpClient()..connectionTimeout = const Duration(milliseconds: 800);
+
+    _statusTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       if (_process == null) return;
       try {
-        final client = HttpClient();
-        client.connectionTimeout = const Duration(milliseconds: 500);
+        final client = _trackingClient ?? HttpClient();
+        bool changed = false;
 
         // 1. Fetch Session Token
         if (_sessionToken.isEmpty) {
@@ -197,6 +202,7 @@ class ServerService {
             final dataStr = await tokenResp.transform(utf8.decoder).join();
             final data = jsonDecode(dataStr);
             _sessionToken = data['session_token'] ?? '';
+            changed = true;
           }
         }
 
@@ -208,6 +214,7 @@ class ServerService {
             final dataStr = await infoResp.transform(utf8.decoder).join();
             final data = jsonDecode(dataStr);
             _deviceName = data['device_name'] ?? '';
+            changed = true;
           }
         }
 
@@ -217,12 +224,19 @@ class ServerService {
         if (connResp.statusCode == 200) {
           final dataStr = await connResp.transform(utf8.decoder).join();
           final data = jsonDecode(dataStr);
-          _connectedCount = data['count'] ?? 0;
+          final int newCount = data['count'] ?? 0;
           final List<dynamic> devs = data['devices'] ?? [];
-          _connectedDevices = devs.map((d) => d.toString()).toList();
+          final List<String> newDevices = devs.map((d) => d.toString()).toList();
+          if (newCount != _connectedCount || newDevices.length != _connectedDevices.length) {
+            _connectedCount = newCount;
+            _connectedDevices = newDevices;
+            changed = true;
+          }
         }
 
-        _statusController.add(null);
+        if (changed) {
+          _statusController.add(null);
+        }
       } catch (_) {
         // Server might not be fully started yet
       }
@@ -232,6 +246,8 @@ class ServerService {
   void _stopTracking() {
     _statusTimer?.cancel();
     _statusTimer = null;
+    _trackingClient?.close(force: true);
+    _trackingClient = null;
     _process = null;
     _sessionToken = '';
     _deviceName = '';

@@ -157,19 +157,26 @@ class DesktopThemeBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget bg;
     switch (DesktopThemeManager.instance.currentTheme) {
       case 'arc':
-        return const arc.ArcAnimatedBackground();
+        bg = const arc.ArcAnimatedBackground();
+        break;
       case 'linear':
-        return const linear.LinearAnimatedBackground();
+        bg = const linear.LinearAnimatedBackground();
+        break;
       case 'liquid_glass_blue':
-        return const glass.LiquidGlassBlueBackground();
+        bg = const glass.LiquidGlassBlueBackground();
+        break;
       case 'spotify':
-        return const spotify.SpotifyAnimatedBackground();
+        bg = const spotify.SpotifyAnimatedBackground();
+        break;
       case 'gemini':
       default:
-        return const GeminiAnimatedBackground();
+        bg = const GeminiAnimatedBackground();
+        break;
     }
+    return RepaintBoundary(child: bg);
   }
 }
 
