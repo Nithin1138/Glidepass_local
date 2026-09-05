@@ -14,30 +14,38 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+    if (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS) {
+      _initialized = true;
+      return;
+    }
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
-    const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-      macOS: darwinSettings,
-    );
+    try {
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/launcher_icon');
+      const darwinSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: darwinSettings,
+        macOS: darwinSettings,
+      );
 
-    // v22 API: all named parameters
-    await _plugin.initialize(settings: initSettings);
+      // v22 API: all named parameters
+      await _plugin.initialize(settings: initSettings);
 
-    // Request Android 13+ permissions
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+      // Request Android 13+ permissions
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
 
-    _initialized = true;
+      _initialized = true;
+    } catch (e) {
+      print('NotificationService init notice: $e');
+    }
   }
 
   Future<bool> get notificationsEnabled async {
@@ -50,6 +58,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS) return;
     if (!await notificationsEnabled) return;
 
     const androidDetails = AndroidNotificationDetails(
