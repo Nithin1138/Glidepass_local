@@ -133,6 +133,15 @@ try {
         }
     } catch {}
 
+    # Ensure Python dependencies are installed for local backend
+    $ReqFile = Join-Path $InstallDir "requirements.txt"
+    if (Test-Path $ReqFile) {
+        Write-Host "  Verifying Python backend dependencies..." -ForegroundColor DarkGray
+        try {
+            & python -m pip install -q --no-warn-script-location -r "$ReqFile" 2>$null
+        } catch {}
+    }
+
     Write-Ok "Extracted binaries and plugin dependencies successfully"
 } catch {
     Write-Fail "Extraction failed: $_"

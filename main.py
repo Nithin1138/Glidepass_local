@@ -59,6 +59,48 @@ def _ensure_safe_stdio():
 
 _ensure_safe_stdio()
 
+def _ensure_dependencies():
+    try:
+        import fastapi
+        import uvicorn
+        import websockets
+        import multipart
+    except ImportError:
+        print("[LANpad] Installing missing Python server dependencies...")
+        req_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
+        pkgs = [
+            "fastapi>=0.100.0",
+            "uvicorn>=0.23.0",
+            "httpx>=0.24.0",
+            "pyperclip>=1.8.2",
+            "pynput>=1.7.6",
+            "pyautogui>=0.9.54",
+            "pillow>=10.0.0",
+            "requests>=2.31.0",
+            "python-multipart>=0.0.6",
+            "websockets>=11.0.3",
+            "certifi>=2023.7.22"
+        ]
+        cmd = [sys.executable, "-m", "pip", "install", "--user", "--quiet", "--no-warn-script-location"]
+        try:
+            if os.path.exists(req_path):
+                subprocess.run(cmd + ["-r", req_path], check=True)
+            else:
+                subprocess.run(cmd + pkgs, check=True)
+            print("[LANpad] Dependencies installed successfully.")
+        except Exception:
+            try:
+                cmd_fallback = [sys.executable, "-m", "pip", "install", "--quiet", "--no-warn-script-location"]
+                if os.path.exists(req_path):
+                    subprocess.run(cmd_fallback + ["-r", req_path], check=True)
+                else:
+                    subprocess.run(cmd_fallback + pkgs, check=True)
+            except Exception as e:
+                print(f"[LANpad] Error auto-installing dependencies: {e}")
+
+_ensure_dependencies()
+
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
