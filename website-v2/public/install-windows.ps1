@@ -26,8 +26,9 @@ if (Test-Path $InstallDir) {
 
 # Release mirrors
 $Mirrors = @(
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.9/LANpad-Windows.zip",
-    "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.4.0/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.9/LANpad-Windows.zip"
 )
 
 Write-Host "📥 Downloading LANpad application bundle..." -ForegroundColor Cyan
@@ -62,7 +63,7 @@ foreach ($Url in $Mirrors) {
 if (-not $Downloaded) {
     Write-Host "❌ ERROR: Could not download LANpad application bundle." -ForegroundColor Red
     Write-Host "Your network proxy or university campus firewall blocked the download." -ForegroundColor Red
-    Write-Host "Please download LANpad manually from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.9" -ForegroundColor Yellow
+    Write-Host "Please download LANpad manually from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.4.0" -ForegroundColor Yellow
     exit 1
 }
 

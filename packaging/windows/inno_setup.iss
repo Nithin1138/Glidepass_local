@@ -1,5 +1,5 @@
 #define MyAppName "LANpad"
-#define MyAppVersion "1.3.9"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "GlidePass"
 #define MyAppURL "https://github.com/Nithin1138/Glidepass_local"
 #define MyAppExeName "lanpad.exe"

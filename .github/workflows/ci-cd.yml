@@ -229,7 +229,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
-            TAG="v1.3.9"
+            TAG="v1.4.0"
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "title=LANpad Desktop Release $TAG" >> $GITHUB_OUTPUT

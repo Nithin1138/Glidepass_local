@@ -77,8 +77,9 @@ if (Test-Path $InstallDir) {
 }
 
 $Mirrors = @(
-    "https://github.com/$repo/releases/download/v1.3.9/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip"
+    "https://github.com/$repo/releases/download/v1.4.0/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/download/v1.3.9/LANpad-Windows.zip"
 )
 
 $Downloaded = $false
@@ -107,7 +108,7 @@ foreach ($url in $Mirrors) {
 
 if (-not $Downloaded) {
     Write-Fail "Could not download LANpad package from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.9" -ForegroundColor Yellow
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.4.0" -ForegroundColor Yellow
     exit 1
 }
 
