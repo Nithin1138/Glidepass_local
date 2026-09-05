@@ -163,6 +163,18 @@ jobs:
           if (Test-Path "assets") {
             Copy-Item -Path "assets" -Destination "lanpad_mobile\build\windows\x64\runner\Release\assets" -Recurse -Force
           }
+
+          # Build Inno Setup Standalone Installer (.exe)
+          if (Get-Command iscc -ErrorAction SilentlyContinue) {
+            iscc packaging\windows\inno_setup.iss
+          } elseif (Test-Path "C:\Program Files (x86)\Inno Setup 6\iscc.exe") {
+            & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" packaging\windows\inno_setup.iss
+          } else {
+            choco install innosetup --yes --no-progress
+            & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" packaging\windows\inno_setup.iss
+          }
+
+          Copy-Item -Path "LANpad-Setup.exe" -Destination "LANpad-Windows-Installer.exe" -Force
           Compress-Archive -Path "lanpad_mobile\build\windows\x64\runner\Release\*" -DestinationPath "LANpad-Windows.zip" -Force
 
       - name: Upload macOS DMG Artifact
@@ -173,12 +185,15 @@ jobs:
           path: LANpad_macOS.dmg
           if-no-files-found: error
 
-      - name: Upload Windows ZIP Artifact
+      - name: Upload Windows Artifacts
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: LANpad-Windows-EXE
-          path: LANpad-Windows.zip
+          path: |
+            LANpad-Setup.exe
+            LANpad-Windows-Installer.exe
+            LANpad-Windows.zip
           if-no-files-found: error
 
   create-release:
@@ -207,7 +222,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
-            TAG="v1.3.8"
+            TAG="v1.3.9"
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "title=LANpad Desktop Release $TAG" >> $GITHUB_OUTPUT
@@ -219,6 +234,8 @@ jobs:
           name: ${{ steps.release_tag.outputs.title }}
           files: |
             release-artifacts/mac/LANpad_macOS.dmg
+            release-artifacts/win/LANpad-Setup.exe
+            release-artifacts/win/LANpad-Windows-Installer.exe
             release-artifacts/win/LANpad-Windows.zip
           draft: false
           prerelease: false
