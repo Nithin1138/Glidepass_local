@@ -137,7 +137,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           mkdir -p lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend
-          cp main.py app.py requirements.txt lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend/ || true
+          cp *.py requirements.txt lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend/ || true
           cp -r templates assets lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend/ || true
           hdiutil create -volname "LANpad" -srcfolder lanpad_mobile/build/macos/Build/Products/Release/lanpad.app -ov -format UDZO LANpad_macOS.dmg
 
@@ -153,10 +153,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          Copy-Item -Path "main.py" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
-          Copy-Item -Path "app.py" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
-          Copy-Item -Path "requirements.txt" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
-          Copy-Item -Path "templates" -Destination "lanpad_mobile\build\windows\x64\runner\Release\templates" -Recurse -Force
+          Copy-Item -Path "*.py" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
+          if (Test-Path "requirements.txt") {
+            Copy-Item -Path "requirements.txt" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
+          }
+          if (Test-Path "templates") {
+            Copy-Item -Path "templates" -Destination "lanpad_mobile\build\windows\x64\runner\Release\templates" -Recurse -Force
+          }
           if (Test-Path "assets") {
             Copy-Item -Path "assets" -Destination "lanpad_mobile\build\windows\x64\runner\Release\assets" -Recurse -Force
           }
