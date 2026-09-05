@@ -59,6 +59,17 @@ def _ensure_safe_stdio():
 
 _ensure_safe_stdio()
 
+if sys.stdout is not None and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr is not None and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 def _ensure_dependencies():
     try:
         import fastapi
@@ -374,7 +385,7 @@ def main():
     controller.start_backend()
     controller.toggle_dashboard()
 
-    print("\U0001F680 LANpad Menubar Active")
+    print("[LANpad] Menubar Active")
     menu_app.run()
 
 if __name__ == "__main__":
@@ -467,7 +478,7 @@ if __name__ == "__main__":
         
         # Sleep main thread forever (since we don't run the menubar AppKit loop)
         import time
-        print("🚀 LANpad Server-Only Active")
+        print("[LANpad] Server-Only Active")
         try:
             while True:
                 time.sleep(1)

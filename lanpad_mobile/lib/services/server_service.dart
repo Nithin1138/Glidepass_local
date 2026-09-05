@@ -99,6 +99,10 @@ class ServerService {
             pyBin,
             [appPyPath, '--server-only'],
             workingDirectory: workingDir,
+            environment: {
+              'PYTHONIOENCODING': 'utf-8',
+              'PYTHONUTF8': '1',
+            },
           );
           print('[ServerService] Started server with: $pyBin $appPyPath');
           break;
