@@ -173,6 +173,13 @@ jobs:
             choco install innosetup --yes --no-progress
             & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" packaging\windows\inno_setup.iss
           }
+          # Apply Authenticode digital signature
+          try {
+            $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=LANpad, O=GlidePass" -CertStoreLocation Cert:\CurrentUser\My
+            Set-AuthenticodeSignature -Certificate $cert -FilePath "LANpad-Setup.exe" -HashAlgorithm SHA256
+          } catch {
+            Write-Host "Authenticode notice: $_"
+          }
 
           Copy-Item -Path "LANpad-Setup.exe" -Destination "LANpad-Windows-Installer.exe" -Force
           Compress-Archive -Path "lanpad_mobile\build\windows\x64\runner\Release\*" -DestinationPath "LANpad-Windows.zip" -Force

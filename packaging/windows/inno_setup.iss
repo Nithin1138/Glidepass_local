@@ -24,6 +24,13 @@ WizardStyle=modern
 PrivilegesRequired=lowest
 CloseApplications=yes
 RestartApplications=no
+VersionInfoVersion=1.3.9.0
+VersionInfoCompany=LANpad
+VersionInfoDescription=LANpad Desktop Controller & LAN Utility
+VersionInfoTextVersion=1.3.9
+VersionInfoCopyright=Copyright (C) 2026 LANpad
+VersionInfoProductName=LANpad
+VersionInfoProductVersion=1.3.9.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
