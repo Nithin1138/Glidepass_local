@@ -77,10 +77,8 @@ if (Test-Path $InstallDir) {
 }
 
 $Mirrors = @(
-    "https://github.com/$repo/releases/download/v1.3.7/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/download/v1.3.6/LANpad-Windows.zip",
-    "https://github.com/$repo/releases/download/v1.3.4/LANpad-Windows.zip"
+    "https://github.com/$repo/releases/download/v1.3.9/LANpad-Windows.zip",
+    "https://github.com/$repo/releases/latest/download/LANpad-Windows.zip"
 )
 
 $Downloaded = $false
@@ -99,6 +97,7 @@ foreach ($url in $Mirrors) {
             $Size = (Get-Item $ZipPath).Length
             if ($Size -gt 1000000) {
                 $Downloaded = $true
+                Unblock-File -Path "$ZipPath" -ErrorAction SilentlyContinue
                 Write-Ok "Downloaded package ($([math]::Round($Size/1MB,1)) MB)"
                 break
             }
@@ -108,7 +107,7 @@ foreach ($url in $Mirrors) {
 
 if (-not $Downloaded) {
     Write-Fail "Could not download LANpad package from GitHub Releases"
-    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.7" -ForegroundColor Yellow
+    Write-Host "  Download manually: https://github.com/$repo/releases/tag/v1.3.9" -ForegroundColor Yellow
     exit 1
 }
 
@@ -125,7 +124,7 @@ try {
     Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
 
     # Move files out of subfolder if zip contained top-level folder
-    $SubExe = Get-ChildItem -Path $InstallDir -Filter "LANpad.exe" -Recurse | Select-Object -First 1
+    $SubExe = Get-ChildItem -Path $InstallDir -Filter "*lanpad*.exe" -Recurse | Select-Object -First 1
     if ($SubExe -and ($SubExe.DirectoryName -ne $InstallDir)) {
         $SubDir = $SubExe.DirectoryName
         Get-ChildItem -Path $SubDir | Move-Item -Destination $InstallDir -Force -ErrorAction SilentlyContinue
@@ -138,6 +137,26 @@ try {
             $ExePath = $AltExe
         }
     }
+
+    # Unblock all extracted executables and DLLs
+    Get-ChildItem -Path $InstallDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+
+    # Create Desktop Shortcut
+    try {
+        $DesktopPath = [System.Environment]::GetFolderPath("Desktop")
+        if (-not (Test-Path $DesktopPath)) { $DesktopPath = "$env:USERPROFILE\Desktop" }
+        if (Test-Path $DesktopPath) {
+            $WshShell = New-Object -ComObject WScript.Shell
+            $ShortcutPath = Join-Path $DesktopPath "LANpad.lnk"
+            if (Test-Path $ShortcutPath) { Remove-Item -Path $ShortcutPath -Force -ErrorAction SilentlyContinue }
+            $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+            $Shortcut.TargetPath = $ExePath
+            $Shortcut.WorkingDirectory = $InstallDir
+            $Shortcut.IconLocation = "$ExePath,0"
+            $Shortcut.Save()
+        }
+    } catch {}
+
     Write-Ok "Extracted binaries and plugin dependencies"
 } catch {
     Write-Fail "Extraction failed: $_"
@@ -149,7 +168,7 @@ Start-Sleep -Milliseconds 300
 # ── Launch ───────────────────────────────────────────────────
 Write-Host ""
 Write-Step 4 4 "Launching LANpad..."
-Start-Process $ExePath
+Start-Process -FilePath $ExePath -WorkingDirectory $InstallDir
 Start-Sleep -Milliseconds 800
 
 Write-Host ""

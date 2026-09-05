@@ -26,10 +26,8 @@ if (Test-Path $InstallDir) {
 
 # Release mirrors
 $Mirrors = @(
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.7/LANpad-Windows.zip",
-    "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip",
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.6/LANpad-Windows.zip",
-    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.4/LANpad-Windows.zip"
+    "https://github.com/Nithin1138/Glidepass_local/releases/download/v1.3.9/LANpad-Windows.zip",
+    "https://github.com/Nithin1138/Glidepass_local/releases/latest/download/LANpad-Windows.zip"
 )
 
 Write-Host "📥 Downloading LANpad application bundle..." -ForegroundColor Cyan
@@ -51,6 +49,7 @@ foreach ($Url in $Mirrors) {
             $Size = (Get-Item $ZipPath).Length
             if ($Size -gt 1000000) {
                 $Downloaded = $true
+                Unblock-File -Path "$ZipPath" -ErrorAction SilentlyContinue
                 Write-Host "✅ Download complete! ($([math]::Round($Size/1MB,1)) MB)" -ForegroundColor Green
                 break
             }
@@ -63,7 +62,7 @@ foreach ($Url in $Mirrors) {
 if (-not $Downloaded) {
     Write-Host "❌ ERROR: Could not download LANpad application bundle." -ForegroundColor Red
     Write-Host "Your network proxy or university campus firewall blocked the download." -ForegroundColor Red
-    Write-Host "Please download LANpad manually from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.7" -ForegroundColor Yellow
+    Write-Host "Please download LANpad manually from GitHub Releases: https://github.com/Nithin1138/Glidepass_local/releases/tag/v1.3.9" -ForegroundColor Yellow
     exit 1
 }
 
@@ -114,6 +113,9 @@ try {
     }
 } catch { }
 
+# Unblock all extracted executables and DLLs
+Get-ChildItem -Path $InstallDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+
 Write-Host "✨ LANpad installed successfully with all companion DLL plugins!" -ForegroundColor Green
 Write-Host "🚀 Launching LANpad..." -ForegroundColor Cyan
-Start-Process $ExePath
+Start-Process -FilePath $ExePath -WorkingDirectory $InstallDir
