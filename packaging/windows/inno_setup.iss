@@ -22,15 +22,15 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
-CloseApplications=yes
+CloseApplications=force
 RestartApplications=no
-VersionInfoVersion=1.3.9.0
+VersionInfoVersion=1.4.0.0
 VersionInfoCompany=LANpad
 VersionInfoDescription=LANpad Desktop Controller & LAN Utility
-VersionInfoTextVersion=1.3.9
+VersionInfoTextVersion=1.4.0
 VersionInfoCopyright=Copyright (C) 2026 LANpad
 VersionInfoProductName=LANpad
-VersionInfoProductVersion=1.3.9.0
+VersionInfoProductVersion=1.4.0.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -47,3 +47,13 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function InitializeSetup(): Boolean;
+var
+  ErrorCode: Integer;
+begin
+  // Forcefully terminate any running instance of lanpad before extracting files
+  ShellExec('open', 'taskkill.exe', '/F /IM lanpad.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+  Result := True;
+end;
