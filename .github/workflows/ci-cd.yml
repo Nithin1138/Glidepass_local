@@ -133,9 +133,12 @@ jobs:
           cd lanpad_mobile
           flutter build macos --release
 
-      - name: Package macOS DMG
+      - name: Package macOS App Bundle & DMG
         if: matrix.os == 'macos-latest'
         run: |
+          mkdir -p lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend
+          cp main.py app.py requirements.txt lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend/ || true
+          cp -r templates assets lanpad_mobile/build/macos/Build/Products/Release/lanpad.app/Contents/Resources/backend/ || true
           hdiutil create -volname "LANpad" -srcfolder lanpad_mobile/build/macos/Build/Products/Release/lanpad.app -ov -format UDZO LANpad_macOS.dmg
 
       - name: Build Flutter Windows Desktop App
@@ -150,7 +153,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          Copy-Item -Path "lanpad_mobile\build\windows\x64\runner\Release\lanpad.exe" -Destination "LANpad.exe" -Force
+          Copy-Item -Path "main.py" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
+          Copy-Item -Path "app.py" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
+          Copy-Item -Path "requirements.txt" -Destination "lanpad_mobile\build\windows\x64\runner\Release\" -Force
+          Copy-Item -Path "templates" -Destination "lanpad_mobile\build\windows\x64\runner\Release\templates" -Recurse -Force
+          if (Test-Path "assets") {
+            Copy-Item -Path "assets" -Destination "lanpad_mobile\build\windows\x64\runner\Release\assets" -Recurse -Force
+          }
           Compress-Archive -Path "lanpad_mobile\build\windows\x64\runner\Release\*" -DestinationPath "LANpad-Windows.zip" -Force
 
       - name: Upload macOS DMG Artifact
@@ -161,21 +170,19 @@ jobs:
           path: LANpad_macOS.dmg
           if-no-files-found: error
 
-      - name: Upload Windows EXE Artifact
+      - name: Upload Windows ZIP Artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: LANpad-Windows-EXE
-          path: |
-            LANpad.exe
-            LANpad-Windows.zip
+          path: LANpad-Windows.zip
           if-no-files-found: error
 
   create-release:
     name: Create GitHub Production Release
     needs: build-flutter-client-apps
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/checkall'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/checkall' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
@@ -191,11 +198,22 @@ jobs:
           name: LANpad-Windows-EXE
           path: release-artifacts/win
 
+      - name: Determine Release Tag
+        id: release_tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v1.3.8"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "title=LANpad Desktop Release $TAG" >> $GITHUB_OUTPUT
+
       - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.3.7' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'LANpad Desktop Release v1.3.7' }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: ${{ steps.release_tag.outputs.title }}
           files: |
             release-artifacts/mac/LANpad_macOS.dmg
             release-artifacts/win/LANpad-Windows.zip

@@ -2010,6 +2010,395 @@ async def typing_status():
     return {"is_typing": is_currently_typing, "status": "online"}
 
 
+# ── Exam Mode Advanced Stealth Endpoints ─────────────────────────────────────
+
+def get_env_secret(secret_name, alt_names=None):
+    """Retrieve secret from environment or project .env files."""
+    keys_to_check = [secret_name] + (alt_names or [])
+    for k in keys_to_check:
+        val = os.environ.get(k)
+        if val:
+            return val.strip().strip('"').strip("'")
+
+    candidates = [
+        os.path.join(os.path.dirname(__file__), ".env"),
+        os.path.join(os.path.dirname(__file__), "website-v2", ".env.local"),
+        os.path.join(os.path.dirname(__file__), "website-v2", ".env.production.local"),
+        os.path.join(os.path.dirname(__file__), "website-v2", ".env.development.local"),
+        os.path.join(os.path.expanduser("~"), ".lanpad", ".env"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        for k in keys_to_check:
+                            if line.startswith(f"{k}="):
+                                val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                                if val:
+                                    return val
+            except Exception:
+                pass
+    return None
+
+
+def get_gemini_api_key():
+    """Retrieve Google Gemini API key from environment or project .env files."""
+    return get_env_secret("GEMINI_API_KEY", alt_names=["GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"])
+
+
+def get_groq_api_key():
+    """Retrieve Groq API key from environment or project .env files."""
+    return get_env_secret("GROQ_API_KEY")
+
+
+@app.post("/api/exam/ai_solve")
+async def exam_ai_solve(request: Request):
+    """
+    Universal Exam AI Solver:
+    Receives extracted problem text and returns optimal, clean answers ready for keystroke injection/dispatch.
+    Intelligently handles:
+      - Coding questions in any selected language (Python, Java, C++, SQL, JS/TS, etc.)
+      - Multiple-choice questions (MCQs) with winning option on line 1 + concise derivation
+      - Quantitative aptitude, math, and logic puzzles
+      - Technical theory and conceptual short/long-answer questions
+    Supports Google Gemini, Groq (Qwen 3.8 / GPT-OSS 120B / LLaMA 3.3), and OpenAI with automatic fallback.
+    """
+    import re, ssl, certifi, urllib.request, json
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    question_text = data.get("question_text", "").strip()
+    raw_language = data.get("language", "auto").strip().lower()
+    custom_instructions = data.get("custom_instructions", "").strip()
+    
+    gemini_key = data.get("gemini_api_key", "").strip() or get_gemini_api_key()
+    groq_key = data.get("api_key", "").strip() or get_groq_api_key()
+    openai_key = get_env_secret("OPENAI_API_KEY")
+
+    if not question_text:
+        return JSONResponse({"status": "error", "message": "No question text provided"}, status_code=400)
+
+    if not gemini_key and not groq_key and not openai_key:
+        return JSONResponse({
+            "status": "error", 
+            "message": "Neither GEMINI_API_KEY, GROQ_API_KEY, nor OPENAI_API_KEY is configured. Please set your API key in the .env file."
+        }, status_code=400)
+
+    # ── Detect Problem Type & Craft Tailored Direct-Dispatch System Prompt ──
+    is_mcq_requested = raw_language in ["mcq", "aptitude", "quiz", "options"]
+    is_theory_requested = raw_language in ["theory", "text", "essay", "short_answer", "concept"]
+    is_sql_requested = raw_language in ["sql"]
+    
+    # Check for MCQ indicators in question text if auto-detect
+    has_mcq_markers = bool(re.search(r'(?:[A-Da-d]\s*[\)\.\:]|Option\s+[A-Da-d]|Choose\s+the\s+correct|Which\s+of\s+the\s+following)', question_text))
+    
+    mode = "coding"
+    display_lang = raw_language.upper()
+
+    if is_mcq_requested or (raw_language in ["auto", ""] and has_mcq_markers):
+        mode = "mcq"
+        system_prompt = (
+            "You are an expert exam solver tackling multiple-choice, quantitative aptitude, and competitive exam questions.\n"
+            "MANDATORY FORMAT RULES FOR DIRECT DISPATCH:\n"
+            "1. Line 1 MUST state the exact winning option letter and full text clearly (e.g. 'Correct Option: B) <option text>').\n"
+            "2. Follow immediately with a concise, crystal-clear 2-4 line explanation or step-by-step derivation.\n"
+            "3. Absolutely NO conversational greetings, pleasantries, or introductory fluff ('Sure, here is the answer:').\n"
+            "4. If multiple options are valid, list all correct options on line 1.\n"
+            "5. Ready for direct keystroke typing or immediate review."
+        )
+    elif is_theory_requested:
+        mode = "theory"
+        system_prompt = (
+            "You are an expert academic and technical exam solver.\n"
+            "MANDATORY FORMAT RULES FOR DIRECT DISPATCH:\n"
+            "1. Provide a direct, authoritative, high-scoring technical answer.\n"
+            "2. Structure with concise bullet points or clean paragraphs ready to be pasted or typed into the answer box.\n"
+            "3. Absolutely NO conversational filler, greetings, or meta-commentary.\n"
+            "4. Thoroughly address all key concepts, definitions, and requirements mentioned in the question."
+        )
+    elif is_sql_requested:
+        mode = "sql"
+        system_prompt = (
+            "You are a database architect and SQL optimization specialist.\n"
+            "Target Dialect: Standard ANSI SQL (MySQL/PostgreSQL compliant)\n\n"
+            "MANDATORY FORMAT RULES FOR DIRECT DISPATCH:\n"
+            "1. Output ONLY pure, valid, optimal SQL code. Absolutely NO markdown code fences (no ```sql, no ```).\n"
+            "2. Absolutely NO conversational prose, greetings, explanations, or text before/after.\n"
+            "3. Ensure correct syntax, proper table aliases, WHERE/JOIN clauses, and GROUP BY/ORDER BY requirements.\n"
+            "4. Ready for direct injection into a SQL console or LeetCode/HackerRank SQL editor."
+        )
+    else:
+        # Coding language (Python, Java, C++, JS/TS, or auto fallback)
+        target_coding_lang = "python"
+        if raw_language in ["java", "cpp", "c++", "c", "javascript", "js", "typescript", "ts", "sql", "go", "rust", "csharp", "cs"]:
+            target_coding_lang = raw_language
+        display_lang = target_coding_lang.upper()
+
+        system_prompt = (
+            f"You are a world-class staff software engineer and competitive programmer solving a timed coding exam.\n"
+            f"Target Language: {display_lang}\n\n"
+            f"MANDATORY FORMAT RULES FOR DIRECT DISPATCH:\n"
+            f"1. Output ONLY pure, runnable code. Absolutely NO markdown fences (no ```, no ```{target_coding_lang}).\n"
+            f"2. Absolutely NO conversational prose, greetings, explanations, complexity notes, or text before/after.\n"
+            f"3. Solution must be 100% complete, fully compilable, optimal time and space complexity ($O(N)$ or best possible).\n"
+            f"4. Include all necessary imports, standard boilerplate, complete class/method signatures, and robust edge-case handling.\n"
+            f"5. Add short, natural inline comments on subtle lines so the code looks authentically hand-written."
+        )
+
+    user_prompt = f"Exam Problem Description:\n{question_text}"
+    if custom_instructions:
+        user_prompt += f"\n\nAdditional Requirements:\n{custom_instructions}"
+
+    try:
+        ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        ssl_ctx = ssl._create_unverified_context()
+
+    # Browser User-Agent to ensure Cloudflare/WAF never blocks API calls
+    browser_headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    def clean_output(content: str) -> str:
+        """Strips accidental markdown code fences or greeting headers from model output."""
+        c = content.strip()
+        if c.startswith("```"):
+            lines = c.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            c = "\n".join(lines).strip()
+        c = re.sub(r'^(?:Here (?:is|are) (?:the )?(?:solution|code|answer|queries)?:?|Certainly!?:?|Sure!?:?)\s*\n+', '', c, flags=re.IGNORECASE)
+        return c.strip()
+
+    last_err = None
+
+    # ── 1. Google Gemini First (if GEMINI_API_KEY is available) ──────────────
+    if gemini_key:
+        gemini_models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        for g_model in gemini_models:
+            try:
+                g_url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent?key={gemini_key}"
+                g_payload = {
+                    "contents": [{
+                        "parts": [
+                            {"text": f"{system_prompt}\n\n{user_prompt}"}
+                        ]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.15,
+                        "maxOutputTokens": 4096
+                    }
+                }
+                req = urllib.request.Request(
+                    g_url,
+                    data=json.dumps(g_payload).encode("utf-8"),
+                    headers=browser_headers,
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=22) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    candidates = res_data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            content = clean_output(parts[0]["text"])
+                            return {
+                                "status": "success", 
+                                "solution": content, 
+                                "language": raw_language,
+                                "mode": mode,
+                                "model": g_model,
+                                "provider": "gemini"
+                            }
+            except Exception as ge:
+                last_err = ge
+                print(f"[exam_ai] Gemini model {g_model} failed: {ge}, trying next...")
+                continue
+
+    # ── 2. Groq Fallback (High-Speed Qwen 3.8 / GPT-OSS 120B / LLaMA 3.3) ─────
+    if groq_key:
+        models_to_try = [
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-120b",
+            "qwen/qwen3.6-27b",
+            "openai/gpt-oss-20b",
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant"
+        ]
+        for model_name in models_to_try:
+            payload = {
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.12,
+                "max_tokens": 4096
+            }
+
+            try:
+                groq_headers = dict(browser_headers)
+                groq_headers["Authorization"] = f"Bearer {groq_key}"
+                req = urllib.request.Request(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=groq_headers,
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=20) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    content = clean_output(res_data["choices"][0]["message"]["content"])
+                    return {
+                        "status": "success", 
+                        "solution": content, 
+                        "language": raw_language,
+                        "mode": mode,
+                        "model": model_name,
+                        "provider": "groq"
+                    }
+            except Exception as e:
+                last_err = e
+                print(f"[exam_ai] Groq model {model_name} failed: {e}, trying next...")
+                continue
+
+    # ── 3. OpenAI Fallback (if OPENAI_API_KEY is available) ────────────────────
+    if openai_key:
+        for o_model in ["gpt-4o-mini", "gpt-4o"]:
+            try:
+                o_headers = dict(browser_headers)
+                o_headers["Authorization"] = f"Bearer {openai_key}"
+                o_payload = {
+                    "model": o_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.15,
+                    "max_tokens": 4096
+                }
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/chat/completions",
+                    data=json.dumps(o_payload).encode("utf-8"),
+                    headers=o_headers,
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=20) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    content = clean_output(res_data["choices"][0]["message"]["content"])
+                    return {
+                        "status": "success", 
+                        "solution": content, 
+                        "language": raw_language,
+                        "mode": mode,
+                        "model": o_model,
+                        "provider": "openai"
+                    }
+            except Exception as oe:
+                last_err = oe
+                print(f"[exam_ai] OpenAI model {o_model} failed: {oe}, trying next...")
+                continue
+
+    print(f"[exam_ai] All AI models failed. Last error: {last_err}")
+    return JSONResponse({"status": "error", "message": f"AI Generation failed: {str(last_err)}"}, status_code=500)
+
+
+@app.post("/api/exam/send_key")
+async def exam_send_key(request: Request):
+    """
+    Remote IDE Control:
+    Dispatches native key shortcuts (Run, Clear, Tab, Arrows, Save) without touching laptop trackpad.
+    """
+    try:
+        data = await request.json()
+        action = data.get("action", "")
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid request"}, status_code=400)
+
+    try:
+        import pyautogui
+        import time
+        pyautogui.FAILSAFE = False
+        pyautogui.PAUSE = 0.02
+        mod_key = 'command' if IS_MAC else 'ctrl'
+
+        if action == "run":
+            # Cmd+Enter or Ctrl+Enter (Standard run shortcut in LeetCode, HackerRank, Codility, IDEs)
+            pyautogui.hotkey(mod_key, 'enter')
+        elif action == "clear_all":
+            # Select all and delete starter boilerplate
+            pyautogui.hotkey(mod_key, 'a')
+            time.sleep(0.04)
+            pyautogui.press('backspace')
+        elif action == "tab":
+            pyautogui.press('tab')
+        elif action == "save":
+            pyautogui.hotkey(mod_key, 's')
+        elif action == "undo":
+            pyautogui.hotkey(mod_key, 'z')
+        elif action == "arrow_up":
+            pyautogui.press('up')
+        elif action == "arrow_down":
+            pyautogui.press('down')
+        elif action == "arrow_left":
+            pyautogui.press('left')
+        elif action == "arrow_right":
+            pyautogui.press('right')
+        elif action == "enter":
+            pyautogui.press('enter')
+        elif action == "backspace":
+            pyautogui.press('backspace')
+        elif action in ["option_a", "option_b", "option_c", "option_d"]:
+            opt = action.replace("option_", "").lower()
+            pyautogui.press(opt)
+        elif action.lower() in ["a", "b", "c", "d", "1", "2", "3", "4"]:
+            pyautogui.press(action.lower())
+        else:
+            return JSONResponse({"status": "error", "message": f"Unknown action: {action}"}, status_code=400)
+
+        safe_release()
+        return {"status": "success", "action": action}
+    except Exception as e:
+        safe_release()
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/exam/emergency_hide")
+@app.get("/api/exam/emergency_hide")
+async def exam_emergency_hide():
+    """
+    Physical Walk-by Ghost Screen:
+    Aborts active typing, releases modifier keys, and instantly hides/minimizes the active laptop window.
+    """
+    global stop_typing, is_currently_typing
+    stop_typing = True
+    is_currently_typing = False
+    safe_release()
+
+    try:
+        import subprocess
+        if IS_MAC:
+            # Hide the frontmost application process immediately on macOS
+            hide_cmd = """osascript -e 'tell application "System Events" to set visible of first application process whose frontmost is true to false'"""
+            subprocess.Popen(hide_cmd, shell=True)
+        elif sys.platform == "win32":
+            # Windows: Win+D to show desktop
+            import pyautogui
+            pyautogui.hotkey('win', 'd')
+            safe_release()
+        print("[emergency] Ghost Desktop triggered - Active window hidden & typing aborted.")
+        return {"status": "success", "message": "Active window hidden"}
+    except Exception as e:
+        print(f"[emergency] Error hiding window: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ── Typing engine ─────────────────────────────────────────────────────────────
 
 def perform_typing(text, wpm, is_coding=False, language="", jitter=False, thinking_pauses=False, typo_sim=False):

@@ -45,11 +45,19 @@ class ServerService {
     // Free port 8000 before starting to prevent address already in use crashes
     await _freePort();
 
+    final exeDir = p.dirname(Platform.resolvedExecutable);
     String workingDir = '/Users/nithin/Projects/GlidePass';
     if (!Directory(workingDir).existsSync()) {
-      workingDir = Directory.current.path;
-      if (!File(p.join(workingDir, 'main.py')).existsSync()) {
-        workingDir = p.dirname(workingDir);
+      if (File(p.join(exeDir, 'main.py')).existsSync()) {
+        workingDir = exeDir;
+      } else if (File(p.join(Directory.current.path, 'main.py')).existsSync()) {
+        workingDir = Directory.current.path;
+      } else if (File(p.join(p.dirname(exeDir), 'main.py')).existsSync()) {
+        workingDir = p.dirname(exeDir);
+      } else if (Platform.isMacOS && File(p.join(exeDir, '..', 'Resources', 'backend', 'main.py')).existsSync()) {
+        workingDir = p.normalize(p.join(exeDir, '..', 'Resources', 'backend'));
+      } else {
+        workingDir = exeDir;
       }
     }
 
@@ -57,20 +65,33 @@ class ServerService {
       Process? proc;
       final String appPyPath = p.join(workingDir, 'main.py');
 
-      // Try multiple known absolute Python binary paths in order of preference.
-      // macOS app bundles run with a restricted PATH, so 'python3' alone often
-      // cannot be resolved even when Python is installed.
-      final List<String> pythonCandidates = [
-        '/Library/Frameworks/Python.framework/Versions/3.14/bin/python3',
-        '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3',
-        '/Library/Frameworks/Python.framework/Versions/3.12/bin/python3',
-        '/Library/Frameworks/Python.framework/Versions/3.11/bin/python3',
-        '/opt/homebrew/bin/python3',
-        '/usr/local/bin/python3',
-        '/usr/bin/python3',
-        'python3',
-        'python',
-      ];
+      final List<String> pythonCandidates = [];
+      if (Platform.isWindows) {
+        pythonCandidates.addAll([
+          'python',
+          'python3',
+          'py',
+          p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python313', 'python.exe'),
+          p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python312', 'python.exe'),
+          p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python311', 'python.exe'),
+          p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python310', 'python.exe'),
+          p.join(Platform.environment['ProgramFiles'] ?? '', 'Python313', 'python.exe'),
+          p.join(Platform.environment['ProgramFiles'] ?? '', 'Python312', 'python.exe'),
+          p.join(Platform.environment['ProgramFiles'] ?? '', 'Python311', 'python.exe'),
+        ]);
+      } else {
+        pythonCandidates.addAll([
+          '/Library/Frameworks/Python.framework/Versions/3.14/bin/python3',
+          '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3',
+          '/Library/Frameworks/Python.framework/Versions/3.12/bin/python3',
+          '/Library/Frameworks/Python.framework/Versions/3.11/bin/python3',
+          '/opt/homebrew/bin/python3',
+          '/usr/local/bin/python3',
+          '/usr/bin/python3',
+          'python3',
+          'python',
+        ]);
+      }
 
       for (final pyBin in pythonCandidates) {
         try {
@@ -148,7 +169,11 @@ class ServerService {
   Future<void> stopServer() async {
     if (_process == null) return;
     _isIntentionalShutdown = true;
-    _process!.kill(ProcessSignal.sigterm);
+    if (Platform.isWindows) {
+      _process!.kill();
+    } else {
+      _process!.kill(ProcessSignal.sigterm);
+    }
     _stopTracking();
   }
 

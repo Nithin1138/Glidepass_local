@@ -142,26 +142,28 @@
             min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            padding: 12px 14px 48px 14px;
-            padding-top: max(12px, env(safe-area-inset-top, 12px));
+            padding: 10px 12px 36px 12px;
+            padding-top: max(10px, env(safe-area-inset-top, 10px));
+            padding-bottom: max(36px, env(safe-area-inset-bottom, 36px));
             box-sizing: border-box;
             touch-action: pan-y;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 9px;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.99); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* ── HEADER ──────────────────────────────────────────────── */
         header {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 0;
         }
 
         .top-nav-bar {
@@ -169,20 +171,21 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            padding: 6px 0 10px 0;
+            padding: 2px 0 4px 0;
             background: transparent;
         }
 
         .top-nav-left {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            min-width: 0;
         }
 
         .nav-icon-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-main);
@@ -193,6 +196,7 @@
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            flex-shrink: 0;
         }
 
         .nav-icon-btn:active {
@@ -204,46 +208,50 @@
         .title-with-status {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             cursor: pointer;
             user-select: none;
+            min-width: 0;
         }
 
         .exam-title-text {
             font-family: var(--font-display);
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             font-weight: 800;
-            letter-spacing: 0.07em;
+            letter-spacing: 0.06em;
             color: #FAFAFA;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .status-pulse-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--green-status);
-            box-shadow: 0 0 10px var(--green-status);
+            box-shadow: 0 0 8px var(--green-status);
             animation: pulse-dot 2s infinite ease-in-out;
+            flex-shrink: 0;
         }
 
         .top-nav-right {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+            flex-shrink: 0;
         }
 
         .decoy-pill-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            height: 34px;
+            gap: 5px;
+            height: 32px;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
+            border-radius: 9px;
             color: #FAFAFA;
-            padding: 0 12px;
-            font-size: 0.68rem;
+            padding: 0 10px;
+            font-size: 0.65rem;
             font-weight: 700;
             letter-spacing: 0.03em;
             cursor: pointer;
@@ -251,6 +259,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             box-sizing: border-box;
+            white-space: nowrap;
         }
 
         .decoy-pill-btn i {
@@ -266,28 +275,30 @@
         .controls-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
         }
 
         .header-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px) saturate(150%);
             -webkit-backdrop-filter: blur(20px) saturate(150%);
-            padding: 11px 12px;
-            border-radius: 14px;
+            padding: 8px 12px;
+            height: 38px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 7px;
             color: #FAFAFA;
             font-size: 0.68rem;
             font-weight: 800;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.05em;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-sizing: border-box;
         }
 
         .header-btn i {
@@ -320,119 +331,509 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
+        /* ── UNIFIED IDE CODE WORKSPACE CARD ────────────────────── */
+        .editor-card {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 0;
+            backdrop-filter: var(--glass-filter);
+            -webkit-backdrop-filter: var(--glass-filter);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .editor-card:focus-within {
+            border-color: rgba(14, 165, 233, 0.45);
+            box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.2), 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .editor-tabs-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 7px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            gap: 6px;
+        }
+
+        .tabs-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs-group::-webkit-scrollbar { display: none; }
+
+        .q-tab {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.67rem;
+            font-weight: 800;
+            font-family: var(--font-display);
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            white-space: nowrap;
+        }
+
+        .q-tab:hover {
+            color: #FAFAFA;
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .q-tab.active {
+            background: rgba(14, 165, 233, 0.16);
+            border-color: var(--accent-color);
+            color: #38BDF8;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+        }
+
+        .tab-save-indicator {
+            font-size: 0.58rem;
+            color: var(--green-status);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            opacity: 0.85;
+            flex-shrink: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .editor-tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+
+        .editor-mini-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .editor-mini-btn:active {
+            transform: scale(0.92);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
         /* ── LANGUAGE TEMPLATE CHIPS ─────────────────────────────── */
         .template-bar {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             overflow-x: auto;
-            padding: 2px 0 8px 0;
-            margin-bottom: 6px;
             scrollbar-width: none;
+            flex: 1;
+            min-width: 0;
+            padding: 2px 0;
+            margin-bottom: 0;
             -webkit-overflow-scrolling: touch;
         }
 
         .template-bar::-webkit-scrollbar { display: none; }
 
         .pill-chip {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-muted);
-            border-radius: 8px;
-            padding: 4px 10px;
-            font-size: 0.62rem;
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-size: 0.63rem;
             font-weight: 700;
             white-space: nowrap;
             cursor: pointer;
-            backdrop-filter: var(--glass-filter);
-            -webkit-backdrop-filter: var(--glass-filter);
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .pill-chip:hover,
         .pill-chip:active {
             color: #fff;
-            border-color: var(--accent-color);
-            background: var(--accent-glow);
-            transform: scale(0.96);
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(56, 189, 248, 0.1);
+            transform: scale(0.97);
         }
 
-        /* ── CODE & PAYLOAD EDITOR CARD ─────────────────────────── */
-        .editor-card {
-            position: relative;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            display: flex;
+        .pill-chip.active {
+            color: #fff;
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.75);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .pill-chip .mode-dot {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .pill-chip.active .mode-dot {
+            background: #38bdf8;
+            box-shadow: 0 0 6px #38bdf8;
+        }
+
+        .ai-solve-pill-btn {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(139, 92, 246, 0.25) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.45);
+            color: #C084FC;
+            border-radius: 8px;
+            padding: 0 10px;
+            height: 27px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.18);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .ai-solve-pill-btn i {
+            color: #38bdf8;
+        }
+
+        .ai-solve-pill-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.35) 0%, rgba(139, 92, 246, 0.45) 100%);
+            border-color: rgba(139, 92, 246, 0.8);
+        }
+
+        /* ── AI ANSWER RESULT PANEL ─────────────────────────────────── */
+        #ai-answer-panel {
+            display: none;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 12px;
-            backdrop-filter: var(--glass-filter);
-            -webkit-backdrop-filter: var(--glass-filter);
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
-            transition: border-color 0.3s ease;
+            background: rgba(10, 14, 22, 0.82);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        #ai-answer-panel.visible { display: flex; }
+
+        .ai-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 12px;
+            background: rgba(139, 92, 246, 0.12);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            gap: 8px;
+        }
+        .ai-panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+        }
+        .ai-panel-title {
+            font-size: 0.63rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #C084FC;
+            white-space: nowrap;
+        }
+        .ai-model-badge {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.42);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            padding: 2px 6px;
+            white-space: nowrap;
+        }
+        .ai-panel-close-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.35);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            transition: color 0.15s;
+        }
+        .ai-panel-close-btn:hover { color: rgba(255,255,255,0.75); }
+
+        .ai-panel-body {
+            padding: 10px 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139,92,246,0.3) transparent;
+        }
+        .ai-panel-body::-webkit-scrollbar { width: 4px; }
+        .ai-panel-body::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
+
+        /* MCQ answer blocks */
+        .ai-answer-block {
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .ai-answer-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .ai-answer-q-label {
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            color: rgba(56,189,248,0.7);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .ai-answer-correct {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #4ade80;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .ai-answer-reasoning {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.55;
+            white-space: pre-wrap;
         }
 
-        .editor-card:focus-within {
-            border-color: rgba(199, 238, 255, 0.3);
+        /* Theory / plain-text result */
+        .ai-answer-plain {
+            font-size: 0.76rem;
+            color: rgba(255,255,255,0.78);
+            line-height: 1.6;
+            white-space: pre-wrap;
         }
 
-        .editor-top {
+        .ai-panel-footer {
+            display: flex;
+            gap: 7px;
+            padding: 8px 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-wrap: wrap;
+        }
+        .ai-panel-action-btn {
+            flex: 1;
+            min-width: 90px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 7px;
+            color: rgba(255,255,255,0.65);
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 6px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.15s;
+        }
+        .ai-panel-action-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+        .ai-panel-action-btn.primary {
+            background: rgba(139,92,246,0.15);
+            border-color: rgba(139,92,246,0.4);
+            color: #C084FC;
+        }
+        .ai-panel-action-btn.primary:hover { background: rgba(139,92,246,0.28); color: #e9d5ff; }
+
+        /* ── MCQ MODE DOCK & DISPATCH ─────────────────────────── */
+        .mcq-dock {
+            margin-top: 8px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: 12px;
+            padding: 9px 10px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+            animation: fadeInMcq 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeInMcq {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .mcq-dock-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 7px;
+            padding: 0 2px;
         }
-
-        .editor-title-wrap {
+        .mcq-dock-title {
             display: flex;
             align-items: center;
             gap: 6px;
-        }
-
-        .editor-title {
             font-size: 0.65rem;
             font-weight: 800;
             letter-spacing: 0.06em;
-            color: var(--text-muted);
+            color: #38bdf8;
             text-transform: uppercase;
         }
-
-        .char-pill {
+        .mcq-detected-badge {
+            font-size: 0.60rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 7px;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        .mcq-detected-badge.winner {
+            background: rgba(74, 222, 128, 0.18);
+            border-color: rgba(74, 222, 128, 0.45);
+            color: #4ade80;
+            font-weight: 800;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
+        }
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+        .mcq-opt-btn {
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 2px 6px;
-            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 8px 3px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            color: #e2e8f0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mcq-opt-btn:active {
+            transform: scale(0.94);
+        }
+        .mcq-opt-btn .opt-letter {
+            font-size: 1.15rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #fff;
+        }
+        .mcq-opt-btn .opt-label {
             font-size: 0.58rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            font-family: var(--font-mono);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+        .mcq-opt-btn.winner {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(16, 185, 129, 0.15));
+            border: 1.5px solid #22c55e;
+            box-shadow: 0 0 14px rgba(34, 197, 94, 0.4);
+        }
+        .mcq-opt-btn.winner .opt-letter {
+            color: #4ade80;
+        }
+        .mcq-opt-btn.winner .opt-label {
+            color: #86efac;
+        }
+        .mcq-opt-btn.selected {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+        }
+        .mcq-opt-btn.selected .opt-letter {
+            color: #38bdf8;
         }
 
-        textarea {
+        .editor-textarea-wrapper {
+            position: relative;
             width: 100%;
-            min-height: 150px;
-            max-height: 320px;
-            background: transparent;
-            border: none;
-            color: #FAFAFA;
+        }
+
+        textarea#payload-text {
+            width: 100%;
+            height: 155px;
+            min-height: 130px;
+            max-height: 240px;
+            background: rgba(5, 7, 12, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 10px 12px 24px 12px;
+            box-sizing: border-box;
+            color: #F8FAFC;
             font-family: var(--font-mono);
-            font-size: 0.84rem;
+            font-size: 0.85rem;
             line-height: 1.55;
-            resize: vertical;
+            resize: none;
             outline: none;
             touch-action: pan-y;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        textarea::placeholder {
+        textarea#payload-text:focus {
+            border-color: rgba(14, 165, 233, 0.5);
+            box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.25);
+        }
+
+        .char-counter-badge {
+            position: absolute;
+            right: 10px;
+            bottom: 7px;
+            font-size: 0.58rem;
+            color: rgba(255, 255, 255, 0.35);
+            font-family: var(--font-mono);
+            font-weight: 600;
+            pointer-events: none;
+            user-select: none;
+        }
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        textarea#payload-text::placeholder {
             color: rgba(255, 255, 255, 0.22);
             font-family: var(--font-main);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
         }
 
-        textarea::-webkit-scrollbar {
-            width: 5px;
+        textarea#payload-text::-webkit-scrollbar {
+            width: 4px;
         }
-        textarea::-webkit-scrollbar-thumb {
+        textarea#payload-text::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.12);
             border-radius: 4px;
         }
@@ -782,90 +1183,662 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 4px 20px var(--accent-glow), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 18px var(--accent-glow), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .btn-inject-stealth:active {
-            transform: scale(0.96);
+            transform: scale(0.97);
         }
 
         .btn-chunk {
             width: 100%;
+            height: 38px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 10px 14px;
-            border-radius: 14px;
-            font-size: 0.72rem;
+            padding: 0 14px;
+            border-radius: 12px;
+            font-size: 0.70rem;
             font-weight: 700;
             letter-spacing: 0.02em;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 7px;
             cursor: pointer;
             backdrop-filter: var(--glass-filter);
             -webkit-backdrop-filter: var(--glass-filter);
             transition: all 0.2s ease;
+            box-sizing: border-box;
         }
 
         .btn-chunk:active {
-            transform: scale(0.96);
+            transform: scale(0.97);
             background: rgba(255, 255, 255, 0.06);
         }
 
+        /* 3-Column Balanced Utility Row */
         .panic-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 7px;
+            width: 100%;
         }
 
         .btn-panic {
             background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(239, 68, 68, 0.35);
             color: #EF4444;
-            padding: 10px 14px;
-            border-radius: 14px;
+            height: 38px;
+            border-radius: 12px;
             font-weight: 800;
-            font-size: 0.72rem;
-            letter-spacing: 0.05em;
+            font-size: 0.67rem;
+            letter-spacing: 0.04em;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             text-transform: uppercase;
             transition: all 0.15s ease;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
+            white-space: nowrap;
+            box-sizing: border-box;
         }
 
         .btn-panic:active, .btn-panic.stopping {
             transform: scale(0.96);
             background: rgba(239, 68, 68, 0.25);
             border-color: #EF4444;
-            box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-ghost {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            color: #C084FC;
+            height: 38px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.67rem;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-transform: uppercase;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .btn-ghost:active {
+            transform: scale(0.96);
+            background: rgba(139, 92, 246, 0.25);
+            box-shadow: 0 0 14px rgba(139, 92, 246, 0.3);
         }
 
         .btn-clear {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-muted);
-            padding: 10px 14px;
-            border-radius: 14px;
-            font-size: 0.72rem;
+            height: 38px;
+            border-radius: 12px;
+            font-size: 0.67rem;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             transition: all 0.2s ease;
+            white-space: nowrap;
+            box-sizing: border-box;
         }
 
         .btn-clear:active {
             transform: scale(0.96);
             color: #fff;
+        }
+
+        /* ── REMOTE LAPTOP CONTROLS DOCK ─────────────────────────── */
+        .remote-ide-dock {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 8px 12px;
+            margin-bottom: 0;
+            backdrop-filter: var(--glass-filter);
+            -webkit-backdrop-filter: var(--glass-filter);
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .remote-dock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            padding: 1px 0;
+        }
+
+        .remote-dock-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .remote-dock-status-wrap {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-muted);
+        }
+
+        .remote-dock-sub {
+            font-size: 0.54rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-weight: 700;
+        }
+
+        .collapse-icon {
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .remote-ide-dock.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .remote-ide-dock.collapsed .remote-keys-container {
+            display: none;
+        }
+
+        .remote-keys-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .remote-keys-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 0.9fr;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .remote-key-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #E2E8F0;
+            height: 34px;
+            padding: 0 6px;
+            border-radius: 9px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+
+        .remote-key-btn:active {
+            transform: scale(0.94);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .remote-key-btn.primary-run {
+            background: rgba(16, 185, 129, 0.14);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34D399;
+            font-weight: 800;
+        }
+
+        .remote-key-btn.primary-run:active {
+            background: rgba(16, 185, 129, 0.28);
+        }
+
+        .remote-dpad-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+        }
+
+        .dpad-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            color: #A1A1AA;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 0.68rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            box-sizing: border-box;
+        }
+
+        .dpad-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: var(--accent-color);
+        }
+
+        /* ── LOW GLOW / RED-SHIFT FILTER ─────────────────────────── */
+        .low-glow-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 5px 9px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .low-glow-btn.active {
+            background: #27272a !important;
+            border-color: #52525b !important;
+            color: #f4f4f5 !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* ── COMPLETE BLACK & GRAY LOW GLOW STEALTH MODE ────────── */
+        body.low-glow-mode,
+        body.red-shift-filter {
+            background-color: #000000 !important;
+            color: #a1a1aa !important;
+        }
+
+        /* Views, Cards, and Containers */
+        body.low-glow-mode #exam-view,
+        body.low-glow-mode .view,
+        body.low-glow-mode header,
+        body.low-glow-mode .top-nav-bar,
+        body.low-glow-mode .editor-card,
+        body.low-glow-mode .remote-ide-dock,
+        body.low-glow-mode .stealth-meter-card,
+        body.low-glow-mode #dynamics-drawer,
+        body.low-glow-mode #device-screen-modal,
+        body.low-glow-mode .choice-card,
+        body.low-glow-mode #snap-choice-modal,
+        body.red-shift-filter #exam-view,
+        body.red-shift-filter .view,
+        body.red-shift-filter header,
+        body.red-shift-filter .top-nav-bar,
+        body.red-shift-filter .editor-card,
+        body.red-shift-filter .remote-ide-dock,
+        body.red-shift-filter .stealth-meter-card,
+        body.red-shift-filter #dynamics-drawer,
+        body.red-shift-filter #device-screen-modal,
+        body.red-shift-filter .choice-card,
+        body.red-shift-filter #snap-choice-modal {
+            background: #050505 !important;
+            border-color: #1f2128 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        /* Top Nav & Header Buttons */
+        body.low-glow-mode .exam-title-text,
+        body.red-shift-filter .exam-title-text {
+            color: #e4e4e7 !important;
+            text-shadow: none !important;
+        }
+
+        body.low-glow-mode .status-pulse-dot,
+        body.red-shift-filter .status-pulse-dot {
+            background: #52525b !important;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
+            animation: none !important;
+        }
+
+        body.low-glow-mode .nav-icon-btn,
+        body.low-glow-mode .decoy-pill-btn,
+        body.low-glow-mode .header-btn,
+        body.red-shift-filter .nav-icon-btn,
+        body.red-shift-filter .decoy-pill-btn,
+        body.red-shift-filter .header-btn {
+            background: #0d0e12 !important;
+            border: 1px solid #22252e !important;
+            color: #a1a1aa !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .nav-icon-btn i,
+        body.low-glow-mode .decoy-pill-btn i,
+        body.low-glow-mode .header-btn i,
+        body.red-shift-filter .nav-icon-btn i,
+        body.red-shift-filter .decoy-pill-btn i,
+        body.red-shift-filter .header-btn i {
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .low-glow-btn,
+        body.red-shift-filter .low-glow-btn {
+            background: #27272a !important;
+            border-color: #52525b !important;
+            color: #f4f4f5 !important;
+            box-shadow: none !important;
+        }
+
+        /* Question Tabs */
+        body.low-glow-mode .q-tab,
+        body.red-shift-filter .q-tab {
+            background: #090a0d !important;
+            border-color: #1c1e24 !important;
+            color: #71717a !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .q-tab.active,
+        body.red-shift-filter .q-tab.active {
+            background: #1f2128 !important;
+            border-color: #3f3f46 !important;
+            color: #f4f4f5 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .tab-save-indicator,
+        body.red-shift-filter .tab-save-indicator {
+            color: #71717a !important;
+        }
+
+        /* Snippet Chips */
+        body.low-glow-mode .pill-chip,
+        body.red-shift-filter .pill-chip {
+            background: #0d0e12 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .pill-chip:hover,
+        body.low-glow-mode .pill-chip:active,
+        body.red-shift-filter .pill-chip:hover,
+        body.red-shift-filter .pill-chip:active {
+            background: #27272a !important;
+            border-color: #52525b !important;
+            color: #ffffff !important;
+        }
+
+        /* Code Editor */
+        body.low-glow-mode .editor-title,
+        body.red-shift-filter .editor-title {
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .editor-title-wrap i,
+        body.red-shift-filter .editor-title-wrap i {
+            color: #52525b !important;
+        }
+
+        body.low-glow-mode .ai-solve-pill-btn,
+        body.red-shift-filter .ai-solve-pill-btn {
+            background: #18191f !important;
+            border-color: #32353e !important;
+            color: #d4d4d8 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .editor-mini-btn,
+        body.red-shift-filter .editor-mini-btn {
+            background: #121318 !important;
+            border-color: #22252e !important;
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .char-pill,
+        body.red-shift-filter .char-pill {
+            background: #0f1015 !important;
+            border-color: #22252e !important;
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode textarea#payload-text,
+        body.red-shift-filter textarea#payload-text {
+            color: #e4e4e7 !important;
+            caret-color: #a1a1aa !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            border-color: #1f2128 !important;
+        }
+
+        body.low-glow-mode textarea#payload-text::placeholder,
+        body.red-shift-filter textarea#payload-text::placeholder {
+            color: #3f3f46 !important;
+        }
+
+        /* Remote Controls Dock */
+        body.low-glow-mode .remote-dock-title,
+        body.red-shift-filter .remote-dock-title {
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .remote-dock-title i,
+        body.red-shift-filter .remote-dock-title i {
+            color: #52525b !important;
+        }
+
+        body.low-glow-mode .remote-dock-header span,
+        body.red-shift-filter .remote-dock-header span {
+            color: #3f3f46 !important;
+        }
+
+        body.low-glow-mode .remote-key-btn,
+        body.red-shift-filter .remote-key-btn {
+            background: #0f1015 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .remote-key-btn.primary-run,
+        body.red-shift-filter .remote-key-btn.primary-run {
+            background: #1c1e24 !important;
+            border-color: #3f3f46 !important;
+            color: #f4f4f5 !important;
+        }
+
+        body.low-glow-mode .dpad-mini,
+        body.red-shift-filter .dpad-mini {
+            background: #090a0d !important;
+            border-color: #1c1e24 !important;
+        }
+
+        body.low-glow-mode .dpad-btn,
+        body.red-shift-filter .dpad-btn {
+            background: #121318 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+        }
+
+        /* Action Buttons */
+        body.low-glow-mode .btn-inject-stealth,
+        body.red-shift-filter .btn-inject-stealth {
+            background: #27272a !important;
+            border: 1px solid #3f3f46 !important;
+            color: #f4f4f5 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .btn-chunk,
+        body.red-shift-filter .btn-chunk {
+            background: #0d0e12 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .btn-chunk i,
+        body.red-shift-filter .btn-chunk i {
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .panic-row .btn-panic,
+        body.red-shift-filter .panic-row .btn-panic {
+            background: #141418 !important;
+            border-color: #2e2f38 !important;
+            color: #d4d4d8 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .panic-row .btn-ghost,
+        body.red-shift-filter .panic-row .btn-ghost {
+            background: #141418 !important;
+            border-color: #2e2f38 !important;
+            color: #d4d4d8 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .panic-row .btn-clear,
+        body.red-shift-filter .panic-row .btn-clear {
+            background: #0d0e12 !important;
+            border-color: #22252e !important;
+            color: #71717a !important;
+        }
+
+        /* Modals, Sheet & Lightbox */
+        body.low-glow-mode .modal-header,
+        body.red-shift-filter .modal-header {
+            border-color: #1f2128 !important;
+        }
+
+        body.low-glow-mode .modal-title,
+        body.red-shift-filter .modal-title {
+            color: #e4e4e7 !important;
+        }
+
+        body.low-glow-mode .silent-badge,
+        body.red-shift-filter .silent-badge {
+            background: #121318 !important;
+            border-color: #22252e !important;
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .silent-dot,
+        body.red-shift-filter .silent-dot {
+            background: #52525b !important;
+        }
+
+        body.low-glow-mode .modal-action-pill-btn,
+        body.low-glow-mode .modal-action-close-btn,
+        body.red-shift-filter .modal-action-pill-btn,
+        body.red-shift-filter .modal-action-close-btn {
+            background: #0f1015 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+        }
+
+        body.low-glow-mode .screen-preview-container,
+        body.red-shift-filter .screen-preview-container {
+            background: #000000 !important;
+            border-color: #1c1e24 !important;
+        }
+
+        body.low-glow-mode .btn-ocr-primary,
+        body.red-shift-filter .btn-ocr-primary {
+            background: #27272a !important;
+            border-color: #3f3f46 !important;
+            color: #f4f4f5 !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .btn-save-secondary,
+        body.red-shift-filter .btn-save-secondary {
+            background: #0d0e12 !important;
+            border-color: #22252e !important;
+            color: #a1a1aa !important;
+        }
+
+        body.low-glow-mode .speed-badge,
+        body.red-shift-filter .speed-badge {
+            background: #16181d !important;
+            border-color: #27272a !important;
+            color: #d4d4d8 !important;
+        }
+
+        body.low-glow-mode .speed-btn,
+        body.red-shift-filter .speed-btn {
+            background: #0e0f14 !important;
+            border-color: #1f2128 !important;
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .speed-btn.active,
+        body.red-shift-filter .speed-btn.active {
+            background: #27272a !important;
+            border-color: #3f3f46 !important;
+            color: #f4f4f5 !important;
+        }
+
+        body.low-glow-mode .toggle-row,
+        body.red-shift-filter .toggle-row {
+            background: #0a0b0e !important;
+            border-color: #1f2128 !important;
+        }
+
+        body.low-glow-mode .toggle-title,
+        body.red-shift-filter .toggle-title {
+            color: #e4e4e7 !important;
+        }
+
+        body.low-glow-mode .toggle-desc,
+        body.red-shift-filter .toggle-desc {
+            color: #71717a !important;
+        }
+
+        body.low-glow-mode .slider,
+        body.red-shift-filter .slider {
+            background-color: #181920 !important;
+            border-color: #27272a !important;
+        }
+
+        body.low-glow-mode input:checked + .slider,
+        body.red-shift-filter input:checked + .slider {
+            background-color: #3f3f46 !important;
+            border-color: #52525b !important;
+            box-shadow: none !important;
+        }
+
+        body.low-glow-mode .choice-btn,
+        body.red-shift-filter .choice-btn {
+            background: #0e0f14 !important;
+            border-color: #1f2128 !important;
+            color: #d4d4d8 !important;
+        }
+
+        body.low-glow-mode #toast,
+        body.red-shift-filter #toast {
+            background: #18181b !important;
+            border: 1px solid #27272a !important;
+            color: #f4f4f5 !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8) !important;
         }
 
         /* ── DYNAMICS & SETTINGS DRAWER (Mobile Bottom Sheet / Desktop Sidebar) ── */
@@ -1418,55 +2391,264 @@
             transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* ── PROFESSIONAL VISION OCR HUB MODAL ─────────────────── */
+        #snap-ocr-modal,
         #snap-choice-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(4, 5, 9, 0.88);
             z-index: 4500;
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: clamp(12px, 3.5vw, 24px);
             box-sizing: border-box;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
         }
 
-        .choice-card {
-            background: #0E0E11;
-            border: 1px solid var(--card-border);
+        .snap-ocr-dialog {
+            background: #0B0C10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 22px;
+            padding: 20px;
             width: 100%;
-            max-width: 380px;
+            max-width: 440px;
+            max-height: 90vh;
+            max-height: 90dvh;
+            overflow-y: auto;
+            scrollbar-width: none;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.2);
+            animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .snap-ocr-dialog::-webkit-scrollbar { display: none; }
+
+        .snap-ocr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        .choice-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 16px;
+        .snap-ocr-title-wrap {
             display: flex;
             align-items: center;
-            gap: 14px;
-            color: #fff;
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 10px;
         }
 
-        .choice-btn:hover,
-        .choice-btn:active {
-            background: rgba(234, 179, 8, 0.12);
+        .snap-ocr-badge-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(245, 158, 11, 0.05));
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--stealth-gold);
+        }
+
+        .snap-ocr-title {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.04em;
+        }
+
+        .snap-ocr-status-pill {
+            font-size: 0.58rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 100px;
+            background: rgba(14, 165, 233, 0.12);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: var(--cyan-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Source Selection Cards */
+        .snap-source-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .snap-source-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .snap-source-card:hover,
+        .snap-source-card:active {
+            background: rgba(234, 179, 8, 0.08);
             border-color: rgba(234, 179, 8, 0.4);
-            transform: scale(0.97);
+            transform: translateY(-2px);
+        }
+
+        .snap-source-card.gallery:hover,
+        .snap-source-card.gallery:active {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .snap-card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2px;
+        }
+
+        .snap-card-title {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .snap-card-sub {
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Preview Viewport & Scanning Laser */
+        .snap-preview-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .snap-image-viewport {
+            position: relative;
+            width: 100%;
+            height: 175px;
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .snap-preview-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .snap-laser-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+            box-shadow: 0 0 15px #38bdf8, 0 0 30px #818cf8;
+            top: 0;
+            display: none;
+            animation: laserScan 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes laserScan {
+            0% { top: 4%; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { top: 94%; opacity: 0.3; }
+        }
+
+        /* OCR Result & AI Action Area */
+        .snap-result-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .snap-ocr-textarea {
+            width: 100%;
+            height: 115px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            color: #E2E8F0;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            line-height: 1.45;
+            resize: vertical;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .snap-ocr-textarea:focus {
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+
+        .snap-solve-glow-btn {
+            background: linear-gradient(135deg, #0284c7 0%, #6366f1 50%, #9333ea 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .snap-solve-glow-btn:hover,
+        .snap-solve-glow-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .snap-secondary-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .snap-secondary-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .snap-secondary-btn:hover,
+        .snap-secondary-btn:active {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
         }
 
         /* ── AUTHENTIC DISGUISE CALCULATOR (iOS 18 Dark Style) ── */
@@ -1700,7 +2882,7 @@
                     <div class="top-nav-right">
                         <button class="decoy-pill-btn" id="decoy-toggle-btn" title="Disguise Mode">
                             <i data-lucide="calculator" size="12"></i>
-                            <span>Decoy Mode</span>
+                            <span>Decoy</span>
                         </button>
                         <button class="nav-icon-btn" id="dynamics-toggle-btn" title="Stealth & Anti-Detection Dynamics (Settings)">
                             <i data-lucide="menu" size="16"></i>
@@ -1725,51 +2907,157 @@
             <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
             <input type="file" id="gallery-input" accept="image/*" style="display: none;">
 
-            <!-- Language snippet chips -->
-            <div class="template-bar">
-                <button class="pill-chip" onclick="insertSnippet('python')">Python 3</button>
-                <button class="pill-chip" onclick="insertSnippet('java')">Java</button>
-                <button class="pill-chip" onclick="insertSnippet('cpp')">C++</button>
-                <button class="pill-chip" onclick="insertSnippet('sql')">SQL</button>
-                <button class="pill-chip" onclick="insertSnippet('js')">JS/TS</button>
-            </div>
-
-            <!-- Code/Text Editor Card -->
+            <!-- Unified IDE Code Workspace Card -->
             <div class="editor-card">
-                <div class="editor-top">
-                    <div class="editor-title-wrap">
-                        <i data-lucide="code" size="13" style="color: var(--stealth-gold);"></i>
-                        <span class="editor-title">Solution Payload Buffer</span>
+                <!-- Integrated Problem Tabs Header -->
+                <div class="editor-tabs-bar">
+                    <div class="tabs-group" id="question-tabs-group">
+                        <button class="q-tab active" data-tab="q1">Q1</button>
+                        <button class="q-tab" data-tab="q2">Q2</button>
+                        <button class="q-tab" data-tab="q3">Q3</button>
+                        <button class="q-tab" data-tab="scratch">Scratchpad</button>
                     </div>
-                    <span id="char-count" class="char-pill">0 chars</span>
+                    <div class="editor-tabs-actions">
+                        <span class="tab-save-indicator" id="tab-save-indicator">✓ Saved</span>
+                        <button class="editor-mini-btn" id="editor-copy-btn" title="Copy Code to Clipboard">
+                            <i data-lucide="copy" size="12"></i>
+                        </button>
+                    </div>
                 </div>
-                <textarea id="payload-text" placeholder="Type solution, fetch device text, or snap question with camera..."></textarea>
+
+                <!-- Languages & AI Solve Action Bar -->
+                <div class="editor-toolbar">
+                    <div class="template-bar" id="language-mode-bar">
+                        <button class="pill-chip active" data-lang="python" onclick="selectEditorMode('python', true)">
+                            <span class="mode-dot"></span>Python 3
+                        </button>
+                        <button class="pill-chip" data-lang="java" onclick="selectEditorMode('java', true)">
+                            <span class="mode-dot"></span>Java
+                        </button>
+                        <button class="pill-chip" data-lang="cpp" onclick="selectEditorMode('cpp', true)">
+                            <span class="mode-dot"></span>C++
+                        </button>
+                        <button class="pill-chip" data-lang="sql" onclick="selectEditorMode('sql', true)">
+                            <span class="mode-dot"></span>SQL
+                        </button>
+                        <button class="pill-chip" data-lang="js" onclick="selectEditorMode('js', true)">
+                            <span class="mode-dot"></span>JS/TS
+                        </button>
+                        <button class="pill-chip" data-lang="mcq" onclick="selectEditorMode('mcq', true)">
+                            <span class="mode-dot"></span>MCQ / Aptitude
+                        </button>
+                        <button class="pill-chip" data-lang="theory" onclick="selectEditorMode('theory', true)">
+                            <span class="mode-dot"></span>Theory / Text
+                        </button>
+                        <button class="pill-chip" data-lang="auto" onclick="selectEditorMode('auto', true)">
+                            <span class="mode-dot"></span>Auto-Detect
+                        </button>
+                    </div>
+                    <button class="ai-solve-pill-btn" id="ai-solve-editor-btn" title="Generate optimal solution with AI in selected mode">
+                        <i data-lucide="sparkles" size="12"></i>
+                        <span id="ai-solve-btn-text">AI Solve (Python)</span>
+                    </button>
+                </div>
+
+                <!-- Syntax-ready IDE Textarea -->
+                <div class="editor-textarea-wrapper">
+                    <textarea id="payload-text" placeholder="Paste or type code, snap problem screen, or tap AI Solve..."></textarea>
+                    <span id="char-count" class="char-counter-badge">0 chars</span>
+                </div>
                 
                 <div id="ocr-progress-bar">
                     <i data-lucide="loader" size="14" class="spin"></i>
                     <span id="ocr-status-text">Scanning image with Neural OCR...</span>
                 </div>
+
+                <!-- Dedicated MCQ Options Dock -->
+                <div class="mcq-dock" id="mcq-options-dock" style="display: none;">
+                    <div class="mcq-dock-header">
+                        <div class="mcq-dock-title">
+                            <i data-lucide="check-circle-2" size="13" style="color: #38bdf8;"></i>
+                            <span>MCQ OPTION DISPATCH</span>
+                        </div>
+                        <span class="mcq-detected-badge" id="mcq-detected-badge">Tap option to send to laptop</span>
+                    </div>
+                    <div class="mcq-options-grid">
+                        <button class="mcq-opt-btn" data-opt="A" onclick="handleMcqOptionClick('A')" title="Dispatch Option A to Laptop">
+                            <span class="opt-letter">A</span>
+                            <span class="opt-label">Option A</span>
+                        </button>
+                        <button class="mcq-opt-btn" data-opt="B" onclick="handleMcqOptionClick('B')" title="Dispatch Option B to Laptop">
+                            <span class="opt-letter">B</span>
+                            <span class="opt-label">Option B</span>
+                        </button>
+                        <button class="mcq-opt-btn" data-opt="C" onclick="handleMcqOptionClick('C')" title="Dispatch Option C to Laptop">
+                            <span class="opt-letter">C</span>
+                            <span class="opt-label">Option C</span>
+                        </button>
+                        <button class="mcq-opt-btn" data-opt="D" onclick="handleMcqOptionClick('D')" title="Dispatch Option D to Laptop">
+                            <span class="opt-letter">D</span>
+                            <span class="opt-label">Option D</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Remote IDE Controls Dock -->
+            <div class="remote-ide-dock collapsed" id="remote-ide-dock">
+                <div class="remote-dock-header" id="remote-dock-toggle" title="Tap to toggle remote controls">
+                    <div class="remote-dock-title">
+                        <i data-lucide="terminal" size="12" style="color: var(--cyan-accent);"></i>
+                        <span>REMOTE LAPTOP CONTROLS</span>
+                    </div>
+                    <div class="remote-dock-status-wrap">
+                        <span class="remote-dock-sub">NO TOUCH</span>
+                        <i data-lucide="chevron-down" size="13" id="remote-dock-arrow" class="collapse-icon"></i>
+                    </div>
+                </div>
+                <div class="remote-keys-container" id="remote-keys-body">
+                    <div class="remote-keys-row">
+                        <button class="remote-key-btn primary-run" id="remote-run-btn" title="Run Code on Laptop (Cmd+Enter / Ctrl+Enter)">
+                            <i data-lucide="play" size="12"></i>
+                            <span>RUN</span>
+                        </button>
+                        <button class="remote-key-btn" id="remote-clear-btn" title="Select All & Delete (Cmd+A + Backspace)">
+                            <i data-lucide="scissors" size="12"></i>
+                            <span>Clear IDE</span>
+                        </button>
+                        <button class="remote-key-btn" id="remote-tab-btn" title="Insert Tab">
+                            <span>⇥ Tab</span>
+                        </button>
+                    </div>
+                    <div class="remote-dpad-row">
+                        <button class="dpad-btn" id="dpad-left" title="Cursor Left">◀</button>
+                        <button class="dpad-btn" id="dpad-up" title="Cursor Up">▲</button>
+                        <button class="dpad-btn" id="dpad-down" title="Cursor Down">▼</button>
+                        <button class="dpad-btn" id="dpad-right" title="Cursor Right">▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Command Deck -->
             <div class="actions-grid">
                 <button class="btn-inject-stealth" id="inject-btn">
-                    <i data-lucide="zap" size="18"></i>
-                    <span>INJECT ALL (NATIVE KEYSTROKES)</span>
+                    <i data-lucide="zap" size="17"></i>
+                    <span>INJECT ALL (KEYSTROKES)</span>
                 </button>
 
                 <button class="btn-chunk" id="chunk-inject-btn">
-                    <i data-lucide="layers" size="15" style="color: var(--accent-color);"></i>
+                    <i data-lucide="layers" size="14" style="color: var(--accent-color);"></i>
                     <span id="chunk-btn-text">Inject Step-by-Step (Block 1)</span>
                 </button>
 
                 <div class="panic-row">
                     <button class="btn-panic" id="panic-stop-btn">
-                        <i data-lucide="alert-octagon" size="15"></i>
-                        <span>PANIC STOP</span>
+                        <i data-lucide="alert-octagon" size="14"></i>
+                        <span id="panic-btn-text">PANIC STOP</span>
                     </button>
-                    <button class="btn-clear" id="clear-btn">
-                        <i data-lucide="trash-2" size="15"></i>
+                    <button class="btn-ghost" id="ghost-desktop-btn" title="Hide laptop active window & enter phone Decoy Mode immediately">
+                        <i data-lucide="shield-alert" size="13"></i>
+                        <span>👻 GHOST</span>
+                    </button>
+                    <button class="btn-clear" id="clear-btn" title="Clear Editor Buffer">
+                        <i data-lucide="trash-2" size="13"></i>
                         <span>Clear</span>
                     </button>
                 </div>
@@ -1916,6 +3204,20 @@
                             <span class="slider"></span>
                         </div>
                     </label>
+
+                    <label class="toggle-row" for="low-glow-toggle-input">
+                        <div class="toggle-info">
+                            <div class="toggle-title">
+                                <i data-lucide="eye-off" size="14" style="color: #ef4444;"></i>
+                                <span>Low-Glow Night Shield</span>
+                            </div>
+                            <div class="toggle-desc">Muted display mode for strict dark exam rooms</div>
+                        </div>
+                        <div class="switch">
+                            <input type="checkbox" id="low-glow-toggle-input">
+                            <span class="slider"></span>
+                        </div>
+                    </label>
                 </div>
 
                 <!-- Done / Apply button -->
@@ -1967,9 +3269,13 @@
         </div>
 
         <div class="modal-actions-grid">
-            <button id="ocr-screen-btn" class="btn-ocr-primary">
-                <i data-lucide="scan-text" size="16"></i>
-                <span>EXTRACT QUESTION TEXT (OCR) &rarr; TEXTBOX</span>
+            <button id="ocr-ai-solve-btn" class="btn-ocr-primary" style="background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); border-color: rgba(147, 51, 234, 0.5); box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);">
+                <i data-lucide="sparkles" size="16"></i>
+                <span id="ocr-ai-solve-text">⚡ 1-TAP OCR &rarr; AI SOLVE</span>
+            </button>
+            <button id="ocr-screen-btn" class="btn-save-secondary" style="color: #60A5FA; border-color: rgba(59, 130, 246, 0.3);">
+                <i data-lucide="scan-text" size="14"></i>
+                <span>Extract OCR Only &rarr; Textbox</span>
             </button>
             <a id="download-screen-link" href="#" download="laptop_screen.jpg" style="text-decoration: none; width: 100%;">
                 <button class="btn-save-secondary">
@@ -1994,36 +3300,80 @@
         </div>
     </div>
 
-    <!-- ── SNAP MODAL (CHOICE BETWEEN CAMERA & UPLOAD) ─────────── -->
-    <div id="snap-choice-modal">
-        <div class="choice-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; color: var(--stealth-gold); letter-spacing: 0.05em;">CAPTURE QUESTION</span>
-                <button class="icon-btn-round" style="width: 32px; height: 32px;" onclick="document.getElementById('snap-choice-modal').style.display='none'">
-                    <i data-lucide="x" size="14"></i>
-                </button>
+    <!-- ── PROFESSIONAL VISION OCR HUB MODAL ─────────────────── -->
+    <div id="snap-ocr-modal">
+        <div class="snap-ocr-dialog">
+            <!-- Modal Header -->
+            <div class="snap-ocr-header">
+                <div class="snap-ocr-title-wrap">
+                    <div class="snap-ocr-badge-icon">
+                        <i data-lucide="scan-line" size="18"></i>
+                    </div>
+                    <div>
+                        <div class="snap-ocr-title">VISION OCR HUB</div>
+                        <div style="font-size: 0.62rem; color: var(--text-muted);">Zero-Blur Neural Question Solver</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="snap-ocr-status-pill" id="snap-ocr-status-pill">READY</span>
+                    <button class="icon-btn-round" style="width: 30px; height: 30px;" onclick="closeSnapOcrModal()">
+                        <i data-lucide="x" size="14"></i>
+                    </button>
+                </div>
             </div>
-            <p style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.45;">
-                Extract question text with high-precision Neural OCR without triggering screen recording on your laptop.
-            </p>
-            <button class="choice-btn" id="choose-camera-btn">
-                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(234, 179, 8, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i data-lucide="camera" size="20" style="color: var(--stealth-gold);"></i>
+
+            <!-- Source Selection Cards -->
+            <div class="snap-source-grid" id="snap-source-grid">
+                <div class="snap-source-card" id="snap-card-camera">
+                    <div class="snap-card-icon" style="background: rgba(234, 179, 8, 0.12); color: var(--stealth-gold);">
+                        <i data-lucide="camera" size="22"></i>
+                    </div>
+                    <div class="snap-card-title">Camera Snap</div>
+                    <div class="snap-card-sub">Point at screen or paper question</div>
                 </div>
-                <div>
-                    <div style="font-size: 0.82rem; font-weight: 800;">Take Photo (Camera)</div>
-                    <div style="font-size: 0.62rem; color: var(--text-muted);">Snap directly from laptop screen</div>
+                <div class="snap-source-card gallery" id="snap-card-gallery">
+                    <div class="snap-card-icon" style="background: rgba(56, 189, 248, 0.12); color: var(--cyan-accent);">
+                        <i data-lucide="image" size="22"></i>
+                    </div>
+                    <div class="snap-card-title">Gallery / File</div>
+                    <div class="snap-card-sub">Upload screenshot or crisp photo</div>
                 </div>
-            </button>
-            <button class="choice-btn" id="choose-gallery-btn">
-                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i data-lucide="image" size="20" style="color: var(--cyan-accent);"></i>
+            </div>
+
+            <!-- Image Preview & Laser Scan Animation -->
+            <div class="snap-preview-container" id="snap-preview-container">
+                <div class="snap-image-viewport">
+                    <img id="snap-preview-img" class="snap-preview-img" src="" alt="OCR Preview">
+                    <div class="snap-laser-bar" id="snap-laser-bar"></div>
                 </div>
-                <div>
-                    <div style="font-size: 0.82rem; font-weight: 800;">Upload Image / Screenshot</div>
-                    <div style="font-size: 0.62rem; color: var(--text-muted);">Upload crisp photo or saved file</div>
+            </div>
+
+            <!-- OCR Result & Direct AI Solver -->
+            <div class="snap-result-container" id="snap-result-container">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.68rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">EXTRACTED QUESTION TEXT</span>
+                    <button class="icon-btn-round" id="snap-copy-ocr-btn" style="width: 26px; height: 26px;" title="Copy extracted text">
+                        <i data-lucide="copy" size="11"></i>
+                    </button>
                 </div>
-            </button>
+                <textarea id="snap-ocr-text-result" class="snap-ocr-textarea" placeholder="OCR text will appear here. You can edit or refine it before solving..."></textarea>
+                
+                <button class="snap-solve-glow-btn" id="snap-solve-now-btn">
+                    <i data-lucide="sparkles" size="16"></i>
+                    <span id="snap-solve-now-text">Solve With AI Now</span>
+                </button>
+
+                <div class="snap-secondary-actions">
+                    <button class="snap-secondary-btn" id="snap-send-to-ide-btn">
+                        <i data-lucide="arrow-down-left" size="13"></i>
+                        <span>Paste to Editor</span>
+                    </button>
+                    <button class="snap-secondary-btn" id="snap-retake-btn">
+                        <i data-lucide="refresh-cw" size="13"></i>
+                        <span>Retake Image</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2212,10 +3562,23 @@
             triggerHaptic([30]);
         }
 
-        payloadText.addEventListener('input', () => {
+        function updateCharCount() {
+            if (!charCount || !payloadText) return;
             const val = payloadText.value;
-            charCount.innerText = `${val.length} chars`;
+            const len = val.length;
+            if (len === 0) {
+                charCount.innerText = "0 chars";
+                return;
+            }
+            const lines = val.split('\n').length;
+            charCount.innerText = lines > 1 ? `${lines}L • ${len} chars` : `${len} chars`;
+        }
+
+        payloadText.addEventListener('input', () => {
+            updateCharCount();
             updateChunks();
+            updateMcqState();
+            if (typeof saveCurrentTab === 'function') saveCurrentTab();
         });
 
         function updateChunks() {
@@ -2223,32 +3586,188 @@
             if (!val) {
                 cachedChunks = [];
                 currentChunkIndex = 0;
-                chunkBtnText.innerText = "Inject Step-by-Step (Block 1)";
+                chunkBtnText.innerText = (currentEditorMode === 'mcq') ? "Inject Derivation / Steps" : "Inject Step-by-Step (Block 1)";
                 return;
             }
             cachedChunks = val.split(/\n\s*\n/).filter(c => c.trim().length > 0);
             if (currentChunkIndex >= cachedChunks.length) {
                 currentChunkIndex = 0;
             }
-            chunkBtnText.innerText = `Inject Chunk (${currentChunkIndex + 1}/${cachedChunks.length || 1})`;
+            if (currentEditorMode === 'mcq') {
+                chunkBtnText.innerText = `Inject Chunk (${currentChunkIndex + 1}/${cachedChunks.length || 1})`;
+            } else {
+                chunkBtnText.innerText = `Inject Chunk (${currentChunkIndex + 1}/${cachedChunks.length || 1})`;
+            }
         }
 
-        // Snippets
+        // Snippets and Problem Mode Management
+        let currentEditorMode = 'python';
+        let selectedMcqOption = null;
+        let detectedWinnerOption = null;
+
         const snippets = {
             python: "def solution():\n    # Write logic here\n    pass\n\nif __name__ == '__main__':\n    solution()\n",
             java: "import java.util.*;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write logic here\n    }\n}\n",
             cpp: "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write logic here\n    return 0;\n}\n",
             sql: "SELECT id, name\nFROM records\nWHERE status = 'active'\nORDER BY created_at DESC;\n",
-            js: "function solve() {\n    // Write logic here\n}\n\nsolve();\n"
+            js: "function solve() {\n    // Write logic here\n}\n\nsolve();\n",
+            mcq: "Question:\n\nOptions:\nA) \nB) \nC) \nD) \n",
+            theory: "Question / Concept:\n\nKey Points to Cover:\n1. \n2. \n",
+            auto: ""
         };
 
-        function insertSnippet(lang) {
-            if (snippets[lang]) {
-                payloadText.value = snippets[lang];
-                payloadText.dispatchEvent(new Event('input'));
-                triggerHaptic([35]);
-                showToast(`Loaded ${lang.toUpperCase()} template`);
+        const modeLabels = {
+            python: "Python 3",
+            java: "Java",
+            cpp: "C++",
+            sql: "SQL",
+            js: "JS/TS",
+            mcq: "MCQ / Aptitude",
+            theory: "Theory / Text",
+            auto: "Auto-Detect"
+        };
+
+        function updateMcqState() {
+            const val = (payloadText ? payloadText.value : '') || '';
+            const mcqDock = document.getElementById('mcq-options-dock');
+            const isMcq = (currentEditorMode === 'mcq');
+            
+            // Check if text has MCQ markers
+            const hasMcqMarkers = /(?:[A-D]\s*[\)\.\:]|Option\s+[A-D]|Correct\s*Option)/i.test(val);
+            if (mcqDock) {
+                mcqDock.style.display = (isMcq || (currentEditorMode === 'auto' && hasMcqMarkers)) ? 'block' : 'none';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             }
+
+            // Extract winning option from text if present
+            const match = val.match(/(?:correct\s*(?:option|answer)?\s*[:\-]?\s*|winning\s*option\s*[:\-]?\s*|answer\s*[:\-]?\s*|best\s*option\s*[:\-]?\s*|^option\s*)([A-D])(?:\)|\:|\.|\s|$)/im);
+            const winnerBadge = document.getElementById('mcq-detected-badge');
+            const optButtons = document.querySelectorAll('.mcq-opt-btn');
+
+            if (match && match[1]) {
+                detectedWinnerOption = match[1].toUpperCase();
+                if (winnerBadge) {
+                    winnerBadge.innerText = `🎯 Correct: Option ${detectedWinnerOption}`;
+                    winnerBadge.classList.add('winner');
+                }
+            } else {
+                detectedWinnerOption = null;
+                if (winnerBadge) {
+                    winnerBadge.innerText = selectedMcqOption ? `Selected: Option ${selectedMcqOption}` : "Tap option to send to laptop";
+                    winnerBadge.classList.remove('winner');
+                }
+            }
+
+            optButtons.forEach(btn => {
+                const opt = btn.getAttribute('data-opt');
+                btn.classList.toggle('winner', opt === detectedWinnerOption);
+                btn.classList.toggle('selected', opt === selectedMcqOption && opt !== detectedWinnerOption);
+            });
+
+            // Update main inject button text
+            const injectBtn = document.getElementById('inject-btn');
+            const chunkBtnText = document.getElementById('chunk-btn-text');
+            if (isMcq && injectBtn) {
+                const span = injectBtn.querySelector('span');
+                const targetOpt = detectedWinnerOption || selectedMcqOption;
+                if (span) {
+                    if (targetOpt) {
+                        span.innerText = `SELECT OPTION (${targetOpt}) ON LAPTOP`;
+                    } else {
+                        span.innerText = "INJECT ANSWER (KEYSTROKES)";
+                    }
+                }
+                if (chunkBtnText) {
+                    chunkBtnText.innerText = "Inject Derivation / Steps (Keystrokes)";
+                }
+            } else if (injectBtn) {
+                const span = injectBtn.querySelector('span');
+                if (span && span.innerText.includes('OPTION')) {
+                    span.innerText = "INJECT ALL (KEYSTROKES)";
+                }
+            }
+        }
+
+        async function handleMcqOptionClick(opt) {
+            selectedMcqOption = opt;
+            triggerHaptic([35]);
+            
+            const optButtons = document.querySelectorAll('.mcq-opt-btn');
+            optButtons.forEach(btn => {
+                const bOpt = btn.getAttribute('data-opt');
+                btn.classList.toggle('selected', bOpt === opt);
+            });
+
+            const winnerBadge = document.getElementById('mcq-detected-badge');
+            if (winnerBadge && !detectedWinnerOption) {
+                winnerBadge.innerText = `Selected: Option ${opt}`;
+            }
+
+            const injectBtn = document.getElementById('inject-btn');
+            if (injectBtn) {
+                const span = injectBtn.querySelector('span');
+                if (span) span.innerText = `SELECT OPTION (${opt}) ON LAPTOP`;
+            }
+
+            showToast(`⚡ Dispatched Option ${opt} to Laptop!`);
+            await sendRemoteKey(`option_${opt.toLowerCase()}`);
+        }
+
+        function selectEditorMode(mode, loadSnippet = false) {
+            currentEditorMode = mode;
+            
+            // Update active pill chips
+            const chips = document.querySelectorAll('#language-mode-bar .pill-chip');
+            chips.forEach(chip => {
+                if (chip.getAttribute('data-lang') === mode) {
+                    chip.classList.add('active');
+                } else {
+                    chip.classList.remove('active');
+                }
+            });
+
+            // Update AI Solve button label
+            const label = modeLabels[mode] || mode.toUpperCase();
+            const aiSolveBtnText = document.getElementById('ai-solve-btn-text');
+            if (aiSolveBtnText) {
+                aiSolveBtnText.innerText = `AI Solve (${label})`;
+            }
+
+            // Also update Vision OCR modal solve button if open
+            const snapSolveNowText = document.getElementById('snap-solve-now-text');
+            if (snapSolveNowText) {
+                snapSolveNowText.innerText = `Solve With AI (${label})`;
+            }
+
+            // Update placeholder based on mode
+            if (payloadText) {
+                if (mode === 'mcq') {
+                    payloadText.placeholder = "Paste MCQ problem & options (A, B, C, D), snap screen, or tap AI Solve...";
+                } else if (mode === 'theory') {
+                    payloadText.placeholder = "Paste question / concept, snap problem screen, or tap AI Solve...";
+                } else {
+                    payloadText.placeholder = "Paste or type code, snap problem screen, or tap AI Solve...";
+                }
+            }
+
+            // Insert template if editor is empty or default snippet is present
+            if (loadSnippet && snippets[mode]) {
+                const currentVal = payloadText.value.trim();
+                const isDefaultSnippet = Object.values(snippets).some(s => s.trim() && s.trim() === currentVal);
+                if (!currentVal || isDefaultSnippet || confirm(`Load clean ${label} template? Current text will be replaced.`)) {
+                    payloadText.value = snippets[mode];
+                    payloadText.dispatchEvent(new Event('input'));
+                }
+            }
+
+            updateMcqState();
+
+            triggerHaptic([25]);
+            showToast(`Active Mode: ${label}`);
+        }
+
+        function insertSnippet(lang) {
+            selectEditorMode(lang, true);
         }
 
         // ── SILENT REAL-TIME DISPLAY & CLIPBOARD CAPTURE ──────────
@@ -2617,23 +4136,192 @@
             }
         });
 
+        // ── VISION OCR HUB MODAL ──────────────────────────────────
+        const snapOcrModal = document.getElementById('snap-ocr-modal');
+        const snapCardCamera = document.getElementById('snap-card-camera');
+        const snapCardGallery = document.getElementById('snap-card-gallery');
+        const snapPreviewContainer = document.getElementById('snap-preview-container');
+        const snapResultContainer = document.getElementById('snap-result-container');
+        const snapPreviewImg = document.getElementById('snap-preview-img');
+        const snapLaserBar = document.getElementById('snap-laser-bar');
+        const snapOcrTextResult = document.getElementById('snap-ocr-text-result');
+        const snapOcrStatusPill = document.getElementById('snap-ocr-status-pill');
+        const snapSourceGrid = document.getElementById('snap-source-grid');
+        const snapSolveNowBtn = document.getElementById('snap-solve-now-btn');
+        const snapSendToIdeBtn = document.getElementById('snap-send-to-ide-btn');
+        const snapRetakeBtn = document.getElementById('snap-retake-btn');
+        const snapCopyOcrBtn = document.getElementById('snap-copy-ocr-btn');
+
+        function openSnapOcrModal() {
+            if (!snapOcrModal) return;
+            // Reset to source selection state
+            if (snapSourceGrid) snapSourceGrid.style.display = '';
+            if (snapPreviewContainer) snapPreviewContainer.style.display = 'none';
+            if (snapResultContainer) snapResultContainer.style.display = 'none';
+            if (snapOcrStatusPill) { snapOcrStatusPill.textContent = 'READY'; snapOcrStatusPill.style.background = ''; }
+            snapOcrModal.style.display = 'flex';
+            triggerHaptic([25]);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeSnapOcrModal() {
+            if (snapOcrModal) snapOcrModal.style.display = 'none';
+            cameraInput.value = '';
+            galleryInput.value = '';
+        }
+
         // ── CAMERA & IMAGE UPLOAD OCR PIPELINE ──────────────────
-        cameraSnapBtn.addEventListener('click', () => {
-            snapChoiceModal.style.display = "flex";
+        cameraSnapBtn.addEventListener('click', openSnapOcrModal);
+        cameraInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleSnapImageOCR(file);
+        });
+        galleryInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleSnapImageOCR(file);
         });
 
-        chooseCameraBtn.addEventListener('click', () => {
-            snapChoiceModal.style.display = "none";
-            cameraInput.click();
-        });
+        if (snapCardCamera) {
+            snapCardCamera.addEventListener('click', () => {
+                triggerHaptic([20]);
+                cameraInput.click();
+            });
+        }
+        if (snapCardGallery) {
+            snapCardGallery.addEventListener('click', () => {
+                triggerHaptic([20]);
+                galleryInput.click();
+            });
+        }
 
-        chooseGalleryBtn.addEventListener('click', () => {
-            snapChoiceModal.style.display = "none";
-            galleryInput.click();
-        });
+        async function handleSnapImageOCR(file) {
+            if (!file || !snapOcrModal) return;
+            triggerHaptic([40]);
 
-        cameraInput.addEventListener('change', (e) => handleImageOCR(e.target.files[0]));
-        galleryInput.addEventListener('change', (e) => handleImageOCR(e.target.files[0]));
+            // Show preview with laser animation
+            const objectUrl = URL.createObjectURL(file);
+            if (snapPreviewImg) snapPreviewImg.src = objectUrl;
+            if (snapSourceGrid) snapSourceGrid.style.display = 'none';
+            if (snapPreviewContainer) snapPreviewContainer.style.display = '';
+            if (snapResultContainer) snapResultContainer.style.display = 'none';
+            if (snapOcrStatusPill) { snapOcrStatusPill.textContent = 'SCANNING'; snapOcrStatusPill.style.background = 'rgba(234,179,8,0.25)'; }
+            if (snapLaserBar) snapLaserBar.style.animationPlayState = 'running';
+
+            let extractedText = '';
+
+            // 1. PRIMARY: Backend Neural OCR
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch('/api/ocr', { method: 'POST', body: formData });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.text && data.text.trim()) {
+                        extractedText = data.text.trim();
+                    }
+                }
+            } catch (e) { console.log('[snap-ocr] backend error, trying client OCR', e); }
+
+            // 2. FALLBACK: Client-side Tesseract.js
+            if (!extractedText && typeof Tesseract !== 'undefined') {
+                if (snapOcrStatusPill) snapOcrStatusPill.textContent = 'CLIENT OCR...';
+                try {
+                    const normalizedUrl = await preprocessImageFile(file);
+                    const src = normalizedUrl || objectUrl;
+                    const res = await Tesseract.recognize(src, 'eng', {
+                        tessedit_pageseg_mode: '3',
+                        preserve_interword_spaces: '1'
+                    });
+                    extractedText = (res.data.text || '').trim();
+                } catch (e) {}
+            }
+
+            if (snapLaserBar) snapLaserBar.style.animationPlayState = 'paused';
+
+            // Show result area
+            if (snapResultContainer) snapResultContainer.style.display = '';
+            if (extractedText) {
+                extractedText = cleanClientOCRText(extractedText);
+                if (snapOcrTextResult) snapOcrTextResult.value = extractedText;
+                if (snapOcrStatusPill) { snapOcrStatusPill.textContent = 'TEXT READY'; snapOcrStatusPill.style.background = 'rgba(34,197,94,0.25)'; }
+                triggerHaptic([60, 40, 80]);
+            } else {
+                if (snapOcrTextResult) snapOcrTextResult.value = '';
+                if (snapOcrStatusPill) { snapOcrStatusPill.textContent = 'NO TEXT'; snapOcrStatusPill.style.background = 'rgba(239,68,68,0.25)'; }
+                showToast('No text detected — edit manually or retake');
+            }
+            // Update solve button label to current mode
+            const snapSolveNowText = document.getElementById('snap-solve-now-text');
+            if (snapSolveNowText) {
+                const lbl = modeLabels[currentEditorMode] || 'Python';
+                snapSolveNowText.innerText = `Solve With AI (${lbl})`;
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Snap Result Buttons
+        if (snapSolveNowBtn) {
+            snapSolveNowBtn.addEventListener('click', async () => {
+                const questionText = snapOcrTextResult ? snapOcrTextResult.value.trim() : '';
+                if (!questionText) { showToast('No question text to solve'); return; }
+                const snapSolveNowText = document.getElementById('snap-solve-now-text');
+                if (snapSolveNowText) snapSolveNowText.innerText = 'AI Solving...';
+                snapSolveNowBtn.disabled = true;
+                triggerHaptic([35]);
+                showToast('⚡ AI solving your question...');
+                const solution = await requestAISolution(questionText, currentEditorMode || 'python');
+                snapSolveNowBtn.disabled = false;
+                const lbl = modeLabels[currentEditorMode] || 'Python';
+                if (snapSolveNowText) snapSolveNowText.innerText = `Solve With AI (${lbl})`;
+                if (solution) {
+                    payloadText.value = solution;
+                    payloadText.dispatchEvent(new Event('input'));
+                    saveCurrentTab();
+                    closeSnapOcrModal();
+                    triggerHaptic([60, 40, 60]);
+                    showToast('⚡ AI Solution loaded into editor!');
+                } else {
+                    showToast('AI solve failed — check connection');
+                }
+            });
+        }
+
+        if (snapSendToIdeBtn) {
+            snapSendToIdeBtn.addEventListener('click', () => {
+                const text = snapOcrTextResult ? snapOcrTextResult.value.trim() : '';
+                if (!text) { showToast('No text to paste'); return; }
+                payloadText.value = (payloadText.value ? payloadText.value + '\n\n' : '') + text;
+                payloadText.dispatchEvent(new Event('input'));
+                saveCurrentTab();
+                closeSnapOcrModal();
+                triggerHaptic([40]);
+                showToast('Question pasted into editor!');
+            });
+        }
+
+        if (snapRetakeBtn) {
+            snapRetakeBtn.addEventListener('click', () => {
+                if (snapResultContainer) snapResultContainer.style.display = 'none';
+                if (snapPreviewContainer) snapPreviewContainer.style.display = 'none';
+                if (snapSourceGrid) snapSourceGrid.style.display = '';
+                if (snapOcrStatusPill) { snapOcrStatusPill.textContent = 'READY'; snapOcrStatusPill.style.background = ''; }
+                cameraInput.value = ''; galleryInput.value = '';
+                triggerHaptic([20]);
+            });
+        }
+
+        if (snapCopyOcrBtn) {
+            snapCopyOcrBtn.addEventListener('click', async () => {
+                const text = snapOcrTextResult ? snapOcrTextResult.value.trim() : '';
+                if (!text) { showToast('No text to copy'); return; }
+                try {
+                    await navigator.clipboard.writeText(text);
+                    triggerHaptic([30]);
+                    showToast('Question text copied!');
+                } catch (e) { showToast('Copy failed'); }
+            });
+        }
+
 
         function cleanClientOCRText(text) {
             if (!text) return "";
@@ -2796,7 +4484,7 @@
                 thinking_pauses: thinkingToggle.checked,
                 typo_sim: typoToggle.checked,
                 is_coding: codingGuardToggle.checked,
-                language: "python"
+                language: currentEditorMode || "python"
             };
 
             try {
@@ -2840,6 +4528,13 @@
 
         // Send all
         injectBtn.addEventListener('click', () => {
+            if (currentEditorMode === 'mcq') {
+                const targetOpt = detectedWinnerOption || selectedMcqOption;
+                if (targetOpt) {
+                    handleMcqOptionClick(targetOpt);
+                    return;
+                }
+            }
             sendInjection(payloadText.value);
         });
 
@@ -2922,6 +4617,9 @@
             decoyCalculator.style.display = "flex";
             triggerHaptic([40, 40]);
         }
+
+        // Alias so Ghost Desktop button can call enterDecoyMode()
+        function enterDecoyMode() { showDecoy(); }
 
         function hideDecoy() {
             decoyCalculator.style.display = "none";
@@ -3137,6 +4835,305 @@
             prevVal = res;
             renderCalcDisplay();
         }
+
+        // ── 1. MULTI-PROBLEM TABS SYSTEM ─────────────────────────
+        const questionTabsGroup = document.getElementById('question-tabs-group');
+        const tabSaveIndicator = document.getElementById('tab-save-indicator');
+        let activeTab = 'q1';
+        let tabsData = {
+            q1: { text: '', lang: 'python', chunkIdx: 0 },
+            q2: { text: '', lang: 'python', chunkIdx: 0 },
+            q3: { text: '', lang: 'python', chunkIdx: 0 },
+            scratch: { text: '', lang: 'python', chunkIdx: 0 }
+        };
+
+        function loadTabsFromStorage() {
+            try {
+                const saved = localStorage.getItem('glidepass_exam_tabs');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    tabsData = { ...tabsData, ...parsed };
+                }
+                const savedActive = localStorage.getItem('glidepass_active_tab');
+                if (savedActive && tabsData[savedActive]) {
+                    activeTab = savedActive;
+                }
+            } catch (e) {
+                console.log("[tabs] storage load error:", e);
+            }
+            if (questionTabsGroup) {
+                questionTabsGroup.querySelectorAll('.q-tab').forEach(t => {
+                    t.classList.toggle('active', t.dataset.tab === activeTab);
+                });
+            }
+            if (tabsData[activeTab] && payloadText) {
+                payloadText.value = tabsData[activeTab].text || '';
+                currentChunkIndex = tabsData[activeTab].chunkIdx || 0;
+            }
+            if (charCount && payloadText) {
+                updateCharCount();
+            }
+            updateChunks();
+        }
+
+        function saveCurrentTab() {
+            if (!tabsData[activeTab]) tabsData[activeTab] = {};
+            tabsData[activeTab].text = payloadText ? payloadText.value : '';
+            tabsData[activeTab].chunkIdx = currentChunkIndex;
+            try {
+                localStorage.setItem('glidepass_exam_tabs', JSON.stringify(tabsData));
+                localStorage.setItem('glidepass_active_tab', activeTab);
+            } catch (e) {}
+            if (tabSaveIndicator) {
+                tabSaveIndicator.style.opacity = '1';
+                setTimeout(() => { if (tabSaveIndicator) tabSaveIndicator.style.opacity = '0.6'; }, 600);
+            }
+        }
+
+        if (questionTabsGroup) {
+            questionTabsGroup.addEventListener('click', (e) => {
+                const btn = e.target.closest('.q-tab');
+                if (!btn) return;
+                const newTab = btn.dataset.tab;
+                if (newTab === activeTab) return;
+                saveCurrentTab();
+                activeTab = newTab;
+                questionTabsGroup.querySelectorAll('.q-tab').forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                triggerHaptic([30]);
+                if (payloadText) {
+                    payloadText.value = tabsData[activeTab]?.text || '';
+                    currentChunkIndex = tabsData[activeTab]?.chunkIdx || 0;
+                }
+                updateCharCount();
+                updateChunks();
+                showToast(`Switched to ${btn.innerText}`);
+            });
+        }
+
+        // Quick Copy Button in Editor Header
+        const editorCopyBtn = document.getElementById('editor-copy-btn');
+        if (editorCopyBtn) {
+            editorCopyBtn.addEventListener('click', async () => {
+                if (!payloadText || !payloadText.value.trim()) {
+                    showToast("Buffer is empty");
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(payloadText.value);
+                    triggerHaptic([30]);
+                    showToast("Copied to clipboard!");
+                } catch (e) {
+                    showToast("Copied!");
+                }
+            });
+        }
+
+        // ── 2. ULTRA-LOW GLOW / BLACK & GRAY STEALTH MODE ────────
+        const lowGlowToggleInput = document.getElementById('low-glow-toggle-input');
+        function initLowGlow() {
+            const isLowGlow = localStorage.getItem('glidepass_low_glow') === 'true';
+            if (isLowGlow) {
+                document.body.classList.add('low-glow-mode');
+                document.body.classList.add('red-shift-filter');
+                if (lowGlowToggleInput) lowGlowToggleInput.checked = true;
+            } else {
+                document.body.classList.remove('low-glow-mode');
+                document.body.classList.remove('red-shift-filter');
+                if (lowGlowToggleInput) lowGlowToggleInput.checked = false;
+            }
+        }
+        if (lowGlowToggleInput) {
+            lowGlowToggleInput.addEventListener('change', (e) => {
+                const active = e.target.checked;
+                document.body.classList.toggle('low-glow-mode', active);
+                document.body.classList.toggle('red-shift-filter', active);
+                localStorage.setItem('glidepass_low_glow', active ? 'true' : 'false');
+                triggerHaptic([40]);
+                showToast(active ? "🕶️ Low-Glow Shield: ON" : "☀️ Normal Mode: ON");
+            });
+        }
+
+        // ── 3. REMOTE IDE CONTROLS ────────────────────────────────
+        async function sendRemoteKey(action) {
+            triggerHaptic([25]);
+            try {
+                const res = await fetch('/api/exam/send_key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+                const d = await res.json();
+                if (d.status === "success") {
+                    showToast(`Remote: ${action.replace('_', ' ').toUpperCase()}`);
+                } else {
+                    showToast(d.message || "Key send failed");
+                }
+            } catch (err) {
+                showToast("Key error: " + err);
+            }
+        }
+
+        const remoteRunBtn = document.getElementById('remote-run-btn');
+        const remoteClearBtn = document.getElementById('remote-clear-btn');
+        const remoteTabBtn = document.getElementById('remote-tab-btn');
+        const dpadUp = document.getElementById('dpad-up');
+        const dpadDown = document.getElementById('dpad-down');
+        const dpadLeft = document.getElementById('dpad-left');
+        const dpadRight = document.getElementById('dpad-right');
+
+        if (remoteRunBtn) remoteRunBtn.addEventListener('click', () => sendRemoteKey('run'));
+        if (remoteClearBtn) remoteClearBtn.addEventListener('click', () => sendRemoteKey('clear_all'));
+        if (remoteTabBtn) remoteTabBtn.addEventListener('click', () => sendRemoteKey('tab'));
+        if (dpadUp) dpadUp.addEventListener('click', () => sendRemoteKey('arrow_up'));
+        if (dpadDown) dpadDown.addEventListener('click', () => sendRemoteKey('arrow_down'));
+        if (dpadLeft) dpadLeft.addEventListener('click', () => sendRemoteKey('arrow_left'));
+        if (dpadRight) dpadRight.addEventListener('click', () => sendRemoteKey('arrow_right'));
+
+        const remoteDockToggle = document.getElementById('remote-dock-toggle');
+        const remoteIdeDock = document.getElementById('remote-ide-dock');
+        if (remoteDockToggle && remoteIdeDock) {
+            remoteDockToggle.addEventListener('click', () => {
+                remoteIdeDock.classList.toggle('collapsed');
+                triggerHaptic([20]);
+            });
+        }
+
+        // ── 4. GHOST DESKTOP DUAL PANIC ───────────────────────────
+        const ghostDesktopBtn = document.getElementById('ghost-desktop-btn');
+        if (ghostDesktopBtn) {
+            ghostDesktopBtn.addEventListener('click', async () => {
+                triggerHaptic([60, 40, 60]);
+                showToast("👻 GHOST: Laptop hidden!");
+                try {
+                    fetch('/api/exam/emergency_hide', { method: 'POST' });
+                } catch (e) {}
+                enterDecoyMode();
+            });
+        }
+
+        // ── 5. ONE-TAP AI CODE SOLVER ─────────────────────────────
+        async function requestAISolution(questionText, targetLang = 'python') {
+            if (!questionText || !questionText.trim()) {
+                showToast("No question text to solve!");
+                return null;
+            }
+            try {
+                const res = await fetch('/api/exam/ai_solve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question_text: questionText,
+                        language: targetLang
+                    })
+                });
+                const data = await res.json();
+                if (data.status === "success" && data.solution) {
+                    return data.solution;
+                } else {
+                    showToast(data.message || "AI generation failed");
+                    return null;
+                }
+            } catch (err) {
+                showToast("AI network error: " + err);
+                return null;
+            }
+        }
+
+        const aiSolveEditorBtn = document.getElementById('ai-solve-editor-btn');
+        const aiSolveBtnText = document.getElementById('ai-solve-btn-text');
+        if (aiSolveEditorBtn) {
+            aiSolveEditorBtn.addEventListener('click', async () => {
+                const currentText = payloadText.value.trim();
+                if (!currentText) {
+                    showToast("Paste problem text into editor first");
+                    return;
+                }
+                aiSolveEditorBtn.classList.add('loading');
+                if (aiSolveBtnText) aiSolveBtnText.innerText = "Solving...";
+                triggerHaptic([35]);
+                showToast("⚡ AI Generating solution...");
+                const solution = await requestAISolution(currentText, currentEditorMode || 'python');
+                aiSolveEditorBtn.classList.remove('loading');
+                const modeLabel = modeLabels[currentEditorMode] || (currentEditorMode || 'Python').toUpperCase();
+                if (aiSolveBtnText) aiSolveBtnText.innerText = `AI Solve (${modeLabel})`;
+
+                if (solution) {
+                    payloadText.value = solution;
+                    payloadText.dispatchEvent(new Event('input'));
+                    saveCurrentTab();
+                    triggerHaptic([50, 40, 50]);
+                    showToast("⚡ Optimal AI Solution Loaded!");
+                }
+            });
+        }
+
+        const ocrAiSolveBtn = document.getElementById('ocr-ai-solve-btn');
+        const ocrAiSolveText = document.getElementById('ocr-ai-solve-text');
+        if (ocrAiSolveBtn) {
+            ocrAiSolveBtn.addEventListener('click', async () => {
+                triggerHaptic([40]);
+                if (ocrAiSolveText) ocrAiSolveText.innerText = "1/2 OCR Scanning...";
+                showToast("Step 1/2: Extracting screen question...");
+                ocrProgressBar.style.display = "flex";
+                ocrStatusText.innerText = "Neural Vision reading laptop screen...";
+
+                let extractedText = "";
+                try {
+                    const res = await fetch('/api/device/ocr');
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.status === "success" && d.text && d.text.trim()) {
+                            extractedText = d.text.trim();
+                        }
+                    }
+                } catch (e) {}
+
+                if (!extractedText && capturedScreenImg.src) {
+                    try {
+                        const res = await fetch('/api/ocr', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ image: capturedScreenImg.src })
+                        });
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.status === "success" && d.text && d.text.trim()) {
+                                extractedText = d.text.trim();
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (!extractedText) {
+                    ocrProgressBar.style.display = "none";
+                    if (ocrAiSolveText) ocrAiSolveText.innerText = "⚡ 1-TAP OCR → AI SOLVE";
+                    showToast("Could not extract question text");
+                    return;
+                }
+
+                if (ocrAiSolveText) ocrAiSolveText.innerText = "2/2 AI Solving...";
+                ocrStatusText.innerText = "⚡ AI Generating optimal solution...";
+                showToast("Step 2/2: Generating code with AI...");
+
+                const solution = await requestAISolution(extractedText, currentEditorMode || 'python');
+                ocrProgressBar.style.display = "none";
+                if (ocrAiSolveText) ocrAiSolveText.innerText = "⚡ 1-TAP OCR → AI SOLVE";
+
+                if (solution) {
+                    payloadText.value = solution;
+                    payloadText.dispatchEvent(new Event('input'));
+                    saveCurrentTab();
+                    deviceScreenModal.style.display = "none";
+                    triggerHaptic([60, 40, 60]);
+                    showToast("⚡ AI Solution injected and ready!");
+                }
+            });
+        }
+
+        // Initialize tabs and theme on startup
+        loadTabsFromStorage();
+        initLowGlow();
 
         // Accelerometer / Shake Detection
         let lastX, lastY, lastZ;
