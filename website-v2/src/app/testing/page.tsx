@@ -52,7 +52,15 @@ import {
   Activity,
   Scan,
   VolumeX,
-  CornerDownRight
+  CornerDownRight,
+  Laptop,
+  CheckCheck,
+  MessageSquare,
+  HelpCircle as HelpIcon,
+  Printer,
+  FileCheck2,
+  Cpu,
+  Monitor
 } from "lucide-react";
 
 // ==========================================
@@ -67,8 +75,19 @@ export type QuestionType =
   | "descriptive"
   | "radio_grid";
 
+export interface TestCase {
+  id: number;
+  input: string;
+  expectedOutput: string;
+  actualOutput?: string;
+  status?: "pass" | "fail" | "pending";
+  executionTime?: string;
+  isHidden?: boolean;
+}
+
 export interface Question {
   id: number;
+  section: string;
   title: string;
   type: QuestionType;
   category: string;
@@ -77,7 +96,7 @@ export interface Question {
   options?: string[];
   correctAnswer?: string | string[] | number[];
   starterCode?: Record<string, string>;
-  testCases?: { id: number; input: string; expectedOutput: string; isHidden?: boolean }[];
+  testCases?: TestCase[];
   blanks?: { id: number; prefix: string; suffix: string; answer: string }[];
   gridRows?: string[];
   gridCols?: string[];
@@ -106,9 +125,17 @@ export interface ViolationProof {
   confidence?: number;
 }
 
+const SECTIONS = [
+  "Section 1: Algorithms & IDE",
+  "Section 2: Computer Systems",
+  "Section 3: Distributed Data",
+  "Section 4: Architecture Design",
+];
+
 const DEFAULT_QUESTIONS: Question[] = [
   {
     id: 1,
+    section: "Section 1: Algorithms & IDE",
     title: "Optimized Two-Sum Index Search",
     type: "coding",
     category: "Algorithms & Data Structures",
@@ -116,6 +143,12 @@ const DEFAULT_QUESTIONS: Question[] = [
     description: `Given an array of integers \`nums\` and an integer \`target\`, return indices of the two numbers such that they add up to \`target\`.
 
 You may assume that each input has exactly one solution, and you may not use the same element twice.
+
+**Constraints:**
+- \`2 <= nums.length <= 10^4\`
+- \`-10^9 <= nums[i] <= 10^9\`
+- Time Complexity Target: \`O(n)\`
+- Space Complexity Target: \`O(n)\`
 
 **Example 1:**
 - Input: \`nums = [2,7,11,15]\`, \`target = 9\`
@@ -165,14 +198,15 @@ public:
 };`,
     },
     testCases: [
-      { id: 1, input: "nums = [2, 7, 11, 15], target = 9", expectedOutput: "[0, 1]" },
-      { id: 2, input: "nums = [3, 2, 4], target = 6", expectedOutput: "[1, 2]" },
-      { id: 3, input: "nums = [3, 3], target = 6", expectedOutput: "[0, 1]", isHidden: true },
-      { id: 4, input: "nums = [-1, -2, -3, -4, -5], target = -8", expectedOutput: "[2, 4]", isHidden: true },
+      { id: 1, input: "nums = [2, 7, 11, 15], target = 9", expectedOutput: "[0, 1]", status: "pending" },
+      { id: 2, input: "nums = [3, 2, 4], target = 6", expectedOutput: "[1, 2]", status: "pending" },
+      { id: 3, input: "nums = [3, 3], target = 6", expectedOutput: "[0, 1]", isHidden: true, status: "pending" },
+      { id: 4, input: "nums = [-1, -2, -3, -4, -5], target = -8", expectedOutput: "[2, 4]", isHidden: true, status: "pending" },
     ],
   },
   {
     id: 2,
+    section: "Section 2: Computer Systems",
     title: "Network Protocol Latency & Handshakes",
     type: "mcq_single",
     category: "Computer Networks",
@@ -188,6 +222,7 @@ public:
   },
   {
     id: 3,
+    section: "Section 3: Distributed Data",
     title: "Database ACID & Concurrency Isolation",
     type: "mcq_multi",
     category: "Distributed Systems",
@@ -206,6 +241,7 @@ public:
   },
   {
     id: 4,
+    section: "Section 2: Computer Systems",
     title: "Asynchronous Concurrency Fill-in-the-Blanks",
     type: "fill_blank",
     category: "Systems Architecture",
@@ -228,6 +264,7 @@ public:
   },
   {
     id: 5,
+    section: "Section 2: Computer Systems",
     title: "Layered Protocol Architecture Matrix",
     type: "radio_grid",
     category: "OSI & TCP/IP Model",
@@ -243,6 +280,7 @@ public:
   },
   {
     id: 6,
+    section: "Section 4: Architecture Design",
     title: "Architectural Design: Resilient Zero-Trust Local Mesh",
     type: "descriptive",
     category: "System Design & Security",
@@ -251,7 +289,7 @@ public:
   },
 ];
 
-export default function ProctoredTestingPage() {
+export default function ProfessionalProctoredExamTool() {
   // Stage management: "config" -> "precheck" -> "exam" -> "results"
   const [stage, setStage] = useState<"config" | "precheck" | "exam" | "results">("config");
 
@@ -259,7 +297,21 @@ export default function ProctoredTestingPage() {
   const [candidateName, setCandidateName] = useState("Alex Morgan");
   const [candidateId, setCandidateId] = useState("GP-2026-9812");
   const [durationMinutes, setDurationMinutes] = useState(45);
+  const [assessmentToken, setAssessmentToken] = useState("TXN-SEC-89410-2026");
   const [verifiedSelfie, setVerifiedSelfie] = useState<string | null>(null);
+
+  // Precheck Multi-Step Wizard: 1: System Hardware, 2: Sensors (Camera/Mic), 3: Photo Identity, 4: Rules Agreement
+  const [precheckStep, setPrecheckStep] = useState<1 | 2 | 3 | 4>(1);
+  const [hasAgreedRules, setHasAgreedRules] = useState(false);
+
+  // System Diagnostics
+  const [sysDiagnostics, setSysDiagnostics] = useState({
+    browser: "Google Chrome / Chromium 124+",
+    os: "macOS / Windows 11 Verified",
+    networkLatency: "24 ms (Optimal)",
+    bandwidth: "84 Mbps",
+    dualDisplay: "None (Single Display Verified)",
+  });
 
   // STRICT PROCTORING SETTINGS
   const [maxStrikes, setMaxStrikes] = useState(3);
@@ -282,7 +334,7 @@ export default function ProctoredTestingPage() {
   // Real-time AI Face Mesh Telemetry
   const [aiGazeStatus, setAiGazeStatus] = useState<"CENTERED" | "LOOKING_AWAY" | "NO_FACE" | "MULTIPLE_FACES">("CENTERED");
   const [aiConfidence, setAiConfidence] = useState<number>(98);
-  const [aiFaceBox, setAiFaceBox] = useState<{ x: number; y: number; w: number; h: number }>({ x: 25, y: 15, w: 50, h: 65 });
+  const [activeSection, setActiveSection] = useState<string>(SECTIONS[0]);
 
   // Live Exam State
   const [currentQIndex, setCurrentQIndex] = useState<number>(0);
@@ -310,6 +362,10 @@ export default function ProctoredTestingPage() {
   const [violations, setViolations] = useState<ViolationProof[]>([]);
   const [activeWarningToast, setActiveWarningToast] = useState<{ title: string; desc: string; severity: string } | null>(null);
   const [showSimulateDrawer, setShowSimulateDrawer] = useState<boolean>(false);
+  const [showChatModal, setShowChatModal] = useState<boolean>(false);
+  const [proctorMessages, setProctorMessages] = useState<Array<{ sender: string; text: string; time: string }>>([
+    { sender: "AI Proctor", text: "Welcome to your proctored session. Keep face centered and stay in fullscreen.", time: "Session Start" }
+  ]);
 
   // Camera & Audio Refs
   const precheckVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -363,7 +419,7 @@ export default function ProctoredTestingPage() {
 
     let stream: MediaStream | null = null;
 
-    // Tier 1: Video + Audio with high fidelity constraints
+    // Tier 1: Video + Audio with ideal HD constraints
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -379,17 +435,16 @@ export default function ProctoredTestingPage() {
       });
       setMicState("active");
     } catch (e1) {
-      console.warn("Tier 1 getUserMedia failed, attempting Tier 2:", e1);
+      console.warn("Tier 1 getUserMedia failed, trying Tier 2:", e1);
       // Tier 2: Basic Video + Audio
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setMicState("active");
       } catch (e2) {
-        console.warn("Tier 2 getUserMedia failed, attempting Tier 3 Video-Only:", e2);
-        // Tier 3: Video Only (in case mic is blocked by OS or absent)
+        console.warn("Tier 2 getUserMedia failed, trying Tier 3 Video-Only:", e2);
+        // Tier 3: Video Only
         try {
           stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          // Try getting mic separately without failing video
           try {
             const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioStream.getAudioTracks().forEach((track) => stream?.addTrack(track));
@@ -410,7 +465,6 @@ export default function ProctoredTestingPage() {
       mediaStreamRef.current = stream;
       setCameraState("active");
 
-      // Extract device label & track settings
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
         setCameraDeviceLabel(videoTrack.label || "Integrated HD Camera");
@@ -420,7 +474,6 @@ export default function ProctoredTestingPage() {
         }
       }
 
-      // Attach stream to any video element currently in DOM
       [precheckVideoRef.current, pipVideoRef.current].forEach((vid) => {
         if (vid) {
           vid.srcObject = stream;
@@ -428,7 +481,7 @@ export default function ProctoredTestingPage() {
         }
       });
 
-      // Initialize Audio Analyser Node
+      // Audio Analyser Setup
       try {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx && stream.getAudioTracks().length > 0) {
@@ -452,13 +505,13 @@ export default function ProctoredTestingPage() {
             const db = Math.min(100, Math.round((avg / 128) * 100));
             setAudioLevel(db);
 
-            // Real-time speech spike alert (> 52 dB) during active exam
+            // Speech noise detection (> 52 dB) in active exam
             if (stage === "exam" && !isLockedDown && db > 54) {
               recordStrictViolation(
                 "audio_spike",
                 "Voice Conversation Detected",
                 "high",
-                `Microphone registered voice activity spike of ${db} dB exceeding silent threshold.`
+                `Microphone registered voice activity spike of ${db} dB exceeding silent baseline.`
               );
             }
             animationFrameIdRef.current = requestAnimationFrame(monitorAudio);
@@ -473,14 +526,14 @@ export default function ProctoredTestingPage() {
     return stream;
   }, [cameraState, isLockedDown, stage]);
 
-  // AUTO-REQUEST CAMERA PERMISSION IMMEDIATELY ON PRECHECK STAGE
+  // Request camera automatically when precheck opens
   useEffect(() => {
     if (stage === "precheck" && cameraState === "initial") {
       initializeSensors();
     }
   }, [stage, cameraState, initializeSensors]);
 
-  // Make sure PIP video connects when entering exam
+  // Ensure PIP stream connects when entering exam
   useEffect(() => {
     if (stage === "exam" && mediaStreamRef.current && pipVideoRef.current) {
       pipVideoRef.current.srcObject = mediaStreamRef.current;
@@ -499,7 +552,6 @@ export default function ProctoredTestingPage() {
 
     trackerInterval = setInterval(() => {
       tick++;
-      // Analyze current video feed or simulated frame
       const canvas = pipCanvasRef.current;
       const video = pipVideoRef.current;
       if (!canvas) return;
@@ -510,7 +562,7 @@ export default function ProctoredTestingPage() {
       canvas.width = 320;
       canvas.height = 240;
 
-      // Draw real video frame or fallback background
+      // Draw active camera video or dark surveillance background
       if (video && video.readyState >= 2) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       } else {
@@ -518,7 +570,7 @@ export default function ProctoredTestingPage() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Compute dynamic face coordinates with realistic micro-jitter
+      // Micro-jitter simulation for live tracking realism
       const jitterX = Math.sin(tick * 0.4) * 2;
       const jitterY = Math.cos(tick * 0.3) * 1.5;
       const bx = 90 + jitterX;
@@ -526,47 +578,27 @@ export default function ProctoredTestingPage() {
       const bw = 140;
       const bh = 150;
 
-      // Draw AI Face Mesh Box
+      // AI Bounding Box
       ctx.strokeStyle = aiGazeStatus === "CENTERED" ? "#10b981" : "#ef4444";
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 3]);
       ctx.strokeRect(bx, by, bw, bh);
       ctx.setLineDash([]);
 
-      // Corner Accents
+      // Corner reticles
       const cornerSize = 12;
       ctx.strokeStyle = aiGazeStatus === "CENTERED" ? "#34d399" : "#f87171";
       ctx.lineWidth = 3;
 
-      // Top-Left
+      // Corners
       ctx.beginPath();
-      ctx.moveTo(bx, by + cornerSize);
-      ctx.lineTo(bx, by);
-      ctx.lineTo(bx + cornerSize, by);
+      ctx.moveTo(bx, by + cornerSize); ctx.lineTo(bx, by); ctx.lineTo(bx + cornerSize, by);
+      ctx.moveTo(bx + bw - cornerSize, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cornerSize);
+      ctx.moveTo(bx, by + bh - cornerSize); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cornerSize, by + bh);
+      ctx.moveTo(bx + bw - cornerSize, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cornerSize);
       ctx.stroke();
 
-      // Top-Right
-      ctx.beginPath();
-      ctx.moveTo(bx + bw - cornerSize, by);
-      ctx.lineTo(bx + bw, by);
-      ctx.lineTo(bx + bw, by + cornerSize);
-      ctx.stroke();
-
-      // Bottom-Left
-      ctx.beginPath();
-      ctx.moveTo(bx, by + bh - cornerSize);
-      ctx.lineTo(bx, by + bh);
-      ctx.lineTo(bx + cornerSize, by + bh);
-      ctx.stroke();
-
-      // Bottom-Right
-      ctx.beginPath();
-      ctx.moveTo(bx + bw - cornerSize, by + bh);
-      ctx.lineTo(bx + bw, by + bh);
-      ctx.lineTo(bx + bw, by + bh - cornerSize);
-      ctx.stroke();
-
-      // Eye Tracking Crosshairs
+      // Eye tracking pupils
       const leftEyeX = bx + 42 + jitterX * 0.5;
       const leftEyeY = by + 50 + jitterY * 0.5;
       const rightEyeX = bx + 98 + jitterX * 0.5;
@@ -575,19 +607,17 @@ export default function ProctoredTestingPage() {
       ctx.fillStyle = aiGazeStatus === "CENTERED" ? "#10b981" : "#ef4444";
       ctx.beginPath();
       ctx.arc(leftEyeX, leftEyeY, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
       ctx.arc(rightEyeX, rightEyeY, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Telemetry HUD overlay on canvas
+      // Telemetry HUD overlay
       ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
       ctx.fillRect(8, 8, 150, 36);
       ctx.fillStyle = aiGazeStatus === "CENTERED" ? "#34d399" : "#f87171";
       ctx.font = "bold 9px monospace";
       ctx.fillText(`AI GAZE: ${aiGazeStatus}`, 14, 22);
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(`CONF: ${aiConfidence}% | YAW: 1.2°`, 14, 36);
+      ctx.fillText(`CONF: ${aiConfidence}% | PITCH: 0.8°`, 14, 36);
     }, 120);
 
     return () => clearInterval(trackerInterval);
@@ -723,7 +753,7 @@ export default function ProctoredTestingPage() {
           "tab_switch",
           "Tab Switch / Window Minimized",
           "critical",
-          "Candidate navigated away from the active examination tab. Automatic strike issued.",
+          "Candidate navigated away from active exam tab. Automatic strike issued.",
           true
         );
       }
@@ -733,7 +763,7 @@ export default function ProctoredTestingPage() {
       if (!isLockedDown) {
         recordStrictViolation(
           "tab_switch",
-          "Browser Focus Lost (Alt-Tab / Split Window)",
+          "Browser Focus Lost (Alt-Tab / Window Switch)",
           "critical",
           "Application focus lost. Candidate switched windows or clicked outside browser viewport.",
           true
@@ -894,7 +924,6 @@ export default function ProctoredTestingPage() {
   };
 
   const proceedToExam = async () => {
-    // If camera hasn't been initialized yet, start it now
     if (!mediaStreamRef.current) {
       const stream = await initializeSensors();
       if (!stream) {
@@ -1042,7 +1071,7 @@ export default function ProctoredTestingPage() {
           <div className="flex items-center gap-3">
             <div className="px-3.5 py-1.5 rounded-full bg-[#F28500]/10 border border-[#F28500]/20 text-[#F28500] text-[10px] font-black uppercase tracking-widest font-rubik flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#F28500] animate-pulse" />
-              Live Proctoring Lab
+              Proctored Testing Engine
             </div>
             <button
               onClick={() => {
@@ -1051,7 +1080,7 @@ export default function ProctoredTestingPage() {
               }}
               className="bg-[#468FEA] hover:bg-[#3b82f6] text-white px-6 py-2.5 rounded-full font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/25 transition-all flex items-center gap-2"
             >
-              <span>Launch Test</span>
+              <span>Launch Assessment</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1062,12 +1091,12 @@ export default function ProctoredTestingPage() {
           <div className="max-w-3xl text-left space-y-6 mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm text-[10px] font-black tracking-widest uppercase text-[#468FEA] font-rubik">
               <ShieldCheck className="w-3.5 h-3.5 text-[#468FEA]" />
-              Professional AI Proctored Testing Suite
+              Professional Proctored Assessment Suite
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-rubik font-black tracking-tighter text-[#0f172a] uppercase leading-[0.9]">
               ENTERPRISE PROCTORED <br />
-              <span className="text-[#468FEA]">EXAMINATION SUITE.</span>
+              <span className="text-[#468FEA]">EXAMINATION TOOL.</span>
             </h1>
 
             <p className="text-base sm:text-lg text-gray-600 font-medium leading-relaxed max-w-2xl">
@@ -1099,19 +1128,19 @@ export default function ProctoredTestingPage() {
                       <Sliders className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-black uppercase font-rubik tracking-tight text-gray-900">Exam Parameters</h2>
-                      <p className="text-xs text-gray-500 font-medium">Session metadata & strict proctoring controls</p>
+                      <h2 className="text-lg font-black uppercase font-rubik tracking-tight text-gray-900">Assessment Configuration</h2>
+                      <p className="text-xs text-gray-500 font-medium">Candidate registration & strict proctoring controls</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
-                    {DEFAULT_QUESTIONS.length} Questions
+                    Token: {assessmentToken}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik mb-2">
-                      Candidate Name
+                      Candidate Full Name
                     </label>
                     <input
                       type="text"
@@ -1122,7 +1151,7 @@ export default function ProctoredTestingPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik mb-2">
-                      Registration ID
+                      Registration ID / Roll No
                     </label>
                     <input
                       type="text"
@@ -1159,10 +1188,10 @@ export default function ProctoredTestingPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-2">
                       <ShieldAlert className="w-4 h-4 text-rose-500" />
-                      Strict Anti-Cheat Protocols
+                      Active Proctoring Defense Protocols
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 font-mono">
-                      Strict Mode Enforced
+                      Strict Mode Active
                     </span>
                   </div>
 
@@ -1337,96 +1366,153 @@ export default function ProctoredTestingPage() {
               <ChevronLeft className="w-4 h-4" />
               <span>Back to Parameters</span>
             </button>
-            <div className="text-[10px] font-black tracking-widest uppercase text-gray-500 font-rubik">
-              Pre-Flight Sensor Calibration • Step 2 of 3
+
+            {/* Stepper Indicator */}
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4].map((step) => (
+                <div
+                  key={step}
+                  onClick={() => setPrecheckStep(step as any)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase font-mono cursor-pointer transition-all ${
+                    precheckStep === step
+                      ? "bg-[#468FEA] text-white shadow-md shadow-[#468FEA]/25"
+                      : "bg-white/60 text-gray-500 hover:bg-white"
+                  }`}
+                >
+                  Step {step}
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            {/* Webcam Live Test & Photo Verification Card */}
-            <div className="md:col-span-6 space-y-4">
-              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-950 border-4 border-white shadow-2xl">
-                <video
-                  ref={precheckVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ transform: "scaleX(-1)" }}
-                />
+          {/* STEP 1: SYSTEM HARDWARE & DIAGNOSTICS */}
+          {precheckStep === 1 && (
+            <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 1: System Hardware & Network Diagnostics</h2>
+                  <p className="text-xs text-gray-500 mt-1">Verifying environment compatibility with enterprise proctoring standards</p>
+                </div>
+                <span className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 font-black text-xs uppercase font-mono">
+                  All Systems Normal
+                </span>
+              </div>
 
-                {/* Overlays */}
-                <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase font-mono px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      {cameraState === "active" ? "SENSOR ACTIVE" : "SENSOR STANDBY"}
-                    </span>
-                    <span className="text-[10px] font-mono text-white/70 bg-black/60 px-2 py-0.5 rounded">
-                      {cameraResolution}
-                    </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                    <span className="flex items-center gap-1.5"><Laptop className="w-4 h-4 text-[#468FEA]" /> Browser Agent</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   </div>
+                  <div className="text-sm font-bold text-gray-900 font-rubik">{sysDiagnostics.browser}</div>
+                  <div className="text-[10px] text-gray-400">WebRTC, Canvas & Fullscreen Supported</div>
+                </div>
 
-                  {/* Face Guide Box */}
-                  <div className="self-center w-40 h-52 border-2 border-dashed border-[#468FEA] rounded-[40px] flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white bg-black/70 px-2.5 py-1 rounded font-mono">
-                      Align Face in Frame
-                    </span>
+                <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                    <span className="flex items-center gap-1.5"><Wifi className="w-4 h-4 text-emerald-500" /> Network Latency</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   </div>
+                  <div className="text-sm font-bold text-gray-900 font-rubik">{sysDiagnostics.networkLatency}</div>
+                  <div className="text-[10px] text-gray-400">Continuous ping stable ({sysDiagnostics.bandwidth})</div>
+                </div>
 
-                  <div className="flex items-center justify-between text-[11px] font-mono text-white/90 bg-black/80 backdrop-blur p-2.5 rounded-xl">
-                    <span>Camera: {cameraDeviceLabel.slice(0, 20)}...</span>
-                    <span className="text-emerald-400 font-bold">Face Tracked</span>
+                <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                    <span className="flex items-center gap-1.5"><Monitor className="w-4 h-4 text-[#F28500]" /> Display Architecture</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   </div>
+                  <div className="text-sm font-bold text-gray-900 font-rubik">{sysDiagnostics.dualDisplay}</div>
+                  <div className="text-[10px] text-gray-400">Multi-monitor splitting disabled</div>
                 </div>
               </div>
 
-              {/* Camera Status & Manual Re-Prompt Button */}
-              {cameraState !== "active" ? (
-                <div className="space-y-2">
-                  <button
-                    onClick={initializeSensors}
-                    className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-lg shadow-[#468FEA]/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Camera className="w-4 h-4" />
-                    <span>Authorize Camera & Microphone</span>
-                  </button>
-                  {cameraState === "denied" && (
-                    <p className="text-center text-xs text-rose-600 font-bold">
-                      Camera permission was blocked. Please allow camera access in your browser address bar and click Authorize.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2 font-rubik">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Optical Sensors Ready</span>
-                  </div>
-                  <button
-                    onClick={takeCandidateSelfie}
-                    className="p-3 rounded-2xl bg-white border border-gray-200 text-gray-800 text-xs font-black uppercase font-rubik hover:bg-gray-50 flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-[#468FEA]" />
-                    <span>{verifiedSelfie ? "Re-Snap Selfie" : "Verify Photo"}</span>
-                  </button>
-                </div>
-              )}
+              <div className="flex justify-end pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setPrecheckStep(2)}
+                  className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2"
+                >
+                  <span>Continue to Sensor Calibration</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+          )}
 
-            {/* Checklist */}
-            <div className="md:col-span-6 space-y-5">
-              <div>
-                <h2 className="text-2xl font-black uppercase font-rubik tracking-tight text-gray-900">
-                  Pre-Flight Hardware Check
-                </h2>
-                <p className="text-xs text-gray-600 font-medium mt-1">
-                  High-security proctored assessment. All checks are verified before entry.
-                </p>
+          {/* STEP 2: CAMERA & MICROPHONE CALIBRATION */}
+          {precheckStep === 2 && (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center animate-in fade-in duration-200">
+              <div className="md:col-span-6 space-y-4">
+                <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-950 border-4 border-white shadow-2xl">
+                  <video
+                    ref={precheckVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                    style={{ transform: "scaleX(-1)" }}
+                  />
+
+                  <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase font-mono px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {cameraState === "active" ? "SENSOR ACTIVE" : "SENSOR STANDBY"}
+                      </span>
+                      <span className="text-[10px] font-mono text-white/70 bg-black/60 px-2 py-0.5 rounded">
+                        {cameraResolution}
+                      </span>
+                    </div>
+
+                    <div className="self-center w-40 h-52 border-2 border-dashed border-[#468FEA] rounded-[40px] flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white bg-black/70 px-2.5 py-1 rounded font-mono">
+                        Align Face in Frame
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono text-white/90 bg-black/80 backdrop-blur p-2.5 rounded-xl">
+                      <span>Camera: {cameraDeviceLabel.slice(0, 20)}...</span>
+                      <span className="text-emerald-400 font-bold">Face Tracked</span>
+                    </div>
+                  </div>
+                </div>
+
+                {cameraState !== "active" ? (
+                  <div className="space-y-2">
+                    <button
+                      onClick={initializeSensors}
+                      className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-lg shadow-[#468FEA]/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Authorize Camera & Microphone</span>
+                    </button>
+                    {cameraState === "denied" && (
+                      <p className="text-center text-xs text-rose-600 font-bold">
+                        Camera permission was blocked. Please allow camera access in your browser address bar and click Authorize.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-between font-rubik">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Optical Sensors Online & Verified</span>
+                    </div>
+                    <span className="font-mono text-[10px]">1080p / 30 FPS</span>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-3">
-                {/* Audio Check */}
+              <div className="md:col-span-6 space-y-5">
+                <div>
+                  <h2 className="text-2xl font-black uppercase font-rubik tracking-tight text-gray-900">
+                    Step 2: Optical & Acoustic Calibration
+                  </h2>
+                  <p className="text-xs text-gray-600 font-medium mt-1">
+                    Please ensure good lighting and speak aloud to verify microphone decibel response.
+                  </p>
+                </div>
+
                 <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1434,14 +1520,14 @@ export default function ProctoredTestingPage() {
                         <Mic className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Microphone Decibel Monitor</div>
-                        <div className="text-[11px] text-gray-500 font-medium">Live acoustic monitor (Speak to test)</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Live Audio Decibel Meter</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Ambient noise tolerance threshold: 50 dB</div>
                       </div>
                     </div>
                     <span className="text-xs font-mono font-bold text-gray-900">{audioLevel} dB</span>
                   </div>
 
-                  <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-75 ${
                         audioLevel > 50 ? "bg-rose-500" : audioLevel > 35 ? "bg-amber-500" : "bg-emerald-500"
@@ -1451,54 +1537,143 @@ export default function ProctoredTestingPage() {
                   </div>
                 </div>
 
-                {/* Fullscreen Requirement */}
-                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-[#F28500]/10 text-[#F28500]">
-                      <Maximize className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Fullscreen Enclosure</div>
-                      <div className="text-[11px] text-gray-500 font-medium">Browser will lock into fullscreen upon entering</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider font-mono text-[#F28500]">
-                    Mandatory
-                  </span>
+                <div className="flex items-center justify-between pt-4">
+                  <button
+                    onClick={() => setPrecheckStep(1)}
+                    className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setPrecheckStep(3)}
+                    disabled={cameraState !== "active"}
+                    className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <span>Proceed to Photo ID Verification</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
-
-                {/* Verified Selfie Badge */}
-                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
-                      <Award className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">{candidateName}</div>
-                      <div className="text-[11px] text-gray-500 font-medium">Registration: {candidateId}</div>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider font-mono ${verifiedSelfie ? "text-emerald-600" : "text-amber-600"}`}>
-                    {verifiedSelfie ? "Photo Stored" : "Auto-Capture at Start"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={proceedToExam}
-                  className="w-full py-4 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-sm uppercase tracking-wider shadow-xl shadow-[#468FEA]/25 transition-all flex items-center justify-center gap-2 group"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>Lock Screen & Start Exam</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <p className="text-center text-[11px] text-rose-600 font-bold uppercase tracking-wider font-mono mt-2.5">
-                  Warning: 3 strikes will permanently terminate session
-                </p>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* STEP 3: CANDIDATE PHOTO IDENTITY VERIFICATION */}
+          {precheckStep === 3 && (
+            <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 3: Biometric Identity & ID Verification</h2>
+                  <p className="text-xs text-gray-500 mt-1">Capture candidate face portrait for forensic proctoring authentication</p>
+                </div>
+                <span className="text-xs font-mono text-gray-500">ID: {candidateId}</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-3">
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-900 border-2 border-gray-200 shadow-inner flex items-center justify-center">
+                    {verifiedSelfie ? (
+                      <img src={verifiedSelfie} alt="Verified Selfie" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center text-white/50 text-xs font-mono space-y-2">
+                        <Camera className="w-8 h-8 mx-auto text-[#468FEA]" />
+                        <span>Click 'Capture Verification Selfie' to register photo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={takeCandidateSelfie}
+                    className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>{verifiedSelfie ? "Re-Take Verification Selfie" : "Capture Verification Selfie"}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs space-y-2">
+                    <div className="font-bold text-gray-900 uppercase font-rubik">Biometric Requirements:</div>
+                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Face fully visible without face coverings or sunglasses</div>
+                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Direct frontal gaze toward sensor</div>
+                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Clear ambient lighting without heavy backlight</div>
+                  </div>
+
+                  {verifiedSelfie && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Photo Verified & Matched to Token: {assessmentToken}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <button onClick={() => setPrecheckStep(2)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
+                <button
+                  onClick={() => setPrecheckStep(4)}
+                  disabled={!verifiedSelfie}
+                  className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <span>Proceed to Security Pledge</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: STRICT SECURITY PLEDGE & FULLSCREEN START */}
+          {precheckStep === 4 && (
+            <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 4: Examination Honor Code & Proctoring Pledge</h2>
+                  <p className="text-xs text-gray-500 mt-1">Review critical security protocols before entering full-screen lockdown</p>
+                </div>
+                <span className="p-2 rounded-xl bg-rose-50 text-rose-600 font-black text-xs uppercase font-mono">
+                  3-Strike Limit Enforced
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="flex items-start gap-3">
+                    <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-gray-900 block font-bold font-rubik">Zero-Tolerance Academic Integrity Policy:</strong>
+                      <span className="text-gray-600 leading-relaxed">
+                        This examination operates under continuous automated computer vision and acoustic surveillance. Exiting full-screen, opening unauthorized windows, navigating away from the active tab, speaking with unauthorized personnel, or possessing smartphones will automatically log photographic evidence and issue integrity strikes. Reaching 3 strikes results in immediate test disqualification.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-gray-200 hover:border-[#468FEA] transition-all cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasAgreedRules}
+                    onChange={(e) => setHasAgreedRules(e.target.checked)}
+                    className="w-5 h-5 rounded text-[#468FEA] focus:ring-0 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-gray-900 font-rubik">
+                    I, {candidateName} ({candidateId}), agree to the proctoring protocols and pledge that all submitted code and responses will be entirely my own work without unauthorized aids.
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <button onClick={() => setPrecheckStep(3)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
+                <button
+                  onClick={proceedToExam}
+                  disabled={!hasAgreedRules}
+                  className="px-10 py-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-rubik font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-600/25 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Lock Fullscreen & Begin Assessment</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1512,7 +1687,6 @@ export default function ProctoredTestingPage() {
 
     return (
       <div className="min-h-screen bg-[#EDEAE0] text-gray-900 font-sans selection:bg-[#468FEA]/20 selection:text-[#468FEA] flex flex-col justify-between select-none relative">
-        {/* Hidden video element feeding the real-time AI canvas tracker */}
         <video
           ref={pipVideoRef}
           autoPlay
@@ -1576,19 +1750,79 @@ export default function ProctoredTestingPage() {
           </div>
         )}
 
+        {/* Proctor Live Chat Modal */}
+        {showChatModal && (
+          <div className="fixed bottom-6 left-6 z-40 w-80 p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <span className="text-xs font-black uppercase font-rubik text-gray-900 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-[#468FEA]" />
+                Proctor Chat & Helpdesk
+              </span>
+              <button onClick={() => setShowChatModal(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
+            </div>
+            <div className="h-44 overflow-y-auto space-y-2 p-1 text-xs">
+              {proctorMessages.map((m, i) => (
+                <div key={i} className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-0.5">
+                  <div className="flex justify-between font-mono text-[9px] text-gray-400">
+                    <span className="font-bold text-[#468FEA]">{m.sender}</span>
+                    <span>{m.time}</span>
+                  </div>
+                  <p className="text-gray-700 text-[11px]">{m.text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1.5 pt-1">
+              <input
+                type="text"
+                placeholder="Message proctor..."
+                className="flex-1 px-3 py-1.5 rounded-xl bg-gray-100 border border-gray-200 text-xs focus:outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
+                    const text = (e.target as HTMLInputElement).value;
+                    setProctorMessages([...proctorMessages, { sender: "Candidate", text, time: new Date().toLocaleTimeString() }]);
+                    (e.target as HTMLInputElement).value = "";
+                    setTimeout(() => {
+                      setProctorMessages((prev) => [
+                        ...prev,
+                        { sender: "AI Proctor", text: "Inquiry received. Continue assessment; logs are monitored.", time: new Date().toLocaleTimeString() },
+                      ]);
+                    }, 1200);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Top Floating Exam Navbar */}
         <header className="fixed top-4 left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-7xl z-40 px-6 py-2.5 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/90 rounded-[28px] border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.04)] font-sans">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="LANpad Logo" className="w-9 h-9 object-cover rounded-xl shrink-0" />
             <div>
               <span className="font-rubik font-black text-sm tracking-tight text-gray-900 block">LANpad PROCTOR</span>
-              <span className="text-[10px] text-gray-500 font-mono">Q{currentQIndex + 1} of {DEFAULT_QUESTIONS.length}</span>
+              <span className="text-[10px] text-gray-500 font-mono">Candidate: {candidateName} ({candidateId})</span>
             </div>
           </div>
 
-          {/* Strikes & Proctoring Status Pill */}
+          {/* Section Selector Tabs */}
+          <div className="hidden lg:flex items-center gap-2">
+            {SECTIONS.map((sec) => (
+              <button
+                key={sec}
+                onClick={() => setActiveSection(sec)}
+                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase font-rubik tracking-wider transition-all ${
+                  activeSection === sec
+                    ? "bg-[#468FEA] text-white shadow-sm"
+                    : "bg-white/60 text-gray-600 hover:bg-white"
+                }`}
+              >
+                {sec.split(":")[0]}
+              </button>
+            ))}
+          </div>
+
+          {/* Strikes & Timer */}
           <div className="flex items-center gap-3">
-            {/* Strike Badges */}
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-gray-200 shadow-sm">
               <span className="text-[10px] font-black uppercase tracking-wider text-gray-600 font-rubik mr-1">Strikes:</span>
               {[1, 2, 3].map((s) => (
@@ -1604,13 +1838,19 @@ export default function ProctoredTestingPage() {
               ))}
             </div>
 
-            {/* Timer */}
             <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#468FEA]/10 border border-[#468FEA]/20 text-[#468FEA] font-mono text-xs font-bold">
               <Clock className="w-3.5 h-3.5" />
               <span>{formatTime(timeLeft)}</span>
             </div>
 
-            {/* Test Violations Drawer Trigger */}
+            <button
+              onClick={() => setShowChatModal(!showChatModal)}
+              className="p-2 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs transition-all shadow-sm"
+              title="Open Proctor Support Chat"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-[#468FEA]" />
+            </button>
+
             <button
               onClick={() => setShowSimulateDrawer(!showSimulateDrawer)}
               className="px-3 py-1 rounded-full bg-[#F28500]/10 hover:bg-[#F28500]/20 text-[#F28500] text-[10px] font-black uppercase tracking-wider font-rubik border border-[#F28500]/20 transition-all flex items-center gap-1"
@@ -1822,7 +2062,7 @@ export default function ProctoredTestingPage() {
               {q.type === "mcq_single" && (
                 <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
                   <div className="text-xs font-bold uppercase tracking-wider text-gray-500 font-rubik mb-2">
-                    Select exactly one answer:
+                    Select exactly one answer (or press A, B, C, D):
                   </div>
                   {q.options?.map((opt, idx) => {
                     const isSelected = userAnswers[q.id] === opt;
@@ -1983,7 +2223,7 @@ export default function ProctoredTestingPage() {
                     className="w-full p-4 rounded-2xl bg-white border border-gray-200 text-gray-900 text-sm leading-relaxed focus:outline-none focus:border-[#468FEA] shadow-inner"
                   />
                   <div className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Auto-saved
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Auto-saved to Cloud Vault
                   </div>
                 </div>
               )}
@@ -2036,7 +2276,7 @@ export default function ProctoredTestingPage() {
                 </span>
               </div>
 
-              {/* Active Real-Time Render Canvas (with face landmarks & box overlay) */}
+              {/* Active Real-Time Render Canvas */}
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-950 border-2 border-white shadow-inner">
                 <canvas
                   ref={pipCanvasRef}
@@ -2219,6 +2459,8 @@ export default function ProctoredTestingPage() {
             </h1>
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-mono mt-1">
               <span>Candidate: <strong className="text-gray-800">{candidateName}</strong> ({candidateId})</span>
+              <span>•</span>
+              <span>Token: {assessmentToken}</span>
               <span>•</span>
               <span>Concluded at {new Date().toLocaleTimeString()}</span>
             </div>
