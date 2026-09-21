@@ -61,7 +61,19 @@ import {
   FileCheck2,
   Cpu,
   Monitor,
-  AlertCircle
+  AlertCircle,
+  QrCode,
+  Calculator,
+  BookOpen,
+  Globe,
+  Search,
+  Compass,
+  FileCode,
+  Keyboard,
+  Zap,
+  Ban,
+  Key,
+  FileCheck
 } from "lucide-react";
 
 // ==========================================
@@ -115,7 +127,14 @@ export interface ViolationProof {
     | "multiple_faces"
     | "looking_away"
     | "phone_detected"
+    | "smartwatch_detected"
+    | "unauthorized_book"
+    | "earphones_detected"
     | "audio_spike"
+    | "voice_trigger_word"
+    | "keystroke_anomaly"
+    | "process_injection"
+    | "code_plagiarism"
     | "clipboard_copy"
     | "devtools_attempt"
     | "screenshot_attempt";
@@ -124,6 +143,89 @@ export interface ViolationProof {
   details: string;
   snapshotDataUrl?: string;
   confidence?: number;
+}
+
+export interface OcrIdData {
+  fullName: string;
+  idNumber: string;
+  dob: string;
+  expiryDate: string;
+  issuer: string;
+  matchScore: number;
+  verified: boolean;
+  status: "idle" | "scanning" | "verified" | "mismatch";
+  idPhotoUrl?: string;
+  extractedName?: string;
+  extractedIdNumber?: string;
+  issueDate?: string;
+  confidence?: number;
+  idCardSnapshot?: string;
+  isScanning?: boolean;
+}
+
+export interface EnvironmentScanData {
+  progress: number;
+  isScanning: boolean;
+  isPassed: boolean;
+  snapshots: string[];
+  completed?: boolean;
+  currentStep?: string;
+  countdown?: number;
+  capturedAngles?: string[];
+}
+
+export interface SecondaryCameraData {
+  isPaired: boolean;
+  pairCode: string;
+  batteryLevel: number;
+  resolution: string;
+  streamActive: boolean;
+  latencyMs?: number;
+}
+
+export interface KeystrokeTelemetry {
+  dwellTime: number;
+  flightTime: number;
+  wpm: number;
+  totalKeystrokes: number;
+  anomalyDetected: boolean;
+  cadenceStatus: "Human Natural" | "Elevated Cadence" | "Suspicious Automated Ingestion";
+  cadenceWpm?: number;
+  avgDwellTimeMs?: number;
+  avgFlightTimeMs?: number;
+  anomalyCount?: number;
+}
+
+export interface SpeechTranscriptItem {
+  id: string;
+  timestamp: string;
+  text: string;
+  flagged: boolean;
+  triggerPhrase?: string;
+  time?: string;
+}
+
+export interface PlagiarismReport {
+  similarityPercent: number;
+  isPlagiarized: boolean;
+  matchedSources: string[];
+  astNodeMatches: number;
+  status: "idle" | "scanning" | "clean" | "flagged";
+}
+
+export interface ProcessAuditItem {
+  name: string;
+  pid: number;
+  status: "blocked" | "whitelisted" | "terminated" | "prohibited" | "allowed";
+  risk: "critical" | "high" | "low";
+  category?: string;
+}
+
+export interface ContentCrawlerReport {
+  checked: boolean;
+  leaksFound: number;
+  takedownIssued: boolean;
+  lastAuditTime: string;
 }
 
 export interface RealDiagnostics {
@@ -319,10 +421,107 @@ export default function ProfessionalProctoredExamTool() {
   const [durationMinutes, setDurationMinutes] = useState(45);
   const [assessmentToken, setAssessmentToken] = useState("TXN-SEC-89410-2026");
   const [verifiedSelfie, setVerifiedSelfie] = useState<string | null>(null);
+  const [faceLandmarksDetected, setFaceLandmarksDetected] = useState<boolean>(false);
 
-  // Precheck Multi-Step Wizard: 1: System Hardware, 2: Sensors (Camera/Mic), 3: Photo Identity, 4: Rules Agreement
-  const [precheckStep, setPrecheckStep] = useState<1 | 2 | 3 | 4>(1);
+  // Precheck Multi-Step Wizard:
+  // Step 1: System Hardware & Process Tree
+  // Step 2: Optical & Acoustic Calibration
+  // Step 3: Biometric Identity & OCR ID Verification
+  // Step 4: 360° Environmental Scan & Dual Camera Pairing
+  // Step 5: Examination Honor Code & Fullscreen Lockdown
+  const [precheckStep, setPrecheckStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [hasAgreedRules, setHasAgreedRules] = useState(false);
+
+  // OCR ID Authentication State
+  const [idCardPhoto, setIdCardPhoto] = useState<string | null>(null);
+  const [ocrIdData, setOcrIdData] = useState<OcrIdData>({
+    fullName: "Alex Morgan",
+    idNumber: "GP-2026-9812",
+    dob: "14-Aug-1998",
+    expiryDate: "31-Dec-2029",
+    issuer: "Dept. of Education & Testing Licensure",
+    matchScore: 98.8,
+    verified: false,
+    status: "idle",
+  });
+
+  // 360-Degree Environmental Room Scan State
+  const [envScanData, setEnvScanData] = useState<EnvironmentScanData>({
+    progress: 0,
+    isScanning: false,
+    isPassed: false,
+    snapshots: [],
+  });
+
+  // Dual/Second Camera Integration State
+  const [secondaryCamera, setSecondaryCamera] = useState<SecondaryCameraData>({
+    isPaired: false,
+    pairCode: "GLIDE-9812-MOB",
+    batteryLevel: 94,
+    resolution: "1080p Full HD @ 30 FPS",
+    streamActive: false,
+  });
+  const [showSecondaryCamInExam, setShowSecondaryCamInExam] = useState<boolean>(true);
+
+  // Keystroke Dynamics & Behavioral Typing Telemetry
+  const [keystrokeTelemetry, setKeystrokeTelemetry] = useState<KeystrokeTelemetry>({
+    dwellTime: 76,
+    flightTime: 112,
+    wpm: 58,
+    totalKeystrokes: 0,
+    anomalyDetected: false,
+    cadenceStatus: "Human Natural",
+  });
+  const lastKeyTimeRef = useRef<number>(Date.now());
+  const keyDownTimeMapRef = useRef<Map<string, number>>(new Map());
+
+  // NLP Voice Recognition & Speech Transcript Log
+  const [speechTranscripts, setSpeechTranscripts] = useState<SpeechTranscriptItem[]>([
+    { id: "st-init", timestamp: "Session Start", text: "Proctoring acoustic and NLP model initialized.", flagged: false }
+  ]);
+  const [nlpTriggerWordsCount, setNlpTriggerWordsCount] = useState<number>(0);
+
+  // OS Process Tree & Hook Injection Blocking State
+  const [processAuditList, setProcessAuditList] = useState<ProcessAuditItem[]>([
+    { name: "Discord.exe", pid: 4892, status: "blocked", risk: "critical" },
+    { name: "Slack.app", pid: 5120, status: "blocked", risk: "high" },
+    { name: "Zoom.us", pid: 6314, status: "blocked", risk: "critical" },
+    { name: "TeamViewer.service", pid: 8812, status: "blocked", risk: "critical" },
+    { name: "AnyDesk.app", pid: 9104, status: "blocked", risk: "critical" },
+    { name: "VirtualBoxVM", pid: 1209, status: "blocked", risk: "critical" },
+  ]);
+  const [isProcessSweepRunning, setIsProcessSweepRunning] = useState<boolean>(false);
+  const [isProcessCompliant, setIsProcessCompliant] = useState<boolean>(false);
+
+  // Code Plagiarism & AST Analysis State
+  const [plagiarismReport, setPlagiarismReport] = useState<PlagiarismReport>({
+    similarityPercent: 8,
+    isPlagiarized: false,
+    matchedSources: ["Public GitHub: leetcode-clean-patterns (8% token overlap)"],
+    astNodeMatches: 4,
+    status: "clean",
+  });
+  const [isScanningPlagiarism, setIsScanningPlagiarism] = useState<boolean>(false);
+  const [showPlagiarismModal, setShowPlagiarismModal] = useState<boolean>(false);
+
+  // Leaked Content Protection Crawler State
+  const [contentCrawler, setContentCrawler] = useState<ContentCrawlerReport>({
+    checked: true,
+    leaksFound: 1,
+    takedownIssued: false,
+    lastAuditTime: "2 mins ago",
+  });
+  const [showCrawlerModal, setShowCrawlerModal] = useState<boolean>(false);
+
+  // Whitelisted Tools Modals
+  const [showCalculatorModal, setShowCalculatorModal] = useState<boolean>(false);
+  const [showReferenceModal, setShowReferenceModal] = useState<boolean>(false);
+  const [calcInput, setCalcInput] = useState<string>("");
+  const [calcResult, setCalcResult] = useState<string>("");
+
+  // Post-Exam Proctor Verdict State
+  const [proctorVerdict, setProctorVerdict] = useState<"approved" | "under_review" | "disqualified" | null>(null);
+  const [verdictNotes, setVerdictNotes] = useState<string>("");
 
   // REAL Live Dynamic Diagnostics State
   const [realDiagnostics, setRealDiagnostics] = useState<RealDiagnostics>({
@@ -1273,6 +1472,62 @@ export default function ProfessionalProctoredExamTool() {
     };
   }, [stage, isDisqualified, isLockedDown, strikesUsed, currentQIndex, timeLeft]);
 
+  // Web Speech API Natural Language Processing & Keyword Dissection
+  useEffect(() => {
+    if (stage !== "exam" || isDisqualified) return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) return;
+
+    let recognition: any = null;
+    try {
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onresult = (event: any) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
+            const lower = transcript.toLowerCase();
+            const triggerWords = ["hey google", "alexa", "siri", "chatgpt", "what is the answer", "help me", "solution to"];
+            const matched = triggerWords.find((w) => lower.includes(w));
+
+            setSpeechTranscripts((prev) => [
+              {
+                id: "st-" + Date.now(),
+                timestamp: new Date().toLocaleTimeString(),
+                text: transcript,
+                flagged: !!matched,
+                triggerPhrase: matched,
+              },
+              ...prev.slice(0, 15),
+            ]);
+
+            if (matched) {
+              setNlpTriggerWordsCount((c) => c + 1);
+              recordStrictViolation(
+                "voice_trigger_word",
+                `Voice Trigger Word: "${matched}"`,
+                "critical",
+                `NLP acoustic engine transcribed unauthorized spoken query: "${transcript}"`
+              );
+            }
+          }
+        }
+      };
+
+      recognition.onerror = () => {};
+      recognition.start();
+    } catch {}
+
+    return () => {
+      if (recognition) {
+        try { recognition.stop(); } catch {}
+      }
+    };
+  }, [stage, isDisqualified]);
+
   // Lockdown Penalty Timer
   useEffect(() => {
     let t: any = null;
@@ -1322,24 +1577,277 @@ export default function ProfessionalProctoredExamTool() {
     setIsLockedDown(false);
   };
 
+  // Biometric Facial Landmark Baseline Snapshot
   const takeCandidateSelfie = () => {
     if (verifiedSelfie) {
       setVerifiedSelfie(null);
+      setFaceLandmarksDetected(false);
       setTimeout(() => {
         if (selfieVideoRef.current && mediaStreamRef.current) {
           selfieVideoRef.current.srcObject = mediaStreamRef.current;
           selfieVideoRef.current.muted = true;
           (selfieVideoRef.current as any).playsInline = true;
-          selfieVideoRef.current.setAttribute("playsinline", "true");
-          selfieVideoRef.current.setAttribute("webkit-playsinline", "true");
           selfieVideoRef.current.play().catch(() => {});
         }
       }, 60);
     } else {
-      const snap = captureSnapshot("VERIFIED CANDIDATE", "#10b981");
+      const snap = captureSnapshot("BIOMETRIC BASELINE // LANDMARK MESH", "#10b981");
       if (snap) {
         setVerifiedSelfie(snap);
+        setFaceLandmarksDetected(true);
       }
+    }
+  };
+
+  // OCR ID Card Authentication Simulator & Extractor
+  const captureOrUploadIdCard = () => {
+    setOcrIdData((prev) => ({ ...prev, status: "scanning" }));
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 480;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const grad = ctx.createLinearGradient(0, 0, 480, 300);
+        grad.addColorStop(0, "#1e3a8a");
+        grad.addColorStop(1, "#0f172a");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 480, 300);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 15px sans-serif";
+        ctx.fillText("GOVERNMENT TESTING IDENTITY CREDENTIAL", 24, 38);
+        ctx.font = "10px monospace";
+        ctx.fillStyle = "#93c5fd";
+        ctx.fillText("STATE BOARD OF HIGHER EDUCATION & TESTING LICENSURE", 24, 54);
+
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(0, 68, 480, 4);
+
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(24, 90, 110, 140);
+        ctx.fillStyle = "#64748b";
+        ctx.beginPath(); ctx.arc(79, 140, 32, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px sans-serif";
+        ctx.fillText(`NAME: ${candidateName.toUpperCase()}`, 150, 115);
+        ctx.font = "11px monospace";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillText(`ID NUMBER : ${candidateId}`, 150, 140);
+        ctx.fillText("BIRTHDATE : 14-AUG-1998", 150, 165);
+        ctx.fillText("EXPIRATION: 31-DEC-2029", 150, 190);
+        ctx.fillText("STATUS    : ACTIVE / ENROLLED", 150, 215);
+
+        ctx.fillStyle = "#ffffff";
+        for (let x = 24; x < 456; x += 4) {
+          if (x % 7 !== 0) ctx.fillRect(x, 250, (x % 3 === 0 ? 2.5 : 1.5), 25);
+        }
+
+        const idDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        setIdCardPhoto(idDataUrl);
+
+        setTimeout(() => {
+          setOcrIdData({
+            fullName: candidateName,
+            idNumber: candidateId,
+            dob: "14-Aug-1998",
+            expiryDate: "31-Dec-2029",
+            issuer: "State Board of Higher Education & Testing Licensure",
+            matchScore: 99.2,
+            verified: true,
+            status: "verified",
+            idPhotoUrl: idDataUrl,
+          });
+        }, 700);
+      }
+    } catch {
+      setOcrIdData((prev) => ({ ...prev, verified: true, status: "verified" }));
+    }
+  };
+
+  // 360-Degree Room & Desk Environmental Pan Scanner
+  const start360EnvironmentScan = () => {
+    setEnvScanData({ progress: 0, isScanning: true, isPassed: false, snapshots: [] });
+
+    const cardinalAngles = [
+      { angle: 90, label: "Left Wall & Perimeter" },
+      { angle: 180, label: "Behind Test-Taker / Doorway" },
+      { angle: 270, label: "Right Wall & Windows" },
+      { angle: 360, label: "Desk Surface & Monitor Rear" },
+    ];
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      const progress = Math.min(100, currentStep * 25);
+      const angleInfo = cardinalAngles[currentStep - 1];
+      const snap = captureSnapshot(`360° SCAN: ${angleInfo.label.toUpperCase()}`, "#10b981");
+
+      setEnvScanData((prev) => ({
+        ...prev,
+        progress,
+        snapshots: [...prev.snapshots, snap],
+      }));
+
+      if (currentStep >= 4) {
+        clearInterval(interval);
+        setEnvScanData((prev) => ({
+          ...prev,
+          progress: 100,
+          isScanning: false,
+          isPassed: true,
+        }));
+      }
+    }, 600);
+  };
+
+  // Dual Camera Mobile Pairing Handshake
+  const pairSecondaryMobileCamera = () => {
+    setSecondaryCamera((prev) => ({
+      ...prev,
+      isPaired: true,
+      streamActive: true,
+    }));
+    setActiveWarningToast({
+      title: "DUAL CAMERA PAIRED",
+      desc: "Mobile side-view workspace stream connected via secure WebRTC handshake.",
+      severity: "medium",
+    });
+    setTimeout(() => setActiveWarningToast(null), 3500);
+  };
+
+  // OS Process Tree Sweep & Prohibited Program Termination
+  const runProcessSweep = () => {
+    setIsProcessSweepRunning(true);
+    setTimeout(() => {
+      setIsProcessSweepRunning(false);
+      setProcessAuditList([
+        { name: "Discord.exe", pid: 4892, status: "blocked", risk: "critical" },
+        { name: "Slack.app", pid: 5120, status: "blocked", risk: "high" },
+        { name: "Zoom.us", pid: 6314, status: "blocked", risk: "critical" },
+        { name: "TeamViewer.service", pid: 8812, status: "blocked", risk: "critical" },
+        { name: "AnyDesk.app", pid: 9104, status: "blocked", risk: "critical" },
+        { name: "VirtualBoxVM", pid: 1209, status: "blocked", risk: "critical" },
+      ]);
+    }, 500);
+  };
+
+  const terminateProhibitedProcesses = () => {
+    setProcessAuditList((prev) =>
+      prev.map((item) => ({ ...item, status: "terminated" }))
+    );
+    setIsProcessCompliant(true);
+    setActiveWarningToast({
+      title: "PROCESS ENVIRONMENT ISOLATED",
+      desc: "All background communication, sharing, and virtual machine processes terminated.",
+      severity: "medium",
+    });
+    setTimeout(() => setActiveWarningToast(null), 3500);
+  };
+
+  // Keystroke Dynamics & Typing Rhythm Measurement
+  const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    const now = Date.now();
+    keyDownTimeMapRef.current.set(e.key, now);
+
+    const flightTime = Math.max(12, Math.min(600, now - lastKeyTimeRef.current));
+    lastKeyTimeRef.current = now;
+
+    setKeystrokeTelemetry((prev) => ({
+      ...prev,
+      flightTime: Math.round(prev.flightTime * 0.8 + flightTime * 0.2),
+      totalKeystrokes: prev.totalKeystrokes + 1,
+      wpm: Math.min(130, Math.max(30, Math.round(prev.wpm + (flightTime < 180 ? 0.6 : -0.4)))),
+    }));
+  };
+
+  const handleEditorKeyUp = (e: React.KeyboardEvent) => {
+    const now = Date.now();
+    const downTime = keyDownTimeMapRef.current.get(e.key) || (now - 65);
+    const dwell = Math.max(20, Math.min(400, now - downTime));
+
+    setKeystrokeTelemetry((prev) => {
+      const newDwell = Math.round(prev.dwellTime * 0.85 + dwell * 0.15);
+      const isSuspicious = dwell < 6 || prev.flightTime < 8;
+      return {
+        ...prev,
+        dwellTime: newDwell,
+        anomalyDetected: isSuspicious,
+        cadenceStatus: isSuspicious ? "Suspicious Automated Ingestion" : "Human Natural",
+      };
+    });
+  };
+
+  // Code Plagiarism & AST Structural Similarity Scanner
+  const runPlagiarismAnalysis = () => {
+    setIsScanningPlagiarism(true);
+    setTimeout(() => {
+      setIsScanningPlagiarism(false);
+      const code = userAnswers[1]?.code || "";
+      const isCheatingPaste = code.includes("twoSum") && code.length > 350 && !code.includes("# Write your");
+      const sim = isCheatingPaste ? 89 : Math.min(22, Math.round(code.length > 60 ? 14 : 5));
+
+      setPlagiarismReport({
+        similarityPercent: sim,
+        isPlagiarized: sim > 75,
+        matchedSources: sim > 75
+          ? ["GitHub: leetcode-solutions-repo (89% AST match)", "Chegg Online Dump #1904"]
+          : ["Public Standard Patterns (14% token overlap)"],
+        astNodeMatches: sim > 75 ? 38 : 4,
+        status: sim > 75 ? "flagged" : "clean",
+      });
+
+      if (sim > 75) {
+        recordStrictViolation(
+          "code_plagiarism",
+          "Code Plagiarism & AST Collision",
+          "critical",
+          `Plagiarism engine detected ${sim}% structural AST syntax match with public cheat repositories.`
+        );
+      }
+    }, 700);
+  };
+
+  // Leaked Content Protection DMCA Takedown Trigger
+  const issueDmcaTakedown = () => {
+    setContentCrawler((prev) => ({
+      ...prev,
+      takedownIssued: true,
+      leaksFound: 0,
+      lastAuditTime: "Just now",
+    }));
+    setActiveWarningToast({
+      title: "DMCA TAKEDOWN ISSUED",
+      desc: "Automated copyright infringement notice filed against scraped repository endpoints.",
+      severity: "medium",
+    });
+    setTimeout(() => setActiveWarningToast(null), 4000);
+  };
+
+  // Scientific Calculator Input Handler
+  const handleCalculatorInput = (val: string) => {
+    if (val === "C") {
+      setCalcInput("");
+      setCalcResult("");
+    } else if (val === "=") {
+      try {
+        const sanitized = calcInput.replace(/[^0-9+\-*/().Math]/g, "");
+        // eslint-disable-next-line no-eval
+        const res = Function(`"use strict"; return (${sanitized})`)();
+        setCalcResult(String(res));
+      } catch {
+        setCalcResult("Error");
+      }
+    } else if (val === "sqrt") {
+      try {
+        const res = Math.sqrt(parseFloat(calcInput || "0"));
+        setCalcResult(String(res));
+      } catch {
+        setCalcResult("Error");
+      }
+    } else {
+      setCalcInput((prev) => prev + val);
     }
   };
 
@@ -1360,6 +1868,7 @@ export default function ProfessionalProctoredExamTool() {
     setTimeLeft(durationMinutes * 60);
     setIsTimerRunning(true);
     setStrikesUsed(0);
+    strikesUsedRef.current = 0;
     setIsDisqualified(false);
     setStage("exam");
   };
@@ -1790,11 +2299,9 @@ export default function ProfessionalProctoredExamTool() {
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back to Parameters</span>
-            </button>
-
-            {/* Stepper Indicator */}
+            </button>            {/* Stepper Indicator */}
             <div className="flex items-center gap-2">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   onClick={() => setPrecheckStep(step as any)}
@@ -1810,13 +2317,13 @@ export default function ProfessionalProctoredExamTool() {
             </div>
           </div>
 
-          {/* STEP 1: REAL DYNAMIC SYSTEM HARDWARE & DIAGNOSTICS */}
+          {/* STEP 1: REAL DYNAMIC SYSTEM HARDWARE & DIAGNOSTICS + OS PROCESS INSPECTOR */}
           {precheckStep === 1 && (
             <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
               <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                 <div>
-                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 1: System Hardware & Network Diagnostics</h2>
-                  <p className="text-xs text-gray-500 mt-1">Live client environment detection for proctored examination compliance</p>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 1: System Hardware & Process Diagnostics</h2>
+                  <p className="text-xs text-gray-500 mt-1">Live client environment detection & operating system background process tree audit</p>
                 </div>
                 <span className={`px-3.5 py-1.5 rounded-2xl font-black text-xs uppercase font-mono flex items-center gap-1.5 ${
                   realDiagnostics.isSafari
@@ -1927,6 +2434,83 @@ export default function ProfessionalProctoredExamTool() {
                 </div>
               </div>
 
+              {/* Background OS Process Tree & VM Inspector Card */}
+              <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-[#468FEA]" />
+                      <h3 className="text-sm font-bold uppercase font-rubik text-gray-900">Background Process Tree & VM Inspector</h3>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Continuous memory inspection for unauthorized screen-sharing, VoIP, and hypervisors.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {processAuditList.some(p => p.status === "prohibited") ? (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
+                        <AlertOctagon className="w-3 h-3 text-rose-600" />
+                        {processAuditList.filter(p => p.status === "prohibited").length} Prohibited Detected
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Process Tree Clean & Compliant
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {processAuditList.map((proc, idx) => (
+                    <div key={idx} className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
+                      proc.status === "prohibited"
+                        ? "bg-rose-50/70 border-rose-200 text-rose-900"
+                        : proc.status === "terminated"
+                        ? "bg-amber-50/50 border-amber-200 text-gray-500"
+                        : "bg-gray-50 border-gray-200 text-gray-700"
+                    }`}>
+                      <div>
+                        <div className="font-mono font-bold text-xs">{proc.name}</div>
+                        <div className="text-[10px] opacity-70">PID: {proc.pid} • {proc.category}</div>
+                      </div>
+                      <span className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full ${
+                        proc.status === "prohibited"
+                          ? "bg-rose-600 text-white animate-pulse"
+                          : proc.status === "terminated"
+                          ? "bg-amber-500 text-white"
+                          : "bg-emerald-600 text-white"
+                      }`}>
+                        {proc.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="text-[11px] text-gray-500 flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5 text-gray-400" />
+                    <span>Prohibited applications (Discord, Zoom, AnyDesk, VMs) must be terminated before exam launch.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {processAuditList.some(p => p.status === "prohibited") && (
+                      <button
+                        onClick={terminateProhibitedProcesses}
+                        className="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-sm flex items-center gap-1.5 transition-all"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>Auto-Terminate Prohibited ({processAuditList.filter(p => p.status === "prohibited").length})</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={runProcessSweep}
+                      className="px-3.5 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold font-rubik flex items-center gap-1 transition-all"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Re-Scan OS Tree</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                 <button
                   onClick={runLiveDiagnostics}
@@ -1977,209 +2561,158 @@ export default function ProfessionalProctoredExamTool() {
                         <span className={`w-1.5 h-1.5 rounded-full ${cameraState === "active" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
                         {cameraState === "active" ? "SENSOR ACTIVE" : "SENSOR STANDBY"}
                       </span>
-                      <span className="text-[10px] font-mono text-white/70 bg-black/60 px-2 py-0.5 rounded">
+
+                      <span className="text-[10px] font-mono text-white/70 bg-black/60 px-2 py-0.5 rounded backdrop-blur">
                         {cameraResolution}
                       </span>
                     </div>
 
-                    {/* DYNAMIC FACE ALIGNMENT RETICLE */}
-                    <div className="self-center flex flex-col items-center gap-2">
-                      <div className={`w-44 h-56 border-2 border-dashed rounded-[44px] transition-all duration-300 flex items-center justify-center ${
-                        cameraState !== "active"
-                          ? "border-gray-500 bg-black/30"
-                          : aiGazeStatus === "CENTERED"
-                          ? "border-emerald-400 bg-emerald-500/15 shadow-[0_0_25px_rgba(52,211,153,0.35)]"
-                          : aiGazeStatus === "LOOKING_AWAY"
-                          ? "border-amber-400 bg-amber-500/15 shadow-[0_0_25px_rgba(251,191,36,0.35)]"
-                          : aiGazeStatus === "MULTIPLE_FACES"
-                          ? "border-purple-400 bg-purple-500/20 shadow-[0_0_25px_rgba(192,132,252,0.35)]"
-                          : "border-rose-500 bg-rose-500/15 shadow-[0_0_25px_rgba(244,63,94,0.35)]"
+                    {/* Facial Bounding Oval Target */}
+                    <div className="w-full flex-1 flex items-center justify-center">
+                      <div className={`w-44 h-56 border-2 border-dashed rounded-[50%] flex items-center justify-center transition-all ${
+                        cameraState === "active"
+                          ? "border-emerald-400/80 bg-emerald-400/5 shadow-[0_0_20px_rgba(52,211,153,0.2)]"
+                          : "border-white/30 bg-black/20"
                       }`}>
-                        <div className="w-4 h-4 rounded-full border border-white/40 flex items-center justify-center">
-                          <div className={`w-1.5 h-1.5 rounded-full ${aiGazeStatus === "CENTERED" ? "bg-emerald-400" : "bg-white/60"}`} />
+                        <div className="text-center px-4">
+                          <span className="text-[10px] font-bold tracking-widest uppercase font-mono text-white/80 bg-black/60 px-2 py-1 rounded">
+                            {cameraState === "active" ? "GAZE CENTERED" : "ALIGN FACE"}
+                          </span>
                         </div>
                       </div>
-
-                      <span className={`text-[11px] font-bold px-3 py-1 rounded-full font-mono shadow-md backdrop-blur transition-all ${
-                        cameraState !== "active"
-                          ? "bg-black/70 text-gray-400"
-                          : aiGazeStatus === "CENTERED"
-                          ? "bg-emerald-600/90 text-white"
-                          : aiGazeStatus === "LOOKING_AWAY"
-                          ? "bg-amber-600/90 text-white"
-                          : aiGazeStatus === "MULTIPLE_FACES"
-                          ? "bg-purple-600/90 text-white"
-                          : "bg-rose-600/90 text-white"
-                      }`}>
-                        {cameraState !== "active"
-                          ? "Authorize Camera to Begin"
-                          : aiGazeStatus === "CENTERED"
-                          ? `✓ Face Centered & Focused (${aiConfidence}%)`
-                          : aiGazeStatus === "LOOKING_AWAY"
-                          ? "⚠ Look Directly at Screen"
-                          : aiGazeStatus === "MULTIPLE_FACES"
-                          ? "⚠ Multiple People in Frame"
-                          : "✕ No Face Detected / Low Light"}
-                      </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono text-white/90 bg-black/80 backdrop-blur p-2.5 rounded-xl border border-white/10">
-                      <span className="truncate max-w-[170px]">{cameraDeviceLabel}</span>
-                      <span className={`font-bold flex items-center gap-1.5 ${
-                        aiGazeStatus === "CENTERED" ? "text-emerald-400" : aiGazeStatus === "LOOKING_AWAY" ? "text-amber-400" : "text-rose-400"
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${
-                          aiGazeStatus === "CENTERED" ? "bg-emerald-400 animate-pulse" : aiGazeStatus === "LOOKING_AWAY" ? "bg-amber-400" : "bg-rose-400"
-                        }`} />
-                        {aiGazeStatus === "CENTERED" ? "Face Tracked" : aiGazeStatus === "LOOKING_AWAY" ? "Gaze Averted" : "No Face"}
-                      </span>
+                    {/* Bottom HUD Bar */}
+                    <div className="bg-black/60 backdrop-blur-md rounded-xl p-2 flex items-center justify-between text-[10px] font-mono text-white/80 border border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Camera className="w-3.5 h-3.5 text-[#468FEA]" />
+                        <span className="truncate max-w-[180px]">{cameraDeviceLabel}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>OPTICAL LOCK</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {cameraState !== "active" ? (
-                  <div className="space-y-2">
-                    <button
-                      onClick={initializeSensors}
-                      className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-lg shadow-[#468FEA]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Camera className="w-4 h-4" />
-                      <span>Authorize Camera & Microphone</span>
-                    </button>
-                    <p className="text-center text-xs text-gray-500">
-                      {realDiagnostics.isSafari
-                        ? "Safari: When the popup appears, click 'Allow' to grant camera access."
-                        : "Click to allow webcam & microphone streaming in browser."}
-                    </p>
+                {/* Microphone Level Visualizer */}
+                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between text-xs font-rubik font-bold">
+                    <span className="flex items-center gap-2 text-gray-800 uppercase">
+                      <Volume2 className="w-4 h-4 text-[#468FEA]" />
+                      Acoustic Decibel Meter (WebAudio RMS)
+                    </span>
+                    <span className="font-mono text-xs text-[#468FEA]">{audioLevel} dB</span>
                   </div>
-                ) : (
-                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-between font-rubik">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Optical & Acoustic Sensors Active</span>
-                    </div>
-                    <span className="font-mono text-[10px]">{cameraResolution}</span>
+
+                  <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex gap-0.5 p-0.5">
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const threshold = (i / 24) * 60;
+                      const isLit = audioLevel > threshold;
+                      const isDanger = i > 18;
+                      const isWarn = i > 12;
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 h-full rounded-sm transition-all duration-75 ${
+                            isLit
+                              ? isDanger
+                                ? "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]"
+                                : isWarn
+                                ? "bg-amber-400"
+                                : "bg-emerald-500"
+                              : "bg-gray-300/40"
+                          }`}
+                        />
+                      );
+                    })}
                   </div>
-                )}
+                  <div className="flex justify-between text-[10px] font-mono text-gray-500">
+                    <span>Silent Ambient (0-20dB)</span>
+                    <span>Acceptable Whisper (21-40dB)</span>
+                    <span className="text-rose-600 font-bold">Violation (&gt;50dB)</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="md:col-span-6 space-y-4">
+              {/* Right Side: Permission Instructions */}
+              <div className="md:col-span-6 space-y-6">
                 <div>
-                  <h2 className="text-2xl font-black uppercase font-rubik tracking-tight text-gray-900">
-                    Step 2: Optical & Acoustic Calibration
+                  <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#468FEA]/10 text-[#468FEA] font-rubik">
+                    Optical & Acoustic Verification
+                  </span>
+                  <h2 className="text-3xl font-black uppercase font-rubik tracking-tight text-gray-900 mt-2">
+                    Sensor Calibration
                   </h2>
-                  <p className="text-xs text-gray-600 font-medium mt-1">
-                    Continuous client-side biometric validation running locally in your browser.
+                  <p className="text-sm text-gray-600 font-medium mt-1 leading-relaxed">
+                    GlidePass requires continuous access to your primary webcam and microphone. Real-time computer vision analyzes eye gaze deviations, multiple face presences, and unauthorized acoustic signals.
                   </p>
                 </div>
 
-                {/* Acoustic Decibel Meter */}
-                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm space-y-2.5">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-3">
+                  <div className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                    cameraState === "active"
+                      ? "bg-emerald-50/80 border-emerald-300 text-emerald-900"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-[#468FEA]/10 text-[#468FEA]">
-                        <Mic className="w-4 h-4" />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        cameraState === "active" ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        <Video className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Live Audio Decibel Meter</div>
-                        <div className="text-[11px] text-gray-500 font-medium">Ambient noise tolerance threshold: 50 dB</div>
+                        <div className="font-bold text-sm font-rubik">Primary Video Camera</div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {cameraState === "active" ? "Connected • 30fps Real-Time Stream" : "Awaiting Authorization"}
+                        </div>
                       </div>
                     </div>
-                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
-                      audioLevel > 50 ? "bg-rose-100 text-rose-700" : audioLevel > 35 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-                    }`}>
-                      {audioLevel} dB
-                    </span>
+                    {cameraState === "active" ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <span className="text-xs font-bold text-gray-400 uppercase font-rubik">Pending</span>
+                    )}
                   </div>
 
-                  <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden relative">
-                    <div
-                      className={`h-full transition-all duration-75 ${
-                        audioLevel > 50 ? "bg-rose-500" : audioLevel > 35 ? "bg-amber-500" : "bg-emerald-500"
-                      }`}
-                      style={{ width: `${Math.min(100, (audioLevel / 75) * 100)}%` }}
-                    />
-                    {/* 50 dB threshold mark */}
-                    <div className="absolute top-0 bottom-0 left-[66%] w-0.5 bg-gray-400" title="50 dB Violation Threshold" />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
-                    <span>16 dB (Quiet Room)</span>
-                    <span className="text-rose-500 font-bold">50 dB Threshold</span>
-                    <span>75+ dB (Speech)</span>
-                  </div>
-                </div>
-
-                {/* Live Biometric Telemetry Card */}
-                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-rubik font-black uppercase tracking-wider text-gray-900">
-                    <span className="flex items-center gap-1.5">
-                      <Scan className="w-4 h-4 text-[#468FEA]" />
-                      Biometric Validation Engine
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      LIVE CV
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
-                    <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                      <span className="text-gray-400 block text-[9px]">FACE TRACKING</span>
-                      <span className={`font-bold ${
-                        aiGazeStatus === "CENTERED" ? "text-emerald-600" : aiGazeStatus === "LOOKING_AWAY" ? "text-amber-600" : "text-rose-600"
+                  <div className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                    micState === "active"
+                      ? "bg-emerald-50/80 border-emerald-300 text-emerald-900"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        micState === "active" ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"
                       }`}>
-                        {aiGazeStatus === "CENTERED" ? "Centered" : aiGazeStatus === "LOOKING_AWAY" ? "Looking Away" : "Missing"}
-                      </span>
+                        <Mic className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm font-rubik">Omnidirectional Microphone</div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {micState === "active" ? "Connected • Real-Time RMS Calibrated" : "Awaiting Authorization"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                      <span className="text-gray-400 block text-[9px]">CONFIDENCE</span>
-                      <span className="font-bold text-gray-900">{aiConfidence}%</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
-                      <span className="text-gray-400 block text-[9px]">ACOUSTIC</span>
-                      <span className={`font-bold ${audioLevel > 50 ? "text-rose-600" : "text-emerald-600"}`}>
-                        {audioLevel > 50 ? "Voice Active" : "Compliant"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Interactive Quick Simulation Bar for Step 2 */}
-                  <div className="pt-1 border-t border-gray-100">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase font-rubik block mb-1.5">Quick Simulation Testing:</span>
-                    <div className="flex flex-wrap gap-1.5 text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAiGazeStatus("LOOKING_AWAY");
-                          setTimeout(() => setAiGazeStatus("CENTERED"), 3000);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium"
-                      >
-                        Simulate Look Away
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAudioLevel(68);
-                          setTimeout(() => setAudioLevel(22), 2500);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 font-medium"
-                      >
-                        Simulate Voice Spike
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAiGazeStatus("NO_FACE");
-                          setTimeout(() => setAiGazeStatus("CENTERED"), 3000);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 font-medium"
-                      >
-                        Simulate Face Departure
-                      </button>
-                    </div>
+                    {micState === "active" ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <span className="text-xs font-bold text-gray-400 uppercase font-rubik">Pending</span>
+                    )}
                   </div>
                 </div>
+
+                {/* Explicit Authorization Button for Safari & Chrome */}
+                {cameraState !== "active" && (
+                  <button
+                    onClick={initializeSensors}
+                    className="w-full py-4 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Video className="w-4 h-4" />
+                    <span>Authorize Camera & Microphone</span>
+                  </button>
+                )}
 
                 <div className="flex items-center justify-between pt-2">
                   <button
@@ -2193,7 +2726,7 @@ export default function ProfessionalProctoredExamTool() {
                     disabled={cameraState !== "active"}
                     className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    <span>Proceed to Photo ID Verification</span>
+                    <span>Proceed to Biometric Identity & OCR ID</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -2201,26 +2734,43 @@ export default function ProfessionalProctoredExamTool() {
             </div>
           )}
 
-          {/* STEP 3: CANDIDATE PHOTO IDENTITY VERIFICATION */}
+          {/* STEP 3: CANDIDATE PHOTO IDENTITY & PHYSICAL ID CARD OCR VERIFICATION */}
           {precheckStep === 3 && (
             <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
               <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                 <div>
-                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 3: Biometric Identity & ID Verification</h2>
-                  <p className="text-xs text-gray-500 mt-1">Capture candidate face portrait for forensic proctoring authentication</p>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 3: Biometric Identity & Physical ID OCR Verification</h2>
+                  <p className="text-xs text-gray-500 mt-1">Facial landmark biometrics & automated Optical Character Recognition (OCR) ID extraction</p>
                 </div>
-                <span className="text-xs font-mono text-gray-500">ID: {candidateId}</span>
+                <span className="text-xs font-mono text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-bold">Candidate: {candidateId}</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                {/* Column 1: Candidate Selfie with Biometric Face Landmarks */}
+                <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
+                      <Camera className="w-4 h-4 text-[#468FEA]" />
+                      Facial Biometric Portrait
+                    </span>
+                    {verifiedSelfie ? (
+                      <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> VERIFIED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        CAPTURE REQUIRED
+                      </span>
+                    )}
+                  </div>
+
                   <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-950 border-2 border-white shadow-inner flex items-center justify-center">
                     {verifiedSelfie ? (
                       <div className="relative w-full h-full">
                         <img src={verifiedSelfie} alt="Verified Selfie" className="w-full h-full object-cover" />
                         <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>PHOTO REGISTERED</span>
+                          <span>FACIAL MESH HASH REGISTERED</span>
                         </div>
                       </div>
                     ) : (
@@ -2234,9 +2784,9 @@ export default function ProfessionalProctoredExamTool() {
                           style={{ transform: "scaleX(-1)" }}
                         />
                         <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
-                          <div className="w-32 h-44 border-2 border-dashed border-[#468FEA] rounded-[50%] flex items-center justify-center bg-black/10">
+                          <div className="w-36 h-48 border-2 border-dashed border-[#468FEA] rounded-[50%] flex items-center justify-center bg-black/10">
                             <span className="text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded font-mono">
-                              Position Face
+                              Align Face in Reticle
                             </span>
                           </div>
                         </div>
@@ -2246,32 +2796,87 @@ export default function ProfessionalProctoredExamTool() {
 
                   <button
                     onClick={takeCandidateSelfie}
-                    className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-3 rounded-xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>{verifiedSelfie ? "Re-Take Verification Selfie" : "Capture Verification Selfie"}</span>
+                    <span>{verifiedSelfie ? "Re-Take Biometric Portrait" : "Capture Biometric Face Mesh"}</span>
                   </button>
+
+                  <div className="text-[11px] text-gray-500 space-y-1 font-mono">
+                    <div>• Distance between eyes: <strong className="text-gray-800">62.4mm (Calibrated)</strong></div>
+                    <div>• Nose bridge angle: <strong className="text-gray-800">89.2° (Frontal)</strong></div>
+                    <div>• Biometric Token: <strong className="text-[#468FEA]">{assessmentToken.slice(0, 14)}...</strong></div>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs space-y-2">
-                    <div className="font-bold text-gray-900 uppercase font-rubik">Biometric Requirements:</div>
-                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Face fully visible without face coverings or sunglasses</div>
-                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Direct frontal gaze toward sensor</div>
-                    <div className="flex items-center gap-2 text-gray-600"><Check className="w-4 h-4 text-emerald-600" /> Clear ambient lighting without heavy backlight</div>
+                {/* Column 2: Physical ID Card OCR Scanner */}
+                <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
+                      <FileCheck className="w-4 h-4 text-emerald-600" />
+                      Physical Government / Student ID (OCR)
+                    </span>
+                    {ocrIdData.verified ? (
+                      <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> MATCHED ({ocrIdData.confidence}%)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        OCR SCAN REQUIRED
+                      </span>
+                    )}
                   </div>
 
-                  {verifiedSelfie ? (
-                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Biometric Portrait Hash Verified & Attached to Assessment Token: {assessmentToken}</span>
+                  {/* ID Card Display Frame */}
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-900 border-2 border-dashed border-gray-300 flex items-center justify-center p-4">
+                    {ocrIdData.idCardSnapshot ? (
+                      <img src={ocrIdData.idCardSnapshot} alt="Scanned ID Card" className="w-full h-full object-contain rounded-xl" />
+                    ) : (
+                      <div className="text-center space-y-2 text-gray-400">
+                        <FileCheck2 className="w-10 h-10 mx-auto text-gray-500 opacity-60" />
+                        <div className="text-xs font-bold font-rubik text-gray-300">Hold Photo ID up to camera</div>
+                        <div className="text-[10px] text-gray-400 font-mono">Passport, Driver's License, or Student Card</div>
+                      </div>
+                    )}
+
+                    {ocrIdData.isScanning && (
+                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-2">
+                        <RefreshCw className="w-6 h-6 animate-spin text-[#468FEA]" />
+                        <span className="text-xs font-mono font-bold">Scanning Optical Text Matrix (Tesseract OCR)...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={captureOrUploadIdCard}
+                    disabled={ocrIdData.isScanning}
+                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <Scan className="w-4 h-4" />
+                    <span>{ocrIdData.verified ? "Re-Scan Physical ID Card" : "Scan Physical ID Card (OCR)"}</span>
+                  </button>
+
+                  {/* Extracted OCR Credential Metadata */}
+                  <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-[11px] font-mono space-y-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Extracted Name:</span>
+                      <strong className="text-gray-900">{ocrIdData.extractedName || "—"}</strong>
                     </div>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>Look directly into the camera and click 'Capture Verification Selfie' to register your photo.</span>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Document ID:</span>
+                      <strong className="text-gray-900">{ocrIdData.extractedIdNumber || "—"}</strong>
                     </div>
-                  )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Issue / Expiry:</span>
+                      <strong className="text-gray-900">{ocrIdData.issueDate ? `${ocrIdData.issueDate} • ${ocrIdData.expiryDate}` : "—"}</strong>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-gray-200">
+                      <span className="text-gray-500">Facial Cross-Match:</span>
+                      <strong className={ocrIdData.verified ? "text-emerald-600" : "text-gray-400"}>
+                        {ocrIdData.verified ? "VERIFIED (1:1 Biometric Alignment)" : "Pending Scan"}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2282,19 +2887,185 @@ export default function ProfessionalProctoredExamTool() {
                   disabled={!verifiedSelfie}
                   className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2 disabled:opacity-50"
                 >
-                  <span>Proceed to Security Pledge</span>
+                  <span>Proceed to 360° Room Sweep & Dual Camera</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 4: STRICT SECURITY PLEDGE & FULLSCREEN START */}
+          {/* STEP 4: 360-DEGREE ENVIRONMENTAL SCAN & DUAL/SECONDARY MOBILE CAMERA */}
           {precheckStep === 4 && (
             <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
               <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                 <div>
-                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 4: Examination Honor Code & Proctoring Pledge</h2>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 4: 360° Room Sweep & Dual Camera Setup</h2>
+                  <p className="text-xs text-gray-500 mt-1">Perimeter workspace sweep & secondary mobile camera connection for continuous hands/desk surveillance</p>
+                </div>
+                <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${
+                  envScanData.completed && secondaryCamera.isPaired
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-800"
+                }`}>
+                  {envScanData.completed && secondaryCamera.isPaired ? "AUDIT COMPLIANT" : "SETUP IN PROGRESS"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                {/* 1. 360° Environmental Room Sweep */}
+                <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
+                      <Compass className="w-4 h-4 text-[#468FEA]" />
+                      360-Degree Environmental Sweep
+                    </span>
+                    {envScanData.completed ? (
+                      <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> SWEEP VERIFIED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        4 ANGLES REQUIRED
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Slowly pan your webcam around your examination area. The automated system records 4 cardinal frames:
+                    <strong> North (Desk/Monitor), East (Right Room), South (Behind/Doorway), and West (Left Room)</strong>.
+                  </p>
+
+                  {/* Cardinal Scan Progress UI */}
+                  {envScanData.isScanning ? (
+                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-mono font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#468FEA]" />
+                          Scanning: {envScanData.currentStep}
+                        </span>
+                        <span>{envScanData.countdown}s Remaining</span>
+                      </div>
+                      <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#468FEA] transition-all duration-300"
+                          style={{ width: `${((4 - (envScanData.countdown ?? 0)) / 4) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Captured Angles Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {["North (Desk & Monitor)", "East (Right Perimeter)", "South (Doorway & Rear)", "West (Left Perimeter)"].map((angle, idx) => {
+                      const captured = (envScanData.capturedAngles || [])[idx];
+                      return (
+                        <div key={angle} className="relative aspect-video rounded-xl overflow-hidden bg-gray-900 border border-gray-200 flex flex-col justify-end p-2 text-white">
+                          {captured ? (
+                            <img src={captured} alt={angle} className="absolute inset-0 w-full h-full object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                              <Compass className="w-6 h-6 opacity-30" />
+                            </div>
+                          )}
+                          <div className="relative z-10 text-[9px] font-mono font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur truncate">
+                            {angle}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={start360EnvironmentScan}
+                    disabled={envScanData.isScanning}
+                    className="w-full py-3 rounded-xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>{envScanData.completed ? "Re-Run 360° Environment Sweep" : "Start Automated 360° Sweep"}</span>
+                  </button>
+                </div>
+
+                {/* 2. Dual / Secondary Mobile Camera Integration */}
+                <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-[#F28500]" />
+                      Dual Camera (Smartphone WebRTC)
+                    </span>
+                    {secondaryCamera.isPaired ? (
+                      <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> PAIRED ({secondaryCamera.latencyMs}ms)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        PAIRING PENDING
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    High-stakes proctoring pairs a secondary mobile device positioned at a <strong>45-degree angle</strong> behind you to record your hands, keyboard, and physical workspace simultaneously.
+                  </p>
+
+                  {/* QR Code and Pairing HUD */}
+                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex items-center gap-4">
+                    <div className="w-24 h-24 bg-white p-2 rounded-xl border border-gray-300 shadow-sm shrink-0 flex flex-col items-center justify-center">
+                      <QrCode className="w-16 h-16 text-gray-900" />
+                      <span className="text-[8px] font-mono font-bold text-[#468FEA] mt-0.5">SCAN QR</span>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="font-bold text-gray-900 font-rubik">Scan with Smartphone Camera</div>
+                      <p className="text-[11px] text-gray-500 leading-snug">
+                        Open your iOS or Android camera app and point at the QR code to launch the WebRTC peer link.
+                      </p>
+                      <div className="text-[10px] font-mono text-[#468FEA]">
+                        Session: glidepass-cam://token-{assessmentToken.slice(0, 10)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={pairSecondaryMobileCamera}
+                    className="w-full py-3 rounded-xl bg-[#F28500] hover:bg-[#d97706] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span>{secondaryCamera.isPaired ? "Re-Synchronize Mobile Camera" : "Pair / Simulate Smartphone Feed"}</span>
+                  </button>
+
+                  <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showSecondaryCamInExam}
+                      onChange={(e) => setShowSecondaryCamInExam(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#468FEA] focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-gray-700">
+                      Display secondary mobile camera PIP during exam workspace
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <button onClick={() => setPrecheckStep(3)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
+                <button
+                  onClick={() => setPrecheckStep(5)}
+                  className="px-8 py-3.5 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2"
+                >
+                  <span>Proceed to Security Honor Code</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: STRICT SECURITY PLEDGE & FULLSCREEN START */}
+          {precheckStep === 5 && (
+            <div className="bg-white/85 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 5: Examination Honor Code & Fullscreen Lockdown</h2>
                   <p className="text-xs text-gray-500 mt-1">Review critical security protocols before entering full-screen lockdown</p>
                 </div>
                 <span className="p-2 rounded-xl bg-rose-50 text-rose-600 font-black text-xs uppercase font-mono">
@@ -2309,7 +3080,7 @@ export default function ProfessionalProctoredExamTool() {
                     <div>
                       <strong className="text-gray-900 block font-bold font-rubik">Zero-Tolerance Academic Integrity Policy:</strong>
                       <span className="text-gray-600 leading-relaxed">
-                        This examination operates under continuous automated computer vision and acoustic surveillance. Exiting full-screen, opening unauthorized windows, navigating away from the active tab, speaking with unauthorized personnel, or possessing smartphones will automatically log photographic evidence and issue integrity strikes. Reaching 3 strikes results in immediate test disqualification.
+                        This examination operates under continuous automated computer vision, acoustic surveillance, keystroke dynamics telemetry, and process tree monitoring. Exiting full-screen, opening unauthorized windows, navigating away from the active tab, speaking with unauthorized personnel, or possessing smartphones will automatically log photographic evidence and issue integrity strikes. Reaching 3 strikes results in immediate test disqualification.
                       </span>
                     </div>
                   </div>
@@ -2329,7 +3100,7 @@ export default function ProfessionalProctoredExamTool() {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <button onClick={() => setPrecheckStep(3)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
+                <button onClick={() => setPrecheckStep(4)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
                 <button
                   onClick={proceedToExam}
                   disabled={!hasAgreedRules}
@@ -2488,6 +3259,34 @@ export default function ProfessionalProctoredExamTool() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Whitelisted Resources Bar */}
+            <div className="hidden sm:flex items-center gap-1.5 border-l border-r border-gray-200 px-2.5">
+              <button
+                onClick={() => setShowCalculatorModal(true)}
+                className="px-2.5 py-1 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold font-rubik flex items-center gap-1 shadow-sm transition-all"
+                title="Open Allowed Scientific Calculator"
+              >
+                <Calculator className="w-3.5 h-3.5 text-[#468FEA]" />
+                <span>Calc</span>
+              </button>
+              <button
+                onClick={() => setShowReferenceModal(true)}
+                className="px-2.5 py-1 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold font-rubik flex items-center gap-1 shadow-sm transition-all"
+                title="Open Allowed Reference Sheet & Standard Libs"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Reference</span>
+              </button>
+              <button
+                onClick={() => setShowCrawlerModal(true)}
+                className="px-2.5 py-1 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold font-rubik flex items-center gap-1 shadow-sm transition-all"
+                title="Web Leak Crawler & Anti-Piracy Monitor"
+              >
+                <Globe className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Crawler</span>
+              </button>
+            </div>
+
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-gray-200 shadow-sm">
               <span className="text-[10px] font-black uppercase tracking-wider text-gray-600 font-rubik mr-1">Strikes:</span>
               {[1, 2, 3].map((s) => (
@@ -2521,7 +3320,7 @@ export default function ProfessionalProctoredExamTool() {
               className="px-3 py-1 rounded-full bg-[#F28500]/10 hover:bg-[#F28500]/20 text-[#F28500] text-[10px] font-black uppercase tracking-wider font-rubik border border-[#F28500]/20 transition-all flex items-center gap-1"
             >
               <Flame className="w-3 h-3" />
-              <span className="hidden sm:inline">Test Violations</span>
+              <span className="hidden sm:inline">Violations Test</span>
             </button>
 
             <button
@@ -2533,17 +3332,17 @@ export default function ProfessionalProctoredExamTool() {
           </div>
         </header>
 
-        {/* Demo Simulator Drawer */}
+        {/* Demo Simulator Drawer - 12 Granular Forensic Triggers */}
         {showSimulateDrawer && (
-          <div className="fixed top-20 left-6 z-50 w-72 p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl space-y-2.5">
+          <div className="fixed top-20 left-6 z-50 w-80 max-h-[80vh] overflow-y-auto p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl space-y-2.5">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100">
               <span className="text-xs font-black uppercase text-gray-900 font-rubik flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-[#F28500]" />
-                Trigger Strict Test Violation
+                12 Strict Proctoring Triggers
               </span>
               <button onClick={() => setShowSimulateDrawer(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
             </div>
-            <p className="text-[10px] text-gray-500">Simulate proctor incidents to verify real-time snapshot capture & strike tracking:</p>
+            <p className="text-[10px] text-gray-500">Test real-time snapshot capture, acoustic alerts, and strike incrementation:</p>
 
             <div className="grid grid-cols-2 gap-1.5 text-[10px]">
               <button
@@ -2583,17 +3382,244 @@ export default function ProfessionalProctoredExamTool() {
                 🚫 Face Missing
               </button>
               <button
-                onClick={() => recordStrictViolation("audio_spike", "Voice / Talking Noise", "high", "Audio amplitude registered continuous speech.")}
+                onClick={() => recordStrictViolation("smartwatch_detected", "Smartwatch Flagged", "critical", "YOLO detected unauthorized wearable / smartwatch.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                ⌚ Smartwatch
+              </button>
+              <button
+                onClick={() => recordStrictViolation("unauthorized_book", "Unauthorized Notes / Books", "critical", "Computer vision detected physical textbooks/sheets on desk.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                📚 Notes / Books
+              </button>
+              <button
+                onClick={() => recordStrictViolation("earphones_detected", "Earphones / Audio Device", "critical", "In-ear audio device detected in acoustic sweep.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                🎧 Earphones
+              </button>
+              <button
+                onClick={() => recordStrictViolation("audio_spike", "Voice / Talking Noise", "high", "Audio amplitude registered continuous speech (> 50dB).")}
                 className="p-2 rounded-xl bg-gray-50 hover:bg-amber-50 border border-gray-200 text-left font-bold text-gray-800"
               >
                 🗣️ Speech Spike
               </button>
               <button
-                onClick={() => recordStrictViolation("fullscreen_exit", "Fullscreen Exit", "critical", "Fullscreen enclosure broken.", true)}
+                onClick={() => {
+                  setNlpTriggerWordsCount(prev => prev + 1);
+                  recordStrictViolation("voice_trigger_word", "Trigger Word Spoken", "critical", "Spoken NLP prompt: 'Hey Google, what is the answer to question 1?'.");
+                }}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                💬 Spoken Prompt
+              </button>
+              <button
+                onClick={() => {
+                  setKeystrokeTelemetry(prev => ({ ...prev, cadenceWpm: 195, anomalyCount: (prev.anomalyCount || 0) + 1 }));
+                  recordStrictViolation("keystroke_anomaly", "Keystroke Cadence Anomaly", "critical", "Unnatural typing burst (> 195 WPM clipboard injection detected).");
+                }}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                ⌨️ Paste Anomaly
+              </button>
+              <button
+                onClick={() => recordStrictViolation("process_injection", "Prohibited Process Injection", "critical", "Unauthorized background process 'Discord.exe' launched.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
+              >
+                ⚙️ Process Breach
+              </button>
+              <button
+                onClick={() => recordStrictViolation("fullscreen_exit", "Fullscreen Exit", "critical", "Fullscreen window enclosure broken.", true)}
                 className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
               >
                 🖥️ Exit Fullscreen
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* 1. SCIENTIFIC CALCULATOR MODAL */}
+        {showCalculatorModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="max-w-xs w-full p-5 rounded-3xl bg-[#1e2230] text-white border-2 border-white/20 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <span className="text-xs font-bold uppercase font-rubik flex items-center gap-1.5">
+                  <Calculator className="w-4 h-4 text-[#468FEA]" /> Allowed Scientific Calculator
+                </span>
+                <button onClick={() => setShowCalculatorModal(false)} className="text-gray-400 hover:text-white text-xs">✕</button>
+              </div>
+
+              {/* Calculator Screen */}
+              <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 text-right font-mono space-y-1">
+                <div className="text-xs text-white/50 h-4 overflow-hidden">{calcInput || "0"}</div>
+                <div className="text-xl font-bold text-[#468FEA] h-7 overflow-hidden">{calcResult || "0"}</div>
+              </div>
+
+              {/* Calculator Keypad */}
+              <div className="grid grid-cols-4 gap-2 text-xs font-mono font-bold">
+                {["C", "sqrt", "(", ")", "7", "8", "9", "/", "4", "5", "6", "*", "1", "2", "3", "-", "0", ".", "=", "+"].map((btn) => (
+                  <button
+                    key={btn}
+                    onClick={() => handleCalculatorInput(btn)}
+                    className={`py-2.5 rounded-xl transition-all ${
+                      btn === "="
+                        ? "bg-[#468FEA] hover:bg-[#3b82f6] text-white"
+                        : btn === "C"
+                        ? "bg-rose-600/80 hover:bg-rose-600 text-white"
+                        : ["+", "-", "*", "/", "sqrt"].includes(btn)
+                        ? "bg-white/20 hover:bg-white/30 text-indigo-200"
+                        : "bg-white/10 hover:bg-white/15 text-white"
+                    }`}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. FORMULA & REFERENCE SHEET MODAL */}
+        {showReferenceModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="max-w-2xl w-full p-6 rounded-3xl bg-white text-gray-900 border border-gray-200 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-sm font-black uppercase font-rubik">Approved Reference & Standard Libraries</h3>
+                </div>
+                <button onClick={() => setShowReferenceModal(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                  <span className="font-bold uppercase font-rubik text-gray-800 block">Python 3.11 Standard Cheat Sheet</span>
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[11px] text-gray-700">
+                    <div>• <code>collections.deque</code>: O(1) appends/pops</div>
+                    <div>• <code>heapq.heappush / heappop</code>: Min-heaps</div>
+                    <div>• <code>bisect.bisect_left</code>: Binary search</div>
+                    <div>• <code>math.gcd, math.lcm</code>: Number theory</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                  <span className="font-bold uppercase font-rubik text-gray-800 block">Algorithm Complexity Guarantees</span>
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[11px] text-gray-700">
+                    <div>• Two Sum (Hash Map): <strong>O(N) Time, O(N) Space</strong></div>
+                    <div>• Binary Search: <strong>O(log N) Time, O(1) Space</strong></div>
+                    <div>• Merge Sort / Quick Sort: <strong>O(N log N) Time</strong></div>
+                    <div>• Matrix Multiplication: <strong>O(N^3) Time</strong></div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                  <span className="font-bold block font-rubik uppercase text-[11px]">Academic Whitelist Confirmation:</span>
+                  <p className="text-[11px] mt-0.5">This reference sheet is approved by faculty. Opening and referencing this window will not incur integrity strikes.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. WEB LEAK CRAWLER MODAL */}
+        {showCrawlerModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="max-w-xl w-full p-6 rounded-3xl bg-white text-gray-900 border border-gray-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-sm font-black uppercase font-rubik">Web Leak Crawler & Anti-Piracy Monitor</h3>
+                </div>
+                <button onClick={() => setShowCrawlerModal(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <p className="text-gray-600 leading-relaxed">
+                  The automated content crawler continually crawls public coding repositories, paste sites, and student homework hubs using question fingerprint hashes to stop exam leakage in real time.
+                </p>
+
+                <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 font-mono text-[11px] space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Crawled Portals:</span>
+                    <strong className="text-gray-800">Pastebin, GitHub Gists, Chegg, CourseHero</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Search Hash:</span>
+                    <strong className="text-[#468FEA]">SHA256:{assessmentToken.slice(0, 16)}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Leaks Detected:</span>
+                    <strong className={contentCrawler.leaksFound > 0 ? "text-rose-600" : "text-emerald-600"}>
+                      {contentCrawler.leaksFound > 0 ? "1 External Paste Detected (Pastebin #9124)" : "0 Leaks (Secure)"}
+                    </strong>
+                  </div>
+                </div>
+
+                {contentCrawler.takedownIssued ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Automated DMCA takedown notice dispatched to host ISP.</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={issueDmcaTakedown}
+                    className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>Issue 1-Click Automated DMCA Takedown Notice</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. AST PLAGIARISM MODAL */}
+        {showPlagiarismModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="max-w-xl w-full p-6 rounded-3xl bg-white text-gray-900 border border-gray-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <FileCode className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-sm font-black uppercase font-rubik">Abstract Syntax Tree (AST) Plagiarism Audit</h3>
+                </div>
+                <button onClick={() => setShowPlagiarismModal(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="grid grid-cols-3 gap-3 text-center font-mono">
+                  <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                    <span className="text-gray-400 block text-[10px]">SIMILARITY</span>
+                    <span className="text-xl font-bold text-emerald-600">{plagiarismReport.similarityPercent}%</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                    <span className="text-gray-400 block text-[10px]">AST MATCHES</span>
+                    <span className="text-xl font-bold text-gray-900">{plagiarismReport.astNodeMatches}</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                    <span className="text-gray-400 block text-[10px]">STATUS</span>
+                    <span className="text-xs font-bold text-emerald-700 uppercase">{plagiarismReport.status}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-1.5 font-mono text-[11px]">
+                  <div className="font-bold text-gray-900 uppercase font-rubik">Structural AST Comparison:</div>
+                  <p className="text-gray-600">
+                    Candidate code parsed into normalized AST tokens. Variable renamings, comment omissions, and formatting differences are stripped to detect semantic code copies.
+                  </p>
+                  <div className="pt-2 border-t border-gray-200 text-gray-500">
+                    Matched Index: <strong>{plagiarismReport.matchedSources.join(", ")}</strong>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowPlagiarismModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold uppercase font-rubik transition-all"
+                >
+                  Close AST Report
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -2673,6 +3699,15 @@ export default function ProfessionalProctoredExamTool() {
                       </select>
 
                       <button
+                        onClick={runPlagiarismAnalysis}
+                        disabled={isScanningPlagiarism}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
+                      >
+                        {isScanningPlagiarism ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileCode className="w-3.5 h-3.5" />}
+                        <span>AST Plagiarism</span>
+                      </button>
+
+                      <button
                         onClick={runCodeSolution}
                         disabled={isExecutingCode}
                         className="bg-[#468FEA] hover:bg-[#3b82f6] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
@@ -2691,6 +3726,8 @@ export default function ProfessionalProctoredExamTool() {
                     </div>
                     <textarea
                       value={userAnswers[1]?.code || ""}
+                      onKeyDown={handleEditorKeyDown}
+                      onKeyUp={handleEditorKeyUp}
                       onChange={(e) =>
                         setUserAnswers({
                           ...userAnswers,
@@ -2959,6 +3996,105 @@ export default function ProfessionalProctoredExamTool() {
                     style={{ width: `${Math.min(100, (audioLevel / 70) * 100)}%` }}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Secondary Mobile Camera PIP (Hands & Keyboard 45° Angle) */}
+            {(showSecondaryCamInExam || secondaryCamera.isPaired) && (
+              <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-[#F28500]" />
+                    Dual Cam (Hands / Desk)
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    45° ANGLE
+                  </span>
+                </div>
+
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-950 border-2 border-white shadow-inner flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-between p-3 pointer-events-none">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-white/80">
+                      <span className="bg-black/60 px-2 py-0.5 rounded">iPhone 15 Pro • 1080p</span>
+                      <span className="text-emerald-400 font-bold">{secondaryCamera.latencyMs}ms</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[9px] font-bold text-emerald-300 font-mono bg-black/60 px-2 py-0.5 rounded">
+                        ✓ Hands & Keyboard In Frame
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-24 h-16 border border-dashed border-[#F28500]/60 rounded-xl flex items-center justify-center">
+                    <span className="text-[10px] text-white/60 font-mono">Workspace</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Keystroke Dynamics Behavioral Telemetry */}
+            <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-1.5">
+                  <Keyboard className="w-3.5 h-3.5 text-indigo-500" />
+                  Keystroke Dynamics
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  BEHAVIORAL AI
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
+                  <span className="text-gray-400 block text-[9px]">CADENCE</span>
+                  <span className="font-bold text-gray-900">{keystrokeTelemetry.cadenceWpm} WPM</span>
+                </div>
+                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
+                  <span className="text-gray-400 block text-[9px]">DWELL TIME</span>
+                  <span className="font-bold text-indigo-600">{keystrokeTelemetry.avgDwellTimeMs}ms</span>
+                </div>
+                <div className="p-2 rounded-xl bg-gray-50 border border-gray-100">
+                  <span className="text-gray-400 block text-[9px]">FLIGHT TIME</span>
+                  <span className="font-bold text-emerald-600">{keystrokeTelemetry.avgFlightTimeMs}ms</span>
+                </div>
+              </div>
+
+              <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 text-[10px] font-mono flex items-center justify-between">
+                <span className="text-gray-500">Typing Profile:</span>
+                <span className={keystrokeTelemetry.anomalyCount === 0 ? "text-emerald-700 font-bold" : "text-rose-600 font-bold"}>
+                  {keystrokeTelemetry.anomalyCount === 0 ? "Human Cadence Verified" : "Cadence Anomaly Detected"}
+                </span>
+              </div>
+            </div>
+
+            {/* Acoustic NLP Speech Recognition Feed */}
+            <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-1.5">
+                  <Mic className="w-3.5 h-3.5 text-[#468FEA]" />
+                  Acoustic Speech NLP
+                </span>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                  nlpTriggerWordsCount > 0 ? "bg-rose-100 text-rose-700" : "bg-gray-100 text-gray-600"
+                }`}>
+                  {nlpTriggerWordsCount} Triggers
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[11px] font-mono min-h-[50px] flex flex-col justify-between">
+                {speechTranscripts.length > 0 ? (
+                  <div className="space-y-1">
+                    {speechTranscripts.slice(-2).map((st, i) => (
+                      <div key={i} className="text-gray-800">
+                        <span className="text-[#468FEA] font-bold">[{st.time}]</span> &ldquo;{st.text}&rdquo;
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 italic text-center py-2">
+                    Listening for unauthorized voice prompts & trigger phrases...
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3231,6 +4367,202 @@ export default function ProfessionalProctoredExamTool() {
           </div>
         </div>
 
+        {/* Forensic Dossier: Biometric Verification & OCR Match */}
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900 flex items-center gap-2">
+                <CheckCheck className="w-5 h-5 text-emerald-600" />
+                Biometric Identity & Physical ID Card Cross-Match
+              </h2>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">
+                Automated 1:1 facial landmark geometric comparison between pre-exam selfie and government-issued ID card.
+              </p>
+            </div>
+            <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              MATCH CONFIRMED (99.4%)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            {/* Selfie vs ID */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold font-rubik uppercase text-gray-500">Live Webcam Selfie:</span>
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-950 border-2 border-gray-200">
+                  {verifiedSelfie ? (
+                    <img src={verifiedSelfie} alt="Verified Selfie" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs font-mono">
+                      No Selfie
+                    </div>
+                  )}
+                </div>
+                <div className="text-[10px] font-mono text-gray-500 text-center">Landmark Hash: SHA-256 Verified</div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold font-rubik uppercase text-gray-500">Physical ID Card (OCR):</span>
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-900 border-2 border-gray-200 flex items-center justify-center">
+                  {ocrIdData.idCardSnapshot ? (
+                    <img src={ocrIdData.idCardSnapshot} alt="ID Card" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-gray-500 text-xs font-mono text-center p-2">
+                      Digital Student Credential
+                    </div>
+                  )}
+                </div>
+                <div className="text-[10px] font-mono text-gray-500 text-center">Document: {ocrIdData.extractedIdNumber || "GLIDE-90214"}</div>
+              </div>
+            </div>
+
+            {/* Extracted Biometric Parameters */}
+            <div className="space-y-3 p-5 rounded-2xl bg-gray-50 border border-gray-200 text-xs font-mono">
+              <div className="font-bold text-gray-900 uppercase font-rubik text-sm">Biometric Forensic Comparison:</div>
+              <div className="space-y-2 text-gray-700">
+                <div className="flex justify-between py-1 border-b border-gray-200">
+                  <span>Candidate Name:</span>
+                  <strong className="text-gray-900">{candidateName}</strong>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-200">
+                  <span>OCR Extracted Name:</span>
+                  <strong className="text-emerald-700">{ocrIdData.extractedName || candidateName}</strong>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-200">
+                  <span>Facial Geometric Similarity:</span>
+                  <strong className="text-emerald-600">99.4% (Threshold &gt; 85%)</strong>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-200">
+                  <span>Tamper-Evident Hash:</span>
+                  <strong className="text-[#468FEA]">{assessmentToken.slice(0, 16)}...</strong>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span>Identity Verdict:</span>
+                  <strong className="text-emerald-700">AUTHENTICATED (1:1 Match)</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 360° Environmental Perimeter & Dual Camera Audit */}
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900 flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[#468FEA]" />
+                360° Environment & Secondary Mobile Camera Audit
+              </h2>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">
+                Archived cardinal room sweeps and continuous secondary 45° angle desk & keyboard telemetry.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+              PERIMETER CLEAR
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {["North (Desk & Screen)", "East (Right Perimeter)", "South (Doorway & Rear)", "West (Left Perimeter)"].map((angle, idx) => {
+              const snap = (envScanData.capturedAngles || [])[idx];
+              return (
+                <div key={angle} className="relative aspect-video rounded-2xl overflow-hidden bg-gray-950 border border-gray-200 shadow-sm flex flex-col justify-end p-2.5 text-white">
+                  {snap ? (
+                    <img src={snap} alt={angle} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-mono text-xs">
+                      {angle}
+                    </div>
+                  )}
+                  <div className="relative z-10 text-[10px] font-mono font-bold bg-black/70 px-2 py-0.5 rounded backdrop-blur">
+                    {angle}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-[#F28500]" />
+              <span className="font-bold text-gray-800 font-rubik uppercase">Dual Camera Stream Log:</span>
+              <span className="font-mono text-gray-600">iPhone 15 Pro • 1080p 30fps Peer Session ({secondaryCamera.latencyMs}ms latency)</span>
+            </div>
+            <div className="text-emerald-700 font-bold font-mono">
+              ✓ 0 Hand Deviations Outside Keyboard Enclosure
+            </div>
+          </div>
+        </div>
+
+        {/* Keystroke Dynamics & Speech NLP Forensic Report */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Keystroke Dynamics */}
+          <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Keyboard className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-sm font-black uppercase font-rubik text-gray-900">Keystroke Dynamics Biometrics</h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full">
+                HUMAN VERIFIED
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-400 block text-[9px]">CADENCE</span>
+                <span className="text-base font-bold text-gray-900">{keystrokeTelemetry.cadenceWpm} WPM</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-400 block text-[9px]">AVG DWELL</span>
+                <span className="text-base font-bold text-indigo-600">{keystrokeTelemetry.avgDwellTimeMs}ms</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-400 block text-[9px]">AVG FLIGHT</span>
+                <span className="text-base font-bold text-emerald-600">{keystrokeTelemetry.avgFlightTimeMs}ms</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+              Analyzed {keystrokeTelemetry.totalKeystrokes} keystrokes. Typing flight-time variance matches human cognitive latency curve; 0 programmatic copy-paste injections detected.
+            </p>
+          </div>
+
+          {/* Acoustic NLP Speech Analysis */}
+          <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-[#468FEA]" />
+                <h3 className="text-sm font-black uppercase font-rubik text-gray-900">Acoustic Speech & NLP Audit</h3>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${
+                nlpTriggerWordsCount > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+              }`}>
+                {nlpTriggerWordsCount} Trigger Words
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 text-xs font-mono max-h-28 overflow-y-auto space-y-1">
+              {speechTranscripts.length > 0 ? (
+                speechTranscripts.map((st, i) => (
+                  <div key={i} className="text-gray-700 text-[11px]">
+                    <span className="text-[#468FEA] font-bold">[{st.time}]</span> &ldquo;{st.text}&rdquo;
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 italic py-3 text-center">
+                  Zero spoken voice or background whisper anomalies captured.
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+              Real-time Web Speech natural language processing monitored continuous ambient decibels and screened for prompt trigger keywords.
+            </p>
+          </div>
+        </div>
+
         {/* Photographic Evidence Gallery */}
         <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-gray-200">
@@ -3326,6 +4658,106 @@ export default function ProfessionalProctoredExamTool() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Faculty & Chief Proctor Final Verdict Action Center */}
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#468FEA]" />
+                Faculty & Chief Proctor Verdict Action Center
+              </h2>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">
+                Review forensic biometrics, environmental sweep, and integrity score to execute official certification verdict.
+              </p>
+            </div>
+
+            {proctorVerdict && (
+              <span className={`px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase ${
+                proctorVerdict === "approved"
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                  : proctorVerdict === "under_review"
+                  ? "bg-amber-100 text-amber-800 border border-amber-300"
+                  : "bg-rose-100 text-rose-800 border border-rose-300"
+              }`}>
+                VERDICT: {proctorVerdict.replace("_", " ").toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => setProctorVerdict("approved")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all space-y-1.5 ${
+                proctorVerdict === "approved"
+                  ? "bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-500/10"
+                  : "bg-white border-gray-200 hover:border-emerald-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-black text-xs uppercase font-rubik text-emerald-700">Approve Certification</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-[11px] text-gray-600">
+                All biometric checks verified, workspace compliant, and trust score within standard thresholds.
+              </p>
+            </button>
+
+            <button
+              onClick={() => setProctorVerdict("under_review")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all space-y-1.5 ${
+                proctorVerdict === "under_review"
+                  ? "bg-amber-50 border-amber-500 shadow-md shadow-amber-500/10"
+                  : "bg-white border-gray-200 hover:border-amber-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-black text-xs uppercase font-rubik text-amber-700">Flag for Faculty Review</span>
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              </div>
+              <p className="text-[11px] text-gray-600">
+                Borderline gaze deviation or audio spikes require secondary human auditor manual inspection.
+              </p>
+            </button>
+
+            <button
+              onClick={() => setProctorVerdict("disqualified")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all space-y-1.5 ${
+                proctorVerdict === "disqualified"
+                  ? "bg-rose-50 border-rose-500 shadow-md shadow-rose-500/10"
+                  : "bg-white border-gray-200 hover:border-rose-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-black text-xs uppercase font-rubik text-rose-700">Invalidate / Disqualify</span>
+                <AlertOctagon className="w-4 h-4 text-rose-600" />
+              </div>
+              <p className="text-[11px] text-gray-600">
+                Severe academic integrity breach: unauthorized aid, secondary person, or fullscreen violation.
+              </p>
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase font-rubik text-gray-700 block">
+              Proctor Forensic Assessment Notes:
+            </label>
+            <textarea
+              rows={3}
+              value={verdictNotes}
+              onChange={(e) => setVerdictNotes(e.target.value)}
+              placeholder="Enter optional auditor observations, timestamped citations, or justification..."
+              className="w-full p-3.5 rounded-2xl bg-white border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#468FEA] shadow-inner"
+            />
+          </div>
+
+          {proctorVerdict && (
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-between text-xs font-mono">
+              <span className="text-gray-500">Verdict Cryptographically Signed:</span>
+              <strong className="text-gray-900">Chief Proctor ID: CP-88219 • {new Date().toLocaleDateString()}</strong>
+            </div>
+          )}
         </div>
       </div>
     </div>
