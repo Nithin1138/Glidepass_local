@@ -41,7 +41,13 @@ import {
   Info,
   Sliders,
   Layers,
-  Check
+  Check,
+  Lock,
+  X,
+  AlertOctagon,
+  EyeOff,
+  UserX,
+  Radio as RadioIcon
 } from "lucide-react";
 
 // ==========================================
@@ -56,13 +62,6 @@ export type QuestionType =
   | "descriptive"
   | "radio_grid";
 
-export interface TestCase {
-  id: number;
-  input: string;
-  expectedOutput: string;
-  isHidden?: boolean;
-}
-
 export interface Question {
   id: number;
   title: string;
@@ -73,7 +72,7 @@ export interface Question {
   options?: string[];
   correctAnswer?: string | string[] | number[];
   starterCode?: Record<string, string>;
-  testCases?: TestCase[];
+  testCases?: { id: number; input: string; expectedOutput: string; isHidden?: boolean }[];
   blanks?: { id: number; prefix: string; suffix: string; answer: string }[];
   gridRows?: string[];
   gridCols?: string[];
@@ -96,26 +95,12 @@ export interface ViolationProof {
     | "devtools_attempt"
     | "screenshot_attempt";
   label: string;
-  severity: "high" | "medium" | "low";
+  severity: "critical" | "high" | "medium";
   details: string;
-  snapshotDataUrl?: string; // base64 or SVG data
+  snapshotDataUrl?: string;
   confidence?: number;
-  meta?: Record<string, any>;
 }
 
-export interface ExamConfig {
-  title: string;
-  durationMinutes: number;
-  enableFullscreen: boolean;
-  enableFaceTracking: boolean;
-  enableAudioMonitoring: boolean;
-  enableTabSwitchDetection: boolean;
-  enableAntiCopy: boolean;
-  enableObjectDetection: boolean;
-  strictness: "low" | "medium" | "high";
-}
-
-// Default standard question pool
 const DEFAULT_QUESTIONS: Question[] = [
   {
     id: 1,
@@ -125,7 +110,7 @@ const DEFAULT_QUESTIONS: Question[] = [
     points: 25,
     description: `Given an array of integers \`nums\` and an integer \`target\`, return indices of the two numbers such that they add up to \`target\`.
 
-You may assume that each input would have exactly one solution, and you may not use the same element twice.
+You may assume that each input has exactly one solution, and you may not use the same element twice.
 
 **Example 1:**
 - Input: \`nums = [2,7,11,15]\`, \`target = 9\`
@@ -198,7 +183,7 @@ public:
   },
   {
     id: 3,
-    title: "Database Acid & Concurrency Isolation",
+    title: "Database ACID & Concurrency Isolation",
     type: "mcq_multi",
     category: "Distributed Systems",
     points: 15,
@@ -265,23 +250,21 @@ export default function ProctoredTestingPage() {
   // Stage management: "config" -> "precheck" -> "exam" -> "results"
   const [stage, setStage] = useState<"config" | "precheck" | "exam" | "results">("config");
 
-  // Exam configuration
-  const [config, setConfig] = useState<ExamConfig>({
-    title: "GlidePass Full-Stack & Systems Engineering Proctored Benchmark",
-    durationMinutes: 45,
-    enableFullscreen: true,
-    enableFaceTracking: true,
-    enableAudioMonitoring: true,
-    enableTabSwitchDetection: true,
-    enableAntiCopy: true,
-    enableObjectDetection: true,
-    strictness: "high",
-  });
-
   // Candidate Profile
   const [candidateName, setCandidateName] = useState("Alex Morgan");
   const [candidateId, setCandidateId] = useState("GP-2026-9812");
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState(45);
+
+  // STRICT PROCTORING SETTINGS
+  const [strictMode, setStrictMode] = useState(true);
+  const [maxStrikes, setMaxStrikes] = useState(3);
+  const [strikesUsed, setStrikesUsed] = useState(0);
+  const [isDisqualified, setIsDisqualified] = useState(false);
+
+  // Active Lockdown Overlay State (Triggered on tab switch or fullscreen exit)
+  const [isLockedDown, setIsLockedDown] = useState(false);
+  const [lockdownReason, setLockdownReason] = useState("");
+  const [lockdownTimer, setLockdownTimer] = useState(10);
 
   // Precheck statuses
   const [cameraPermission, setCameraPermission] = useState<"prompt" | "granted" | "denied">("prompt");
@@ -297,7 +280,7 @@ export default function ProctoredTestingPage() {
 
   // Answers State
   const [userAnswers, setUserAnswers] = useState<Record<number, any>>({
-    1: { code: DEFAULT_QUESTIONS[0].starterCode?.["python"] || "", lang: "python", testResults: null },
+    1: { code: DEFAULT_QUESTIONS[0].starterCode?.["python"] || "", lang: "python" },
     2: "",
     3: [],
     4: { 1: "", 2: "" },
@@ -313,12 +296,12 @@ export default function ProctoredTestingPage() {
 
   // Real-time Proctoring Logs & Violations
   const [violations, setViolations] = useState<ViolationProof[]>([]);
-  const [activeWarningToast, setActiveWarningToast] = useState<{ title: string; desc: string } | null>(null);
+  const [activeWarningToast, setActiveWarningToast] = useState<{ title: string; desc: string; severity: string } | null>(null);
   const [showSimulateDrawer, setShowSimulateDrawer] = useState<boolean>(false);
 
   // Camera & Audio Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -351,8 +334,12 @@ export default function ProctoredTestingPage() {
           videoRef.current.srcObject = stream;
           videoRef.current.play().catch(() => {});
         }
+        if (pipVideoRef.current) {
+          pipVideoRef.current.srcObject = stream;
+          pipVideoRef.current.play().catch(() => {});
+        }
 
-        // Setup Web Audio Analyser
+        // Web Audio Setup
         try {
           const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
           const audioCtx = new AudioContextClass();
@@ -372,16 +359,16 @@ export default function ProctoredTestingPage() {
               sum += dataArray[i];
             }
             const average = sum / dataArray.length;
-            const dbApprox = Math.min(100, Math.round((average / 128) * 100));
-            setAudioLevel(dbApprox);
+            const db = Math.min(100, Math.round((average / 128) * 100));
+            setAudioLevel(db);
 
-            // Auto-detect loud audio spike if threshold exceeded in exam
-            if (stage === "exam" && config.enableAudioMonitoring && dbApprox > 72) {
-              recordViolation(
+            // STRICT NOISE DETECTION (> 48 dB in strict mode records strike!)
+            if (stage === "exam" && !isLockedDown && db > 52) {
+              recordStrictViolation(
                 "audio_spike",
-                "High Decibel Audio / Conversation Detected",
+                "Unauthorized Voice / Noise Spike",
                 "high",
-                `Microphone registered abnormal volume spike (${dbApprox} dB). Continuous background speech suspected.`
+                `Microphone registered speech audio volume of ${db} dB. Voice activity or room conversation detected.`
               );
             }
 
@@ -392,19 +379,26 @@ export default function ProctoredTestingPage() {
           console.warn("Audio Context error:", e);
         }
       } else {
-        // Fallback simulation
         setCameraPermission("granted");
         setMicPermission("granted");
       }
     } catch (err) {
-      console.warn("Media devices permission denied or unavailable:", err);
+      console.warn("Media devices permission error:", err);
       setCameraPermission("denied");
       setMicPermission("denied");
     }
   };
 
-  // Capture Snapshot on Canvas
-  const captureSnapshot = (overlayTag?: string, boundingColor: string = "#ef4444"): string => {
+  // Re-attach stream when entering exam stage
+  useEffect(() => {
+    if (stage === "exam" && mediaStreamRef.current && pipVideoRef.current) {
+      pipVideoRef.current.srcObject = mediaStreamRef.current;
+      pipVideoRef.current.play().catch(() => {});
+    }
+  }, [stage]);
+
+  // Capture Snapshot on Canvas with red incident overlays
+  const captureSnapshot = (overlayTag?: string, color: string = "#ef4444"): string => {
     try {
       const canvas = document.createElement("canvas");
       canvas.width = 480;
@@ -412,69 +406,70 @@ export default function ProctoredTestingPage() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return "";
 
-      if (videoRef.current && videoRef.current.readyState >= 2) {
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const activeVideo = pipVideoRef.current || videoRef.current;
+      if (activeVideo && activeVideo.readyState >= 2) {
+        ctx.drawImage(activeVideo, 0, 0, canvas.width, canvas.height);
       } else {
-        // Draw realistic simulated camera feed
+        // High quality simulated surveillance frame
         const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        grad.addColorStop(0, "#181824");
-        grad.addColorStop(1, "#0d0e15");
+        grad.addColorStop(0, "#1f2937");
+        grad.addColorStop(1, "#111827");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Candidate silhouette
-        ctx.fillStyle = "#2a2b3d";
+        ctx.fillStyle = "#374151";
         ctx.beginPath();
-        ctx.arc(240, 150, 65, 0, Math.PI * 2);
+        ctx.arc(240, 150, 60, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(240, 310, 110, 80, 0, 0, Math.PI * 2);
+        ctx.ellipse(240, 310, 100, 75, 0, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Add detection overlay / bounding box
+      // Add strict detection overlay
       if (overlayTag) {
-        ctx.strokeStyle = boundingColor;
-        ctx.lineWidth = 3;
-        ctx.setLineDash([6, 3]);
-        ctx.strokeRect(150, 80, 180, 200);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([8, 4]);
+        ctx.strokeRect(140, 70, 200, 210);
         ctx.setLineDash([]);
 
         // Tag banner
-        ctx.fillStyle = boundingColor;
-        ctx.fillRect(150, 50, 180, 28);
+        ctx.fillStyle = color;
+        ctx.fillRect(140, 42, 200, 26);
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 12px sans-serif";
-        ctx.fillText(overlayTag, 160, 68);
+        ctx.font = "bold 11px monospace";
+        ctx.fillText(`[!] ${overlayTag}`, 148, 60);
       }
 
-      // Watermark with timestamp and candidate
-      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-      ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-      ctx.fillStyle = "#38bdf8";
-      ctx.font = "11px monospace";
+      // Watermark
+      ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+      ctx.fillRect(0, canvas.height - 28, canvas.width, 28);
+      ctx.fillStyle = "#f59e0b";
+      ctx.font = "bold 10px monospace";
       ctx.fillText(
-        `PROCTOR-SNAP | ${candidateId} | ${new Date().toLocaleTimeString()} | GP-AUDIT`,
+        `PROCTOR-AUDIT // ${candidateId} // ${new Date().toLocaleTimeString()} // STRIKE #${strikesUsed + 1}`,
         12,
         canvas.height - 10
       );
 
-      return canvas.toDataURL("image/jpeg", 0.85);
+      return canvas.toDataURL("image/jpeg", 0.88);
     } catch {
       return "";
     }
   };
 
-  // Record a proctoring violation with real visual evidence snapshot
-  const recordViolation = (
+  // Record a STRICT violation and increase strikes
+  const recordStrictViolation = (
     type: ViolationProof["type"],
     label: string,
     severity: ViolationProof["severity"],
     details: string,
-    forcedSnapshot?: string
+    triggerLockdown: boolean = false
   ) => {
-    const elapsed = config.durationMinutes * 60 - timeLeft;
-    const snap = forcedSnapshot || captureSnapshot(label.toUpperCase(), severity === "high" ? "#ef4444" : "#f59e0b");
+    const elapsed = durationMinutes * 60 - timeLeft;
+    const snap = captureSnapshot(label.toUpperCase(), severity === "critical" ? "#dc2626" : "#ea580c");
 
     const newViolation: ViolationProof = {
       id: "v-" + Math.random().toString(36).substring(2, 9),
@@ -485,121 +480,143 @@ export default function ProctoredTestingPage() {
       severity,
       details,
       snapshotDataUrl: snap,
-      confidence: Math.floor(Math.random() * 8) + 91,
+      confidence: Math.floor(Math.random() * 5) + 95,
     };
 
     setViolations((prev) => [newViolation, ...prev]);
 
-    // Show warning toast
+    // Update Strike Count
+    const nextStrikes = strikesUsed + 1;
+    setStrikesUsed(nextStrikes);
+
+    if (nextStrikes >= maxStrikes) {
+      setIsDisqualified(true);
+      setIsLockedDown(false);
+      finishExam();
+      return;
+    }
+
+    if (triggerLockdown) {
+      setIsLockedDown(true);
+      setLockdownReason(details);
+      setLockdownTimer(8);
+    }
+
+    // Warning toast
     setActiveWarningToast({
-      title: `Proctoring Flag: ${label}`,
+      title: `STRIKE #${nextStrikes} ISSUED: ${label}`,
       desc: details,
+      severity,
     });
     setTimeout(() => {
       setActiveWarningToast(null);
-    }, 4500);
+    }, 5000);
   };
 
   // ==========================================
-  // REAL-TIME BROWSER PROCTORING LISTENERS
+  // ULTRA-STRICT BROWSER ANTI-CHEAT LISTENERS
   // ==========================================
   useEffect(() => {
-    if (stage !== "exam") return;
+    if (stage !== "exam" || isDisqualified) return;
 
-    // 1. Tab visibility / Page Blur
+    // 1. Tab Switch / Window Blur -> IMMEDIATE STRICT LOCKDOWN
     const handleVisibilityChange = () => {
-      if (document.hidden && config.enableTabSwitchDetection) {
-        recordViolation(
+      if (document.hidden) {
+        recordStrictViolation(
           "tab_switch",
           "Tab Switch / Window Minimized",
-          "high",
-          "Candidate navigated away from the exam tab or switched focus to another application."
+          "critical",
+          "Candidate navigated away from the active examination tab. Automatic strike issued.",
+          true
         );
       }
     };
 
     const handleWindowBlur = () => {
-      if (config.enableTabSwitchDetection) {
-        recordViolation(
+      if (!isLockedDown) {
+        recordStrictViolation(
           "tab_switch",
-          "Window Lost Focus",
-          "medium",
-          "Mouse or keyboard focus moved outside active exam viewport."
+          "Browser Focus Lost (Alt-Tab / Split Window)",
+          "critical",
+          "Application focus lost. Candidate switched windows or clicked outside browser viewport.",
+          true
         );
       }
     };
 
-    // 2. Fullscreen change detection
+    // 2. Fullscreen Exit -> IMMEDIATE STRICT LOCKDOWN
     const handleFullscreenChange = () => {
       const isFull = !!document.fullscreenElement;
       setIsFullscreenActive(isFull);
-      if (!isFull && config.enableFullscreen) {
-        recordViolation(
+      if (!isFull) {
+        recordStrictViolation(
           "fullscreen_exit",
-          "Fullscreen Mode Exited",
-          "high",
-          "Candidate exited mandated full-screen mode during active proctoring session."
+          "Fullscreen Mode Breached",
+          "critical",
+          "Mandatory full-screen mode exited. Exam view is locked until full-screen is restored.",
+          true
         );
       }
     };
 
-    // 3. Anti-Copy / Paste / Selection Interception
+    // 3. Strict Copy, Cut, Paste, Selection Blocking
     const handleCopy = (e: ClipboardEvent) => {
-      if (config.enableAntiCopy) {
-        e.preventDefault();
-        recordViolation(
-          "clipboard_copy",
-          "Clipboard Copy Attempted",
-          "medium",
-          "Candidate attempted to copy question content into system clipboard."
-        );
-      }
+      e.preventDefault();
+      recordStrictViolation(
+        "clipboard_copy",
+        "Unauthorized Clipboard Copy",
+        "high",
+        "Candidate attempted to copy test content or question text into system clipboard."
+      );
     };
 
     const handlePaste = (e: ClipboardEvent) => {
-      if (config.enableAntiCopy) {
-        // Prevent paste inside non-IDE questions
-        if (currentQIndex !== 0) {
-          e.preventDefault();
-          recordViolation(
-            "clipboard_copy",
-            "Clipboard Paste Attempted",
-            "medium",
-            "Direct external clipboard injection detected into answer field."
-          );
-        }
+      if (currentQIndex !== 0) {
+        e.preventDefault();
+        recordStrictViolation(
+          "clipboard_copy",
+          "External Paste Attempted",
+          "high",
+          "External clipboard injection detected into examination answer field."
+        );
       }
     };
 
     const handleContextMenu = (e: MouseEvent) => {
-      if (config.enableAntiCopy) {
+      e.preventDefault();
+    };
+
+    const handleSelectStart = (e: Event) => {
+      if (currentQIndex !== 0) {
         e.preventDefault();
       }
     };
 
-    // 4. DevTools / Screenshot key combos interception
+    // 4. DevTools / PrintScreen / Window management hotkeys
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Devtools: F12, Ctrl+Shift+I, Cmd+Option+I
+      // F12, Ctrl+Shift+I, Cmd+Option+I, Ctrl+U
       if (
         e.key === "F12" ||
-        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "I" || e.key === "i" || e.key === "J" || e.key === "j" || e.key === "C" || e.key === "c"))
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "I" || e.key === "i" || e.key === "J" || e.key === "j" || e.key === "C" || e.key === "c")) ||
+        ((e.ctrlKey || e.metaKey) && (e.key === "u" || e.key === "U" || e.key === "s" || e.key === "S"))
       ) {
         e.preventDefault();
-        recordViolation(
+        recordStrictViolation(
           "devtools_attempt",
-          "Developer Tools Access Attempt",
-          "high",
-          `Blocked shortcut (${e.key}) used to inspect DOM or network traffic.`
+          "Developer Tools / Source Code Access",
+          "critical",
+          `Blocked restricted shortcut (${e.key}) used for inspecting DOM elements or network activity.`
         );
       }
 
       // PrintScreen / Screenshot shortcuts
       if (e.key === "PrintScreen" || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "3" || e.key === "4" || e.key === "S" || e.key === "s"))) {
-        recordViolation(
+        e.preventDefault();
+        recordStrictViolation(
           "screenshot_attempt",
-          "Screen Capture / Snipping Detected",
-          "high",
-          "System keyboard shortcut for screen capture triggered."
+          "Screen Capture Attempt Detected",
+          "critical",
+          "System shortcut for screenshot snipping intercepted by proctoring guard."
         );
       }
     };
@@ -610,6 +627,7 @@ export default function ProctoredTestingPage() {
     document.addEventListener("copy", handleCopy);
     document.addEventListener("paste", handlePaste);
     document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("selectstart", handleSelectStart);
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
@@ -619,14 +637,26 @@ export default function ProctoredTestingPage() {
       document.removeEventListener("copy", handleCopy);
       document.removeEventListener("paste", handlePaste);
       document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("selectstart", handleSelectStart);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [stage, config, currentQIndex, timeLeft]);
+  }, [stage, isDisqualified, isLockedDown, strikesUsed, currentQIndex, timeLeft]);
 
-  // Countdown timer in exam
+  // Lockdown Penalty Timer
+  useEffect(() => {
+    let t: any = null;
+    if (isLockedDown && lockdownTimer > 0) {
+      t = setInterval(() => {
+        setLockdownTimer((prev) => Math.max(0, prev - 1));
+      }, 1000);
+    }
+    return () => clearInterval(t);
+  }, [isLockedDown, lockdownTimer]);
+
+  // Exam Countdown Timer
   useEffect(() => {
     let interval: any = null;
-    if (stage === "exam" && isTimerRunning && timeLeft > 0) {
+    if (stage === "exam" && isTimerRunning && timeLeft > 0 && !isDisqualified) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -639,9 +669,9 @@ export default function ProctoredTestingPage() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [stage, isTimerRunning, timeLeft]);
+  }, [stage, isTimerRunning, timeLeft, isDisqualified]);
 
-  // Enter browser Fullscreen
+  // Request browser fullscreen
   const requestFullScreen = async () => {
     try {
       const elem = document.documentElement;
@@ -656,21 +686,21 @@ export default function ProctoredTestingPage() {
     }
   };
 
-  // Precheck to Exam transition
-  const proceedToExam = async () => {
-    if (config.enableFullscreen) {
-      await requestFullScreen();
-    }
-    // Take candidate verification photo
-    const selfie = captureSnapshot("VERIFIED CANDIDATE", "#10b981");
-    setCapturedPhoto(selfie);
+  const resumeFromLockdown = async () => {
+    await requestFullScreen();
+    setIsLockedDown(false);
+  };
 
-    setTimeLeft(config.durationMinutes * 60);
+  const proceedToExam = async () => {
+    await requestFullScreen();
+    captureSnapshot("VERIFIED CANDIDATE", "#10b981");
+    setTimeLeft(durationMinutes * 60);
     setIsTimerRunning(true);
+    setStrikesUsed(0);
+    setIsDisqualified(false);
     setStage("exam");
   };
 
-  // Submit / Finish Exam
   const finishExam = () => {
     setIsTimerRunning(false);
     if (document.fullscreenElement) {
@@ -679,15 +709,16 @@ export default function ProctoredTestingPage() {
     setStage("results");
   };
 
-  // Execute Code Simulator for Coding Question
+  // Execute Code Solution in IDE
   const runCodeSolution = () => {
     setIsExecutingCode(true);
-    setCodeOutput("Running test harness in isolated WebAssembly container...\nCompiling code against test cases...");
+    setCodeOutput("Compiling code against test cases in isolated runtime sandbox...");
 
     setTimeout(() => {
       setIsExecutingCode(false);
       const code = userAnswers[1]?.code || "";
-      const hasTwoSumLogic = code.includes("lookup") || code.includes("map") || code.includes("seen") || code.includes("target -");
+      const hasTwoSumLogic =
+        code.includes("lookup") || code.includes("map") || code.includes("seen") || code.includes("target -");
 
       if (hasTwoSumLogic) {
         setCodeExecutionPassed(true);
@@ -698,7 +729,7 @@ export default function ProctoredTestingPage() {
           `Test Case 2: nums=[3,2,4], target=6      => Output: [1, 2] [PASS] (0.03ms)\n` +
           `Test Case 3: nums=[3,3], target=6        => Output: [0, 1] [PASS] (Hidden)\n` +
           `Test Case 4: nums=[-1,-2,-3,-4,-5], t=-8 => Output: [2, 4] [PASS] (Hidden)\n` +
-          `\nExecution Time: 38ms | Memory Allocated: 14.8MB\nSTATUS: ACCEPTED (All Test Cases Passed)`
+          `\nExecution Time: 38ms | Memory: 14.8MB\nSTATUS: ACCEPTED (All Test Cases Passed)`
         );
       } else {
         setCodeExecutionPassed(false);
@@ -711,21 +742,22 @@ export default function ProctoredTestingPage() {
           `\nExecution Time: 42ms | Memory: 15.1MB\nSTATUS: WRONG ANSWER on Test Case 2`
         );
       }
-    }, 1100);
+    }, 1000);
   };
 
-  // Calculate Overall Trust Score
+  // Trust Score calculation
   const calculateTrustScore = () => {
+    if (isDisqualified) return 0;
     let score = 100;
     violations.forEach((v) => {
-      if (v.severity === "high") score -= 14;
-      else if (v.severity === "medium") score -= 7;
-      else score -= 3;
+      if (v.severity === "critical") score -= 25;
+      else if (v.severity === "high") score -= 15;
+      else score -= 8;
     });
-    return Math.max(12, Math.min(100, score));
+    return Math.max(0, Math.min(100, score));
   };
 
-  // Calculate Academic Score
+  // Exam Score calculation
   const calculateExamScore = () => {
     let earned = 0;
     let total = 0;
@@ -733,28 +765,21 @@ export default function ProctoredTestingPage() {
     DEFAULT_QUESTIONS.forEach((q) => {
       total += q.points;
       if (q.id === 1) {
-        // Coding
         if (codeExecutionPassed) earned += q.points;
-        else if (userAnswers[1]?.code?.length > 40) earned += 15; // Partial
+        else if ((userAnswers[1]?.code || "").length > 40) earned += 15;
       } else if (q.id === 2) {
-        // MCQ Single
         if (userAnswers[2] === q.correctAnswer) earned += q.points;
       } else if (q.id === 3) {
-        // MCQ Multi
         const ans = userAnswers[3] || [];
         const correct = q.correctAnswer as string[];
-        const isMatch =
-          ans.length === correct.length && ans.every((item: string) => correct.includes(item));
-        if (isMatch) earned += q.points;
+        if (ans.length === correct.length && ans.every((item: string) => correct.includes(item))) earned += q.points;
         else if (ans.length > 0 && ans.some((item: string) => correct.includes(item))) earned += 7;
       } else if (q.id === 4) {
-        // Fill blank
         const b1 = (userAnswers[4]?.[1] || "").toLowerCase().trim();
         const b2 = (userAnswers[4]?.[2] || "").toLowerCase().trim();
         if (b1 === "io_uring") earned += 7.5;
         if (b2 === "epoll") earned += 7.5;
       } else if (q.id === 5) {
-        // Grid
         const gridAns = userAnswers[5] || {};
         let matches = 0;
         Object.entries(q.gridCorrect || {}).forEach(([row, col]) => {
@@ -762,7 +787,6 @@ export default function ProctoredTestingPage() {
         });
         earned += Math.round((matches / 3) * q.points);
       } else if (q.id === 6) {
-        // Descriptive
         if ((userAnswers[6] || "").length > 80) earned += 18;
         else if ((userAnswers[6] || "").length > 20) earned += 10;
       }
@@ -775,345 +799,296 @@ export default function ProctoredTestingPage() {
   const examScore = calculateExamScore();
 
   // ==========================================
-  // RENDER: STAGE 1 - EXAM CONFIGURATION / CREATOR
+  // RENDER: STAGE 1 - EXAM CREATOR & ONBOARDING
   // ==========================================
   if (stage === "config") {
     return (
-      <div className="min-h-screen bg-[#08080c] text-white selection:bg-indigo-500/30 selection:text-indigo-200 relative overflow-hidden">
-        {/* Background ambient lighting */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="min-h-screen bg-[#EDEAE0] text-gray-900 font-sans selection:bg-[#468FEA]/20 selection:text-[#468FEA] relative overflow-hidden">
+        {/* Ambient background glows matching homepage */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#468FEA]/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#F28500]/10 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Top Navigation */}
-        <header className="border-b border-white/10 bg-white/[0.02] backdrop-blur-xl sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-rose-500 p-[1px] shadow-lg shadow-indigo-500/20">
-                  <div className="w-full h-full bg-[#08080c] rounded-[7px] flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-                  </div>
-                </div>
-                <span className="font-semibold text-lg tracking-tight text-white flex items-center gap-1.5">
-                  GlidePass <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">PROCTOR LAB</span>
-                </span>
-              </Link>
-            </div>
+        {/* Global LANpad Styled Floating Navbar */}
+        <header className="fixed top-6 left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-7xl z-50 px-8 py-3 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/85 rounded-[32px] border border-white/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] font-sans">
+          <Link href="/" className="flex items-center gap-3">
+            <img src="/logo.png" alt="LANpad Logo" className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-2xl shrink-0" />
+            <span className="font-rubik font-black text-xl md:text-2xl tracking-tight text-gray-900">LANpad</span>
+          </Link>
 
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-white/50 hidden sm:inline">Production Testing Environment</span>
-              <button
-                onClick={() => setStage("precheck")}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 flex items-center gap-2"
-              >
-                <span>Launch Quick Exam</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+          <div className="hidden lg:flex items-center gap-6 xl:gap-8 text-[10px] font-black tracking-[0.2em] uppercase text-gray-500 font-rubik">
+            <Link href="/" className="hover:text-[#468FEA] transition-colors">Technology</Link>
+            <Link href="/#features" className="hover:text-[#468FEA] transition-colors">Features</Link>
+            <Link href="/#setup" className="hover:text-[#F28500] transition-colors">How to Use</Link>
+            <Link href="/downloads" className="hover:text-[#F28500] transition-colors">Downloads</Link>
+            <Link href="/support" className="hover:text-[#468FEA] transition-colors">Support</Link>
+            <Link href="/resources" className="hover:text-[#468FEA] transition-colors">Resources</Link>
+            <Link href="/clipboard" className="hover:text-[#468FEA] transition-colors">Clipboard</Link>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="px-3.5 py-1.5 rounded-full bg-[#F28500]/10 border border-[#F28500]/20 text-[#F28500] text-[10px] font-black uppercase tracking-widest font-rubik flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F28500] animate-pulse" />
+              Strict Proctoring
             </div>
+            <button
+              onClick={() => setStage("precheck")}
+              className="bg-[#468FEA] hover:bg-[#3b82f6] text-white px-6 py-2.5 rounded-full font-rubik font-black text-xs uppercase tracking-wider shadow-lg shadow-[#468FEA]/25 transition-all flex items-center gap-2"
+            >
+              <span>Launch Test</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="max-w-7xl mx-auto px-6 py-12">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-indigo-300 font-medium mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Comprehensive AI Proctored Testing Suite & IDE
+        {/* Hero Banner matching production homepage */}
+        <main className="max-w-7xl mx-auto px-6 pt-36 pb-20 relative z-10">
+          <div className="max-w-3xl text-left space-y-6 mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm text-[10px] font-black tracking-widest uppercase text-[#468FEA] font-rubik">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#468FEA]" />
+              Enterprise Anti-Cheat & Automated Evidence Auditing
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-4">
-              Proctored Exam Simulator <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-rose-400 bg-clip-text text-transparent">
-                With Instant Proof Auditing
-              </span>
+
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-rubik font-black tracking-tighter text-[#0f172a] uppercase leading-[0.9]">
+              STRICT PROCTORED <br />
+              <span className="text-[#468FEA]">EXAM SIMULATOR.</span>
             </h1>
-            <p className="text-white/60 text-base sm:text-lg leading-relaxed">
-              Create, configure, and experience complete online proctored assessments. Features interactive coding IDE, multi-format questions, full-screen lockdown, AI webcam face/gaze/object tracking, microphone noise detection, and photographic violation audit proofs.
+
+            <p className="text-base sm:text-lg text-gray-600 font-medium leading-relaxed max-w-2xl">
+              Zero-tolerance automated proctored assessment suite with high-frequency AI camera verification, real-time noise decibel monitoring, full-screen lockdown, anti-copy enforcement, and photographic strike evidence dossiers.
             </p>
+
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-4 pt-2 text-[10px] font-black uppercase tracking-widest text-gray-500 font-rubik">
+              <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-full border border-white/60 shadow-sm">
+                <Lock className="w-3 h-3 text-emerald-600" /> 3-Strike Auto-Disqualify
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-full border border-white/60 shadow-sm">
+                <Camera className="w-3 h-3 text-[#F28500]" /> Photo Proof Snapshots
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-full border border-white/60 shadow-sm">
+                <Terminal className="w-3 h-3 text-[#468FEA]" /> Isolated Coding IDE
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Exam Creator & Settings */}
+          {/* Configuration Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left: Strict Exam Parameters */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-                  <div className="flex items-center gap-2.5">
-                    <Sliders className="w-5 h-5 text-indigo-400" />
-                    <h2 className="text-lg font-semibold text-white">Exam Parameters</h2>
+              <div className="bg-white/75 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-8 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.04)] space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200/60">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#468FEA]/10 text-[#468FEA]">
+                      <Sliders className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black uppercase font-rubik tracking-tight text-gray-900">Exam Parameters</h2>
+                      <p className="text-xs text-gray-500 font-medium">Configure session identification & duration</p>
+                    </div>
                   </div>
-                  <span className="text-xs px-2.5 py-1 rounded-md bg-white/[0.05] text-white/70 border border-white/10 font-mono">
-                    {DEFAULT_QUESTIONS.length} Questions Loaded
+                  <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
+                    {DEFAULT_QUESTIONS.length} Questions
                   </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-white/70 uppercase tracking-wider mb-2">
-                      Assessment Title
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik mb-2">
+                      Candidate Name
                     </label>
                     <input
                       type="text"
-                      value={config.title}
-                      onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
+                      value={candidateName}
+                      onChange={(e) => setCandidateName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-gray-200 text-gray-900 text-sm font-medium focus:outline-none focus:border-[#468FEA] transition-colors shadow-inner"
                     />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-white/70 uppercase tracking-wider mb-2">
-                        Candidate Name
-                      </label>
-                      <input
-                        type="text"
-                        value={candidateName}
-                        onChange={(e) => setCandidateName(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-white/70 uppercase tracking-wider mb-2">
-                        Candidate ID / Roll No
-                      </label>
-                      <input
-                        type="text"
-                        value={candidateId}
-                        onChange={(e) => setCandidateId(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
-                      />
-                    </div>
-                  </div>
-
                   <div>
-                    <label className="block text-xs font-medium text-white/70 uppercase tracking-wider mb-2">
-                      Duration (Minutes)
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik mb-2">
+                      Candidate ID / Registration
                     </label>
-                    <div className="flex items-center gap-3">
-                      {[15, 30, 45, 60, 90].map((mins) => (
-                        <button
-                          key={mins}
-                          onClick={() => setConfig({ ...config, durationMinutes: mins })}
-                          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                            config.durationMinutes === mins
-                              ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300"
-                              : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]"
-                          }`}
-                        >
-                          {mins}m
-                        </button>
-                      ))}
-                    </div>
+                    <input
+                      type="text"
+                      value={candidateId}
+                      onChange={(e) => setCandidateId(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-gray-200 text-gray-900 text-sm font-medium focus:outline-none focus:border-[#468FEA] transition-colors shadow-inner"
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Proctoring Rules Configuration */}
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-                  <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    <h2 className="text-lg font-semibold text-white">Active Proctoring Modules</h2>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik mb-2">
+                    Exam Duration
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {[15, 30, 45, 60, 90].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setDurationMinutes(m)}
+                        className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-rubik transition-all ${
+                          durationMinutes === m
+                            ? "bg-[#468FEA] text-white shadow-md shadow-[#468FEA]/20"
+                            : "bg-white/80 border border-gray-200 text-gray-700 hover:bg-white"
+                        }`}
+                      >
+                        {m} Minutes
+                      </button>
+                    ))}
                   </div>
-                  <span className="text-xs text-emerald-400 flex items-center gap-1 font-mono">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    AI Engine Ready
-                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableFullscreen}
-                      onChange={(e) => setConfig({ ...config, enableFullscreen: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <Maximize className="w-3.5 h-3.5 text-indigo-400" /> Fullscreen Lockdown
-                      </div>
-                      <p className="text-xs text-white/50 mt-0.5">Flags exiting fullscreen or multi-monitor splitting.</p>
-                    </div>
-                  </label>
+                {/* Strict Rules Accordion */}
+                <div className="pt-2 border-t border-gray-200/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-rose-500" />
+                      Strict Anti-Cheat Policy
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 font-mono">
+                      Strict Mode Active
+                    </span>
+                  </div>
 
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableFaceTracking}
-                      onChange={(e) => setConfig({ ...config, enableFaceTracking: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5 text-indigo-400" /> Face & Gaze Tracking
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200/60 flex items-start gap-2.5">
+                      <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-gray-900 font-bold">3 Strikes Rule</strong>
+                        <span className="text-gray-600 text-[11px]">3 integrity violations automatically lock and disqualify the exam.</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-0.5">Detects missing candidate, looking away, or multiple faces.</p>
                     </div>
-                  </label>
 
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableAudioMonitoring}
-                      onChange={(e) => setConfig({ ...config, enableAudioMonitoring: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <Mic className="w-3.5 h-3.5 text-indigo-400" /> Microphone Decibel Monitor
+                    <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200/60 flex items-start gap-2.5">
+                      <Eye className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-gray-900 font-bold">Continuous Eye Tracking</strong>
+                        <span className="text-gray-600 text-[11px]">Looking away or turning head off-screen logs photo proof.</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-0.5">Captures audio spikes, whispering, and background voices.</p>
                     </div>
-                  </label>
 
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableTabSwitchDetection}
-                      onChange={(e) => setConfig({ ...config, enableTabSwitchDetection: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-indigo-400" /> Tab Switch & Window Blur
+                    <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200/60 flex items-start gap-2.5">
+                      <Maximize className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-gray-900 font-bold">Fullscreen Lockdown</strong>
+                        <span className="text-gray-600 text-[11px]">Exiting fullscreen halts the exam with a penalty timer.</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-0.5">Logs Alt+Tab, minimizing, and unfocused application events.</p>
                     </div>
-                  </label>
 
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableAntiCopy}
-                      onChange={(e) => setConfig({ ...config, enableAntiCopy: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <Copy className="w-3.5 h-3.5 text-indigo-400" /> Anti-Copy & DevTools Guard
+                    <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200/60 flex items-start gap-2.5">
+                      <Copy className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-gray-900 font-bold">Anti-Clipboard Interceptor</strong>
+                        <span className="text-gray-600 text-[11px]">Right clicks, copy, paste, and text drag are completely disabled.</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-0.5">Disables context menu, clipboard cut/copy, and F12 inspect.</p>
                     </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.enableObjectDetection}
-                      onChange={(e) => setConfig({ ...config, enableObjectDetection: e.target.checked })}
-                      className="mt-1 rounded bg-white/10 border-white/20 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-white flex items-center gap-1.5">
-                        <Smartphone className="w-3.5 h-3.5 text-indigo-400" /> Phone & Object Detection
-                      </div>
-                      <p className="text-xs text-white/50 mt-0.5">Flags prohibited objects (smartphones, books, dual headsets).</p>
-                    </div>
-                  </label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right: Question Types Preview & Launch */}
+            {/* Right: Question Types Preview & Call To Action */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-white/10">
-                  <Layers className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-lg font-semibold text-white">Question Architecture</h2>
+              <div className="bg-white/75 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-8 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.04)] space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-gray-200/60">
+                  <div className="p-2.5 rounded-xl bg-[#F28500]/10 text-[#F28500]">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black uppercase font-rubik tracking-tight text-gray-900">Question Types</h2>
+                    <p className="text-xs text-gray-500 font-medium">All standard proctored assessment formats</p>
+                  </div>
                 </div>
-                <p className="text-xs text-white/60 mb-4 leading-relaxed">
-                  The test demonstrates 6 distinct proctored question paradigms, complete with live execution and auto-evaluation:
-                </p>
 
-                <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                      <div className="p-2 rounded-xl bg-[#468FEA]/10 text-[#468FEA]">
                         <Terminal className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Full IDE & Code Runner</div>
-                        <div className="text-xs text-white/50">Multi-language (Python, JS, C++) + Test Cases</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Coding IDE & Test Cases</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Python, JavaScript, C++ compiler simulator</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-indigo-300">25 pts</span>
+                    <span className="text-xs font-mono font-black text-[#468FEA]">25 PTS</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      <div className="p-2 rounded-xl bg-[#F28500]/10 text-[#F28500]">
                         <Radio className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Single Choice MCQ</div>
-                        <div className="text-xs text-white/50">Network protocol resumption & latency</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Single Choice MCQ</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Zero-RTT network protocol resumption</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-purple-300">10 pts</span>
+                    <span className="text-xs font-mono font-black text-[#F28500]">10 PTS</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                      <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
                         <CheckSquare className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Multiple Correct Answers</div>
-                        <div className="text-xs text-white/50">Distributed database isolation anomalies</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Multiple Correct Answers</div>
+                        <div className="text-[11px] text-gray-500 font-medium">ACID transaction isolation anomalies</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-pink-300">15 pts</span>
+                    <span className="text-xs font-mono font-black text-purple-600">15 PTS</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
                         <Code2 className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Fill in the Blanks</div>
-                        <div className="text-xs text-white/50">Kernel async I/O & epoll architecture</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Fill in the Blanks</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Linux kernel io_uring & epoll polling</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-amber-300">15 pts</span>
+                    <span className="text-xs font-mono font-black text-amber-600">15 PTS</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                      <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600">
                         <Sliders className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Radio Matrix Matching</div>
-                        <div className="text-xs text-white/50">Layer 3/4/7 protocol mapping grid</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Radio Matrix Matching</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Protocol Layer 3/4/7 mapping grid</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-cyan-300">15 pts</span>
+                    <span className="text-xs font-mono font-black text-teal-600">15 PTS</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                  <div className="p-3 rounded-2xl bg-white/90 border border-gray-200/60 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
                         <FileText className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Descriptive Essay Input</div>
-                        <div className="text-xs text-white/50">Zero-trust P2P local discovery design</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Descriptive System Design</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Zero-trust peer-to-peer discovery</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-emerald-300">20 pts</span>
+                    <span className="text-xs font-mono font-black text-emerald-600">20 PTS</span>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-white/10">
+                <div className="pt-4 border-t border-gray-200/60">
                   <button
                     onClick={() => setStage("precheck")}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 group transition-all"
+                    className="w-full py-4 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-sm uppercase tracking-wider shadow-xl shadow-[#468FEA]/25 transition-all flex items-center justify-center gap-2 group"
                   >
-                    <span>Proceed to Pre-Flight System Check</span>
+                    <span>Proceed to Pre-Flight Calibration</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
-                  <p className="text-center text-[11px] text-white/40 mt-2.5">
-                    Will verify camera, microphone, and full-screen compatibility before entering.
+                  <p className="text-center text-[11px] text-gray-500 font-medium mt-2.5">
+                    Will request camera and audio calibration before fullscreen test lock.
                   </p>
                 </div>
               </div>
@@ -1125,68 +1100,63 @@ export default function ProctoredTestingPage() {
   }
 
   // ==========================================
-  // RENDER: STAGE 2 - SYSTEM PRE-CHECK & VERIFICATION
+  // RENDER: STAGE 2 - PRE-FLIGHT HARDWARE CALIBRATION
   // ==========================================
   if (stage === "precheck") {
     return (
-      <div className="min-h-screen bg-[#08080c] text-white selection:bg-indigo-500/30 selection:text-indigo-200 relative overflow-hidden flex flex-col justify-between">
-        {/* Background ambient lighting */}
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="min-h-screen bg-[#EDEAE0] text-gray-900 font-sans selection:bg-[#468FEA]/20 selection:text-[#468FEA] py-12 px-6 relative overflow-hidden flex flex-col justify-between">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#468FEA]/10 rounded-full blur-[120px] pointer-events-none" />
 
-        <header className="border-b border-white/10 bg-white/[0.02] backdrop-blur-xl">
-          <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStage("config")}
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <h1 className="text-base font-semibold text-white">System Pre-Flight & Candidate Verification</h1>
+        <div className="max-w-5xl mx-auto w-full">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-300/60">
+            <button
+              onClick={() => setStage("config")}
+              className="px-4 py-2 rounded-full bg-white/80 hover:bg-white text-gray-700 text-xs font-bold uppercase tracking-wider font-rubik flex items-center gap-1.5 transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back to Parameters</span>
+            </button>
+            <div className="text-[10px] font-black tracking-widest uppercase text-gray-500 font-rubik">
+              Pre-Flight Sensor Calibration • Step 2 of 3
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
-              Step 2 of 3
-            </span>
           </div>
-        </header>
 
-        <main className="max-w-5xl mx-auto px-6 py-8 w-full flex-1 flex flex-col justify-center">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            {/* Camera Preview Card */}
+            {/* Webcam Live Test */}
             <div className="md:col-span-6 space-y-4">
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black/50 border border-white/10 shadow-2xl">
-                {/* Live video */}
+              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-900 border-4 border-white shadow-2xl">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover mirror"
+                  className="w-full h-full object-cover"
                   style={{ transform: "scaleX(-1)" }}
                 />
 
                 {/* Overlays */}
-                <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4">
+                <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-black/70 backdrop-blur text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="text-[10px] font-black uppercase font-mono px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      LIVE FEED
+                      SENSOR CALIBRATED
                     </span>
-                    <span className="text-[10px] font-mono text-white/60 bg-black/70 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-white/70 bg-black/60 px-2 py-0.5 rounded">
                       {candidateId}
                     </span>
                   </div>
 
-                  {/* Face outline guide */}
-                  <div className="self-center w-40 h-52 border-2 border-dashed border-indigo-400/60 rounded-[40px] flex items-center justify-center">
-                    <span className="text-[11px] text-indigo-300/80 bg-black/60 px-2 py-0.5 rounded">
-                      Align Face Here
+                  {/* Face Guide Box */}
+                  <div className="self-center w-40 h-52 border-2 border-dashed border-[#468FEA] rounded-[40px] flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded font-mono">
+                      Align Face in Frame
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] font-mono text-white/70 bg-black/80 backdrop-blur p-2 rounded-lg">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-white/90 bg-black/80 backdrop-blur p-2.5 rounded-xl">
                     <span>Gaze: Centered</span>
-                    <span className="text-emerald-400">1 Person Detected</span>
+                    <span className="text-emerald-400 font-bold">Face Tracked (1 Person)</span>
                   </div>
                 </div>
               </div>
@@ -1194,315 +1164,272 @@ export default function ProctoredTestingPage() {
               {cameraPermission !== "granted" ? (
                 <button
                   onClick={startCameraAndMic}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-2xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-lg shadow-[#468FEA]/20 transition-all flex items-center justify-center gap-2"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>Grant Camera & Mic Access</span>
+                  <span>Authorize Camera & Microphone</span>
                 </button>
               ) : (
-                <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-between font-rubik">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Camera & Microphone Calibrated</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Optical Sensors Ready</span>
                   </div>
-                  <span className="font-mono">Ready</span>
+                  <span className="font-mono text-[10px]">1080p 30FPS</span>
                 </div>
               )}
             </div>
 
-            {/* Checklist & Verification */}
+            {/* Checklist */}
             <div className="md:col-span-6 space-y-5">
               <div>
-                <h2 className="text-xl font-bold text-white mb-1">Hardware & Security Checklist</h2>
-                <p className="text-xs text-white/60">All prerequisites must pass before test access is unlocked.</p>
+                <h2 className="text-2xl font-black uppercase font-rubik tracking-tight text-gray-900">
+                  Verification Checklist
+                </h2>
+                <p className="text-xs text-gray-600 font-medium mt-1">
+                  You are entering a high-security examination environment. Ensure all hardware checks are satisfied.
+                </p>
               </div>
 
               <div className="space-y-3">
-                {/* Item 1: Camera */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${cameraPermission === "granted" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-white/5 text-white/50"}`}>
-                      <Video className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">Webcam Sensor</div>
-                      <div className="text-xs text-white/50">Required for face detection & continuous audit</div>
-                    </div>
-                  </div>
-                  {cameraPermission === "granted" ? (
-                    <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Passed
-                    </span>
-                  ) : (
-                    <button
-                      onClick={startCameraAndMic}
-                      className="text-xs text-indigo-400 hover:underline"
-                    >
-                      Enable
-                    </button>
-                  )}
-                </div>
-
-                {/* Item 2: Microphone with decibel meter */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
-                  <div className="flex items-center justify-between mb-2">
+                {/* Audio Check */}
+                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${micPermission === "granted" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-white/5 text-white/50"}`}>
+                      <div className="p-2 rounded-xl bg-[#468FEA]/10 text-[#468FEA]">
                         <Mic className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">Microphone Decibel Monitor</div>
-                        <div className="text-xs text-white/50">Real-time room noise and voice telemetry</div>
+                        <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Microphone Decibel Calibrator</div>
+                        <div className="text-[11px] text-gray-500 font-medium">Ambient noise tolerance threshold: 50 dB</div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-white/80">{audioLevel} dB</span>
+                    <span className="text-xs font-mono font-bold text-gray-900">{audioLevel} dB</span>
                   </div>
-                  {/* Live dB Bar */}
-                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+
+                  <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-75 ${
-                        audioLevel > 65 ? "bg-rose-500" : audioLevel > 40 ? "bg-amber-500" : "bg-emerald-500"
+                        audioLevel > 55 ? "bg-rose-500" : audioLevel > 40 ? "bg-amber-500" : "bg-emerald-500"
                       }`}
-                      style={{ width: `${Math.min(100, (audioLevel / 80) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (audioLevel / 70) * 100)}%` }}
                     />
                   </div>
                 </div>
 
-                {/* Item 3: Full-Screen Lock */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                {/* Fullscreen Requirement */}
+                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${isFullscreenActive ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-white/5 text-white/50"}`}>
+                    <div className="p-2 rounded-xl bg-[#F28500]/10 text-[#F28500]">
                       <Maximize className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">Full-Screen Mode</div>
-                      <div className="text-xs text-white/50">Browser will expand to fullscreen upon start</div>
+                      <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">Exclusive Full-Screen Enclosure</div>
+                      <div className="text-[11px] text-gray-500 font-medium">Automatic full-screen expansion on launch</div>
                     </div>
                   </div>
-                  <span className="text-xs text-indigo-400 font-mono">Enforced at Launch</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider font-mono text-[#F28500]">
+                    Mandatory
+                  </span>
                 </div>
 
-                {/* Item 4: Candidate Card */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+                {/* Candidate Identity Card */}
+                <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
                       <Award className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">{candidateName}</div>
-                      <div className="text-xs text-white/50">ID: {candidateId} • Verified Candidate</div>
+                      <div className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">{candidateName}</div>
+                      <div className="text-[11px] text-gray-500 font-medium">Registration: {candidateId}</div>
                     </div>
                   </div>
-                  <span className="text-xs text-emerald-400 font-medium">Ready</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider font-mono text-emerald-600">
+                    Verified
+                  </span>
                 </div>
               </div>
 
               <div className="pt-2">
                 <button
                   onClick={proceedToExam}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium shadow-xl shadow-emerald-600/25 flex items-center justify-center gap-2 group transition-all"
+                  className="w-full py-4 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-white font-rubik font-black text-sm uppercase tracking-wider shadow-xl shadow-[#468FEA]/25 transition-all flex items-center justify-center gap-2 group"
                 >
-                  <ShieldCheck className="w-5 h-5" />
-                  <span>Start Proctored Examination</span>
+                  <Lock className="w-4 h-4" />
+                  <span>Lock Screen & Start Exam</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
-                <p className="text-center text-[11px] text-white/40 mt-2">
-                  Exiting fullscreen or switching windows during exam will record photo evidence.
+                <p className="text-center text-[11px] text-rose-600 font-bold uppercase tracking-wider font-mono mt-2.5">
+                  Warning: 3 strikes will permanently terminate session
                 </p>
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   // ==========================================
-  // RENDER: STAGE 3 - LIVE PROCTORED EXAM & IDE
+  // RENDER: STAGE 3 - STRICT LIVE PROCTORED EXAM & IDE
   // ==========================================
   if (stage === "exam") {
     const q = DEFAULT_QUESTIONS[currentQIndex];
 
     return (
-      <div className="min-h-screen bg-[#08080c] text-white selection:bg-indigo-500/30 selection:text-indigo-200 flex flex-col justify-between select-none">
-        {/* Active Warning Toast */}
-        {activeWarningToast && (
-          <div className="fixed top-20 right-6 z-50 max-w-md p-4 rounded-xl bg-rose-950/90 border border-rose-500/50 backdrop-blur-xl shadow-2xl animate-in slide-in-from-right-4 duration-300">
-            <div className="flex items-start gap-3">
-              <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+      <div className="min-h-screen bg-[#EDEAE0] text-gray-900 font-sans selection:bg-[#468FEA]/20 selection:text-[#468FEA] flex flex-col justify-between select-none relative">
+        {/* STRICT LOCKDOWN OVERLAY (Triggered on Fullscreen Exit or Tab Switch) */}
+        {isLockedDown && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6 text-center text-white animate-in fade-in duration-200">
+            <div className="max-w-md w-full p-8 rounded-3xl bg-[#181824] border-2 border-rose-500 shadow-2xl shadow-rose-600/30 space-y-5">
+              <div className="w-16 h-16 rounded-full bg-rose-500/20 border-2 border-rose-500 flex items-center justify-center mx-auto text-rose-500 animate-bounce">
+                <AlertOctagon className="w-8 h-8" />
+              </div>
+
               <div>
-                <div className="text-sm font-semibold text-rose-200">{activeWarningToast.title}</div>
-                <div className="text-xs text-rose-300/80 mt-1">{activeWarningToast.desc}</div>
-                <div className="text-[10px] font-mono text-rose-400/90 mt-2 flex items-center gap-1">
-                  <Camera className="w-3 h-3" /> Photographic evidence snapshot captured & logged to report
+                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-rose-500 text-white font-mono">
+                  SECURITY VIOLATION REGISTERED
+                </span>
+                <h2 className="text-2xl font-black uppercase font-rubik text-white mt-3">
+                  STRIKE #{strikesUsed} OF {maxStrikes}
+                </h2>
+                <p className="text-xs text-rose-200/80 mt-2 font-medium">
+                  {lockdownReason || "Mandatory fullscreen or window focus was breached."}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/40 border border-white/10 text-xs font-mono text-amber-300">
+                A photographic evidence snapshot has been recorded to your examination audit log.
+              </div>
+
+              {lockdownTimer > 0 ? (
+                <div className="text-xs font-mono text-white/50">
+                  Penalty cooldown: Resume unlocked in <strong className="text-white">{lockdownTimer}s</strong>
                 </div>
+              ) : (
+                <button
+                  onClick={resumeFromLockdown}
+                  className="w-full py-3.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-black uppercase tracking-wider font-rubik text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center justify-center gap-2"
+                >
+                  <Maximize className="w-4 h-4" />
+                  <span>Re-Lock Fullscreen & Resume Exam</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Warning Toast */}
+        {activeWarningToast && (
+          <div className="fixed top-24 right-6 z-40 max-w-sm p-4 rounded-2xl bg-rose-600 text-white shadow-2xl shadow-rose-600/40 animate-in slide-in-from-right-6 duration-300">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-white" />
+              <div>
+                <div className="text-xs font-black uppercase font-rubik">{activeWarningToast.title}</div>
+                <div className="text-[11px] opacity-90 mt-0.5">{activeWarningToast.desc}</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Live Top Bar Header */}
-        <header className="border-b border-white/10 bg-[#0d0e15]/95 backdrop-blur-xl sticky top-0 z-40 px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-400" />
-              <span className="font-semibold text-sm tracking-tight text-white hidden sm:inline">
-                {config.title}
-              </span>
-            </div>
-            <span className="text-xs px-2.5 py-0.5 rounded-md bg-white/[0.05] text-white/60 font-mono">
-              Q{currentQIndex + 1} / {DEFAULT_QUESTIONS.length}
-            </span>
-          </div>
-
-          {/* Center Proctoring Telemetry Pill */}
-          <div className="hidden md:flex items-center gap-4 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-xs">
-            <div className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Face Locked</span>
-            </div>
-            <span className="text-white/20">|</span>
-            <div className="flex items-center gap-1.5 text-white/70 font-mono">
-              <Mic className="w-3 h-3 text-indigo-400" />
-              <span>{audioLevel} dB</span>
-            </div>
-            <span className="text-white/20">|</span>
-            <div className="flex items-center gap-1.5 text-white/70">
-              <Maximize className="w-3 h-3 text-indigo-400" />
-              <span>{isFullscreenActive ? "Full-Screen" : "Windowed"}</span>
-            </div>
-            <span className="text-white/20">|</span>
-            <div className={`flex items-center gap-1 font-mono ${violations.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-              <AlertTriangle className="w-3 h-3" />
-              <span>{violations.length} Flags</span>
-            </div>
-          </div>
-
-          {/* Right Timer & Submit */}
+        {/* Top Floating Exam Navbar */}
+        <header className="fixed top-4 left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-7xl z-40 px-6 py-2.5 flex justify-between items-center backdrop-blur-md bg-[#EDEAE0]/90 rounded-[28px] border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.04)] font-sans">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono text-sm">
-              <Clock className="w-4 h-4" />
+            <img src="/logo.png" alt="LANpad Logo" className="w-9 h-9 object-cover rounded-xl shrink-0" />
+            <div>
+              <span className="font-rubik font-black text-sm tracking-tight text-gray-900 block">LANpad PROCTOR</span>
+              <span className="text-[10px] text-gray-500 font-mono">Q{currentQIndex + 1} of {DEFAULT_QUESTIONS.length}</span>
+            </div>
+          </div>
+
+          {/* Strikes & Proctoring Status Pill */}
+          <div className="flex items-center gap-3">
+            {/* Strike Badges */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-gray-200 shadow-sm">
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-600 font-rubik mr-1">Strikes:</span>
+              {[1, 2, 3].map((s) => (
+                <div
+                  key={s}
+                  className={`w-3 h-3 rounded-full border transition-all ${
+                    s <= strikesUsed
+                      ? "bg-rose-500 border-rose-600 animate-pulse"
+                      : "bg-gray-200 border-gray-300"
+                  }`}
+                  title={`Strike ${s}`}
+                />
+              ))}
+            </div>
+
+            {/* Timer */}
+            <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#468FEA]/10 border border-[#468FEA]/20 text-[#468FEA] font-mono text-xs font-bold">
+              <Clock className="w-3.5 h-3.5" />
               <span>{formatTime(timeLeft)}</span>
             </div>
 
+            {/* Test Violations Drawer Trigger */}
             <button
               onClick={() => setShowSimulateDrawer(!showSimulateDrawer)}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-white/80 transition-colors flex items-center gap-1.5"
-              title="Test violation alerts with real proof capturing"
+              className="px-3 py-1 rounded-full bg-[#F28500]/10 hover:bg-[#F28500]/20 text-[#F28500] text-[10px] font-black uppercase tracking-wider font-rubik border border-[#F28500]/20 transition-all flex items-center gap-1"
             >
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <Flame className="w-3 h-3" />
               <span className="hidden sm:inline">Test Violations</span>
             </button>
 
             <button
               onClick={finishExam}
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition-all"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-full font-rubik font-black text-xs uppercase tracking-wider shadow-md transition-all"
             >
-              Submit Exam
+              Finish Exam
             </button>
           </div>
         </header>
 
-        {/* Violation Simulator Floating Drawer (For evaluation & demo testing) */}
+        {/* Demo Simulator Drawer */}
         {showSimulateDrawer && (
-          <div className="fixed top-20 left-6 z-50 w-80 p-4 rounded-2xl bg-[#12131f]/95 border border-white/10 backdrop-blur-2xl shadow-2xl space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-semibold text-white">Trigger Test Violation (Demo)</span>
-              </div>
-              <button
-                onClick={() => setShowSimulateDrawer(false)}
-                className="text-white/40 hover:text-white text-xs"
-              >
-                ✕
-              </button>
+          <div className="fixed top-20 left-6 z-50 w-72 p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl space-y-2.5">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <span className="text-xs font-black uppercase text-gray-900 font-rubik flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-[#F28500]" />
+                Trigger Strict Test Violation
+              </span>
+              <button onClick={() => setShowSimulateDrawer(false)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
             </div>
-            <p className="text-[11px] text-white/50">
-              Click any button to trigger and verify proof capture and flagging just like enterprise proctoring:
-            </p>
+            <p className="text-[10px] text-gray-500">Simulate proctor incidents to verify real-time snapshot capture & strike tracking:</p>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
               <button
-                onClick={() =>
-                  recordViolation(
-                    "looking_away",
-                    "Candidate Looking Away From Screen",
-                    "medium",
-                    "Gaze tracker detected candidate head orientation diverted off-screen for > 8 seconds."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-amber-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("looking_away", "Candidate Looking Away", "high", "Eye gaze averted from screen for > 5s.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-amber-50 border border-gray-200 text-left font-bold text-gray-800"
               >
                 👀 Look Away
               </button>
-
               <button
-                onClick={() =>
-                  recordViolation(
-                    "multiple_faces",
-                    "Multiple Faces Detected",
-                    "high",
-                    "Second person entered webcam visual perimeter. Unauthorized collaborator suspected."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("multiple_faces", "Second Person Detected", "critical", "Multiple faces detected in frame.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
               >
-                👥 Second Person
+                👥 Multi-Person
               </button>
-
               <button
-                onClick={() =>
-                  recordViolation(
-                    "phone_detected",
-                    "Prohibited Device: Smartphone in Hand",
-                    "high",
-                    "YOLO object detector identified smartphone handheld device in candidate frame."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("phone_detected", "Mobile Phone in Hand", "critical", "YOLO object model flagged smartphone.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
               >
-                📱 Mobile Phone
+                📱 Phone Detected
               </button>
-
               <button
-                onClick={() =>
-                  recordViolation(
-                    "face_missing",
-                    "Candidate Missing From Webcam Frame",
-                    "high",
-                    "No human facial geometry detected in video stream for consecutive frames."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("face_missing", "Face Left Frame", "critical", "No face detected in video stream.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
               >
                 🚫 Face Missing
               </button>
-
               <button
-                onClick={() =>
-                  recordViolation(
-                    "audio_spike",
-                    "Voice Speech Audio Spike Detected",
-                    "medium",
-                    "Microphone registered speech frequency spike (74 dB). Secondary conversation flagged."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-amber-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("audio_spike", "Voice / Talking Noise", "high", "Audio amplitude registered continuous speech.")}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-amber-50 border border-gray-200 text-left font-bold text-gray-800"
               >
-                🗣️ Voice / Audio Spike
+                🗣️ Speech Spike
               </button>
-
               <button
-                onClick={() =>
-                  recordViolation(
-                    "fullscreen_exit",
-                    "Candidate Exited Fullscreen Mode",
-                    "high",
-                    "Fullscreen lock broken. Candidate minimized exam or switched to second display."
-                  )
-                }
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 text-left text-[11px] text-white/80 transition-colors"
+                onClick={() => recordStrictViolation("fullscreen_exit", "Fullscreen Exit", "critical", "Fullscreen enclosure broken.", true)}
+                className="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 border border-gray-200 text-left font-bold text-gray-800"
               >
                 🖥️ Exit Fullscreen
               </button>
@@ -1510,101 +1437,95 @@ export default function ProctoredTestingPage() {
           </div>
         )}
 
-        {/* Main Exam Canvas */}
-        <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left / Center 9 Cols: Question Content & Interactive Inputs */}
-          <div className="lg:col-span-9 flex flex-col space-y-4">
+        {/* Main Examination Workspace */}
+        <main className="max-w-7xl w-full mx-auto px-6 pt-24 pb-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left / Center 9 Cols: Active Question */}
+          <div className="lg:col-span-9 space-y-4">
             {/* Question Header Card */}
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono font-medium">
-                      {q.category}
-                    </span>
-                    <span className="text-xs px-2.5 py-1 rounded-md bg-white/[0.05] text-white/70 font-mono">
-                      {q.type.toUpperCase().replace("_", " ")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-indigo-300 font-semibold">{q.points} Points</span>
-                    <button
-                      onClick={() => {
-                        const newSet = new Set(markedForReview);
-                        if (newSet.has(q.id)) newSet.delete(q.id);
-                        else newSet.add(q.id);
-                        setMarkedForReview(newSet);
-                      }}
-                      className={`text-xs px-2.5 py-1 rounded-md border transition-all ${
-                        markedForReview.has(q.id)
-                          ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
-                          : "bg-white/[0.03] border-white/10 text-white/50 hover:text-white"
-                      }`}
-                    >
-                      {markedForReview.has(q.id) ? "★ Marked for Review" : "☆ Mark for Review"}
-                    </button>
-                  </div>
+            <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#468FEA]/10 text-[#468FEA] font-rubik">
+                    {q.category}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-mono">
+                    {q.type.toUpperCase().replace("_", " ")}
+                  </span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-black text-[#468FEA]">{q.points} PTS</span>
+                  <button
+                    onClick={() => {
+                      const s = new Set(markedForReview);
+                      if (s.has(q.id)) s.delete(q.id);
+                      else s.add(q.id);
+                      setMarkedForReview(s);
+                    }}
+                    className={`text-[10px] font-black uppercase tracking-wider font-rubik px-3 py-1 rounded-full border transition-all ${
+                      markedForReview.has(q.id)
+                        ? "bg-[#F28500]/15 border-[#F28500]/30 text-[#F28500]"
+                        : "bg-white border-gray-200 text-gray-500 hover:text-gray-800"
+                    }`}
+                  >
+                    {markedForReview.has(q.id) ? "★ Marked" : "☆ Mark Review"}
+                  </button>
+                </div>
+              </div>
 
-                <h2 className="text-xl font-bold text-white mb-2">{q.title}</h2>
-                <div className="text-sm text-white/80 whitespace-pre-line leading-relaxed font-sans">
-                  {q.description}
-                </div>
+              <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900">
+                {q.title}
+              </h2>
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                {q.description}
               </div>
             </div>
 
-            {/* Question Input Engine based on Type */}
-            <div className="flex-1">
+            {/* Input Component based on Question Type */}
+            <div>
               {/* 1. CODING QUESTION IDE */}
               {q.type === "coding" && (
-                <div className="rounded-2xl bg-[#0b0c13] border border-white/10 overflow-hidden shadow-2xl flex flex-col h-[520px]">
+                <div className="rounded-3xl bg-[#181824] border-4 border-white/80 overflow-hidden shadow-2xl flex flex-col h-[520px]">
                   {/* IDE Toolbar */}
-                  <div className="px-4 py-2.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                        <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                        <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                      </div>
-                      <span className="text-xs text-white/40 font-mono">solution.{selectedLanguage === "python" ? "py" : selectedLanguage === "javascript" ? "js" : "cpp"}</span>
+                  <div className="px-4 py-3 bg-black/40 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-rose-500" />
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="text-xs text-white/40 font-mono ml-2">solution.{selectedLanguage === "python" ? "py" : selectedLanguage === "javascript" ? "js" : "cpp"}</span>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <select
                         value={selectedLanguage}
                         onChange={(e) => {
-                          const lang = e.target.value;
-                          setSelectedLanguage(lang);
+                          const l = e.target.value;
+                          setSelectedLanguage(l);
                           setUserAnswers({
                             ...userAnswers,
-                            1: {
-                              ...userAnswers[1],
-                              lang,
-                              code: q.starterCode?.[lang] || "",
-                            },
+                            1: { ...userAnswers[1], lang: l, code: q.starterCode?.[l] || "" },
                           });
                         }}
-                        className="bg-white/[0.05] border border-white/10 text-xs text-white rounded-lg px-2.5 py-1 focus:outline-none"
+                        className="bg-white/10 border border-white/15 text-xs text-white rounded-xl px-3 py-1 font-mono focus:outline-none"
                       >
-                        <option value="python" className="bg-[#12131f]">Python 3.11</option>
-                        <option value="javascript" className="bg-[#12131f]">JavaScript (Node v20)</option>
-                        <option value="cpp" className="bg-[#12131f]">C++ 20</option>
+                        <option value="python" className="bg-gray-900">Python 3.11</option>
+                        <option value="javascript" className="bg-gray-900">JavaScript</option>
+                        <option value="cpp" className="bg-gray-900">C++ 20</option>
                       </select>
 
                       <button
                         onClick={runCodeSolution}
                         disabled={isExecutingCode}
-                        className="px-3.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-lg shadow-indigo-600/25 transition-all disabled:opacity-50"
+                        className="bg-[#468FEA] hover:bg-[#3b82f6] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
                       >
                         {isExecutingCode ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                        <span>Run Test Cases</span>
+                        <span>Run Tests</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Code Textarea with line numbers */}
+                  {/* Code Editor */}
                   <div className="flex-1 flex overflow-hidden">
-                    <div className="w-12 bg-black/20 text-white/30 text-right pr-3 pt-3 font-mono text-xs select-none space-y-1">
+                    <div className="w-12 bg-black/30 text-white/20 text-right pr-3 pt-3 font-mono text-xs select-none space-y-1">
                       {Array.from({ length: 18 }).map((_, i) => (
                         <div key={i}>{i + 1}</div>
                       ))}
@@ -1622,30 +1543,31 @@ export default function ProctoredTestingPage() {
                     />
                   </div>
 
-                  {/* Execution Console Output */}
-                  <div className="h-36 bg-black/40 border-t border-white/10 p-3 overflow-y-auto font-mono text-xs">
-                    <div className="flex items-center justify-between text-white/50 mb-1 text-[11px] pb-1 border-b border-white/5">
-                      <span className="flex items-center gap-1.5">
-                        <Terminal className="w-3 h-3 text-indigo-400" />
-                        Execution Console
+                  {/* Execution Console */}
+                  <div className="h-36 bg-black/60 border-t border-white/10 p-3 overflow-y-auto font-mono text-xs">
+                    <div className="flex items-center justify-between text-white/50 text-[10px] pb-1 border-b border-white/5 mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <Terminal className="w-3 h-3 text-[#468FEA]" /> Runtime Terminal Output
                       </span>
                       {codeExecutionPassed !== null && (
-                        <span className={codeExecutionPassed ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
-                          {codeExecutionPassed ? "✓ ALL TESTS PASSED" : "✗ TEST FAILED"}
+                        <span className={codeExecutionPassed ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                          {codeExecutionPassed ? "✓ ALL TEST CASES PASSED" : "✗ TEST CASE FAILURE"}
                         </span>
                       )}
                     </div>
                     <pre className="text-white/80 whitespace-pre-wrap">
-                      {codeOutput || "// Click 'Run Test Cases' to compile and execute your logic against sample & hidden test suites."}
+                      {codeOutput || "// Click 'Run Tests' to compile solution against hidden and public test cases."}
                     </pre>
                   </div>
                 </div>
               )}
 
-              {/* 2. MCQ SINGLE CHOICE (RADIO BUTTONS) */}
+              {/* 2. MCQ SINGLE CHOICE */}
               {q.type === "mcq_single" && (
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl space-y-3">
-                  <div className="text-xs text-white/50 mb-2">Select exactly one correct option:</div>
+                <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-gray-500 font-rubik mb-2">
+                    Select exactly one answer:
+                  </div>
                   {q.options?.map((opt, idx) => {
                     const isSelected = userAnswers[q.id] === opt;
                     const letter = String.fromCharCode(65 + idx);
@@ -1654,68 +1576,62 @@ export default function ProctoredTestingPage() {
                       <div
                         key={idx}
                         onClick={() => setUserAnswers({ ...userAnswers, [q.id]: opt })}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3.5 ${
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
                           isSelected
-                            ? "bg-indigo-500/15 border-indigo-500/50 text-white shadow-lg shadow-indigo-500/10"
-                            : "bg-white/[0.02] border-white/10 text-white/70 hover:text-white hover:bg-white/[0.04]"
+                            ? "bg-[#468FEA]/10 border-[#468FEA] text-gray-900 shadow-md shadow-[#468FEA]/10"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
                         }`}
                       >
                         <div
-                          className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-mono font-semibold ${
-                            isSelected ? "border-indigo-400 bg-indigo-500 text-white" : "border-white/20 text-white/40"
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-mono font-bold ${
+                            isSelected ? "border-[#468FEA] bg-[#468FEA] text-white" : "border-gray-300 text-gray-400"
                           }`}
                         >
                           {letter}
                         </div>
-                        <span className="text-sm font-medium">{opt}</span>
+                        <span className="text-sm font-semibold">{opt}</span>
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              {/* 3. MCQ MULTIPLE CORRECT (CHECKBOXES) */}
+              {/* 3. MCQ MULTIPLE CORRECT */}
               {q.type === "mcq_multi" && (
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl space-y-3">
-                  <div className="text-xs text-indigo-300 font-mono mb-2">
-                    Multiple Choice • Choose all options that apply:
+                <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[#F28500] font-rubik mb-2">
+                    Choose all that apply:
                   </div>
                   {q.options?.map((opt, idx) => {
-                    const currentSelected = (userAnswers[q.id] as string[]) || [];
-                    const isSelected = currentSelected.includes(opt);
+                    const selected = (userAnswers[q.id] as string[]) || [];
+                    const isSelected = selected.includes(opt);
 
-                    const toggleOption = () => {
+                    const toggle = () => {
                       if (isSelected) {
-                        setUserAnswers({
-                          ...userAnswers,
-                          [q.id]: currentSelected.filter((item) => item !== opt),
-                        });
+                        setUserAnswers({ ...userAnswers, [q.id]: selected.filter((s) => s !== opt) });
                       } else {
-                        setUserAnswers({
-                          ...userAnswers,
-                          [q.id]: [...currentSelected, opt],
-                        });
+                        setUserAnswers({ ...userAnswers, [q.id]: [...selected, opt] });
                       }
                     };
 
                     return (
                       <div
                         key={idx}
-                        onClick={toggleOption}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3.5 ${
+                        onClick={toggle}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
                           isSelected
-                            ? "bg-pink-500/15 border-pink-500/50 text-white shadow-lg shadow-pink-500/10"
-                            : "bg-white/[0.02] border-white/10 text-white/70 hover:text-white hover:bg-white/[0.04]"
+                            ? "bg-[#F28500]/10 border-[#F28500] text-gray-900 shadow-md shadow-[#F28500]/10"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
                         }`}
                       >
                         <div
-                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                            isSelected ? "border-pink-400 bg-pink-500 text-white" : "border-white/20 text-transparent"
+                          className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center ${
+                            isSelected ? "border-[#F28500] bg-[#F28500] text-white" : "border-gray-300 text-transparent"
                           }`}
                         >
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </div>
-                        <span className="text-sm font-medium">{opt}</span>
+                        <span className="text-sm font-semibold">{opt}</span>
                       </div>
                     );
                   })}
@@ -1724,11 +1640,13 @@ export default function ProctoredTestingPage() {
 
               {/* 4. FILL IN THE BLANKS */}
               {q.type === "fill_blank" && (
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl space-y-6">
-                  <div className="text-xs text-amber-300 font-mono">Fill in the precise missing terminology:</div>
-                  <div className="space-y-4 text-sm leading-relaxed text-white/90">
+                <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
+                  <div className="text-xs font-bold uppercase tracking-wider text-amber-600 font-rubik">
+                    Type the correct missing terms:
+                  </div>
+                  <div className="space-y-3 text-sm leading-relaxed text-gray-800">
                     {q.blanks?.map((b) => (
-                      <div key={b.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/10 flex flex-wrap items-center gap-2">
+                      <div key={b.id} className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm flex flex-wrap items-center gap-2">
                         <span>{b.prefix}</span>
                         <input
                           type="text"
@@ -1737,13 +1655,10 @@ export default function ProctoredTestingPage() {
                           onChange={(e) =>
                             setUserAnswers({
                               ...userAnswers,
-                              [q.id]: {
-                                ...userAnswers[q.id],
-                                [b.id]: e.target.value,
-                              },
+                              [q.id]: { ...userAnswers[q.id], [b.id]: e.target.value },
                             })
                           }
-                          className="px-3 py-1.5 rounded-lg bg-black/40 border border-amber-500/30 text-amber-200 font-mono text-sm focus:outline-none focus:border-amber-400 w-44"
+                          className="px-3 py-1.5 rounded-xl bg-gray-50 border-2 border-amber-300 text-gray-900 font-mono text-sm focus:outline-none focus:border-amber-500 w-48 shadow-inner"
                         />
                         <span>{b.suffix}</span>
                       </div>
@@ -1752,27 +1667,25 @@ export default function ProctoredTestingPage() {
                 </div>
               )}
 
-              {/* 5. RADIO GRID / MATRIX MATCHING */}
+              {/* 5. RADIO GRID MATRIX */}
               {q.type === "radio_grid" && (
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl overflow-x-auto">
-                  <div className="text-xs text-cyan-300 font-mono mb-4">
-                    Radio Matrix • Select one corresponding layer per protocol row:
+                <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm overflow-x-auto">
+                  <div className="text-xs font-bold uppercase tracking-wider text-teal-700 font-rubik mb-4">
+                    Matrix Grid • Select one layer per row:
                   </div>
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-white/10 text-white/50 text-xs font-mono">
-                        <th className="pb-3 pr-4">Protocol / Service</th>
+                      <tr className="border-b border-gray-200 text-gray-500 text-xs font-mono font-bold">
+                        <th className="pb-3 pr-4">Protocol</th>
                         {q.gridCols?.map((col, idx) => (
-                          <th key={idx} className="pb-3 px-3 text-center">
-                            {col}
-                          </th>
+                          <th key={idx} className="pb-3 px-3 text-center">{col}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-gray-100">
                       {q.gridRows?.map((row, rIdx) => (
-                        <tr key={rIdx} className="hover:bg-white/[0.01]">
-                          <td className="py-3.5 pr-4 font-medium text-white">{row}</td>
+                        <tr key={rIdx} className="hover:bg-gray-50/50">
+                          <td className="py-3.5 pr-4 font-bold text-gray-900">{row}</td>
                           {q.gridCols?.map((col, cIdx) => {
                             const isChecked = userAnswers[q.id]?.[row] === col;
                             return (
@@ -1784,13 +1697,10 @@ export default function ProctoredTestingPage() {
                                   onChange={() =>
                                     setUserAnswers({
                                       ...userAnswers,
-                                      [q.id]: {
-                                        ...userAnswers[q.id],
-                                        [row]: col,
-                                      },
+                                      [q.id]: { ...userAnswers[q.id], [row]: col },
                                     })
                                   }
-                                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/20 focus:ring-0 cursor-pointer"
+                                  className="w-4 h-4 text-[#468FEA] cursor-pointer"
                                 />
                               </td>
                             );
@@ -1802,79 +1712,74 @@ export default function ProctoredTestingPage() {
                 </div>
               )}
 
-              {/* 6. DESCRIPTIVE / ESSAY TEXT INPUT */}
+              {/* 6. DESCRIPTIVE ESSAY INPUT */}
               {q.type === "descriptive" && (
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl space-y-4">
-                  <div className="flex items-center justify-between text-xs text-white/50 font-mono">
-                    <span>Markdown formatting supported</span>
+                <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between text-xs text-gray-500 font-mono font-bold">
+                    <span>Markdown Enabled</span>
                     <span>{(userAnswers[q.id] || "").length} characters</span>
                   </div>
                   <textarea
                     rows={8}
-                    placeholder="Provide your structured architectural explanation here..."
+                    placeholder="Provide your structured architectural explanation..."
                     value={userAnswers[q.id] || ""}
                     onChange={(e) => setUserAnswers({ ...userAnswers, [q.id]: e.target.value })}
-                    className="w-full p-4 rounded-xl bg-black/30 border border-white/10 text-white font-sans text-sm leading-relaxed focus:outline-none focus:border-emerald-500/50 resize-y"
+                    className="w-full p-4 rounded-2xl bg-white border border-gray-200 text-gray-900 text-sm leading-relaxed focus:outline-none focus:border-[#468FEA] shadow-inner"
                   />
-                  <div className="text-[11px] text-white/40 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Auto-saved to session storage</span>
+                  <div className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Auto-saved
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Bottom Question Navigation Footer */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between">
+            {/* Pagination Controls */}
+            <div className="p-4 rounded-2xl bg-white/80 border border-white/60 shadow-sm flex items-center justify-between">
               <button
                 disabled={currentQIndex === 0}
                 onClick={() => setCurrentQIndex((prev) => Math.max(0, prev - 1))}
-                className="px-4 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-white/80 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-full bg-white border border-gray-200 text-xs font-black uppercase font-rubik text-gray-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
               >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Previous Question</span>
+                <ChevronLeft className="w-4 h-4" /> Previous
               </button>
 
-              <div className="text-xs text-white/50 font-mono">
+              <div className="text-xs font-mono font-bold text-gray-500">
                 {currentQIndex + 1} of {DEFAULT_QUESTIONS.length}
               </div>
 
               {currentQIndex < DEFAULT_QUESTIONS.length - 1 ? (
                 <button
                   onClick={() => setCurrentQIndex((prev) => Math.min(DEFAULT_QUESTIONS.length - 1, prev + 1))}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all"
+                  className="px-5 py-2 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-xs font-black uppercase font-rubik text-white shadow-md flex items-center gap-1.5"
                 >
-                  <span>Next Question</span>
-                  <ChevronRight className="w-4 h-4" />
+                  Next <ChevronRight className="w-4 h-4" />
                 </button>
               ) : (
                 <button
                   onClick={finishExam}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all"
+                  className="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-xs font-black uppercase font-rubik text-white shadow-md flex items-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Review & Finish Exam</span>
+                  Submit Exam <CheckCircle2 className="w-4 h-4" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Right 3 Cols: Live Proctoring PIP, Audio Meter & Question Palette */}
+          {/* Right 3 Cols: Real-Time Proctoring PIP & Palette */}
           <div className="lg:col-span-3 space-y-4">
-            {/* Live Proctoring Webcam Picture-in-Picture */}
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl space-y-3">
+            {/* Live Camera Surveillance PIP */}
+            <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <Video className="w-3.5 h-3.5 text-indigo-400" />
-                  Live Proctoring Feed
+                <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-[#468FEA]" />
+                  Live Surveillance PIP
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
 
-              {/* Corner Video PIP */}
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-black/60 border border-white/10">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-900 border-2 border-white shadow-inner">
                 <video
-                  ref={videoRef}
+                  ref={pipVideoRef}
                   autoPlay
                   playsInline
                   muted
@@ -1882,44 +1787,45 @@ export default function ProctoredTestingPage() {
                   style={{ transform: "scaleX(-1)" }}
                 />
 
-                {/* Real-time bounding box simulation */}
-                <div className="absolute inset-0 pointer-events-none p-2 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-[9px] font-mono text-emerald-400 bg-black/60 px-1.5 py-0.5 rounded">
-                    <span>FACE-ID: #01</span>
-                    <span>CONF: 98.4%</span>
+                <div className="absolute inset-0 pointer-events-none p-2 flex flex-col justify-between text-[9px] font-mono">
+                  <div className="flex items-center justify-between text-emerald-400 bg-black/60 px-1.5 py-0.5 rounded">
+                    <span>TRACK: #01</span>
+                    <span>99.2% CONF</span>
                   </div>
-                  <div className="self-center w-24 h-18 border border-dashed border-emerald-400/70 rounded-lg" />
-                  <div className="flex items-center justify-between text-[9px] font-mono text-white/70 bg-black/70 px-1.5 py-0.5 rounded">
-                    <span>Gaze: On-Screen</span>
-                    <span>Obj: Clear</span>
+                  <div className="self-center w-24 h-16 border border-dashed border-emerald-400/80 rounded-lg" />
+                  <div className="flex items-center justify-between text-white/80 bg-black/70 px-1.5 py-0.5 rounded">
+                    <span>Gaze: Centered</span>
+                    <span>Objects: Clear</span>
                   </div>
                 </div>
               </div>
 
-              {/* Audio Monitor Meter */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/60 flex items-center gap-1">
-                    <Volume2 className="w-3 h-3 text-indigo-400" /> Ambient Noise
+              {/* Noise Monitor */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] font-medium text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <Volume2 className="w-3 h-3 text-[#468FEA]" /> Mic Decibels
                   </span>
-                  <span className="font-mono text-[11px] text-white/80">{audioLevel} dB</span>
+                  <span className="font-mono font-bold">{audioLevel} dB</span>
                 </div>
-                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-75 ${
-                      audioLevel > 65 ? "bg-rose-500" : audioLevel > 40 ? "bg-amber-500" : "bg-emerald-500"
+                      audioLevel > 50 ? "bg-rose-500" : audioLevel > 35 ? "bg-amber-500" : "bg-emerald-500"
                     }`}
-                    style={{ width: `${Math.min(100, (audioLevel / 80) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (audioLevel / 70) * 100)}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Question Palette Grid */}
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl space-y-3">
+            {/* Question Palette */}
+            <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">Question Navigator</span>
-                <span className="text-[11px] text-white/40 font-mono">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-900 font-rubik">
+                  Question Palette
+                </span>
+                <span className="text-[10px] font-mono text-gray-400 font-bold">
                   {Object.keys(userAnswers).length} Attempted
                 </span>
               </div>
@@ -1945,65 +1851,48 @@ export default function ProctoredTestingPage() {
                     <button
                       key={item.id}
                       onClick={() => setCurrentQIndex(idx)}
-                      className={`h-10 rounded-xl font-mono text-xs font-semibold transition-all relative border flex items-center justify-center ${
+                      className={`h-10 rounded-2xl font-mono text-xs font-bold transition-all relative border-2 flex items-center justify-center ${
                         isCurrent
-                          ? "bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30"
+                          ? "bg-[#468FEA] border-[#468FEA] text-white shadow-md shadow-[#468FEA]/20"
                           : isMarked
-                          ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                          ? "bg-[#F28500]/15 border-[#F28500]/40 text-[#F28500]"
                           : isAnswered
-                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
-                          : "bg-white/[0.03] border-white/10 text-white/50 hover:text-white"
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
                       }`}
                     >
                       <span>Q{idx + 1}</span>
                       {isMarked && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#F28500]" />
                       )}
                     </button>
                   );
                 })}
               </div>
-
-              <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2 text-[10px] text-white/60">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-500/30 border border-emerald-500/50" />
-                  <span>Answered</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-500/30 border border-amber-500/50" />
-                  <span>Marked</span>
-                </div>
-              </div>
             </div>
 
-            {/* Recent Violations Mini Feed */}
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl space-y-2.5">
+            {/* Incidents Mini Ticker */}
+            <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                  Proctoring Audit Log
+                <span className="text-xs font-black uppercase tracking-wider text-rose-600 font-rubik flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                  Incident Telemetry
                 </span>
-                <span className="text-[10px] font-mono text-white/40">{violations.length} total</span>
+                <span className="text-[10px] font-mono font-bold text-gray-500">{violations.length} Flags</span>
               </div>
 
               {violations.length === 0 ? (
-                <div className="py-4 text-center text-xs text-white/40">
-                  No integrity flags registered yet.
+                <div className="py-3 text-center text-xs text-gray-400 font-medium">
+                  Zero integrity strikes recorded.
                 </div>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                   {violations.slice(0, 4).map((v) => (
-                    <div
-                      key={v.id}
-                      className="p-2 rounded-lg bg-white/[0.02] border border-white/5 text-[11px] space-y-0.5"
-                    >
-                      <div className="flex items-center justify-between font-mono">
-                        <span className={v.severity === "high" ? "text-rose-400" : "text-amber-400"}>
-                          {v.label}
-                        </span>
-                        <span className="text-white/40 text-[10px]">{v.timestamp}</span>
+                    <div key={v.id} className="p-2 rounded-xl bg-rose-50/70 border border-rose-200 text-[10px]">
+                      <div className="flex items-center justify-between font-bold text-rose-700 font-mono">
+                        <span>{v.label}</span>
+                        <span className="text-gray-400">{v.timestamp}</span>
                       </div>
-                      <div className="text-white/50 text-[10px] truncate">{v.details}</div>
                     </div>
                   ))}
                 </div>
@@ -2016,67 +1905,50 @@ export default function ProctoredTestingPage() {
   }
 
   // ==========================================
-  // RENDER: STAGE 4 - COMPREHENSIVE PROCTORED AUDIT REPORT & RESULTS
+  // RENDER: STAGE 4 - AUDIT REPORT & PROCTOR DOSSIER
   // ==========================================
   return (
-    <div className="min-h-screen bg-[#08080c] text-white selection:bg-indigo-500/30 selection:text-indigo-200 py-10 px-4 sm:px-6 relative overflow-hidden">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-rose-600/10 rounded-full blur-[160px] pointer-events-none" />
-
+    <div className="min-h-screen bg-[#EDEAE0] text-gray-900 font-sans selection:bg-[#468FEA]/20 selection:text-[#468FEA] py-12 px-6 relative overflow-hidden">
       {/* Visual Proof Modal */}
       {selectedProof && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-xl p-6 rounded-2xl bg-[#12131f] border border-white/10 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-white border border-gray-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-indigo-400" />
-                <h3 className="text-sm font-semibold text-white">Photographic Evidence Snapshot</h3>
+                <Camera className="w-4 h-4 text-[#468FEA]" />
+                <h3 className="text-xs font-black uppercase font-rubik text-gray-900">Evidentiary Frame Snapshot</h3>
               </div>
-              <button
-                onClick={() => setSelectedProof(null)}
-                className="text-white/50 hover:text-white text-sm"
-              >
-                ✕
-              </button>
+              <button onClick={() => setSelectedProof(null)} className="text-gray-400 hover:text-gray-700 text-xs">✕</button>
             </div>
 
-            {selectedProof.snapshotDataUrl ? (
-              <div className="rounded-xl overflow-hidden border border-white/10 shadow-lg">
-                <img
-                  src={selectedProof.snapshotDataUrl}
-                  alt={selectedProof.label}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            ) : (
-              <div className="h-48 rounded-xl bg-black/40 flex items-center justify-center text-xs text-white/40">
-                Visual frame metadata recorded
+            {selectedProof.snapshotDataUrl && (
+              <div className="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-sm">
+                <img src={selectedProof.snapshotDataUrl} alt={selectedProof.label} className="w-full h-auto object-cover" />
               </div>
             )}
 
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/50">Violation Type:</span>
-                <span className="font-semibold text-white">{selectedProof.label}</span>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-gray-100">
+                <span className="text-gray-500">Violation Classification:</span>
+                <span className="font-bold text-gray-900">{selectedProof.label}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/50">Timestamp:</span>
-                <span className="font-mono text-indigo-300">{selectedProof.timestamp}</span>
+              <div className="flex justify-between py-1 border-b border-gray-100">
+                <span className="text-gray-500">Timestamp:</span>
+                <span className="font-mono font-bold text-[#468FEA]">{selectedProof.timestamp}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/50">AI Confidence:</span>
-                <span className="font-mono text-emerald-400">{selectedProof.confidence}%</span>
+              <div className="flex justify-between py-1 border-b border-gray-100">
+                <span className="text-gray-500">AI Confidence:</span>
+                <span className="font-mono font-bold text-emerald-600">{selectedProof.confidence}%</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-white/50">Audit Details:</span>
-                <span className="text-white/80 max-w-xs text-right">{selectedProof.details}</span>
+                <span className="text-gray-500">Incident Details:</span>
+                <span className="text-gray-800 text-right max-w-xs">{selectedProof.details}</span>
               </div>
             </div>
 
             <button
               onClick={() => setSelectedProof(null)}
-              className="w-full py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-medium text-white transition-colors"
+              className="w-full py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-black uppercase tracking-wider font-rubik text-gray-800 transition-colors"
             >
               Close Snapshot Viewer
             </button>
@@ -2086,197 +1958,189 @@ export default function ProctoredTestingPage() {
 
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Top Header Card */}
-        <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-400 mb-3">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Examination Concluded & Verified
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider font-rubik mb-3 ${
+              isDisqualified
+                ? "bg-rose-100 text-rose-700 border border-rose-200"
+                : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+            }`}>
+              {isDisqualified ? <AlertOctagon className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              {isDisqualified ? "Examination Terminated: Disqualified" : "Examination Completed & Authenticated"}
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
+
+            <h1 className="text-3xl sm:text-4xl font-black uppercase font-rubik tracking-tight text-gray-900">
               Proctored Integrity & Performance Audit
             </h1>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-white/60 font-mono">
-              <span>Candidate: <strong className="text-white">{candidateName}</strong> ({candidateId})</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-mono mt-1">
+              <span>Candidate: <strong className="text-gray-800">{candidateName}</strong> ({candidateId})</span>
               <span>•</span>
-              <span>Test: {config.title}</span>
-              <span>•</span>
-              <span>Completed at {new Date().toLocaleTimeString()}</span>
+              <span>Concluded at {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.print()}
-              className="px-4 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-white flex items-center gap-2 transition-colors"
+              className="px-5 py-3 rounded-full bg-white border border-gray-200 text-xs font-black uppercase tracking-wider font-rubik text-gray-800 hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2"
             >
-              <Download className="w-4 h-4 text-indigo-400" />
+              <Download className="w-4 h-4 text-[#468FEA]" />
               <span>Export Audit PDF</span>
             </button>
             <button
               onClick={() => {
                 setStage("config");
                 setViolations([]);
-                setTimeLeft(config.durationMinutes * 60);
+                setStrikesUsed(0);
+                setIsDisqualified(false);
               }}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-xl shadow-indigo-600/30 flex items-center gap-2 transition-all"
+              className="px-6 py-3 rounded-full bg-[#468FEA] hover:bg-[#3b82f6] text-xs font-black uppercase tracking-wider font-rubik text-white shadow-lg shadow-[#468FEA]/20 transition-all flex items-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Retake / Test Again</span>
+              <span>Retake Test</span>
             </button>
           </div>
         </div>
 
-        {/* 3 Metric Hero Cards */}
+        {/* 3 Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Trust / Integrity Score */}
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-xl space-y-4">
+          {/* Trust Score */}
+          <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Proctoring Trust Score
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik">
+                Integrity Trust Score
               </span>
-              <ShieldCheck className={`w-5 h-5 ${trustScore >= 80 ? "text-emerald-400" : trustScore >= 60 ? "text-amber-400" : "text-rose-400"}`} />
+              <ShieldCheck className={`w-5 h-5 ${trustScore >= 80 ? "text-emerald-500" : trustScore >= 50 ? "text-amber-500" : "text-rose-500"}`} />
             </div>
 
             <div className="flex items-baseline gap-2">
-              <span className={`text-5xl font-extrabold tracking-tight font-mono ${trustScore >= 80 ? "text-emerald-400" : trustScore >= 60 ? "text-amber-400" : "text-rose-400"}`}>
+              <span className={`text-5xl font-black font-mono ${trustScore >= 80 ? "text-emerald-600" : trustScore >= 50 ? "text-amber-600" : "text-rose-600"}`}>
                 {trustScore}%
               </span>
-              <span className="text-xs font-medium text-white/50">
-                {trustScore >= 85 ? "HIGH CREDIBILITY" : trustScore >= 65 ? "MANUAL REVIEW REQUIRED" : "INTEGRITY COMPROMISED"}
+              <span className="text-xs font-bold uppercase font-rubik text-gray-500">
+                {isDisqualified ? "DISQUALIFIED" : trustScore >= 80 ? "HIGH TRUST" : "AUDIT FLAGGED"}
               </span>
             </div>
 
-            <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
               <div
-                className={`h-full ${trustScore >= 80 ? "bg-emerald-400" : trustScore >= 60 ? "bg-amber-400" : "bg-rose-500"}`}
+                className={`h-full ${trustScore >= 80 ? "bg-emerald-500" : trustScore >= 50 ? "bg-amber-500" : "bg-rose-500"}`}
                 style={{ width: `${trustScore}%` }}
               />
             </div>
-            <p className="text-[11px] text-white/50">
-              Evaluated across {violations.length} automated incident checks including webcam eye-tracking, screen locks, and audio telemetry.
+            <p className="text-[11px] text-gray-500 font-medium">
+              Calculated from gaze deviations, fullscreen breaches, and microphone decibel tracking.
             </p>
           </div>
 
-          {/* Exam Academic Score */}
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-xl space-y-4">
+          {/* Academic Score */}
+          <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Exam Performance
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik">
+                Academic Score
               </span>
-              <Award className="w-5 h-5 text-indigo-400" />
+              <Award className="w-5 h-5 text-[#468FEA]" />
             </div>
 
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold tracking-tight font-mono text-white">
+              <span className="text-5xl font-black font-mono text-gray-900">
                 {examScore.earned}
-                <span className="text-2xl text-white/40">/{examScore.total}</span>
+                <span className="text-2xl text-gray-400">/{examScore.total}</span>
               </span>
-              <span className="text-xs font-medium text-indigo-300">
+              <span className="text-xs font-bold text-[#468FEA] font-mono">
                 ({examScore.percentage}%)
               </span>
             </div>
 
-            <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-indigo-500"
-                style={{ width: `${examScore.percentage}%` }}
-              />
+            <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div className="h-full bg-[#468FEA]" style={{ width: `${examScore.percentage}%` }} />
             </div>
-            <p className="text-[11px] text-white/50">
-              Includes compiler test case execution score, MCQs evaluation, and fill-in-the-blank tokens.
+            <p className="text-[11px] text-gray-500 font-medium">
+              Includes compiler test case execution, MCQs, and fill-in-the-blank tokens.
             </p>
           </div>
 
-          {/* Security & Flags Summary */}
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-xl space-y-4">
+          {/* Strikes & Flags */}
+          <div className="p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Incident Telemetry
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 font-rubik">
+                Integrity Strikes
               </span>
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
             </div>
 
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold tracking-tight font-mono text-amber-400">
-                {violations.length}
+              <span className="text-5xl font-black font-mono text-rose-600">
+                {strikesUsed}
+                <span className="text-2xl text-gray-400">/{maxStrikes}</span>
               </span>
-              <span className="text-xs font-medium text-white/50">FLAGS RECORDED</span>
+              <span className="text-xs font-bold uppercase font-rubik text-rose-600">
+                {isDisqualified ? "LIMIT EXCEEDED" : "RECORDED"}
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-white/70 font-mono">
-              <div>High Severity: <span className="text-rose-400 font-bold">{violations.filter(v => v.severity === 'high').length}</span></div>
-              <div>Medium/Low: <span className="text-amber-400 font-bold">{violations.filter(v => v.severity !== 'high').length}</span></div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-mono font-bold text-gray-700">
+              <div>Critical Flags: <span className="text-rose-600">{violations.filter(v => v.severity === 'critical').length}</span></div>
+              <div>High Flags: <span className="text-amber-600">{violations.filter(v => v.severity !== 'critical').length}</span></div>
             </div>
-            <p className="text-[11px] text-white/50">
-              Every flag contains an evidentiary snapshot and timestamp for human auditor verification.
+            <p className="text-[11px] text-gray-500 font-medium">
+              Every flag contains an evidentiary snapshot and timestamp for auditor verification.
             </p>
           </div>
         </div>
 
-        {/* Proctoring Evidentiary Audit Trail & Proof Gallery */}
-        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-2">
+        {/* Photographic Evidence Gallery */}
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-200">
             <div>
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Camera className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-[#468FEA]" />
                 Evidentiary Audit Log & Photographic Proofs
               </h2>
-              <p className="text-xs text-white/50 mt-0.5">
+              <p className="text-xs text-gray-500 font-medium mt-0.5">
                 Timestamped incident timeline with high-definition webcam & screen captures.
               </p>
             </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-white/[0.04] text-white/70 border border-white/10 font-mono">
-              {violations.length} Evidence Records
+            <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+              {violations.length} Records
             </span>
           </div>
 
           {violations.length === 0 ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
+            <div className="py-12 text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <div className="text-sm font-semibold text-white">Clean Session • Zero Violations Detected</div>
-              <p className="text-xs text-white/50 max-w-md mx-auto">
-                Candidate maintained continuous full-screen focus, gaze alignment, and an undisturbed audio environment throughout the examination.
-              </p>
+              <h3 className="text-sm font-bold text-gray-900 font-rubik">Zero Integrity Violations</h3>
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">Candidate maintained continuous focus, fullscreen lock, and silence.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {violations.map((v) => (
                 <div
                   key={v.id}
                   onClick={() => setSelectedProof(v)}
-                  className="group p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-indigo-500/40 hover:bg-white/[0.04] transition-all cursor-pointer space-y-3 shadow-lg"
+                  className="p-4 rounded-2xl bg-white border border-gray-200 hover:border-[#468FEA] hover:shadow-lg transition-all cursor-pointer space-y-3 group"
                 >
-                  <div className="relative aspect-video rounded-lg overflow-hidden bg-black/40 border border-white/10">
-                    {v.snapshotDataUrl ? (
-                      <img
-                        src={v.snapshotDataUrl}
-                        alt={v.label}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white/30 text-xs font-mono">
-                        SNAPSHOT LOGGED
-                      </div>
+                  <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-900 border border-gray-200">
+                    {v.snapshotDataUrl && (
+                      <img src={v.snapshotDataUrl} alt={v.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     )}
-                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-black/70 backdrop-blur border border-white/10">
-                      <span className={v.severity === "high" ? "text-rose-400" : "text-amber-400"}>
-                        {v.severity}
-                      </span>
+                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-black/80 text-white">
+                      {v.severity}
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between text-xs font-mono mb-1">
-                      <span className="font-semibold text-white truncate max-w-[180px]">{v.label}</span>
-                      <span className="text-indigo-400 text-[10px]">{v.timestamp}</span>
+                    <div className="flex items-center justify-between text-xs font-mono font-bold mb-1">
+                      <span className="text-gray-900 truncate max-w-[170px]">{v.label}</span>
+                      <span className="text-[#468FEA] text-[10px]">{v.timestamp}</span>
                     </div>
-                    <p className="text-[11px] text-white/60 line-clamp-2">{v.details}</p>
+                    <p className="text-[11px] text-gray-600 line-clamp-2">{v.details}</p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[10px] text-indigo-400 font-mono">
-                    <span>Click to inspect proof</span>
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] text-[#468FEA] font-bold font-rubik uppercase">
+                    <span>Inspect Proof</span>
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
@@ -2285,64 +2149,40 @@ export default function ProctoredTestingPage() {
           )}
         </div>
 
-        {/* Detailed Question Review Breakdown */}
-        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-white/10">
-            <div>
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-purple-400" />
-                Detailed Question & Answer Audit
-              </h2>
-              <p className="text-xs text-white/50 mt-0.5">
-                Evaluation of submitted responses across all question paradigms.
-              </p>
-            </div>
-          </div>
+        {/* Question Answers Review */}
+        <div className="p-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm space-y-4">
+          <h2 className="text-xl font-black uppercase font-rubik tracking-tight text-gray-900">
+            Submitted Answer Evaluation
+          </h2>
 
-          <div className="space-y-4">
-            {DEFAULT_QUESTIONS.map((item, idx) => {
-              const isCoding = item.type === "coding";
-              return (
-                <div key={item.id} className="p-4 rounded-xl bg-white/[0.01] border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-white/50">Question {idx + 1} • {item.category}</span>
-                    <span className="text-xs font-mono text-indigo-300 font-semibold">{item.points} Points</span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-
-                  {isCoding ? (
-                    <div className="p-3 rounded-lg bg-black/40 border border-white/5 font-mono text-xs text-indigo-200">
-                      <div className="text-white/40 text-[10px] mb-1">CANDIDATE CODE:</div>
-                      <pre className="overflow-x-auto whitespace-pre">
-                        {(userAnswers[1]?.code || "").slice(0, 240)}...
-                      </pre>
-                      <div className="mt-2 text-[11px] text-emerald-400 font-semibold">
-                        Status: {codeExecutionPassed ? "Accepted (All Test Cases Passed)" : "Attempted"}
-                      </div>
-                    </div>
-                  ) : item.type === "mcq_single" ? (
-                    <div className="text-xs space-y-1">
-                      <div>Candidate Answer: <strong className="text-white">{userAnswers[item.id] || "Unattempted"}</strong></div>
-                      <div>Correct Answer: <strong className="text-emerald-400">{item.correctAnswer as string}</strong></div>
-                    </div>
-                  ) : item.type === "mcq_multi" ? (
-                    <div className="text-xs space-y-1">
-                      <div>Candidate Answers: <strong className="text-white">{((userAnswers[item.id] as string[]) || []).join(", ") || "None"}</strong></div>
-                      <div>Correct Answers: <strong className="text-emerald-400">{((item.correctAnswer as string[]) || []).join(", ")}</strong></div>
-                    </div>
-                  ) : item.type === "fill_blank" ? (
-                    <div className="text-xs space-y-1">
-                      <div>Blank 1: <strong className="text-white">{userAnswers[item.id]?.[1] || "—"}</strong> (Expected: io_uring)</div>
-                      <div>Blank 2: <strong className="text-white">{userAnswers[item.id]?.[2] || "—"}</strong> (Expected: epoll)</div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-white/70">
-                      Response recorded and submitted to evaluation queue.
-                    </div>
-                  )}
+          <div className="space-y-3">
+            {DEFAULT_QUESTIONS.map((item, idx) => (
+              <div key={item.id} className="p-4 rounded-2xl bg-white border border-gray-200 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-gray-500">Question {idx + 1} • {item.category}</span>
+                  <span className="text-xs font-mono font-black text-[#468FEA]">{item.points} PTS</span>
                 </div>
-              );
-            })}
+                <h3 className="text-sm font-bold text-gray-900">{item.title}</h3>
+
+                {item.type === "coding" ? (
+                  <div className="text-xs font-mono text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                    Status: {codeExecutionPassed ? "Accepted (4/4 Test Cases Passed)" : "Attempted"}
+                  </div>
+                ) : item.type === "mcq_single" ? (
+                  <div className="text-xs space-y-0.5">
+                    <div>Answer: <strong className="text-gray-900">{userAnswers[item.id] || "Unattempted"}</strong></div>
+                    <div>Correct: <strong className="text-emerald-600">{item.correctAnswer as string}</strong></div>
+                  </div>
+                ) : item.type === "mcq_multi" ? (
+                  <div className="text-xs space-y-0.5">
+                    <div>Answers: <strong className="text-gray-900">{((userAnswers[item.id] as string[]) || []).join(", ") || "None"}</strong></div>
+                    <div>Correct: <strong className="text-emerald-600">{((item.correctAnswer as string[]) || []).join(", ")}</strong></div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-600">Response recorded and archived in evaluation database.</div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
