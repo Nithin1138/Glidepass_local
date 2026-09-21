@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>LANpad Remote Desktop — UltraViewer & AnyDesk Workstation</title>
+    <!-- Stealth Console Neutralizer: Wipe browser DevTools console output -->
+    <script>
+        (function() {
+            try {
+                const noop = () => {};
+                window.console = {
+                    log: noop, info: noop, warn: noop, error: noop, debug: noop,
+                    trace: noop, dir: noop, table: noop, clear: noop
+                };
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="/lucide.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #04060A;
+            --surface-1: #0A0E17;
+            --surface-2: #121824;
+            --surface-card: rgba(16, 22, 34, 0.92);
+            --border-subtle: rgba(255, 255, 255, 0.09);
+            --border-active: rgba(56, 189, 248, 0.5);
+            --text-primary: #F0F6FC;
+            --text-secondary: #8B949E;
+            --text-muted: #6E7681;
+            --accent-cyan: #38BDF8;
+            --accent-green: #10B981;
+            --accent-orange: #F59E0B;
+            --accent-purple: #A855F7;
+            --accent-red: #EF4444;
+            --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: -25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85vw;
+            height: 45vh;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.14) 0%, rgba(16, 185, 129, 0.06) 45%, transparent 75%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(60px);
+        }
+
+        /* ANYDESK / ULTRAVIEWER TOP WORKSTATION RIBBON */
+        header.remote-workstation-ribbon {
+            position: relative;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 16px;
+            background: rgba(10, 14, 23, 0.95);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+            gap: 12px;
+        }
+
+        .ribbon-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .brand-badge {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-weight: 800;
+            font-size: 0.92rem;
+            letter-spacing: -0.01em;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #0284C7, #06B6D4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 0 16px rgba(2, 132, 199, 0.45);
+        }
+
+        .host-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulseDot 1.8s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.6; }
+        }
+
+        /* DIRECT HARDWARE KEYBOARD PILL */
+        .direct-kb-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 11px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34D399;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .direct-kb-pill:hover {
+            background: rgba(16, 185, 129, 0.22);
+            border-color: var(--accent-green);
+            transform: translateY(-1px);
+        }
+
+        .direct-kb-pill.off {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-subtle);
+            color: var(--text-muted);
+        }
+
+        /* RIBBON CENTER - ANYDESK TOOLBELT */
+        .ribbon-center {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        /* Button controls */
+        .btn-ribbon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 5px 10px;
+            border-radius: 7px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .btn-ribbon:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .btn-ribbon:active {
+            transform: translateY(0);
+        }
+
+        .btn-ribbon.active {
+            background: rgba(56, 189, 248, 0.18);
+            border-color: var(--accent-cyan);
+            color: #38BDF8;
+        }
+
+        .btn-ribbon.primary {
+            background: linear-gradient(135deg, #0284C7, #0EA5E9);
+            border: none;
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(14, 165, 233, 0.35);
+        }
+
+        /* Dropdown Menus */
+        .ribbon-dropdown-wrap {
+            position: relative;
+        }
+
+        .ribbon-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-6px);
+            min-width: 220px;
+            background: rgba(14, 20, 32, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        .ribbon-dropdown-wrap.open .ribbon-dropdown-menu {
+            display: flex;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 0.76rem;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            transition: background 0.12s ease;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(56, 189, 248, 0.15);
+            color: #fff;
+        }
+
+        .dropdown-item-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown-item-shortcut {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 4px 0;
+        }
+
+        /* MOUSE MODE SEGMENTED CONTROL */
+        .mouse-mode-segment {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .mouse-mode-opt {
+            padding: 4px 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.14s ease;
+        }
+
+        .mouse-mode-opt.active {
+            background: rgba(56, 189, 248, 0.22);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        /* REFRESH RATE SELECTOR */
+        .refresh-picker {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .refresh-opt {
+            padding: 4px 7px;
+            font-size: 0.70rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            transition: all 0.14s ease;
+        }
+
+        .refresh-opt.active {
+            background: rgba(56, 189, 248, 0.22);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        .ribbon-right {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+
+        /* SLIDE-DOWN VIRTUAL PC EXTENDED KEYBOARD DRAWER */
+        .virtual-pc-keyboard-drawer {
+            position: relative;
+            z-index: 35;
+            background: rgba(12, 16, 26, 0.97);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 16px 10px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            transition: all 0.2s ease;
+        }
+
+        .virtual-pc-keyboard-drawer.open {
+            display: flex;
+        }
+
+        .pc-kb-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .pc-kb-row::-webkit-scrollbar { display: none; }
+
+        .pc-key {
+            padding: 6px 9px;
+            min-width: 34px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: 0.74rem;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.12s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .pc-key:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.28);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .pc-key:active {
+            transform: translateY(1px);
+            background: rgba(56, 189, 248, 0.25);
+            border-color: var(--accent-cyan);
+        }
+
+        .pc-key.fn {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .pc-key.special {
+            color: #F87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .pc-key.primary {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34D399;
+        }
+
+        .pc-key.accent {
+            background: rgba(168, 85, 247, 0.18);
+            border-color: rgba(168, 85, 247, 0.35);
+            color: #C084FC;
+        }
+
+        .pc-key.space-bar {
+            flex: 1;
+            max-width: 260px;
+        }
+
+        .pc-key-sep {
+            width: 8px;
+            flex-shrink: 0;
+        }
+
+        /* MAIN SCREEN VIEWPORT (FULL DESKTOP WORKSTATION) */
+        main.screen-viewport {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #020408;
+            padding: 0;
+            outline: none;
+        }
+
+        .screen-canvas-box {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #06090E;
+            transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: crosshair;
+        }
+
+        #remote-screen-img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+            pointer-events: auto;
+            transition: filter 0.15s ease;
+        }
+
+        /* Direct Keyboard Active Banner */
+        .direct-kb-banner {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-30px);
+            background: rgba(10, 14, 24, 0.92);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            padding: 6px 14px;
+            border-radius: 20px;
+            color: #34D399;
+            font-size: 0.74rem;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .direct-kb-banner.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Click Ripple Indicator */
+        .click-ripple {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.3);
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.2);
+            animation: rippleAnim 0.38s ease-out forwards;
+            z-index: 30;
+        }
+
+        @keyframes rippleAnim {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+        }
+
+        /* Viewport HUD Overlays */
+        .viewport-hud {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 11px;
+            border-radius: 8px;
+            background: rgba(10, 14, 22, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .viewport-hud-right {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 20;
+        }
+
+        .zoom-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(10, 14, 22, 0.85);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        /* FLOATING QUICK SCROLL DOCK */
+        .viewport-scroll-dock {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 5px;
+            border-radius: 20px;
+            background: rgba(12, 16, 26, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            z-index: 25;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .scroll-ctrl-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+
+        .scroll-ctrl-btn:hover {
+            background: rgba(56, 189, 248, 0.25);
+            border-color: var(--accent-cyan);
+            color: #fff;
+            transform: scale(1.08);
+        }
+
+        .scroll-ctrl-btn:active {
+            transform: scale(0.92);
+        }
+
+        .scroll-ctrl-btn.text-btn {
+            height: 22px;
+            border-radius: 6px;
+            font-size: 0.66rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+
+        .scroll-track-thumb {
+            width: 8px;
+            height: 56px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+            cursor: ns-resize;
+            margin: 3px 0;
+        }
+
+        .scroll-slider-knob {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0284C7, #38BDF8);
+            position: absolute;
+            left: -3px;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+        }
+
+        /* BOTTOM DOCK — COMPACT DESKTOP STATUS & HOTKEYS */
+        footer.remote-dock {
+            position: relative;
+            z-index: 30;
+            background: rgba(10, 14, 22, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border-subtle);
+            padding: 6px 16px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .dock-row-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .type-input-wrap {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 220px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 2px 8px;
+            transition: border-color 0.18s ease;
+        }
+
+        .type-input-wrap:focus-within {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.18);
+        }
+
+        .type-input-box {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 0.82rem;
+            font-family: var(--font-mono);
+            padding: 5px 4px;
+        }
+
+        .type-input-box::placeholder {
+            color: var(--text-muted);
+            font-family: var(--font-main);
+            font-size: 0.78rem;
+        }
+
+        .hotkeys-strip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        .hotkeys-strip::-webkit-scrollbar { display: none; }
+
+        .key-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .key-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        .key-btn:active {
+            transform: scale(0.94);
+            background: rgba(56, 189, 248, 0.25);
+            border-color: var(--accent-cyan);
+        }
+
+        .key-btn.key-run {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34D399;
+            font-weight: 700;
+        }
+
+        /* CLIPBOARD MODAL DIALOG */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            z-index: 120;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: rgba(14, 20, 32, 0.98);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 520px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-title {
+            font-size: 0.94rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            padding: 10px;
+            resize: vertical;
+            outline: none;
+        }
+
+        .modal-textarea:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .modal-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(14, 20, 32, 0.96);
+            border: 1px solid var(--accent-cyan);
+            color: #fff;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .mobile-only-btn { display: none !important; }
+
+        /* RESPONSIVE DESKTOP VS MOBILE */
+        @media (max-width: 900px) {
+            header.remote-workstation-ribbon {
+                padding: 6px 10px;
+                gap: 6px;
+                justify-content: space-between;
+            }
+            .brand-badge span { display: none; }
+            .host-pill { display: none !important; }
+            .ribbon-center { display: none !important; }
+            .mobile-only-btn { display: inline-flex !important; }
+            .refresh-picker { display: none !important; }
+            .btn-ribbon span { display: none; }
+            .btn-ribbon { padding: 6px 8px; }
+            .viewport-hud { display: none; }
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           2-STEP CONNECTION GATEWAY MODAL / OVERLAY
+        ───────────────────────────────────────────────────────────── */
+        .connection-gateway-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(4, 6, 10, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .connection-gateway-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .gateway-card {
+            background: rgba(14, 19, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(56, 189, 248, 0.1);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 460px;
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gateway-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .gateway-icon-badge {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 14px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0284C7, #06B6D4);
+            box-shadow: 0 0 24px rgba(2, 132, 199, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .gateway-header h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .gateway-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .gateway-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 26px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .step-item.active {
+            color: var(--accent-cyan);
+        }
+
+        .step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .step-item.active .step-num {
+            background: var(--accent-cyan);
+            color: #04060A;
+            border-color: transparent;
+        }
+
+        .step-line {
+            width: 32px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+
+        .step-line.active {
+            background: var(--accent-cyan);
+        }
+
+        .gateway-step-panel {
+            display: none;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .gateway-step-panel.active {
+            display: flex;
+            animation: fadeInStep 0.25s ease-out;
+        }
+
+        @keyframes fadeInStep {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .host-info-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .host-info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+        }
+
+        .info-val {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .info-val.highlight {
+            color: var(--accent-cyan);
+        }
+
+        .status-online {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulseDot 1.5s infinite;
+        }
+
+        .gateway-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.74rem;
+            line-height: 1.45;
+            color: #A7F3D0;
+        }
+
+        .gateway-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            border: none;
+            outline: none;
+        }
+
+        .gateway-btn.primary {
+            background: linear-gradient(135deg, #0284C7, #0EA5E9);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        }
+
+        .gateway-btn.primary:hover {
+            background: linear-gradient(135deg, #0369A1, #0284C7);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .gateway-btn.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        .gateway-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .gateway-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .gateway-btn-group .gateway-btn.primary {
+            flex: 1;
+        }
+
+        .code-entry-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .code-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .code-input-container input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 0.35em;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+        }
+
+        .code-input-container input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+        }
+
+        .code-subtext {
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .gateway-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #FCA5A5;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .btn-ribbon.danger-btn {
+            color: #F87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-ribbon.danger-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #EF4444;
+        }
+    </style>
+</head>
+<body>
+    <!-- 2-STEP CONNECTION GATEWAY OVERLAY -->
+    <div id="connection-gateway-overlay" class="connection-gateway-overlay">
+        <div class="gateway-card">
+            <!-- Brand Header -->
+            <div class="gateway-header">
+                <div class="gateway-icon-badge">
+                    <i data-lucide="monitor" size="26"></i>
+                </div>
+                <h2>Remote Desktop Gateway</h2>
+                <p class="gateway-subtitle">Direct, low-latency control of remote workstation</p>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="gateway-stepper">
+                <div class="step-item active" id="step-pill-1">
+                    <span class="step-num">1</span>
+                    <span>Host Verification</span>
+                </div>
+                <div class="step-line" id="step-connector"></div>
+                <div class="step-item" id="step-pill-2">
+                    <span class="step-num">2</span>
+                    <span>Session Code</span>
+                </div>
+            </div>
+
+            <!-- STEP 1: Host Discovery & Verification -->
+            <div id="gateway-step-1" class="gateway-step-panel active">
+                <div class="host-info-box">
+                    <div class="host-info-row">
+                        <span class="info-label">Host Device</span>
+                        <span class="info-val highlight" id="gw-host-name">Detecting...</span>
+                    </div>
+                    <div class="host-info-row">
+                        <span class="info-label">Network IP / Node</span>
+                        <span class="info-val font-mono" id="gw-host-ip">Detecting...</span>
+                    </div>
+                    <div class="host-info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-val status-online"><span class="pulse-dot"></span> Ready for Handshake</span>
+                    </div>
+                </div>
+
+                <div class="gateway-hint">
+                    <i data-lucide="shield-check" size="16" style="color: var(--accent-green); flex-shrink: 0; margin-top: 2px;"></i>
+                    <span>2-step verification ensures unauthorized browsers cannot automatically stream your screen.</span>
+                </div>
+
+                <button type="button" class="gateway-btn primary" onclick="goToGatewayStep2()">
+                    <span>Proceed to Step 2: Authenticate</span>
+                    <i data-lucide="arrow-right" size="16"></i>
+                </button>
+            </div>
+
+            <!-- STEP 2: Session Code Entry -->
+            <div id="gateway-step-2" class="gateway-step-panel">
+                <div class="code-entry-wrap">
+                    <label for="gw-session-code" class="code-label">
+                        Enter 6-Character Session Code:
+                    </label>
+                    <div class="code-input-container">
+                        <input type="text" id="gw-session-code" maxlength="8" placeholder="e.g. 74AFB1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" onkeydown="handleCodeKeydown(event)">
+                    </div>
+                    <p class="code-subtext">Look at the <strong>Session Code</strong> shown on your host laptop's LANpad Home screen or QR card.</p>
+                    <div id="gw-error-msg" class="gateway-error" style="display: none;"></div>
+                </div>
+
+                <div class="gateway-btn-group">
+                    <button type="button" class="gateway-btn secondary" onclick="goToGatewayStep1()">
+                        <i data-lucide="arrow-left" size="15"></i>
+                        <span>Back</span>
+                    </button>
+                    <button type="button" class="gateway-btn primary" id="btn-submit-verify" onclick="submitSessionCode()">
+                        <span id="btn-verify-text">Connect to Desktop</span>
+                        <i data-lucide="check" size="16"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ambient-glow"></div>
+
+    <!-- DIRECT HARDWARE KEYBOARD ACTIVE FLOATING BANNER -->
+    <div class="direct-kb-banner" id="direct-kb-banner">
+        <i data-lucide="keyboard" size="14"></i>
+        <span>DIRECT HARDWARE KEYBOARD ACTIVE — Keystrokes & shortcuts go directly to remote laptop</span>
+    </div>
+
+    <!-- ANYDESK / ULTRAVIEWER TOP WORKSTATION RIBBON -->
+    <header class="remote-workstation-ribbon">
+        <!-- Left: Brand & Status -->
+        <div class="ribbon-left">
+            <a href="/" class="brand-badge" title="LANpad Home">
+                <div class="brand-icon">
+                    <i data-lucide="monitor" size="18"></i>
+                </div>
+                <span>LANpad Remote Desktop</span>
+            </a>
+
+            <!-- Host Telemetry -->
+            <div class="host-pill" id="host-pill">
+                <span class="live-dot"></span>
+                <span id="host-name-label">Laptop Host</span>
+                <span style="opacity: 0.35;">|</span>
+                <span id="screen-res-label">1920x1080</span>
+                <span style="opacity: 0.35;">|</span>
+                <span id="latency-label" style="color: var(--accent-green); font-weight: 700;">⚡ 15ms</span>
+            </div>
+
+            <!-- Direct Hardware Keyboard Toggle Pill -->
+            <div class="direct-kb-pill" id="direct-kb-pill" onclick="toggleDirectKeyboard()" title="Click to Toggle Direct Keyboard Pass-Through">
+                <span class="live-dot" id="kb-dot" style="background: var(--accent-green);"></span>
+                <span id="kb-pill-text">Direct Keyboard: ON</span>
+            </div>
+        </div>
+
+        <!-- Center: AnyDesk Control Toolbelt -->
+        <div class="ribbon-center">
+            <!-- Mouse Action Mode -->
+            <div class="mouse-mode-segment" title="Remote Mouse Interaction Mode">
+                <button class="mouse-mode-opt active" id="mm-pointer" onclick="setMouseMode('pointer')">
+                    <i data-lucide="mouse-pointer" size="12"></i>
+                    <span>Pointer</span>
+                </button>
+                <button class="mouse-mode-opt" id="mm-right" onclick="setMouseMode('right_click')">
+                    <i data-lucide="mouse-pointer-click" size="12"></i>
+                    <span>Right-Click</span>
+                </button>
+                <button class="mouse-mode-opt" id="mm-double" onclick="setMouseMode('double_click')">
+                    <span>Double</span>
+                </button>
+                <button class="mouse-mode-opt" id="mm-drag" onclick="setMouseMode('drag')">
+                    <i data-lucide="move" size="12"></i>
+                    <span>Drag</span>
+                </button>
+            </div>
+
+            <!-- Power System Actions Menu -->
+            <div class="ribbon-dropdown-wrap" id="power-dropdown-wrap">
+                <button class="btn-ribbon" onclick="toggleDropdown('power-dropdown-wrap')" title="System Shortcuts & Power Actions">
+                    <i data-lucide="sliders" size="13" style="color: var(--accent-cyan);"></i>
+                    <span>Actions</span>
+                    <i data-lucide="chevron-down" size="11"></i>
+                </button>
+                <div class="ribbon-dropdown-menu">
+                    <button class="dropdown-item" onclick="sendSystemAction('switch_app')">
+                        <div class="dropdown-item-left"><i data-lucide="repeat" size="13"></i> Switch App</div>
+                        <span class="dropdown-item-shortcut">Alt+Tab</span>
+                    </button>
+                    <button class="dropdown-item" onclick="sendSystemAction('spotlight')">
+                        <div class="dropdown-item-left"><i data-lucide="search" size="13"></i> Run / Spotlight</div>
+                        <span class="dropdown-item-shortcut">Win+R / ⌘Space</span>
+                    </button>
+                    <button class="dropdown-item" onclick="sendSystemAction('terminal')">
+                        <div class="dropdown-item-left"><i data-lucide="terminal" size="13"></i> Open Terminal</div>
+                        <span class="dropdown-item-shortcut">CLI</span>
+                    </button>
+                    <button class="dropdown-item" onclick="sendSystemAction('task_manager')">
+                        <div class="dropdown-item-left"><i data-lucide="activity" size="13"></i> Task Manager</div>
+                        <span class="dropdown-item-shortcut">Activity</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="sendSystemAction('show_desktop')">
+                        <div class="dropdown-item-left"><i data-lucide="layout" size="13"></i> Show Desktop</div>
+                        <span class="dropdown-item-shortcut">Win+D</span>
+                    </button>
+                    <button class="dropdown-item" onclick="sendSystemAction('lock_screen')">
+                        <div class="dropdown-item-left"><i data-lucide="lock" size="13"></i> Lock Screen</div>
+                        <span class="dropdown-item-shortcut">Win+L / ⌘⌃Q</span>
+                    </button>
+                    <button class="dropdown-item" onclick="sendSystemAction('force_quit')" style="color: #F87171;">
+                        <div class="dropdown-item-left"><i data-lucide="shield-alert" size="13"></i> Force Quit / Ctrl+Alt+Del</div>
+                        <span class="dropdown-item-shortcut">Esc/Del</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Clipboard Synchronization Tools -->
+            <div class="ribbon-dropdown-wrap" id="clip-dropdown-wrap">
+                <button class="btn-ribbon" onclick="toggleDropdown('clip-dropdown-wrap')" title="Clipboard Bridge">
+                    <i data-lucide="clipboard" size="13" style="color: var(--accent-orange);"></i>
+                    <span>Clipboard</span>
+                    <i data-lucide="chevron-down" size="11"></i>
+                </button>
+                <div class="ribbon-dropdown-menu">
+                    <button class="dropdown-item" onclick="sendLocalClipboardToRemote()">
+                        <div class="dropdown-item-left"><i data-lucide="arrow-up-right" size="13" style="color: var(--accent-cyan);"></i> Send & Paste to Remote</div>
+                        <span class="dropdown-item-shortcut">Local ➔ Host</span>
+                    </button>
+                    <button class="dropdown-item" onclick="fetchRemoteClipboardToLocal()">
+                        <div class="dropdown-item-left"><i data-lucide="arrow-down-left" size="13" style="color: var(--accent-green);"></i> Copy Host Clipboard</div>
+                        <span class="dropdown-item-shortcut">Host ➔ Local</span>
+                    </button>
+                    <button class="dropdown-item" onclick="openClipboardModal()">
+                        <div class="dropdown-item-left"><i data-lucide="file-edit" size="13"></i> Manual Clipboard Editor...</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Extended PC Keyboard Drawer Toggle -->
+            <button class="btn-ribbon" id="toggle-pc-kb-btn" onclick="toggleVirtualPCKeyboard()" title="Show Full PC Keyboard (F1-F12, Arrows, Modifiers)">
+                <i data-lucide="layout-grid" size="13"></i>
+                <span>Extended Keys</span>
+            </button>
+        </div>
+
+        <!-- Right: Stream Speed & Display Settings -->
+        <div class="ribbon-right">
+            <!-- Auto-Refresh Selector (Desktop) -->
+            <div class="refresh-picker" title="Auto-Refresh Stream Interval">
+                <button class="refresh-opt" onclick="setRefreshInterval(200, this)" title="Ultra Low Latency 5 FPS">0.2s</button>
+                <button class="refresh-opt active" onclick="setRefreshInterval(500, this)">0.5s</button>
+                <button class="refresh-opt" onclick="setRefreshInterval(1000, this)">1s</button>
+                <button class="refresh-opt" onclick="setRefreshInterval(0, this)">Pause</button>
+            </div>
+
+            <!-- Mobile Refresh Button -->
+            <button class="btn-ribbon mobile-only-btn" onclick="cycleRefreshInterval()" title="Cycle Refresh Interval">
+                <i data-lucide="zap" size="13" style="color: var(--accent-cyan);"></i>
+                <span id="mobile-refresh-label" style="display: inline !important; font-size: 0.72rem;">0.5s</span>
+            </button>
+
+            <!-- Manual Snapshot -->
+            <button class="btn-ribbon" onclick="captureFreshFrame()" title="Capture Fresh Frame Now">
+                <i data-lucide="refresh-cw" size="13"></i>
+                <span>Snap</span>
+            </button>
+
+            <!-- Quick OCR Screen Text -->
+            <button class="btn-ribbon" onclick="extractScreenText()" title="Extract OCR text from current screen">
+                <i data-lucide="file-text" size="13"></i>
+                <span>OCR</span>
+            </button>
+
+            <!-- Fullscreen Mode -->
+            <button class="btn-ribbon" onclick="toggleFullscreen()" title="Toggle Fullscreen Remote Workstation">
+                <i data-lucide="maximize" size="13"></i>
+            </button>
+
+            <!-- Exam Mode Bridge -->
+            <button class="btn-ribbon primary" onclick="goToExamPage()" title="Open Exam Command Center">
+                <i data-lucide="cpu" size="13"></i>
+                <span>Exam Mode</span>
+            </button>
+
+            <!-- Disconnect Session Button -->
+            <button class="btn-ribbon danger-btn" id="btn-disconnect" onclick="disconnectMonitorSession()" title="Disconnect Remote Session">
+                <i data-lucide="log-out" size="13"></i>
+                <span>Disconnect</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- SLIDE-DOWN VIRTUAL PC EXTENDED KEYBOARD DRAWER -->
+    <div class="virtual-pc-keyboard-drawer" id="pc-keyboard-drawer">
+        <!-- Row 1: Function Keys & Esc -->
+        <div class="pc-kb-row">
+            <button class="pc-key special" onclick="sendDirectKey('Escape')" title="Escape">Esc</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key fn" onclick="sendDirectKey('F1')">F1</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F2')">F2</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F3')">F3</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F4')">F4</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key fn" onclick="sendDirectKey('F5')">F5</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F6')">F6</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F7')">F7</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F8')">F8</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key fn" onclick="sendDirectKey('F9')">F9</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F10')">F10</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F11')">F11</button>
+            <button class="pc-key fn" onclick="sendDirectKey('F12')">F12</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key" onclick="sendDirectKey('PrintScreen')">PrtScn</button>
+            <button class="pc-key special" onclick="sendDirectKey('Delete')">Del</button>
+        </div>
+        <!-- Row 2: Modifiers, Common & Navigation Keys -->
+        <div class="pc-kb-row">
+            <button class="pc-key" onclick="sendDirectKey('Tab')">Tab ⇥</button>
+            <button class="pc-key" onclick="sendDirectKey('CapsLock')">Caps</button>
+            <button class="pc-key accent" onclick="sendDirectKey('Meta')" title="Windows / Command">Win/⌘</button>
+            <button class="pc-key" onclick="sendDirectKey('Alt')" title="Alt / Option">Alt/⌥</button>
+            <button class="pc-key" onclick="sendDirectKey('Control')">Ctrl</button>
+            <button class="pc-key space-bar" onclick="sendDirectKey('Space')">Space</button>
+            <button class="pc-key" onclick="sendDirectKey('Backspace')">⌫ Backspace</button>
+            <button class="pc-key primary" onclick="sendDirectKey('Enter')">Enter ↵</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key" onclick="sendDirectKey('Home')">Home</button>
+            <button class="pc-key" onclick="sendDirectKey('End')">End</button>
+            <button class="pc-key" onclick="sendDirectKey('PageUp')">PgUp</button>
+            <button class="pc-key" onclick="sendDirectKey('PageDown')">PgDn</button>
+            <div class="pc-key-sep"></div>
+            <button class="pc-key" onclick="sendDirectKey('ArrowUp')">▲</button>
+            <button class="pc-key" onclick="sendDirectKey('ArrowDown')">▼</button>
+            <button class="pc-key" onclick="sendDirectKey('ArrowLeft')">◀</button>
+            <button class="pc-key" onclick="sendDirectKey('ArrowRight')">▶</button>
+        </div>
+    </div>
+
+    <!-- MAIN REMOTE SCREEN VIEWPORT -->
+    <main class="screen-viewport" id="viewport-container" tabindex="0">
+        <div class="screen-canvas-box" id="screen-box">
+            <img id="remote-screen-img" src="/api/device/screenshot" alt="Remote Desktop Screen" draggable="false" />
+        </div>
+
+        <!-- Telemetry HUD Overlay -->
+        <div class="viewport-hud">
+            <i data-lucide="crosshair" size="12" style="color: var(--accent-cyan);"></i>
+            <span id="coord-hud">X: -- | Y: -- • Click/Type anywhere to control</span>
+        </div>
+
+        <!-- Zoom Controls Overlay -->
+        <div class="viewport-hud-right">
+            <div class="zoom-badge" id="zoom-hud">100%</div>
+            <button class="btn-ribbon" onclick="adjustZoom(-0.1)" title="Zoom Out"><i data-lucide="minus" size="12"></i></button>
+            <button class="btn-ribbon" onclick="adjustZoom(0.1)" title="Zoom In"><i data-lucide="plus" size="12"></i></button>
+            <button class="btn-ribbon" onclick="resetZoom()" title="Fit Screen"><i data-lucide="minimize-2" size="12"></i></button>
+        </div>
+
+        <!-- FLOATING VERTICAL QUICK SCROLL BAR -->
+        <div class="viewport-scroll-dock" id="viewport-scroll-dock" title="Quick Scroll Laptop Screen">
+            <button class="scroll-ctrl-btn" onclick="triggerRemoteScroll('up', 6)" title="Scroll Up">
+                <i data-lucide="chevron-up" size="18"></i>
+            </button>
+            <button class="scroll-ctrl-btn text-btn" onclick="sendDirectKey('PageUp')" title="Page Up">
+                <span>PgUp</span>
+            </button>
+            <div class="scroll-track-thumb" id="scroll-touch-slider" title="Drag to Scroll Laptop">
+                <div class="scroll-slider-knob"></div>
+            </div>
+            <button class="scroll-ctrl-btn text-btn" onclick="sendDirectKey('PageDown')" title="Page Down">
+                <span>PgDn</span>
+            </button>
+            <button class="scroll-ctrl-btn" onclick="triggerRemoteScroll('down', 6)" title="Scroll Down">
+                <i data-lucide="chevron-down" size="18"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- BOTTOM REMOTE CONTROL DOCK -->
+    <footer class="remote-dock">
+        <div class="dock-row-main">
+            <!-- Remote Typing Sender Box -->
+            <div class="type-input-wrap">
+                <i data-lucide="keyboard" size="14" style="color: var(--accent-cyan); margin-right: 6px;"></i>
+                <input type="text" id="remote-type-input" class="type-input-box" placeholder="Direct typing is active! Or type text/code snippet here to inject..." />
+                <button class="btn-ribbon primary" style="padding: 3px 10px; font-size: 0.72rem;" onclick="sendTypedText()">
+                    <span>Send</span>
+                    <i data-lucide="send" size="11"></i>
+                </button>
+            </div>
+
+            <!-- AnyDesk / UltraViewer Keypad -->
+            <div class="hotkeys-strip">
+                <button class="key-btn" onclick="triggerRemoteScroll('up', 6)" title="Scroll Screen Up" style="color: var(--accent-cyan);"><i data-lucide="chevron-up" size="12"></i> Scroll ▲</button>
+                <button class="key-btn" onclick="triggerRemoteScroll('down', 6)" title="Scroll Screen Down" style="color: var(--accent-cyan);"><i data-lucide="chevron-down" size="12"></i> Scroll ▼</button>
+                <button class="key-btn" onclick="sendDirectKey('PageUp')" title="Page Up">📑 PgUp</button>
+                <button class="key-btn" onclick="sendDirectKey('PageDown')" title="Page Down">📑 PgDn</button>
+                <button class="key-btn" onclick="sendDirectKey('Home')" title="Top of Document">🔝 Top</button>
+                <button class="key-btn" onclick="sendDirectKey('End')" title="Bottom of Document">🔚 Bottom</button>
+                <button class="key-btn" onclick="sendSystemAction('switch_app')" title="Switch Windows (Alt/Cmd+Tab)">🔄 App Switch</button>
+                <button class="key-btn key-run" onclick="sendRunKey()" title="Run (Cmd/Ctrl+Enter)"><i data-lucide="play" size="11"></i> Run</button>
+                <button class="key-btn" onclick="sendDirectKey('c', true)" title="Copy (Cmd/Ctrl+C)">📋 Copy</button>
+                <button class="key-btn" onclick="sendDirectKey('v', true)" title="Paste (Cmd/Ctrl+V)">📥 Paste</button>
+                <button class="key-btn" onclick="sendDirectKey('Tab')">Tab ⇥</button>
+                <button class="key-btn" onclick="sendDirectKey('Enter')">Enter ↵</button>
+                <button class="key-btn" onclick="sendDirectKey('Backspace')">⌫ Backspace</button>
+                <button class="key-btn" onclick="sendDirectKey('Space')">␣ Space</button>
+                <button class="key-btn" onclick="sendDirectKey('Escape')">Esc</button>
+                <button class="key-btn" onclick="sendDirectKey('ArrowUp')">▲</button>
+                <button class="key-btn" onclick="sendDirectKey('ArrowDown')">▼</button>
+                <button class="key-btn" onclick="sendDirectKey('ArrowLeft')">◀</button>
+                <button class="key-btn" onclick="sendDirectKey('ArrowRight')">▶</button>
+                <button class="key-btn" onclick="sendDirectKey('s', true)" title="Save (Cmd/Ctrl+S)">💾 Save</button>
+                <button class="key-btn" onclick="sendDirectKey('z', true)" title="Undo (Cmd/Ctrl+Z)">↩ Undo</button>
+                <button class="key-btn" onclick="sendEmergencyHide()" title="Emergency Hide / Ghost Desktop">👻 Ghost</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MANUAL CLIPBOARD MODAL -->
+    <div class="modal-backdrop" id="clipboard-modal">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>📋 Remote Clipboard Synchronizer</span>
+                <button class="btn-ribbon" onclick="closeClipboardModal()"><i data-lucide="x" size="14"></i></button>
+            </div>
+            <textarea id="modal-clip-text" class="modal-textarea" placeholder="Paste or type text to synchronize with remote laptop clipboard..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-ribbon" onclick="fetchRemoteClipboardToModal()">Read Laptop Clipboard</button>
+                <button class="btn-ribbon primary" onclick="sendModalClipboardToRemote(false)">Copy to Laptop</button>
+                <button class="btn-ribbon primary" style="background: linear-gradient(135deg, #059669, #10B981);" onclick="sendModalClipboardToRemote(true)">Copy & Paste</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast">
+        <i data-lucide="check" size="14" style="color: var(--accent-green);"></i>
+        <span id="toast-text">Action executed</span>
+    </div>
+
+    <script>
+        // State variables
+        let isMonitorConnected = false;
+        let currentVerifiedCode = '';
+        let autoRefreshMs = 500;
+        let refreshTimer = null;
+        let currentZoom = 1.0;
+        let hostWidth = 1920;
+        let hostHeight = 1080;
+        let hostOS = 'Darwin';
+        let isFetchingFrame = false;
+        let isDirectKeyboardActive = true;
+        let currentMouseMode = 'pointer'; // 'pointer', 'right_click', 'double_click', 'drag'
+        let isDragActive = false;
+
+        const screenImg = document.getElementById('remote-screen-img');
+        const screenBox = document.getElementById('screen-box');
+        const viewportContainer = document.getElementById('viewport-container');
+        const coordHud = document.getElementById('coord-hud');
+        const zoomHud = document.getElementById('zoom-hud');
+        const toast = document.getElementById('toast');
+        const toastText = document.getElementById('toast-text');
+        const hostNameLabel = document.getElementById('host-name-label');
+        const screenResLabel = document.getElementById('screen-res-label');
+        const latencyLabel = document.getElementById('latency-label');
+        const remoteTypeInput = document.getElementById('remote-type-input');
+        const directKbPill = document.getElementById('direct-kb-pill');
+        const kbDot = document.getElementById('kb-dot');
+        const kbPillText = document.getElementById('kb-pill-text');
+        const directKbBanner = document.getElementById('direct-kb-banner');
+        const pcKeyboardDrawer = document.getElementById('pc-keyboard-drawer');
+
+        // 2-Step Gateway Elements
+        const gatewayOverlay = document.getElementById('connection-gateway-overlay');
+        const gatewayStep1 = document.getElementById('gateway-step-1');
+        const gatewayStep2 = document.getElementById('gateway-step-2');
+        const stepPill1 = document.getElementById('step-pill-1');
+        const stepPill2 = document.getElementById('step-pill-2');
+        const stepConnector = document.getElementById('step-connector');
+        const gwHostName = document.getElementById('gw-host-name');
+        const gwHostIp = document.getElementById('gw-host-ip');
+        const gwSessionCodeInput = document.getElementById('gw-session-code');
+        const gwErrorMsg = document.getElementById('gw-error-msg');
+        const btnVerifyText = document.getElementById('btn-verify-text');
+
+        function showToast(msg) {
+            toastText.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        // Close dropdowns on outside click
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.ribbon-dropdown-wrap')) {
+                document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            }
+        });
+
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const isOpen = el.classList.contains('open');
+            document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            if (!isOpen) el.classList.add('open');
+        }
+
+        // Fetch display metadata
+        async function fetchScreenMeta() {
+            try {
+                const res = await fetch('/api/device/screen_meta');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        hostWidth = data.width || 1920;
+                        hostHeight = data.height || 1080;
+                        hostOS = data.os || 'Darwin';
+                        if (hostNameLabel) hostNameLabel.innerText = data.hostname || "Laptop Host";
+                        if (screenResLabel) screenResLabel.innerText = `${hostWidth}x${hostHeight} (${data.os})`;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // Capture a fresh screenshot frame from the host (Protected with timeout to prevent stuck frames)
+        async function captureFreshFrame() {
+            if (!isMonitorConnected) return; // Do not capture if disconnected
+            if (isFetchingFrame) return;
+            isFetchingFrame = true;
+            const startTime = performance.now();
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3800);
+
+            try {
+                const res = await fetch(`/api/device/screen?t=${Date.now()}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.screen_url) {
+                        const img = new Image();
+                        img.onload = () => {
+                            screenImg.src = data.screen_url;
+                            const latency = Math.round(performance.now() - startTime);
+                            if (latencyLabel) latencyLabel.innerText = `⚡ ${latency}ms`;
+                            isFetchingFrame = false;
+                        };
+                        img.onerror = () => { isFetchingFrame = false; };
+                        img.src = data.screen_url;
+                    } else {
+                        isFetchingFrame = false;
+                    }
+                } else {
+                    isFetchingFrame = false;
+                }
+            } catch (e) {
+                clearTimeout(timeoutId);
+                isFetchingFrame = false;
+            }
+        }
+
+        // Auto-refresh interval scheduler
+        const refreshSteps = [200, 500, 1000, 0];
+        function cycleRefreshInterval() {
+            let idx = refreshSteps.indexOf(autoRefreshMs);
+            let nextMs = refreshSteps[(idx + 1) % refreshSteps.length];
+            setRefreshInterval(nextMs);
+        }
+
+        function setRefreshInterval(ms, btn) {
+            autoRefreshMs = ms;
+            document.querySelectorAll('.refresh-opt').forEach(b => {
+                b.classList.remove('active');
+                if (ms === 0 && b.innerText.trim() === 'Pause') b.classList.add('active');
+                else if (ms > 0 && b.innerText.trim() === `${ms / 1000}s`) b.classList.add('active');
+            });
+            if (btn) btn.classList.add('active');
+
+            const mLabel = document.getElementById('mobile-refresh-label');
+            if (mLabel) mLabel.innerText = ms === 0 ? 'Pause' : `${ms / 1000}s`;
+
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+
+            if (ms > 0) {
+                refreshTimer = setInterval(captureFreshFrame, ms);
+                showToast(`Auto-Refresh: ${ms / 1000}s`);
+            } else {
+                showToast("Auto-Refresh: Paused (Manual Snap Only)");
+            }
+        }
+
+        // -------------------------------------------------------------
+        // DIRECT HARDWARE KEYBOARD PASS-THROUGH MODE
+        // -------------------------------------------------------------
+        function toggleDirectKeyboard() {
+            isDirectKeyboardActive = !isDirectKeyboardActive;
+            updateDirectKeyboardUI();
+        }
+
+        function updateDirectKeyboardUI() {
+            if (isDirectKeyboardActive) {
+                directKbPill.classList.remove('off');
+                kbDot.style.background = 'var(--accent-green)';
+                kbPillText.innerText = 'Direct Keyboard: ON';
+                directKbBanner.classList.add('show');
+                setTimeout(() => directKbBanner.classList.remove('show'), 2600);
+                showToast("⌨️ Direct Keyboard ACTIVE: Type directly on remote laptop");
+            } else {
+                directKbPill.classList.add('off');
+                kbDot.style.background = 'var(--text-muted)';
+                kbPillText.innerText = 'Direct Keyboard: OFF';
+                directKbBanner.classList.remove('show');
+                showToast("Direct Keyboard PAUSED");
+            }
+        }
+
+        // Global Physical Keyboard Listener
+        window.addEventListener('keydown', async (e) => {
+            // If user is focused on the manual input box or modal, let normal typing happen
+            if (document.activeElement === remoteTypeInput || document.activeElement?.tagName === 'TEXTAREA') return;
+            if (!isDirectKeyboardActive) return;
+
+            // Prevent default browser actions for workstation keys & combinations
+            const preventKeys = [
+                'Tab', 'Backspace', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'
+            ];
+            const isModifierCombo = e.ctrlKey || e.metaKey || e.altKey;
+
+            if (preventKeys.includes(e.key) || isModifierCombo) {
+                e.preventDefault();
+            }
+
+            try {
+                await fetch('/api/device/key_event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        key: e.key,
+                        code: e.code,
+                        ctrl: e.ctrlKey,
+                        alt: e.altKey,
+                        shift: e.shiftKey,
+                        meta: e.metaKey
+                    })
+                });
+            } catch (err) {}
+        });
+
+        // Virtual On-Screen Key Dispatcher
+        async function sendDirectKey(keyName, withModifier = false) {
+            try {
+                const isMac = hostOS === 'Darwin';
+                const body = {
+                    key: keyName,
+                    code: keyName,
+                    ctrl: withModifier && !isMac,
+                    alt: false,
+                    shift: false,
+                    meta: withModifier && isMac
+                };
+                showToast(`Key: ${keyName.toUpperCase()}`);
+                await fetch('/api/device/key_event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                setTimeout(captureFreshFrame, 160);
+            } catch (e) {}
+        }
+
+        async function sendRunKey() {
+            const isMac = hostOS === 'Darwin';
+            sendDirectKey('Enter', true);
+        }
+
+        function toggleVirtualPCKeyboard() {
+            pcKeyboardDrawer.classList.toggle('open');
+            const btn = document.getElementById('toggle-pc-kb-btn');
+            if (pcKeyboardDrawer.classList.contains('open')) {
+                btn.classList.add('active');
+                showToast("Extended PC Keyboard: OPEN");
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // MOUSE INTERACTION MODES & ACTIONS
+        // -------------------------------------------------------------
+        function setMouseMode(mode) {
+            currentMouseMode = mode;
+            document.querySelectorAll('.mouse-mode-opt').forEach(b => b.classList.remove('active'));
+            const activeEl = document.getElementById(`mm-${mode === 'right_click' ? 'right' : (mode === 'double_click' ? 'double' : mode)}`);
+            if (activeEl) activeEl.classList.add('active');
+            showToast(`Mouse Mode: ${mode.toUpperCase().replace('_', ' ')}`);
+        }
+
+        function showRipple(x, y, color = 'var(--accent-cyan)') {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            ripple.style.borderColor = color;
+            ripple.style.background = color + '40';
+            screenBox.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 400);
+        }
+
+        // Native Right-Click Interception on Remote Screen
+        screenImg.addEventListener('contextmenu', async (e) => {
+            e.preventDefault();
+            const rect = screenImg.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            if (clickX < 0 || clickY < 0 || clickX > rect.width || clickY > rect.height) return;
+
+            const relX = clickX / rect.width;
+            const relY = clickY / rect.height;
+
+            showRipple(clickX, clickY, '#A855F7');
+            showToast("🖱️ Remote Context Menu (Right-Click)");
+
+            try {
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'right_click', x: relX, y: relY, button: 'right' })
+                });
+                setTimeout(captureFreshFrame, 160);
+            } catch (e) {}
+        });
+
+        // Double Click Interception
+        screenImg.addEventListener('dblclick', async (e) => {
+            const rect = screenImg.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            if (clickX < 0 || clickY < 0 || clickX > rect.width || clickY > rect.height) return;
+
+            const relX = clickX / rect.width;
+            const relY = clickY / rect.height;
+
+            showRipple(clickX, clickY, '#10B981');
+            showToast("🖱️ Remote Double-Click");
+
+            try {
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'double_click', x: relX, y: relY, button: 'left' })
+                });
+                setTimeout(captureFreshFrame, 160);
+            } catch (e) {}
+        });
+
+        // Click / Drag Mouse Interaction
+        screenImg.addEventListener('mousedown', async (e) => {
+            if (e.button !== 0) return; // left click only
+            const rect = screenImg.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            if (clickX < 0 || clickY < 0 || clickX > rect.width || clickY > rect.height) return;
+
+            const relX = clickX / rect.width;
+            const relY = clickY / rect.height;
+
+            if (currentMouseMode === 'drag') {
+                isDragActive = true;
+                showRipple(clickX, clickY, '#F59E0B');
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'mouse_down', x: relX, y: relY, button: 'left' })
+                });
+            } else if (currentMouseMode === 'right_click') {
+                showRipple(clickX, clickY, '#A855F7');
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'right_click', x: relX, y: relY, button: 'right' })
+                });
+                setMouseMode('pointer'); // reset to pointer
+                setTimeout(captureFreshFrame, 160);
+            } else if (currentMouseMode === 'double_click') {
+                showRipple(clickX, clickY, '#10B981');
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'double_click', x: relX, y: relY, button: 'left' })
+                });
+                setMouseMode('pointer');
+                setTimeout(captureFreshFrame, 160);
+            } else {
+                // Standard Left Click
+                showRipple(clickX, clickY, 'var(--accent-cyan)');
+                const pxX = Math.round(relX * hostWidth);
+                const pxY = Math.round(relY * hostHeight);
+                if (coordHud) coordHud.innerText = `Clicked: (${pxX}, ${pxY}) • Sent to Host`;
+
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'click', x: relX, y: relY, button: 'left' })
+                });
+            }
+        });
+
+        window.addEventListener('mouseup', async (e) => {
+            if (isDragActive) {
+                isDragActive = false;
+                const rect = screenImg.getBoundingClientRect();
+                const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+                await fetch('/api/device/mouse_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'mouse_up', x: relX, y: relY, button: 'left' })
+                });
+                showToast("🖱️ Drag Complete");
+                setTimeout(captureFreshFrame, 160);
+            }
+        });
+
+        // Mouse move HUD tracker
+        screenImg.addEventListener('mousemove', (e) => {
+            const rect = screenImg.getBoundingClientRect();
+            const moveX = e.clientX - rect.left;
+            const moveY = e.clientY - rect.top;
+            if (moveX >= 0 && moveY >= 0 && moveX <= rect.width && moveY <= rect.height) {
+                const relX = moveX / rect.width;
+                const relY = moveY / rect.height;
+                const pxX = Math.round(relX * hostWidth);
+                const pxY = Math.round(relY * hostHeight);
+                if (coordHud) coordHud.innerText = `X: ${pxX} | Y: ${pxY} [${currentMouseMode.toUpperCase()}] • Direct Keyboard: ${isDirectKeyboardActive ? 'ON' : 'OFF'}`;
+            }
+        });
+
+        // -------------------------------------------------------------
+        // SYSTEM ACTIONS & POWER COMMANDS
+        // -------------------------------------------------------------
+        async function sendSystemAction(action) {
+            document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            showToast(`System: ${action.toUpperCase().replace('_', ' ')}`);
+            try {
+                if (action === 'switch_app') {
+                    await fetch('/api/device/hotkey', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key: 'switch_app' })
+                    });
+                } else {
+                    await fetch('/api/device/system_action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action })
+                    });
+                }
+                setTimeout(captureFreshFrame, 250);
+            } catch (e) {
+                showToast("System action failed");
+            }
+        }
+
+        // Emergency Desktop Hide
+        async function sendEmergencyHide() {
+            try {
+                await fetch('/api/exam/emergency_hide', { method: 'POST' });
+                showToast("👻 Emergency Ghost: Desktop Hidden");
+            } catch (e) {}
+        }
+
+        // -------------------------------------------------------------
+        // CLIPBOARD SYNCHRONIZATION
+        // -------------------------------------------------------------
+        async function sendLocalClipboardToRemote() {
+            document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text) {
+                    showToast("Local clipboard is empty!");
+                    return;
+                }
+                const res = await fetch('/api/device/clipboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, paste: true })
+                });
+                if (res.ok) {
+                    showToast(`📋 Injected ${text.length} chars directly into remote laptop!`);
+                    setTimeout(captureFreshFrame, 200);
+                }
+            } catch (e) {
+                openClipboardModal();
+                showToast("Browser clipboard restricted: Paste text into editor");
+            }
+        }
+
+        async function fetchRemoteClipboardToLocal() {
+            document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            try {
+                const res = await fetch('/api/device/clipboard');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.text) {
+                        await navigator.clipboard.writeText(data.text);
+                        showToast(`📥 Copied ${data.text.length} chars from remote laptop to local clipboard!`);
+                    } else {
+                        showToast("Remote laptop clipboard is empty");
+                    }
+                }
+            } catch (e) {
+                showToast("Failed to read remote clipboard");
+            }
+        }
+
+        function openClipboardModal() {
+            document.querySelectorAll('.ribbon-dropdown-wrap').forEach(w => w.classList.remove('open'));
+            document.getElementById('clipboard-modal').classList.add('open');
+        }
+
+        function closeClipboardModal() {
+            document.getElementById('clipboard-modal').classList.remove('open');
+        }
+
+        async function fetchRemoteClipboardToModal() {
+            try {
+                const res = await fetch('/api/device/clipboard');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('modal-clip-text').value = data.text || '';
+                    showToast("Loaded remote clipboard text");
+                }
+            } catch (e) {}
+        }
+
+        async function sendModalClipboardToRemote(autoPaste = false) {
+            const text = document.getElementById('modal-clip-text').value;
+            if (!text) return;
+            try {
+                const res = await fetch('/api/device/clipboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, paste: autoPaste })
+                });
+                if (res.ok) {
+                    closeClipboardModal();
+                    showToast(autoPaste ? "Pasted text on remote laptop!" : "Copied text to remote clipboard!");
+                    setTimeout(captureFreshFrame, 200);
+                }
+            } catch (e) {}
+        }
+
+        // -------------------------------------------------------------
+        // SCROLLING & ZOOM CONTROLS
+        // -------------------------------------------------------------
+        let lastScrollTime = 0;
+        async function triggerRemoteScroll(direction, clicks = 6) {
+            const now = Date.now();
+            if (now - lastScrollTime < 60) return;
+            lastScrollTime = now;
+            try {
+                showToast(direction === 'up' ? `▲ Scroll Up (${clicks})` : `▼ Scroll Down (${clicks})`);
+                await fetch('/api/device/scroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ direction, clicks })
+                });
+                setTimeout(captureFreshFrame, 120);
+            } catch (e) {}
+        }
+
+        // Direct Mouse Wheel Scroll
+        screenBox.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const dir = e.deltaY > 0 ? 'down' : 'up';
+            const count = Math.min(10, Math.max(3, Math.round(Math.abs(e.deltaY) / 18)));
+            triggerRemoteScroll(dir, count);
+        }, { passive: false });
+
+        // Touch Swipe on Mobile Screen to Scroll
+        let touchStartY = 0;
+        let isTouchMoving = false;
+        screenImg.addEventListener('touchstart', (e) => {
+            if (e.touches.length >= 1) {
+                touchStartY = e.touches[0].clientY;
+                isTouchMoving = true;
+            }
+        }, { passive: true });
+
+        screenImg.addEventListener('touchmove', (e) => {
+            if (!isTouchMoving || !e.touches.length) return;
+            const curY = e.touches[0].clientY;
+            const diffY = curY - touchStartY;
+            if (Math.abs(diffY) > 22) {
+                const dir = diffY > 0 ? 'up' : 'down';
+                const clicks = Math.min(8, Math.max(2, Math.round(Math.abs(diffY) / 14)));
+                triggerRemoteScroll(dir, clicks);
+                touchStartY = curY;
+            }
+        }, { passive: true });
+
+        screenImg.addEventListener('touchend', () => { isTouchMoving = false; }, { passive: true });
+
+        // Touch Drag Slider on Scroll Dock
+        const sliderEl = document.getElementById('scroll-touch-slider');
+        if (sliderEl) {
+            let activeDrag = false;
+            let startY = 0;
+            const knob = sliderEl.querySelector('.scroll-slider-knob');
+
+            sliderEl.addEventListener('pointerdown', (e) => {
+                activeDrag = true;
+                startY = e.clientY;
+                sliderEl.setPointerCapture(e.pointerId);
+            });
+
+            sliderEl.addEventListener('pointermove', (e) => {
+                if (!activeDrag) return;
+                const dy = e.clientY - startY;
+                if (knob) {
+                    const clampedY = Math.max(-18, Math.min(18, dy));
+                    knob.style.transform = `translateY(${clampedY}px)`;
+                }
+                if (Math.abs(dy) > 8) {
+                    const dir = dy > 0 ? 'down' : 'up';
+                    triggerRemoteScroll(dir, 4);
+                    startY = e.clientY;
+                }
+            });
+
+            const stopDrag = () => {
+                activeDrag = false;
+                if (knob) knob.style.transform = 'translateY(-50%)';
+            };
+            sliderEl.addEventListener('pointerup', stopDrag);
+            sliderEl.addEventListener('pointercancel', stopDrag);
+        }
+
+        // Zoom Controls
+        function adjustZoom(delta) {
+            currentZoom = Math.max(0.6, Math.min(2.5, currentZoom + delta));
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1.0;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            screenBox.style.transform = `scale(${currentZoom})`;
+            if (zoomHud) zoomHud.innerText = `${Math.round(currentZoom * 100)}%`;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        // Send Typed Text from bottom input box
+        async function sendTypedText() {
+            const text = remoteTypeInput.value;
+            if (!text) return;
+            try {
+                const res = await fetch('/api/device/type_text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                if (res.ok) {
+                    remoteTypeInput.value = '';
+                    showToast("Injected text directly on host display!");
+                    setTimeout(captureFreshFrame, 160);
+                }
+            } catch (e) {
+                showToast("Typing dispatch failed");
+            }
+        }
+
+        remoteTypeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendTypedText();
+            }
+        });
+
+        // OCR extraction
+        async function extractScreenText() {
+            showToast("Reading text from remote screen...");
+            try {
+                const res = await fetch('/api/device/ocr?refresh=true');
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.status === 'success' && d.text) {
+                        navigator.clipboard.writeText(d.text);
+                        showToast(`OCR Success: Copied ${d.text.length} chars to clipboard!`);
+                    } else {
+                        showToast("No text detected on screen");
+                    }
+                }
+            } catch (e) {
+                showToast("OCR request failed");
+            }
+        }
+
+        function goToExamPage() {
+            const s = sessionStorage.getItem('sid') || '';
+            window.location.href = '/exam' + (s ? '?sid=' + encodeURIComponent(s) : '');
+        }
+
+        // -------------------------------------------------------------
+        // 2-STEP CONNECTION GATEWAY & SESSION HANDSHAKE
+        // -------------------------------------------------------------
+        async function fetchGatewayHostInfo() {
+            try {
+                const res = await fetch('/api/connection/info');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        if (gwHostName) gwHostName.innerText = data.device_name || 'LANpad Laptop';
+                        if (gwHostIp) gwHostIp.innerText = data.lan_ip || window.location.hostname;
+                        if (hostNameLabel) hostNameLabel.innerText = data.device_name || 'Laptop Host';
+                    }
+                }
+            } catch (_) {
+                if (gwHostName) gwHostName.innerText = 'LANpad Host (Online)';
+                if (gwHostIp) gwHostIp.innerText = window.location.hostname;
+            }
+        }
+
+        function goToGatewayStep1() {
+            if (gatewayStep2) gatewayStep2.classList.remove('active');
+            if (gatewayStep1) gatewayStep1.classList.add('active');
+            if (stepPill2) stepPill2.classList.remove('active');
+            if (stepConnector) stepConnector.classList.remove('active');
+            if (stepPill1) stepPill1.classList.add('active');
+            if (gwErrorMsg) gwErrorMsg.style.display = 'none';
+        }
+
+        function goToGatewayStep2() {
+            if (gatewayStep1) gatewayStep1.classList.remove('active');
+            if (gatewayStep2) gatewayStep2.classList.add('active');
+            if (stepPill2) stepPill2.classList.add('active');
+            if (stepConnector) stepConnector.classList.add('active');
+            if (gwSessionCodeInput) {
+                setTimeout(() => gwSessionCodeInput.focus(), 80);
+            }
+        }
+
+        function handleCodeKeydown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitSessionCode();
+            }
+        }
+
+        async function submitSessionCode() {
+            const code = (gwSessionCodeInput ? gwSessionCodeInput.value : '').trim().toUpperCase();
+            if (!code) {
+                showGatewayError('Please enter the session code.');
+                return;
+            }
+
+            if (gwErrorMsg) gwErrorMsg.style.display = 'none';
+            if (btnVerifyText) btnVerifyText.innerText = 'Verifying...';
+
+            try {
+                const res = await fetch('/api/device/verify_code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    // Handshake Success!
+                    isMonitorConnected = true;
+                    currentVerifiedCode = code;
+                    sessionStorage.setItem('monitor_session_token', code);
+
+                    if (btnVerifyText) btnVerifyText.innerText = 'Connected!';
+                    showToast('Connected to ' + (data.device_name || 'Remote Host'));
+
+                    // Smooth transition to active monitor canvas
+                    setTimeout(() => {
+                        if (gatewayOverlay) gatewayOverlay.classList.add('hidden');
+                        fetchScreenMeta();
+                        captureFreshFrame();
+                        setRefreshInterval(autoRefreshMs || 500, document.querySelector('.refresh-opt.active'));
+                        if (btnVerifyText) btnVerifyText.innerText = 'Connect to Desktop';
+                    }, 300);
+                } else {
+                    showGatewayError(data.message || 'Invalid Session Code. Check host screen.');
+                    if (btnVerifyText) btnVerifyText.innerText = 'Connect to Desktop';
+                }
+            } catch (err) {
+                showGatewayError('Connection failed. Verify host server is running.');
+                if (btnVerifyText) btnVerifyText.innerText = 'Connect to Desktop';
+            }
+        }
+
+        function showGatewayError(msg) {
+            if (gwErrorMsg) {
+                gwErrorMsg.innerText = msg;
+                gwErrorMsg.style.display = 'block';
+            }
+        }
+
+        function disconnectMonitorSession() {
+            isMonitorConnected = false;
+            currentVerifiedCode = '';
+            sessionStorage.removeItem('monitor_session_token');
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+            if (screenImg) {
+                screenImg.src = '';
+            }
+            if (gwSessionCodeInput) {
+                gwSessionCodeInput.value = '';
+            }
+            goToGatewayStep1();
+            if (gatewayOverlay) gatewayOverlay.classList.remove('hidden');
+            fetchGatewayHostInfo();
+            showToast('Disconnected from remote workstation');
+        }
+
+        // Initialize on load with 2-step verification gate
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            await fetchGatewayHostInfo();
+
+            // Check if this browser already authorized the session in current tab
+            const savedCode = sessionStorage.getItem('monitor_session_token');
+            if (savedCode) {
+                try {
+                    const res = await fetch('/api/device/verify_code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: savedCode })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.status === 'success') {
+                        isMonitorConnected = true;
+                        currentVerifiedCode = savedCode;
+                        if (gatewayOverlay) gatewayOverlay.classList.add('hidden');
+                        fetchScreenMeta();
+                        captureFreshFrame();
+                        setRefreshInterval(500, document.querySelector('.refresh-opt.active'));
+                        return;
+                    }
+                } catch (_) {}
+            }
+
+            // Otherwise, keep the 2-Step Gateway Overlay active and do not auto-poll
+            if (gatewayOverlay) gatewayOverlay.classList.remove('hidden');
+            goToGatewayStep1();
+        });
+
+        // Tab visibility management to prevent background lag, runaway polling, and stuck frames
+        document.addEventListener('visibilitychange', () => {
+            if (!isMonitorConnected) return;
+            if (document.hidden) {
+                if (refreshTimer) {
+                    clearInterval(refreshTimer);
+                    refreshTimer = null;
+                }
+            } else {
+                if (!refreshTimer && autoRefreshMs > 0) {
+                    captureFreshFrame();
+                    refreshTimer = setInterval(captureFreshFrame, autoRefreshMs);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

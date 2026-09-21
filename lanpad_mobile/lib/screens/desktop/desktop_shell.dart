@@ -27,6 +27,7 @@ import '../../models/history_model.dart';
 import '../../models/resource_model.dart';
 import '../../config/theme.dart';
 import '../../services/admin_service.dart';
+import '../../utils/network_utils.dart';
 import 'desktop_state.dart';
 import 'desktop_theme.dart';
 import 'widgets/sidebar.dart';
@@ -41,6 +42,7 @@ import 'views/setup_permissions_view.dart';
 import 'views/file_previews_view.dart';
 import 'views/onboarding_view.dart';
 import 'views/licenses_view.dart';
+import 'views/remote_control_view.dart';
 
 class ActiveToast {
   final String id;
@@ -84,6 +86,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
   // ── Network ───────────────────────────────────────────────────────
   bool _isDirectLan = true;
   String _localIp = 'Detecting...';
+  bool _isClientOnlyMode = false;
 
   // ── Other state ───────────────────────────────────────────────────
   List<SharedFile> _files = [];
@@ -119,6 +122,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
   final TextEditingController _hubSearchController = TextEditingController();
 
   // ── Misc ──────────────────────────────────────────────────────────
+  static bool _hasPromptedAccessibilityThisLaunch = false;
   bool _hasAccessibilityPermission = true;
   bool _isPermissionDialogOpen = false;
   bool _hasAcceptedAgreement = true;
@@ -166,6 +170,11 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
       if (isReady) {
         if (readyChanged) {
           _adminService.refresh(force: true);
+        }
+        if (_serverService.lanIp.isNotEmpty &&
+            !NetworkUtils.isVirtualOrLocalOnlyIp(_serverService.lanIp) &&
+            _localIp != _serverService.lanIp) {
+          _localIp = _serverService.lanIp;
         }
         if (!_isConnectedToLocalService) {
           _isConnectedToLocalService = true;
@@ -503,8 +512,17 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
     const platform = MethodChannel('lanpad/system');
     try {
       final bool hasPermission = await platform.invokeMethod('checkAccessibility');
-      setState(() => _hasAccessibilityPermission = hasPermission);
-      if (!hasPermission) _showPermissionDialog();
+      if (mounted) {
+        setState(() => _hasAccessibilityPermission = hasPermission);
+      }
+      // If permission is already granted ("if gave then none"), do not prompt at all
+      if (hasPermission) return;
+
+      // Only prompt ONCE per app launch ("only one time when open if not gave")
+      if (_hasPromptedAccessibilityThisLaunch) return;
+      _hasPromptedAccessibilityThisLaunch = true;
+
+      _showPermissionDialog();
     } catch (_) {}
   }
 
@@ -1052,19 +1070,12 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
   }
 
   Future<void> _fetchLocalIp() async {
-    try {
-      final interfaces = await NetworkInterface.list(
-        type: InternetAddressType.IPv4, includeLinkLocal: false);
-      for (final iface in interfaces) {
-        for (final addr in iface.addresses) {
-          if (!addr.isLoopback && !addr.address.startsWith('169.254')) {
-            setState(() => _localIp = addr.address);
-            return;
-          }
-        }
-      }
-    } catch (_) {}
-    setState(() => _localIp = '127.0.0.1');
+    final ip = await NetworkUtils.getBestLocalIp(
+      backendSuggestedIp: _serverService.lanIp,
+    );
+    if (mounted && _localIp != ip) {
+      setState(() => _localIp = ip);
+    }
   }
 
   Future<void> _reconnectSession() async {
@@ -1188,13 +1199,20 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
       body: Stack(
         children: [
           Positioned.fill(child: DesktopThemeBackground()),
-          if (_serverService.hasCrashed)
+          if (_serverService.hasCrashed && !_isClientOnlyMode)
             _DesktopCrashView(
               crashLog: _serverService.crashLog,
               onRetry: () {
                 _serverService.startServer();
                 setState(() {});
               },
+              onContinueAsClient: () {
+                setState(() {
+                  _isClientOnlyMode = true;
+                });
+                _showToast('Client Mode active: Discovering nearby devices...');
+              },
+              onInstallPython: Platform.isWindows ? _installPythonOnWindows : null,
             )
           else if (_adminService.status.value.isLoaded && 
                    _adminService.status.value.monetizationEnabled && 
@@ -1206,7 +1224,7 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
                 await windowManager.hide();
               },
             )
-          else if (!_serverService.isServerReady)
+          else if (!_serverService.isServerReady && !_isClientOnlyMode)
             _DesktopSplashView(
               isStarting: _serverService.isStarting,
               onStart: () {
@@ -1349,7 +1367,12 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
   Widget _buildView(DesktopState state) {
     switch (_currentView) {
       case DesktopView.home:
-        return HomeView(state: state);
+        return HomeView(
+          state: state,
+          onNavigate: (view) => setState(() => _currentView = view),
+        );
+      case DesktopView.remoteControl:
+        return RemoteControlView(state: state);
       case DesktopView.files:
         return FilesView(
           state: state, 
@@ -1391,6 +1414,26 @@ class _DesktopShellState extends State<DesktopShell> with WindowListener, Widget
         );
       case DesktopView.licenses:
         return LicensesView(state: state);
+    }
+  }
+
+  Future<void> _installPythonOnWindows() async {
+    if (!Platform.isWindows) return;
+    _showToast('Starting Python 3.12 installer...');
+    try {
+      final res = await Process.run('powershell', [
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command',
+        'Start-Process cmd -ArgumentList "/c winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements" -Verb RunAs'
+      ]);
+      if (res.exitCode != 0) {
+        launchUrl(Uri.parse('https://www.python.org/downloads/windows/'));
+      } else {
+        _showToast('Python installation launched. Please wait a moment, then retry server.');
+      }
+    } catch (_) {
+      launchUrl(Uri.parse('https://www.python.org/downloads/windows/'));
     }
   }
 }
@@ -1555,66 +1598,103 @@ class _DesktopSplashView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Crash View
+// Desktop Crash View
 // ─────────────────────────────────────────────────────────────────
 
 class _DesktopCrashView extends StatelessWidget {
   final String crashLog;
   final VoidCallback onRetry;
+  final VoidCallback onContinueAsClient;
+  final VoidCallback? onInstallPython;
 
-  const _DesktopCrashView({required this.crashLog, required this.onRetry});
+  const _DesktopCrashView({
+    required this.crashLog,
+    required this.onRetry,
+    required this.onContinueAsClient,
+    this.onInstallPython,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF1E0A0A),
+      color: const Color(0xFF140A0A),
       padding: const EdgeInsets.all(48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_rounded, color: Colors.redAccent, size: 32),
+              const Icon(Icons.warning_rounded, color: Colors.amberAccent, size: 32),
               const SizedBox(width: 16),
               Text(
-                'LANpad Backend Crashed',
+                'LANpad Local Backend Notice',
                 style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
-            'The Python backend server exited unexpectedly. Please report this error.',
-            style: GoogleFonts.inter(fontSize: 16, color: Colors.white70),
+            'The local Python server is not active on this device. You can still use this app as a Remote Client to pair with another desktop or phone!',
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Expanded(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                color: const Color(0xFF0A0505),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white12),
               ),
               child: SingleChildScrollView(
                 child: Text(
                   crashLog,
-                  style: const TextStyle(fontFamily: 'monospace', color: Colors.redAccent, fontSize: 13),
+                  style: const TextStyle(fontFamily: 'monospace', color: Colors.amberAccent, fontSize: 13, height: 1.5),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            ),
-            onPressed: onRetry,
-            icon: const Icon(LucideIcons.refresh_cw, size: 18),
-            label: const Text('Restart Server'),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0077C0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: onContinueAsClient,
+                icon: const Icon(LucideIcons.monitor, size: 18),
+                label: const Text('Continue as Remote Client (Pair with Device)', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              if (Platform.isWindows && onInstallPython != null)
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B5E20),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: onInstallPython,
+                  icon: const Icon(LucideIcons.download, size: 18),
+                  label: const Text('Install Python 3.12 (1-Click)', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: onRetry,
+                icon: const Icon(LucideIcons.refresh_cw, size: 18),
+                label: const Text('Retry Server'),
+              ),
+            ],
           ),
         ],
       ),

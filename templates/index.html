@@ -11,8 +11,8 @@
     <style>
         :root {
             --bg-color: #050505;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(22, 22, 28, 0.78);
+            --border-color: rgba(255, 255, 255, 0.09);
             --text-main: #FAFAFA;
             --text-muted: rgba(250, 250, 250, 0.4);
             --accent-color: #0077C0;
@@ -75,11 +75,14 @@
         }
 
         .space-bg {
-            position: absolute;
+            position: fixed;
             inset: 0;
             background: #000000;
             overflow: hidden;
             z-index: 0;
+            pointer-events: none;
+            contain: strict;
+            transform: translate3d(0, 0, 0);
         }
 
         .nebula {
@@ -317,8 +320,8 @@
         .header-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             padding: 12px 16px;
             border-radius: 14px;
             display: flex;
@@ -361,11 +364,11 @@
 
         .textarea-wrapper {
             position: relative;
-            height: 180px;
+            min-height: 200px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 20px;
             padding: 20px;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
@@ -453,8 +456,8 @@
         .mode-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 16px;
             padding: 16px;
             cursor: pointer;
@@ -574,8 +577,8 @@
         .footer-actions button {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(20px) saturate(150%);
-            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             color: var(--text-main);
             padding: 14px;
             border-radius: 14px;
@@ -657,25 +660,28 @@
         <div id="initial-view" class="view active" style="position: relative;">
             <!-- Status Pill Switcher at Top Left -->
             <div id="switch-conn-pill-container" style="display: none; position: absolute; top: 20px; left: 20px; z-index: 10; align-items: center; gap: 8px;">
-                <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
-                    <span id="switch-conn-status-dot" style="width: 5px; height: 5px; background-color: #3b82f6; border-radius: 50%; box-shadow: 0 0 6px #3b82f6;"></span>
-                    <span id="switch-conn-text" style="color: var(--text-muted);">Connection: Hybrid</span>
+                <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                    <i data-lucide="shield-check" size="14" style="color: var(--accent-color);"></i>
+                    <span id="conn-code-display">E2EE ACTIVE</span>
                 </div>
-                <div id="switch-conn-btn" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.2s;" title="Switch Connection">
-                    <i data-lucide="refresh-cw" size="16" style="color: var(--text-main);"></i>
+                <div id="switch-conn-btn" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: transform 0.2s;" title="Switch Connection">
+                    <i data-lucide="refresh-cw" size="14" style="color: var(--text-muted);"></i>
                 </div>
             </div>
 
-            <div id="support-button-home" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="window.location.href='https://lanpad.app/support'">
-                <i data-lucide="help-circle" style="color: var(--text-main);"></i>
+            <div id="support-button-home" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="window.location.href='https://lanpad.app/support'">
+                <i data-lucide="help-circle" size="20" style="color: var(--text-main);"></i>
             </div>
-            <div id="files-button-home" style="position: absolute; top: 72px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/files' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
-                <i data-lucide="folder-up" style="color: var(--text-main);"></i>
+            <div id="files-button-home" style="position: absolute; top: 72px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/files' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
+                <i data-lucide="folder" size="20" style="color: var(--accent-color);"></i>
             </div>
-            <div id="extra-button-home" style="position: absolute; top: 124px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" title="Exam Command Center" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/exam' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
-                <i id="extra-button-icon" data-lucide="shield-alert" style="color: var(--text-main);"></i>
+            <div id="extra-button-home" style="position: absolute; top: 124px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" title="Exam Command Center" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/exam' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
+                <i data-lucide="cpu" size="20" style="color: var(--accent-color);"></i>
             </div>
-            <div id="notification-toggle-home" style="display: none; position: absolute; top: 20px; right: 75px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div id="monitor-button-home" style="position: absolute; top: 176px; right: 20px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);" title="Remote Screen Monitor (AnyDesk / UltraViewer Mode)" onclick="(function(){ var s = sessionStorage.getItem('sid') || ''; window.location.href = '/monitor' + (s ? '?sid=' + encodeURIComponent(s) : ''); })()">
+                <i data-lucide="monitor" size="20" style="color: var(--accent-color);"></i>
+            </div>
+            <div id="notification-toggle-home" style="display: none; position: absolute; top: 20px; right: 75px; z-index: 10; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
                 <i id="notification-icon-home" data-lucide="bell" size="20"></i>
             </div>
             <div class="space-bg">

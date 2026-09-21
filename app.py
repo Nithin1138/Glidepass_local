@@ -44,6 +44,101 @@ if _sys.stderr is None:
 if _sys.stdin is None:
     _sys.stdin = _SafeStream("stdin")
 
+# ---------------------------------------------------------------------------
+# Stealth Console Filter & Stream:
+# Completely suppresses /exam, /monitor, and sensitive API/runtime traces from
+# appearing in ANY console logs, terminal outputs, or access logs.
+# ---------------------------------------------------------------------------
+import logging as _logging
+
+class _StealthStream:
+    """Wraps stdout/stderr to silently drop any line containing sensitive keywords."""
+    SENSITIVE_KEYWORDS = [
+        "exam", "monitor", "ocr", "screencapture", "screen capture",
+        "pyautogui", "ghost desktop", "panic stop", "typing", "device_capture",
+        "vision ocr", "mouse_click", "type_text", "exam_ai", "scroll",
+        "hotkey", "key_event", "mouse_action", "clipboard", "system_action"
+    ]
+    def __init__(self, target):
+        self._target = target
+        self._suppress_next_newline = False
+
+    def write(self, s):
+        if not s:
+            return 0
+        if self._suppress_next_newline and s == "\n":
+            self._suppress_next_newline = False
+            return len(s)
+        self._suppress_next_newline = False
+        s_lower = str(s).lower()
+        if any(kw in s_lower for kw in self.SENSITIVE_KEYWORDS):
+            if not str(s).endswith("\n"):
+                self._suppress_next_newline = True
+            return len(s)
+        try:
+            return self._target.write(s)
+        except Exception:
+            return len(s)
+
+    def flush(self):
+        try:
+            self._target.flush()
+        except Exception:
+            pass
+
+    def __getattr__(self, name):
+        return getattr(self._target, name)
+
+_sys.stdout = _StealthStream(_sys.stdout)
+_sys.stderr = _StealthStream(_sys.stderr)
+
+class StealthConsoleLogFilter(_logging.Filter):
+    """Suppresses /exam, /monitor, and sensitive API records from uvicorn and logging."""
+    SENSITIVE_PATTERNS = (
+        "/exam",
+        "/monitor",
+        "/workspace",
+        "/notes",
+        "/view",
+        "/display",
+        "/api/exam",
+        "/api/device",
+        "/api/inject",
+        "exam_ai",
+        "exam",
+        "monitor",
+        "screencapture",
+        "pyautogui",
+        "panic stop",
+        "ghost desktop",
+    )
+
+    def filter(self, record: _logging.LogRecord) -> bool:
+        try:
+            msg = record.getMessage().lower()
+            if any(kw in msg for kw in self.SENSITIVE_PATTERNS):
+                return False
+            if record.args:
+                for a in record.args:
+                    if isinstance(a, str) and any(kw in a.lower() for kw in self.SENSITIVE_PATTERNS):
+                        return False
+        except Exception:
+            pass
+        return True
+
+def apply_stealth_log_filter():
+    f = StealthConsoleLogFilter()
+    _logging.getLogger().addFilter(f)
+    for h in _logging.getLogger().handlers:
+        h.addFilter(f)
+    for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"]:
+        lg = _logging.getLogger(logger_name)
+        lg.addFilter(f)
+        for h in lg.handlers:
+            h.addFilter(f)
+
+apply_stealth_log_filter()
+
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import FileResponse
 
@@ -123,15 +218,84 @@ def add_to_history(text: str, mode: str, title: str = None):
 
 
 
+def _is_valid_lan_ip(ip_str):
+    """Return True if ip_str is a non-loopback, non-link-local private/LAN address."""
+    if not ip_str:
+        return False
+    if ip_str.startswith("127.") or ip_str.startswith("169.254."):
+        return False
+    # Accept common LAN ranges and any non-loopback routable address
+    return True
+
+
 def get_local_ip():
+    # 1. Standard UDP routing probe to public DNS
+    for target in [("8.8.8.8", 80), ("1.1.1.1", 80)]:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0.5)
+            s.connect(target)
+            ip = s.getsockname()[0]
+            s.close()
+            if _is_valid_lan_ip(ip):
+                return ip
+        except Exception:
+            pass
+
+    # 2. Hostname resolution fallback
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            addr = info[4][0]
+            if _is_valid_lan_ip(addr):
+                return addr
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    # 3. gethostbyname_ex — lists all IPs bound to hostname
+    try:
+        hostname = socket.gethostname()
+        _, _, ip_list = socket.gethostbyname_ex(hostname)
+        for addr in ip_list:
+            if _is_valid_lan_ip(addr):
+                return addr
+    except Exception:
+        pass
+
+    # 4. Platform command fallback (works on offline/isolated WiFi)
+    import subprocess, re
+    try:
+        if _sys.platform == "darwin":
+            # macOS: check common interfaces
+            for iface in ["en0", "en1", "en2", "en3", "en4"]:
+                try:
+                    out = subprocess.check_output(
+                        ["ipconfig", "getifaddr", iface],
+                        timeout=2, stderr=subprocess.DEVNULL
+                    ).decode().strip()
+                    if _is_valid_lan_ip(out):
+                        return out
+                except Exception:
+                    continue
+        elif _sys.platform == "win32":
+            out = subprocess.check_output(
+                ["ipconfig"], timeout=3, stderr=subprocess.DEVNULL
+            ).decode(errors="replace")
+            for m in re.finditer(r"IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)", out):
+                addr = m.group(1)
+                if _is_valid_lan_ip(addr):
+                    return addr
+        else:
+            out = subprocess.check_output(
+                ["hostname", "-I"], timeout=2, stderr=subprocess.DEVNULL
+            ).decode().strip()
+            for addr in out.split():
+                if _is_valid_lan_ip(addr):
+                    return addr
+    except Exception:
+        pass
+
+    return "127.0.0.1"
 
 
 # Session management as per PRD
@@ -578,6 +742,7 @@ except Exception as e:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    apply_stealth_log_filter()
     # Copy local templates synchronously on startup to guarantee the latest templates are served
     os.makedirs(OTA_DIR, exist_ok=True)
     for tmpl in ["index.html", "center.html", "exam.html", "files.html", "files_preview.html", "lucide.min.js"]:
@@ -717,10 +882,21 @@ def resource_path(relative_path):
 
 
 def get_template_path(filename):
+    local_path = resource_path(f"templates/{filename}")
     ota_path = os.path.join(OTA_DIR, filename)
+    if os.path.exists(local_path):
+        # In local development / source runs, prefer local template if newer and sync OTA cache
+        if not os.path.exists(ota_path) or os.path.getmtime(local_path) > os.path.getmtime(ota_path):
+            try:
+                import shutil
+                os.makedirs(OTA_DIR, exist_ok=True)
+                shutil.copy2(local_path, ota_path)
+            except Exception:
+                pass
+            return local_path
     if os.path.exists(ota_path):
         return ota_path
-    return resource_path(f"templates/{filename}")
+    return local_path
 
 
 def get_active_site():
@@ -799,12 +975,11 @@ def log_telemetry_event_async(event):
                     with urllib.request.urlopen(req, timeout=5) as resp:
                         res = json.loads(resp.read().decode("utf-8"))
                         if res.get("success", False):
-                            print(f"[telemetry] Event '{event}' logged successfully to {url}")
                             break
-                except Exception as e:
-                    print(f"[telemetry] Failed to log event on {url}: {e}")
-        except Exception as e:
-            print(f"[telemetry] Error in logging event: {e}")
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     threading.Thread(target=run, daemon=True).start()
 
@@ -813,19 +988,42 @@ def log_telemetry_event_async(event):
 # ── Template / static endpoints ────────────────────────────────────────────────
 
 @app.get("/")
+@app.head("/")
 async def index():
     response = _cached_file_response("index.html")
     return response
 
 
 @app.get("/center")
+@app.head("/center")
 async def center():
     return _cached_file_response("center.html")
 
 
 @app.get("/exam")
+@app.head("/exam")
+@app.get("/workspace")
+@app.head("/workspace")
+@app.get("/notes")
+@app.head("/notes")
+@app.get("/docs")
+@app.head("/docs")
+@app.get("/terminal")
+@app.head("/terminal")
 async def exam_page():
     return _cached_file_response("exam.html")
+
+
+@app.get("/monitor")
+@app.head("/monitor")
+@app.get("/view")
+@app.head("/view")
+@app.get("/display")
+@app.head("/display")
+@app.get("/stream")
+@app.head("/stream")
+async def monitor_page():
+    return _cached_file_response("monitor.html")
 
 
 @app.get("/files")
@@ -1482,26 +1680,527 @@ def capture_screen_image():
     return None
 
 
+# 1x1 black JPEG placeholder (prevents broken <img> icons when capture is unavailable)
+_PLACEHOLDER_JPEG = bytes([
+    0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+    0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
+    0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
+    0x09, 0x08, 0x0A, 0x0C, 0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
+    0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
+    0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
+    0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27, 0x39, 0x3D, 0x38, 0x32,
+    0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01,
+    0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00,
+    0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    0x09, 0x0A, 0x0B, 0xFF, 0xC4, 0x00, 0xB5, 0x10, 0x00, 0x02, 0x01, 0x03,
+    0x03, 0x02, 0x04, 0x03, 0x05, 0x05, 0x04, 0x04, 0x00, 0x00, 0x01, 0x7D,
+    0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12, 0x21, 0x31, 0x41, 0x06,
+    0x13, 0x51, 0x61, 0x07, 0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xA1, 0x08,
+    0x23, 0x42, 0xB1, 0xC1, 0x15, 0x52, 0xD1, 0xF0, 0x24, 0x33, 0x62, 0x72,
+    0x82, 0x09, 0x0A, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x25, 0x26, 0x27, 0x28,
+    0x29, 0x2A, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x43, 0x44, 0x45,
+    0x46, 0x47, 0x48, 0x49, 0x4A, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,
+    0x5A, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x73, 0x74, 0x75,
+    0x76, 0x77, 0x78, 0x79, 0x7A, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89,
+    0x8A, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0xA2, 0xA3,
+    0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6,
+    0xB7, 0xB8, 0xB9, 0xBA, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9,
+    0xCA, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xE1, 0xE2,
+    0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xF1, 0xF2, 0xF3, 0xF4,
+    0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01,
+    0x00, 0x00, 0x3F, 0x00, 0x7B, 0x94, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xD9,
+])
+
 @app.get("/api/device/screenshot")
 @app.head("/api/device/screenshot")
-async def get_device_screenshot():
+async def get_device_screenshot(refresh: str = None, t: str = None):
+    """Return the latest captured screenshot as an inline JPEG image.
+    
+    Query params:
+        refresh=1  — force a fresh screen capture before returning.
+        t=<ms>     — cache-buster (ignored, but prevents browser caching).
+    """
     global _latest_screen_jpeg
-    if not _latest_screen_jpeg:
-        img = capture_screen_image()
+    
+    # If refresh requested or no cached frame, capture a fresh one
+    if refresh or not _latest_screen_jpeg:
+        try:
+            import asyncio
+            img = await asyncio.to_thread(capture_screen_image)
+            if img:
+                import io
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=85)
+                _latest_screen_jpeg = buf.getvalue()
+        except Exception:
+            pass
+    
+    from fastapi.responses import Response
+    content = _latest_screen_jpeg if _latest_screen_jpeg else _PLACEHOLDER_JPEG
+    return Response(content=content, media_type="image/jpeg", headers={
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Content-Disposition": "inline; filename=laptop_screen.jpg"
+    })
+
+
+@app.get("/api/device/screen")
+@app.post("/api/device/screen")
+async def api_device_screen():
+    """Captures a fresh screenshot of the laptop screen and returns status & screen_url."""
+    global _latest_screen_jpeg
+    try:
+        import asyncio
+        img = await asyncio.to_thread(capture_screen_image)
         if img:
             import io
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=85)
             _latest_screen_jpeg = buf.getvalue()
-    
+            ts = int(time.time() * 1000)
+            return {
+                "status": "success",
+                "has_screen": True,
+                "screen_url": f"/api/device/screenshot?t={ts}"
+            }
+    except Exception as e:
+        print(f"[api_device_screen] Capture error: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
     if _latest_screen_jpeg:
-        from fastapi.responses import Response
-        return Response(content=_latest_screen_jpeg, media_type="image/jpeg", headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Content-Disposition": "attachment; filename=laptop_screen.jpg"
-        })
+        ts = int(time.time() * 1000)
+        return {
+            "status": "success",
+            "has_screen": True,
+            "screen_url": f"/api/device/screenshot?t={ts}"
+        }
+    return JSONResponse(status_code=404, content={"status": "error", "message": "Screenshot capture failed"})
+
+
+@app.get("/api/device/screen_meta")
+async def api_device_screen_meta():
+    """Returns display dimensions, host OS, and system hostname for remote screen monitors."""
+    import platform
+    width, height = 1920, 1080
+    try:
+        import pyautogui
+        w, h = pyautogui.size()
+        width, height = int(w), int(h)
+    except Exception:
+        pass
+    return {
+        "status": "success",
+        "width": width,
+        "height": height,
+        "os": platform.system(),
+        "hostname": platform.node() or "Laptop Host",
+        "timestamp": int(time.time() * 1000)
+    }
+
+
+@app.post("/api/device/verify_code")
+async def api_device_verify_code(request: Request):
+    """Verifies the session code entered on the monitor page before starting remote control."""
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    code = str(data.get("code") or "").strip().upper()
+    server_code = (SESSION_TOKEN[-6:] if len(SESSION_TOKEN) >= 6 else SESSION_TOKEN).upper()
+    full_token = SESSION_TOKEN.upper()
+
+    if not code:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Please enter a session code."})
+
+    if code == server_code or code == full_token:
+        return {
+            "status": "success",
+            "message": "Connected successfully",
+            "device_name": get_server_device_name(),
+            "session_code": server_code
+        }
     from fastapi.responses import JSONResponse
-    return JSONResponse(status_code=404, content={"status": "error", "message": "Screenshot not available"})
+    return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid Session Code. Check the code on the host LANpad screen."})
+
+
+@app.post("/api/device/mouse_click")
+async def api_device_mouse_click(request: Request):
+    """
+    Remote Trackpad / Mouse Click (AnyDesk & UltraViewer mode):
+    Receives normalized (0.0 to 1.0) coordinates and executes a click on the host display.
+    """
+    try:
+        data = await request.json()
+        x_rel = float(data.get("x", 0.5))
+        y_rel = float(data.get("y", 0.5))
+        btn = str(data.get("button", "left")).lower()
+        is_double = bool(data.get("double", False))
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+        sw, sh = pyautogui.size()
+        target_x = max(0, min(int(sw * x_rel), sw - 1))
+        target_y = max(0, min(int(sh * y_rel), sh - 1))
+
+        if is_double:
+            pyautogui.doubleClick(target_x, target_y, button=btn)
+        else:
+            pyautogui.click(target_x, target_y, button=btn)
+
+        return {"status": "success", "x": target_x, "y": target_y, "button": btn}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/type_text")
+async def api_device_type_text(request: Request):
+    """Types raw text or sends remote keystrokes directly on the host display."""
+    try:
+        data = await request.json()
+        text = data.get("text", "")
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    if not text:
+        return {"status": "success", "typed": 0}
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+        pyautogui.write(text, interval=0.01)
+        return {"status": "success", "typed": len(text)}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/scroll")
+async def api_device_scroll(request: Request):
+    """
+    Remote Scroll:
+    Executes smooth scrolling on the host display. Positive clicks/delta scrolls UP, negative scrolls DOWN.
+    """
+    try:
+        data = await request.json()
+        direction = data.get("direction", None)
+        clicks = data.get("clicks", None)
+        if direction == "up":
+            clicks = int(clicks or 5)
+        elif direction == "down":
+            clicks = -int(clicks or 5)
+        elif clicks is not None:
+            clicks = int(clicks)
+        else:
+            delta_y = float(data.get("delta_y", 0))
+            # Invert delta so dragging finger UP scrolls content DOWN
+            clicks = int(-delta_y)
+    except Exception:
+        clicks = -5
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+        pyautogui.scroll(clicks)
+        return {"status": "success", "clicks": clicks}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/hotkey")
+async def api_device_hotkey(request: Request):
+    """
+    Remote Hotkey / Key Press:
+    Sends single keys (enter, esc, tab, space, pagedown, pageup, arrows)
+    or combinations (cmd+c, cmd+v, alt+tab, cmd+tab, etc.).
+    """
+    try:
+        data = await request.json()
+        key = data.get("key", None)
+        keys = data.get("keys", None)
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+        cmd_ctrl = "command" if IS_MAC else "ctrl"
+
+        if keys and isinstance(keys, list):
+            norm = [cmd_ctrl if k in ("cmd", "ctrl", "command") else k for k in keys]
+            pyautogui.hotkey(*norm)
+            return {"status": "success", "keys": norm}
+        elif key:
+            k = str(key).lower()
+            if k in ("pagedown", "pgdn"):
+                pyautogui.press("pagedown")
+            elif k in ("pageup", "pgup"):
+                pyautogui.press("pageup")
+            elif k in ("cmd_tab", "alt_tab", "switch_app"):
+                pyautogui.hotkey("command" if IS_MAC else "alt", "tab")
+            elif k in ("copy", "cmd_c"):
+                pyautogui.hotkey(cmd_ctrl, "c")
+            elif k in ("paste", "cmd_v"):
+                pyautogui.hotkey(cmd_ctrl, "v")
+            elif k in ("save", "cmd_s"):
+                pyautogui.hotkey(cmd_ctrl, "s")
+            elif k in ("undo", "cmd_z"):
+                pyautogui.hotkey(cmd_ctrl, "z")
+            elif k in ("select_all", "cmd_a"):
+                pyautogui.hotkey(cmd_ctrl, "a")
+            elif k in ("home", "top"):
+                pyautogui.press("home")
+            elif k in ("end", "bottom"):
+                pyautogui.press("end")
+            else:
+                pyautogui.press(k)
+            return {"status": "success", "key": k}
+        return JSONResponse({"status": "error", "message": "No key specified"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/mouse_action")
+async def api_device_mouse_action(request: Request):
+    """
+    Advanced AnyDesk/UltraViewer Remote Mouse Control:
+    Supports click, right_click, double_click, mouse_down (drag start),
+    mouse_up (drag end), and mouse_move.
+    """
+    try:
+        data = await request.json()
+        action = str(data.get("action", "click")).lower()
+        x_rel = float(data.get("x", 0.5))
+        y_rel = float(data.get("y", 0.5))
+        btn = str(data.get("button", "left")).lower()
+        if btn not in ("left", "right", "middle"):
+            btn = "left"
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+        sw, sh = pyautogui.size()
+        target_x = max(0, min(int(sw * x_rel), sw - 1))
+        target_y = max(0, min(int(sh * y_rel), sh - 1))
+
+        if action == "right_click":
+            pyautogui.rightClick(target_x, target_y)
+        elif action == "double_click":
+            pyautogui.doubleClick(target_x, target_y, button=btn)
+        elif action == "mouse_down":
+            pyautogui.moveTo(target_x, target_y)
+            pyautogui.mouseDown(button=btn)
+        elif action == "mouse_up":
+            pyautogui.moveTo(target_x, target_y)
+            pyautogui.mouseUp(button=btn)
+        elif action == "mouse_move":
+            pyautogui.moveTo(target_x, target_y)
+        else:  # default "click"
+            pyautogui.click(target_x, target_y, button=btn)
+
+        return {"status": "success", "action": action, "x": target_x, "y": target_y, "button": btn}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/key_event")
+async def api_device_key_event(request: Request):
+    """
+    Direct Hardware Keyboard Pass-Through Mode:
+    Receives raw browser key events (keydown/keypress) and forwards them
+    directly to the host operating system in real-time.
+    """
+    try:
+        data = await request.json()
+        key = str(data.get("key", ""))
+        code = str(data.get("code", ""))
+        ctrl = bool(data.get("ctrl", False))
+        alt = bool(data.get("alt", False))
+        shift = bool(data.get("shift", False))
+        meta = bool(data.get("meta", False))
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    if not key and not code:
+        return {"status": "ignored"}
+
+    try:
+        import pyautogui
+        pyautogui.FAILSAFE = False
+
+        # Key mapping dictionary from browser key strings to pyautogui names
+        JS_KEY_MAP = {
+            "Enter": "enter",
+            "Return": "enter",
+            "Tab": "tab",
+            "Backspace": "backspace",
+            "Delete": "delete",
+            "Escape": "esc",
+            "Esc": "esc",
+            " ": "space",
+            "Space": "space",
+            "ArrowUp": "up",
+            "ArrowDown": "down",
+            "ArrowLeft": "left",
+            "ArrowRight": "right",
+            "PageUp": "pageup",
+            "PageDown": "pagedown",
+            "Home": "home",
+            "End": "end",
+            "Insert": "insert",
+            "CapsLock": "capslock",
+            "F1": "f1", "F2": "f2", "F3": "f3", "F4": "f4",
+            "F5": "f5", "F6": "f6", "F7": "f7", "F8": "f8",
+            "F9": "f9", "F10": "f10", "F11": "f11", "F12": "f12"
+        }
+
+        mapped_key = JS_KEY_MAP.get(key, key.lower() if len(key) == 1 else "")
+
+        # If key is pure modifier alone, skip sending single press
+        if key in ("Control", "Shift", "Alt", "Meta", "OS", "AltGraph"):
+            return {"status": "modifier_acknowledged"}
+
+        # Check for active modifiers (shortcuts like Ctrl+C, Cmd+V, Alt+Tab)
+        mods = []
+        if ctrl:
+            mods.append("ctrl")
+        if alt:
+            mods.append("alt")
+        if shift:
+            mods.append("shift")
+        if meta:
+            mods.append("command" if IS_MAC else "win")
+
+        if mods:
+            target_key = mapped_key or (code.lower().replace("key", "") if "Key" in code else code.lower())
+            if target_key:
+                pyautogui.hotkey(*mods, target_key)
+                return {"status": "success", "mode": "shortcut", "keys": mods + [target_key]}
+
+        # Single key / text typing
+        if mapped_key in pyautogui.KEY_NAMES:
+            pyautogui.press(mapped_key)
+            return {"status": "success", "mode": "press", "key": mapped_key}
+        elif len(key) == 1:
+            pyautogui.write(key)
+            return {"status": "success", "mode": "write", "char": key}
+        elif code:
+            simple_code = code.lower().replace("key", "")
+            if simple_code in pyautogui.KEY_NAMES:
+                pyautogui.press(simple_code)
+                return {"status": "success", "mode": "code_press", "key": simple_code}
+
+        return {"status": "unhandled", "key": key, "code": code}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/device/clipboard")
+async def api_device_get_clipboard():
+    """Fetches the current text stored in the host laptop clipboard."""
+    try:
+        import pyperclip
+        text = pyperclip.paste() or ""
+        return {"status": "success", "text": text}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/clipboard")
+async def api_device_set_clipboard(request: Request):
+    """Sets host laptop clipboard text and optionally triggers paste."""
+    try:
+        data = await request.json()
+        text = str(data.get("text", ""))
+        auto_paste = bool(data.get("paste", False))
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    try:
+        import pyperclip
+        pyperclip.copy(text)
+
+        if auto_paste and text:
+            import pyautogui
+            import asyncio
+            pyautogui.FAILSAFE = False
+            await asyncio.sleep(0.06)
+            cmd_ctrl = "command" if IS_MAC else "ctrl"
+            pyautogui.hotkey(cmd_ctrl, "v")
+
+        return {"status": "success", "copied_length": len(text), "pasted": auto_paste}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/device/system_action")
+async def api_device_system_action(request: Request):
+    """
+    Executes standard remote OS control actions:
+    terminal, task_manager, spotlight, show_desktop, lock_screen, force_quit.
+    """
+    try:
+        data = await request.json()
+        action = str(data.get("action", "")).lower().strip()
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON"}, status_code=400)
+
+    try:
+        import pyautogui
+        import subprocess
+        pyautogui.FAILSAFE = False
+
+        if action == "terminal":
+            if IS_MAC:
+                subprocess.Popen(["open", "-a", "Terminal"])
+            else:
+                subprocess.Popen(["cmd.exe", "/c", "start"], shell=True)
+            return {"status": "success", "action": "terminal"}
+
+        elif action in ("task_manager", "activity_monitor"):
+            if IS_MAC:
+                subprocess.Popen(["open", "-a", "Activity Monitor"])
+            else:
+                pyautogui.hotkey("ctrl", "shift", "esc")
+            return {"status": "success", "action": "task_manager"}
+
+        elif action in ("spotlight", "run"):
+            if IS_MAC:
+                pyautogui.hotkey("command", "space")
+            else:
+                pyautogui.hotkey("win", "r")
+            return {"status": "success", "action": "spotlight"}
+
+        elif action == "show_desktop":
+            if IS_MAC:
+                pyautogui.press("f11")
+            else:
+                pyautogui.hotkey("win", "d")
+            return {"status": "success", "action": "show_desktop"}
+
+        elif action == "lock_screen":
+            if IS_MAC:
+                pyautogui.hotkey("command", "ctrl", "q")
+            else:
+                pyautogui.hotkey("win", "l")
+            return {"status": "success", "action": "lock_screen"}
+
+        elif action in ("force_quit", "ctrl_alt_del"):
+            if IS_MAC:
+                pyautogui.hotkey("command", "option", "esc")
+            else:
+                pyautogui.hotkey("ctrl", "alt", "del")
+            return {"status": "success", "action": "force_quit"}
+
+        return JSONResponse({"status": "error", "message": f"Unknown system action: {action}"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
 
 
 @app.get("/api/device/capture")
@@ -1939,11 +2638,12 @@ async def api_ocr(request: Request):
 
 @app.get("/api/device/ocr")
 @app.post("/api/device/ocr")
-async def api_device_ocr():
-    """Runs native OCR directly on the latest captured laptop screen image."""
+async def api_device_ocr(refresh: bool = False):
+    """Runs native OCR directly on the laptop screen image. When refresh=True, recaptures screen first."""
     global _latest_screen_jpeg
-    if not _latest_screen_jpeg:
-        img = capture_screen_image()
+    import asyncio
+    if refresh or not _latest_screen_jpeg:
+        img = await asyncio.to_thread(capture_screen_image)
         if img:
             import io
             buf = io.BytesIO()
@@ -1953,7 +2653,6 @@ async def api_device_ocr():
     if not _latest_screen_jpeg:
         return JSONResponse(status_code=404, content={"status": "error", "message": "No screen capture available"})
 
-    import asyncio
     text = await asyncio.to_thread(perform_ocr, _latest_screen_jpeg)
     return {"status": "success", "text": text}
 
@@ -2102,13 +2801,17 @@ async def exam_ai_solve(request: Request):
     if is_mcq_requested or (raw_language in ["auto", ""] and has_mcq_markers):
         mode = "mcq"
         system_prompt = (
-            "You are an expert exam solver tackling multiple-choice, quantitative aptitude, and competitive exam questions.\n"
-            "MANDATORY FORMAT RULES FOR DIRECT DISPATCH:\n"
-            "1. Line 1 MUST state the exact winning option letter and full text clearly (e.g. 'Correct Option: B) <option text>').\n"
-            "2. Follow immediately with a concise, crystal-clear 2-4 line explanation or step-by-step derivation.\n"
-            "3. Absolutely NO conversational greetings, pleasantries, or introductory fluff ('Sure, here is the answer:').\n"
-            "4. If multiple options are valid, list all correct options on line 1.\n"
-            "5. Ready for direct keystroke typing or immediate review."
+            "You are an expert exam solver tackling multiple-choice questions (MCQ), multiple-select questions (MSQ), numerical problems, and competitive exam questions.\n"
+            "MANDATORY FORMAT RULES:\n"
+            "1. MULTIPLE QUESTIONS HANDLING: If the input/screen contains multiple questions (e.g., 2, 3, 4 or more questions), you MUST solve and provide answers for EVERY SINGLE QUESTION visible. Never omit any question.\n"
+            "2. SEPARATION FOR IDENTIFICATION: Clearly separate each question's solution using a distinct divider line '---'.\n"
+            "3. QUESTION ANSWER FORMAT:\n"
+            "   For each question, start with a clear question identifier (e.g. 'Q1:' or '### Question 1:'):\n"
+            "   - SINGLE CORRECT MCQ: 'Correct Option: <Letter>) <Option Text>' (e.g. 'Correct Option: B) 42 rad/s')\n"
+            "   - MULTIPLE CORRECT OPTIONS (MSQ): 'Correct Options: <Letters>) <Options Text>' (e.g. 'Correct Options: A, C) Both A and C are correct')\n"
+            "   - NO OPTIONS (Numerical / Value / Fill in the blank / Short answer): 'Correct Answer: <Exact Value or Result>' (e.g. 'Correct Answer: 14.5' or 'Correct Answer: True'). State the direct correct answer clearly.\n"
+            "4. CONCISE CALCULATION & EXPLANATION: Immediately follow the answer line with a crisp 2-3 line calculation, formula substitution, or step-by-step reasoning.\n"
+            "5. NO CONVERSATIONAL PROSE: Absolutely NO greetings, no introductory filler (e.g. no 'Sure, here are the answers:'). Output ONLY the direct structured solutions."
         )
     elif is_theory_requested:
         mode = "theory"
@@ -2150,6 +2853,14 @@ async def exam_ai_solve(request: Request):
         )
 
     user_prompt = f"Exam Problem Description:\n{question_text}"
+    if is_mcq_requested or (raw_language in ["auto", ""] and has_mcq_markers):
+        user_prompt += (
+            "\n\nIMPORTANT INSTRUCTION:\n"
+            "Carefully scan the text/screen above. If there are multiple questions visible (e.g. 2, 3, 4 questions or Question 1, Question 2, etc.), "
+            "you MUST answer ALL of them sequentially in order.\n"
+            "Format every question clearly (Q1:, Q2:, Q3:...), state the correct option or direct answer, give a 2-3 line calculation/explanation, "
+            "and separate each question with '---'."
+        )
     if custom_instructions:
         user_prompt += f"\n\nAdditional Requirements:\n{custom_instructions}"
 

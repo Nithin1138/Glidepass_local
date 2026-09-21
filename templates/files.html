@@ -29,8 +29,8 @@
     <style>
         :root {
             --bg-color: #050505;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(22, 22, 28, 0.78);
+            --border-color: rgba(255, 255, 255, 0.09);
             --text-main: #FAFAFA;
             --text-muted: rgba(250, 250, 250, 0.4);
             --accent-color: #0077C0;
@@ -95,31 +95,32 @@
             z-index: 0;
             pointer-events: none;
             background: #000;
+            transform: translate3d(0, 0, 0);
+            contain: strict;
         }
         
         @keyframes pulseGlow {
             0% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
-            50% { transform: scale(1.1); filter: drop-shadow(0 0 20px var(--accent-glow)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 16px var(--accent-glow)); }
             100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
         }
         .pulsing-cloud {
-            animation: pulseGlow 1.5s ease-in-out infinite;
+            animation: pulseGlow 2s ease-in-out infinite;
         }
 
         .category-scroll {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.35;
-            animation: aurora-float 15s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            display: none;
         }
 
         .aurora-blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.35;
-            animation: aurora-float 15s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            filter: blur(40px);
+            opacity: 0.3;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+            backface-visibility: hidden;
+            animation: aurora-float 20s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
         }
 
         .aurora-1 {
@@ -1126,6 +1127,7 @@
             sessionStorage.setItem('sessionDeletedFiles', JSON.stringify(arr));
         }
 
+        let lastRenderedFilesSig = '';
         function renderFiles(files) {
             const sessionSet = getSessionFiles();
             const deletedSet = new Set(getSessionDeleted().map(f => f.name));
@@ -1136,12 +1138,18 @@
             });
 
             if (activeFiles.length === 0) {
+                lastRenderedFilesSig = 'empty';
                 filesList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.85rem;">No files shared this session. Upload a file above to start!</div>`;
                 return;
             }
 
             // Track downloaded files in sessionStorage
             const downloadedSet = new Set(JSON.parse(sessionStorage.getItem('downloadedFiles') || '[]'));
+            const currentSig = activeFiles.map(f => `${f.name}:${f.size}:${downloadedSet.has(f.name)}`).join('|');
+            if (currentSig === lastRenderedFilesSig) {
+                return; // Prevent unnecessary DOM destruction and reflow
+            }
+            lastRenderedFilesSig = currentSig;
 
             filesList.innerHTML = activeFiles.map(file => {
                 const nameEscaped = encodeURIComponent(file.name);
@@ -1150,7 +1158,7 @@
                     ? 'border: 1px solid rgba(0, 200, 83, 0.6); box-shadow: 0 0 8px rgba(0, 200, 83, 0.15);'
                     : 'border: 1px solid var(--border-color);';
                 return `
-                    <div id="file-card-${nameEscaped}" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); ${borderStyle} border-radius: 12px; padding: 12px 16px; backdrop-filter: blur(10px); transition: border-color 0.3s ease, box-shadow 0.3s ease;">
+                    <div id="file-card-${nameEscaped}" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); ${borderStyle} border-radius: 12px; padding: 12px 16px; transition: border-color 0.2s ease, box-shadow 0.2s ease;">
                         <div style="display: flex; flex-direction: column; gap: 3px; max-width: 65%; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <span style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</span>

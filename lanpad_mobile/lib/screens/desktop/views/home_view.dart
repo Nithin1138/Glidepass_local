@@ -9,12 +9,15 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
+import '../widgets/sidebar.dart';
+import '../../../utils/network_utils.dart';
 
 /// Home view — shows the QR pairing screen when idle,
 /// switches to the "connected" dashboard when a device is paired.
 class HomeView extends StatelessWidget {
   final DesktopState state;
-  const HomeView({super.key, required this.state});
+  final ValueChanged<DesktopView>? onNavigate;
+  const HomeView({super.key, required this.state, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +27,17 @@ class HomeView extends StatelessWidget {
     final isConnectedClient = state.connectionService.isConnected && !state.connectionService.isLocalConnection;
 
     if ((isRunning && (hasDevices || hasRemoteHubs)) || isConnectedClient) {
-      return _ConnectedView(state: state);
+      return _ConnectedView(state: state, onNavigate: onNavigate);
     }
-    return _WaitingView(state: state);
+    return _WaitingView(state: state, onNavigate: onNavigate);
   }
 }
 
 // ─── Waiting / QR Pairing Screen ─────────────────────────────────────────────
 class _WaitingView extends StatefulWidget {
   final DesktopState state;
-  const _WaitingView({required this.state});
+  final ValueChanged<DesktopView>? onNavigate;
+  const _WaitingView({required this.state, this.onNavigate});
 
   @override
   State<_WaitingView> createState() => _WaitingViewState();
@@ -82,66 +86,53 @@ class _WaitingViewState extends State<_WaitingView> {
       localIps.add('127.0.0.1');
       localIps.add('localhost');
 
-      String? localIp;
-      for (var interface in interfaces) {
-        for (var addr in interface.addresses) {
-          if (!addr.isLoopback) {
-            localIp = addr.address;
-            break;
-          }
-        }
-        if (localIp != null) break;
-      }
+      final subnets = await NetworkUtils.getCandidateSubnets();
+      final List<Future<void>> tasks = [];
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 1000);
 
-      if (localIp != null) {
-        final parts = localIp.split('.');
-        if (parts.length == 4) {
-          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-          final List<Future<void>> tasks = [];
+      for (final subnet in subnets) {
+        for (int i = 1; i <= 254; i++) {
+          final ip = '$subnet.$i';
+          if (localIps.contains(ip)) continue;
+          final url = 'http://$ip:8000';
 
-          final client = HttpClient();
-          client.connectionTimeout = const Duration(milliseconds: 1000);
+          tasks.add(
+            client.getUrl(Uri.parse('$url/api/connection/info'))
+                .then((req) => req.close())
+                .then((res) async {
+              if (res.statusCode == 200) {
+                final bodyStr = await res.transform(utf8.decoder).join();
+                final data = jsonDecode(bodyStr);
+                if (data['status'] == 'success') {
+                  final serverCode = data['session_code']?.toString() ?? '';
+                  final myToken = widget.state.serverService.sessionToken;
+                  final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
+                  
+                  if (serverCode.toLowerCase() == myCode.toLowerCase()) {
+                    return;
+                  }
 
-          for (int i = 1; i <= 254; i++) {
-            final ip = '$subnet.$i';
-            if (localIps.contains(ip)) continue;
-            final url = 'http://$ip:8000';
-
-            tasks.add(
-              client.getUrl(Uri.parse('$url/api/connection/info'))
-                  .then((req) => req.close())
-                  .then((res) async {
-                if (res.statusCode == 200) {
-                  final bodyStr = await res.transform(utf8.decoder).join();
-                  final data = jsonDecode(bodyStr);
-                  if (data['status'] == 'success') {
-                    final serverCode = data['session_code']?.toString() ?? '';
-                    final myToken = widget.state.serverService.sessionToken;
-                    final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
-                    
-                    if (serverCode.toLowerCase() == myCode.toLowerCase()) {
-                      return;
-                    }
-
-                    if (mounted) {
-                      setState(() {
-                        if (!_discoveredDevices.any((d) => d['url'] == url)) {
-                          _discoveredDevices.add({
-                            'url': url,
-                            'device_name': data['device_name'] ?? 'LANpad Device',
-                            'session_code': data['session_code'] ?? '',
-                            'ip': ip,
-                          });
-                        }
-                      });
-                    }
+                  if (mounted) {
+                    setState(() {
+                      if (!_discoveredDevices.any((d) => d['url'] == url)) {
+                        _discoveredDevices.add({
+                          'url': url,
+                          'device_name': data['device_name'] ?? 'LANpad Device',
+                          'session_code': data['session_code'] ?? '',
+                          'ip': ip,
+                        });
+                      }
+                    });
                   }
                 }
-              }).catchError((_) {}),
-            );
-          }
-          await Future.wait(tasks);
+              }
+            }).catchError((_) {}),
+          );
         }
+      }
+      if (tasks.isNotEmpty) {
+        await Future.wait(tasks);
       }
     } catch (e) {
       debugPrint('Local discovery error: $e');
@@ -830,7 +821,8 @@ class _QuickStartGuide extends StatelessWidget {
 // ─── Connected Dashboard ──────────────────────────────────────────────────────
 class _ConnectedView extends StatelessWidget {
   final DesktopState state;
-  const _ConnectedView({required this.state});
+  final ValueChanged<DesktopView>? onNavigate;
+  const _ConnectedView({required this.state, this.onNavigate});
 
   void _showScannerDialog(BuildContext context) {
     showDialog(
@@ -876,7 +868,7 @@ class _ConnectedView extends StatelessWidget {
           const SizedBox(width: 16),
           // Right col (4/12) — quick actions + stats
           Expanded(flex: 4, child: Column(children: [
-            _QuickActionsCard(state: state),
+            _QuickActionsCard(state: state, onNavigate: onNavigate),
             const SizedBox(height: 16),
             _ConnectionStatsCard(state: state),
           ])),
@@ -936,66 +928,53 @@ class _ScannerDialogState extends State<_ScannerDialog> {
       localIps.add('127.0.0.1');
       localIps.add('localhost');
 
-      String? localIp;
-      for (var interface in interfaces) {
-        for (var addr in interface.addresses) {
-          if (!addr.isLoopback) {
-            localIp = addr.address;
-            break;
-          }
-        }
-        if (localIp != null) break;
-      }
+      final subnets = await NetworkUtils.getCandidateSubnets();
+      final List<Future<void>> tasks = [];
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 1000);
 
-      if (localIp != null) {
-        final parts = localIp.split('.');
-        if (parts.length == 4) {
-          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-          final List<Future<void>> tasks = [];
+      for (final subnet in subnets) {
+        for (int i = 1; i <= 254; i++) {
+          final ip = '$subnet.$i';
+          if (localIps.contains(ip)) continue;
+          final url = 'http://$ip:8000';
 
-          final client = HttpClient();
-          client.connectionTimeout = const Duration(milliseconds: 1000);
+          tasks.add(
+            client.getUrl(Uri.parse('$url/api/connection/info'))
+                .then((req) => req.close())
+                .then((res) async {
+              if (res.statusCode == 200) {
+                final bodyStr = await res.transform(utf8.decoder).join();
+                final data = jsonDecode(bodyStr);
+                if (data['status'] == 'success') {
+                  final serverCode = data['session_code']?.toString() ?? '';
+                  final myToken = widget.state.serverService.sessionToken;
+                  final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
+                  
+                  if (serverCode.toLowerCase() == myCode.toLowerCase()) {
+                    return;
+                  }
 
-          for (int i = 1; i <= 254; i++) {
-            final ip = '$subnet.$i';
-            if (localIps.contains(ip)) continue;
-            final url = 'http://$ip:8000';
-
-            tasks.add(
-              client.getUrl(Uri.parse('$url/api/connection/info'))
-                  .then((req) => req.close())
-                  .then((res) async {
-                if (res.statusCode == 200) {
-                  final bodyStr = await res.transform(utf8.decoder).join();
-                  final data = jsonDecode(bodyStr);
-                  if (data['status'] == 'success') {
-                    final serverCode = data['session_code']?.toString() ?? '';
-                    final myToken = widget.state.serverService.sessionToken;
-                    final myCode = myToken.length >= 6 ? myToken.substring(myToken.length - 6) : myToken;
-                    
-                    if (serverCode.toLowerCase() == myCode.toLowerCase()) {
-                      return;
-                    }
-
-                    if (mounted) {
-                      setState(() {
-                        if (!_discoveredDevices.any((d) => d['url'] == url)) {
-                          _discoveredDevices.add({
-                            'url': url,
-                            'device_name': data['device_name'] ?? 'LANpad Device',
-                            'session_code': data['session_code'] ?? '',
-                            'ip': ip,
-                          });
-                        }
-                      });
-                    }
+                  if (mounted) {
+                    setState(() {
+                      if (!_discoveredDevices.any((d) => d['url'] == url)) {
+                        _discoveredDevices.add({
+                          'url': url,
+                          'device_name': data['device_name'] ?? 'LANpad Device',
+                          'session_code': data['session_code'] ?? '',
+                          'ip': ip,
+                        });
+                      }
+                    });
                   }
                 }
-              }).catchError((_) {}),
-            );
-          }
-          await Future.wait(tasks);
+              }
+            }).catchError((_) {}),
+          );
         }
+      }
+      if (tasks.isNotEmpty) {
+        await Future.wait(tasks);
       }
     } catch (e) {
       debugPrint('Local discovery error: $e');
@@ -1684,7 +1663,8 @@ class _FeedRow extends StatelessWidget {
 
 class _QuickActionsCard extends StatelessWidget {
   final DesktopState state;
-  const _QuickActionsCard({required this.state});
+  final ValueChanged<DesktopView>? onNavigate;
+  const _QuickActionsCard({required this.state, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -1711,6 +1691,25 @@ class _QuickActionsCard extends StatelessWidget {
             subtitle: 'Inject or simulate input',
             isPrimary: false,
             onTap: () {},
+          ),
+          const SizedBox(height: 12),
+          _ActionBtn(
+            icon: LucideIcons.monitor,
+            title: 'Remote Desktop Screen',
+            subtitle: 'AnyDesk / UltraViewer live in-app control',
+            isPrimary: true,
+            onTap: () {
+              if (onNavigate != null) {
+                onNavigate!(DesktopView.remoteControl);
+              } else if (state.connectedRemoteHubs.isNotEmpty) {
+                final hub = state.connectedRemoteHubs.first;
+                final url = hub['url'] ?? '';
+                final token = hub['token'] ?? '';
+                if (url.isNotEmpty) {
+                  launchUrl(Uri.parse('$url/monitor?sid=$token'));
+                }
+              }
+            },
           ),
         ],
       ),

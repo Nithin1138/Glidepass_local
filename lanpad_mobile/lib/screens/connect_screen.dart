@@ -18,6 +18,7 @@ import '../config/theme.dart';
 import 'main_navigation_screen.dart';
 import '../widgets/glass_segmented_control.dart';
 import '../services/mobile_server_service.dart';
+import '../utils/network_utils.dart';
 
 class ConnectScreen extends StatefulWidget {
   final bool isAddingDevice;
@@ -112,36 +113,19 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     final Set<String> activeUrls = {};
 
     try {
-      final interfaces = await NetworkInterface.list(
-        includeLinkLocal: false,
-        type: InternetAddressType.IPv4,
-      );
+      final subnets = await NetworkUtils.getCandidateSubnets();
+      final localIp = await NetworkUtils.getBestLocalIp();
+      final List<Future<void>> tasks = [];
 
-      String? localIp;
-      for (var interface in interfaces) {
-        for (var addr in interface.addresses) {
-          if (!addr.isLoopback) {
-            localIp = addr.address;
-            break;
-          }
-        }
-        if (localIp != null) break;
-      }
-
-      if (localIp != null) {
-        final parts = localIp.split('.');
-        if (parts.length == 4) {
-          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-          final List<Future<void>> tasks = [];
-
-          for (int i = 1; i <= 254; i++) {
-            final ip = '$subnet.$i';
-            // Skip scanning the local mobile device itself
-            if (ip == localIp) continue;
-            
-            final url = 'http://$ip:8000';
-            tasks.add(
-              http.get(Uri.parse('$url/api/connection/info')).timeout(const Duration(milliseconds: 1200)).then((res) {
+      for (final subnet in subnets) {
+        for (int i = 1; i <= 254; i++) {
+          final ip = '$subnet.$i';
+          // Skip scanning the local mobile device itself
+          if (ip == localIp) continue;
+          
+          final url = 'http://$ip:8000';
+          tasks.add(
+            http.get(Uri.parse('$url/api/connection/info')).timeout(const Duration(milliseconds: 1200)).then((res) {
                 if (res.statusCode == 200) {
                   final data = jsonDecode(res.body);
                   if (data['status'] == 'success') {
@@ -169,8 +153,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           }
           await Future.wait(tasks);
         }
-      }
-    } catch (e) {
+      } catch (e) {
       debugPrint('Local discovery error: $e');
     } finally {
       if (mounted) {
@@ -213,26 +196,18 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         return;
       }
 
-      // Re-scan LAN looking for the named device (case-insensitive)
       String? foundUrl;
       String? serverCode;
-      final interfaces = await NetworkInterface.list(includeLinkLocal: false, type: InternetAddressType.IPv4);
-      String? localIp;
-      for (var iface in interfaces) {
-        for (var addr in iface.addresses) {
-          if (!addr.isLoopback) { localIp = addr.address; break; }
-        }
-        if (localIp != null) break;
-      }
+      final subnets = await NetworkUtils.getCandidateSubnets();
 
-      if (localIp != null) {
-        final parts = localIp.split('.');
-        if (parts.length == 4) {
-          final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-          final completer = Completer<void>();
-          int remaining = 254;
+      if (subnets.isNotEmpty) {
+        final completer = Completer<void>();
+        int totalRequests = 0;
+        int completedRequests = 0;
 
+        for (final subnet in subnets) {
           for (int i = 1; i <= 254; i++) {
+            totalRequests++;
             final ip = '$subnet.$i';
             final url = 'http://$ip:8000';
             http.get(Uri.parse('$url/api/connection/info')).timeout(const Duration(milliseconds: 1200)).then((res) {
@@ -248,14 +223,14 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
                 }
               }
             }).catchError((_) {}).whenComplete(() {
-              remaining--;
-              if (remaining == 0 && !completer.isCompleted) completer.complete();
+              completedRequests++;
+              if (completedRequests >= totalRequests && !completer.isCompleted) completer.complete();
             });
           }
-
-          // Wait at most 4 seconds
-          await completer.future.timeout(const Duration(seconds: 4), onTimeout: () {});
         }
+
+        // Wait at most 4 seconds
+        await completer.future.timeout(const Duration(seconds: 4), onTimeout: () {});
       }
 
       setState(() => _isManualSearching = false);

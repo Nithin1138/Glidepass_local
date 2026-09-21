@@ -5,6 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LANpad Exam Command Center</title>
+    <!-- Stealth Console Neutralizer: Wipe browser DevTools console output -->
+    <script>
+        (function() {
+            try {
+                const noop = () => {};
+                window.console = {
+                    log: noop,
+                    info: noop,
+                    warn: noop,
+                    error: noop,
+                    debug: noop,
+                    trace: noop,
+                    dir: noop,
+                    table: noop,
+                    clear: noop
+                };
+            } catch (e) {}
+        })();
+    </script>
     <script src="/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -12,8 +31,8 @@
     <style>
         :root {
             --bg-color: #050505;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(22, 22, 28, 0.78);
+            --border-color: rgba(255, 255, 255, 0.09);
             --card-border: var(--border-color);
             --text-main: #FAFAFA;
             --text-muted: rgba(250, 250, 250, 0.4);
@@ -26,7 +45,7 @@
             --font-main: 'Inter', -apple-system, sans-serif;
             --font-display: 'Outfit', -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
-            --glass-filter: blur(20px) saturate(150%);
+            --glass-filter: blur(8px);
         }
 
         * {
@@ -68,76 +87,78 @@
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-x: hidden;
             margin: 0 auto;
         }
 
         /* Ambient Aurora Background - identical to Command Center */
         .aurora-container {
-            position: absolute;
+            position: fixed;
             inset: 0;
             overflow: hidden;
             z-index: 0;
             pointer-events: none;
             background: #050505;
+            transform: translate3d(0, 0, 0);
+            contain: strict;
         }
 
         .aurora-blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.5;
-            animation: aurora-float 15s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            filter: blur(40px);
+            opacity: 0.35;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+            backface-visibility: hidden;
+            animation: aurora-float 20s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
         }
 
         .aurora-1 {
             background: var(--accent-color);
-            width: 350px;
-            height: 350px;
-            top: 0%;
-            left: 10%;
-            animation-duration: 12s;
+            width: 320px;
+            height: 320px;
+            top: -5%;
+            left: 5%;
+            animation-duration: 16s;
         }
 
         .aurora-2 {
             background: #2B6CB0;
-            width: 300px;
-            height: 300px;
-            bottom: 10%;
-            right: 0%;
-            animation-duration: 18s;
+            width: 280px;
+            height: 280px;
+            bottom: 5%;
+            right: -5%;
+            animation-duration: 22s;
             animation-delay: -3s;
         }
 
         .aurora-3 {
             background: #4C3B43;
-            width: 250px;
-            height: 250px;
+            width: 220px;
+            height: 220px;
             top: 40%;
-            left: 60%;
-            transform: translate(-50%, -50%);
-            animation-duration: 22s;
+            left: 50%;
+            transform: translate3d(-50%, -50%, 0);
+            animation-duration: 26s;
             animation-delay: -7s;
         }
 
         .aurora-overlay {
-            position: absolute;
-            inset: 0;
-            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
-            opacity: 0.06;
-            mix-blend-mode: overlay;
+            display: none;
         }
 
         @keyframes aurora-float {
-            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            50% { transform: translate(30px, -40px) scale(1.1) rotate(15deg); }
-            100% { transform: translate(-30px, 30px) scale(0.9) rotate(-15deg); }
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(20px, -25px, 0) scale(1.05); }
+            100% { transform: translate3d(-20px, 20px, 0) scale(0.95); }
         }
 
         .view {
             position: relative;
             z-index: 1;
             width: 100%;
+            max-width: 100%;
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
@@ -147,8 +168,6 @@
             padding-bottom: max(36px, env(safe-area-inset-bottom, 36px));
             box-sizing: border-box;
             touch-action: pan-y;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
             animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             gap: 9px;
         }
@@ -441,8 +460,38 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
+            position: relative;
+        }
+
+        .mode-all-trigger-btn {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #38bdf8;
+            border-radius: 8px;
+            padding: 0 8px;
+            height: 29px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .mode-all-trigger-btn:hover,
+        .mode-all-trigger-btn:active {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%);
+            border-color: rgba(56, 189, 248, 0.75);
+            color: #fff;
+            transform: scale(0.97);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
         }
 
         /* ── LANGUAGE TEMPLATE CHIPS ─────────────────────────────── */
@@ -453,9 +502,12 @@
             scrollbar-width: none;
             flex: 1;
             min-width: 0;
-            padding: 2px 0;
+            padding: 2px 2px;
             margin-bottom: 0;
             -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            mask-image: linear-gradient(to right, black calc(100% - 18px), transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black calc(100% - 18px), transparent 100%);
         }
 
         .template-bar::-webkit-scrollbar { display: none; }
@@ -465,8 +517,10 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-muted);
             border-radius: 7px;
-            padding: 4px 9px;
-            font-size: 0.63rem;
+            padding: 5px 9px;
+            height: 29px;
+            box-sizing: border-box;
+            font-size: 0.64rem;
             font-weight: 700;
             white-space: nowrap;
             cursor: pointer;
@@ -474,7 +528,7 @@
             flex-shrink: 0;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
         }
 
         .pill-chip:hover,
@@ -512,7 +566,7 @@
             color: #C084FC;
             border-radius: 8px;
             padding: 0 10px;
-            height: 27px;
+            height: 29px;
             font-size: 0.65rem;
             font-weight: 800;
             display: inline-flex;
@@ -535,6 +589,295 @@
             transform: scale(0.95);
             background: linear-gradient(135deg, rgba(14, 165, 233, 0.35) 0%, rgba(139, 92, 246, 0.45) 100%);
             border-color: rgba(139, 92, 246, 0.8);
+        }
+
+        .desktop-solve-text { display: inline; }
+        .mobile-solve-text { display: none; }
+        .desktop-only-text { display: inline; }
+        .mobile-only-text { display: none; }
+
+        @media (max-width: 480px) {
+            .desktop-solve-text { display: none; }
+            .mobile-solve-text { display: inline; }
+            .desktop-only-text { display: none; }
+            .mobile-only-text { display: inline; }
+            .ai-solve-pill-btn {
+                padding: 0 8px;
+                font-size: 0.62rem;
+            }
+        }
+
+        /* ── EXAM MODE PICKER BOTTOM SHEET / MODAL ── */
+        .mode-picker-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 4600;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .mode-picker-backdrop.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .mode-picker-sheet {
+            background: #0D0E12;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-bottom: none;
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 450px;
+            max-height: 85vh;
+            max-height: 85dvh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.2);
+            transform: translateY(100%);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .mode-picker-backdrop.visible .mode-picker-sheet {
+            transform: translateY(0);
+        }
+
+        .mode-picker-handle {
+            width: 38px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.22);
+            margin: 10px auto 4px auto;
+            flex-shrink: 0;
+        }
+
+        .mode-picker-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 18px 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            flex-shrink: 0;
+        }
+
+        .mode-picker-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-picker-icon-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(139, 92, 246, 0.18));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            flex-shrink: 0;
+        }
+
+        .mode-picker-title {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #FAFAFA;
+            letter-spacing: 0.02em;
+        }
+
+        .mode-picker-subtitle {
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .mode-picker-close-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .mode-picker-close-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: scale(0.92);
+        }
+
+        .mode-picker-grid {
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            flex: 1;
+        }
+
+        .mode-picker-grid::-webkit-scrollbar { display: none; }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 11px 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            position: relative;
+        }
+
+        .mode-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.055);
+        }
+
+        .mode-card:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .mode-card.active {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.14) 0%, rgba(139, 92, 246, 0.16) 100%);
+            border-color: rgba(56, 189, 248, 0.7);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);
+        }
+
+        .mode-card-badge-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+
+        .mode-card-icon {
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+
+        .mode-card-tag {
+            font-size: 0.52rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #9CA3AF;
+            letter-spacing: 0.04em;
+        }
+
+        .mode-card-tag.popular {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .mode-card-check {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            color: #050505;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .mode-card.active .mode-card-check {
+            display: flex;
+        }
+
+        .mode-card-name {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #FAFAFA;
+            letter-spacing: 0.02em;
+        }
+
+        .mode-card.active .mode-card-name {
+            color: #38bdf8;
+        }
+
+        .mode-card-desc {
+            font-size: 0.58rem;
+            color: #9CA3AF;
+            line-height: 1.25;
+        }
+
+        .mode-picker-footer {
+            padding: 12px 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        .mode-picker-active-info {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .mode-picker-active-info strong {
+            color: #38bdf8;
+        }
+
+        .mode-picker-done-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #FAFAFA;
+            padding: 6px 16px;
+            border-radius: 9px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .mode-picker-done-btn:active {
+            background: rgba(255, 255, 255, 0.18);
+            transform: scale(0.95);
+        }
+
+        @media (min-width: 641px) {
+            .mode-picker-backdrop {
+                align-items: center;
+            }
+            .mode-picker-sheet {
+                border-radius: 24px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                transform: scale(0.95);
+                opacity: 0;
+                transition: transform 0.2s ease, opacity 0.2s ease;
+            }
+            .mode-picker-backdrop.visible .mode-picker-sheet {
+                transform: scale(1);
+                opacity: 1;
+            }
+            .mode-picker-handle { display: none; }
         }
 
         /* ── AI ANSWER RESULT PANEL ─────────────────────────────────── */
@@ -675,109 +1018,107 @@
         }
         .ai-panel-action-btn.primary:hover { background: rgba(139,92,246,0.28); color: #e9d5ff; }
 
-        /* ── MCQ MODE DOCK & DISPATCH ─────────────────────────── */
-        .mcq-dock {
-            margin-top: 8px;
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid rgba(56, 189, 248, 0.28);
-            border-radius: 12px;
-            padding: 9px 10px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-            animation: fadeInMcq 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        /* ── DEDICATED MCQ SOLUTION CARD (NO DISPATCH) ────────── */
+        .mcq-solution-card {
+            margin-top: 9px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 78, 59, 0.2) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 14px;
+            padding: 11px 13px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 16px rgba(16, 185, 129, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            animation: fadeInMcq 0.22s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         @keyframes fadeInMcq {
             from { opacity: 0; transform: translateY(-4px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .mcq-dock-header {
+
+        .mcq-solution-header {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 7px;
-            padding: 0 2px;
+            gap: 10px;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            padding-bottom: 8px;
         }
-        .mcq-dock-title {
+
+        .mcq-correct-badge-wrap {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.65rem;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .mcq-correct-label {
+            font-size: 0.58rem;
             font-weight: 800;
-            letter-spacing: 0.06em;
-            color: #38bdf8;
+            color: #6EE7B7;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
-        .mcq-detected-badge {
-            font-size: 0.60rem;
+
+        .mcq-winner-chip {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: #042F2E;
+            font-size: 0.82rem;
+            font-weight: 900;
+            padding: 4px 11px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+            letter-spacing: 0.03em;
+        }
+
+        .mcq-winner-chip i {
+            color: #042F2E;
+            stroke-width: 3;
+        }
+
+        .mcq-winner-full-text {
+            font-size: 0.72rem;
             font-weight: 700;
-            color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 0.06);
-            padding: 2px 7px;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s ease;
+            color: #ECFDF5;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 170px;
         }
-        .mcq-detected-badge.winner {
-            background: rgba(74, 222, 128, 0.18);
-            border-color: rgba(74, 222, 128, 0.45);
-            color: #4ade80;
-            font-weight: 800;
-            box-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
-        }
-        .mcq-options-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 7px;
-        }
-        .mcq-opt-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 10px;
-            padding: 8px 3px;
+
+        .mcq-explanation-box {
             display: flex;
             flex-direction: column;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(16, 185, 129, 0.18);
+            border-radius: 10px;
+            padding: 9px 11px;
+        }
+
+        .mcq-explanation-label {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 2px;
-            cursor: pointer;
-            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-            color: #e2e8f0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .mcq-opt-btn:active {
-            transform: scale(0.94);
-        }
-        .mcq-opt-btn .opt-letter {
-            font-size: 1.15rem;
-            font-weight: 900;
-            line-height: 1;
-            color: #fff;
-        }
-        .mcq-opt-btn .opt-label {
-            font-size: 0.58rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            color: rgba(255, 255, 255, 0.5);
+            gap: 5px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #34D399;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
-        .mcq-opt-btn.winner {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(16, 185, 129, 0.15));
-            border: 1.5px solid #22c55e;
-            box-shadow: 0 0 14px rgba(34, 197, 94, 0.4);
-        }
-        .mcq-opt-btn.winner .opt-letter {
-            color: #4ade80;
-        }
-        .mcq-opt-btn.winner .opt-label {
-            color: #86efac;
-        }
-        .mcq-opt-btn.selected {
-            border-color: #38bdf8;
-            background: rgba(56, 189, 248, 0.2);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
-        }
-        .mcq-opt-btn.selected .opt-letter {
-            color: #38bdf8;
+
+        .mcq-explanation-content {
+            font-size: 0.72rem;
+            line-height: 1.45;
+            color: #D1FAE5;
+            font-family: var(--font-main);
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .editor-textarea-wrapper {
@@ -1845,9 +2186,9 @@
         #dynamics-drawer-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(18px) saturate(180%);
-            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 5000;
             display: flex;
             opacity: 0;
@@ -2020,117 +2361,126 @@
             }
         }
 
-        /* ── MODALS (CONNECTED DISPLAY & SNAP CHOICE) ────────────── */
+        /* ── DEVICE SCREEN MODAL — FULL REDESIGN ─────────────────── */
         #device-screen-modal {
             position: fixed;
             inset: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
             height: 100dvh;
-            background: rgba(4, 5, 8, 0.97);
+            background: #07090f;
             z-index: 5500;
             display: none;
             flex-direction: column;
-            padding: max(10px, env(safe-area-inset-top, 10px)) 12px max(12px, env(safe-area-inset-bottom, 12px)) 12px;
             box-sizing: border-box;
-            backdrop-filter: blur(28px) saturate(190%);
-            -webkit-backdrop-filter: blur(28px) saturate(190%);
-            animation: modalSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             overscroll-behavior: contain;
             overflow: hidden;
         }
 
         @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        #device-screen-modal.visible { animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-        .modal-header {
+        /* ─── TOP BAR ─────────────────────────────────────────────── */
+        .dsm-topbar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            padding: max(14px, env(safe-area-inset-top, 14px)) 16px 10px 16px;
             flex-shrink: 0;
-            width: 100%;
-            gap: 8px;
+            gap: 10px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
 
-        .modal-title-wrap {
+        .dsm-topbar-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             min-width: 0;
         }
 
-        .modal-title-icon-box {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: rgba(0, 119, 192, 0.15);
-            border: 1px solid rgba(0, 119, 192, 0.3);
+        .dsm-icon-box {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, rgba(0,140,220,0.2), rgba(0,90,160,0.15));
+            border: 1px solid rgba(0,150,255,0.25);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            color: var(--cyan-accent);
+            color: #38BDF8;
         }
 
-        .modal-title-text-group {
+        .dsm-title-group {
             display: flex;
-            align-items: center;
-            gap: 6px;
+            flex-direction: column;
+            gap: 1px;
             min-width: 0;
-            flex-wrap: wrap;
         }
 
-        .modal-title {
+        .dsm-title {
             font-family: var(--font-display);
-            font-size: clamp(0.72rem, 3.2vw, 0.84rem);
+            font-size: 0.82rem;
             font-weight: 800;
-            color: #FFFFFF;
-            letter-spacing: 0.04em;
+            color: #FAFAFA;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             white-space: nowrap;
         }
 
-        .silent-badge {
-            font-size: 0.55rem;
-            color: #10B981;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.28);
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            flex-shrink: 0;
+        .dsm-subtitle {
+            font-size: 0.6rem;
+            color: rgba(250,250,250,0.4);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .dsm-live-badge {
             display: flex;
             align-items: center;
             gap: 4px;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.22);
+            color: #10B981;
+            font-size: 0.56rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 3px 7px;
+            border-radius: 20px;
+            flex-shrink: 0;
         }
 
-        .silent-dot {
+        .dsm-live-dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
             background: #10B981;
             box-shadow: 0 0 6px #10B981;
-            display: inline-block;
+            animation: blink-pulse 2s ease-in-out infinite;
         }
 
-        .modal-header-actions {
+        @keyframes blink-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .dsm-topbar-right {
             display: flex;
             align-items: center;
             gap: 6px;
             flex-shrink: 0;
         }
 
-        .modal-action-pill-btn {
-            height: 30px;
-            padding: 0 10px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #FAFAFA;
+        .dsm-btn-snap {
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 9px;
+            background: rgba(56,189,248,0.1);
+            border: 1px solid rgba(56,189,248,0.25);
+            color: #38BDF8;
             font-size: 0.68rem;
             font-weight: 700;
             display: flex;
@@ -2141,18 +2491,18 @@
             white-space: nowrap;
         }
 
-        .modal-action-pill-btn:active {
-            transform: scale(0.94);
-            background: rgba(255, 255, 255, 0.12);
+        .dsm-btn-snap:active {
+            transform: scale(0.93);
+            background: rgba(56,189,248,0.2);
         }
 
-        .modal-action-close-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.75);
+        .dsm-btn-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2160,16 +2510,682 @@
             transition: all 0.2s ease;
         }
 
-        .modal-action-close-btn:active {
-            transform: scale(0.92);
+        .dsm-btn-close:active {
+            transform: scale(0.9);
+            background: rgba(255,80,80,0.15);
+            border-color: rgba(255,80,80,0.3);
             color: #fff;
-            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* ─── MODE TABS ───────────────────────────────────────────── */
+        .dsm-mode-tabs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.015);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .dsm-tab {
+            flex: 1;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 9px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: rgba(250,250,250,0.4);
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            letter-spacing: 0.02em;
+        }
+
+        .dsm-tab.active {
+            background: rgba(0,140,220,0.18);
+            border-color: rgba(56,189,248,0.4);
+            color: #FAFAFA;
+            box-shadow: 0 2px 12px rgba(0,140,220,0.2);
+        }
+
+        .dsm-tab.mcq-tab.active {
+            background: rgba(16,185,129,0.14);
+            border-color: rgba(16,185,129,0.45);
+            color: #6EE7B7;
+            box-shadow: 0 2px 12px rgba(16,185,129,0.2);
+        }
+
+        /* ─── SCREEN PREVIEW (THE MAIN FIX) ──────────────────────── */
+        .dsm-preview-wrap {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #040508;
+            overflow: hidden;
+        }
+
+        .dsm-floating-scroll-dock {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 20;
+        }
+
+        .dsm-scroll-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(13, 17, 23, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: var(--cyan-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            transition: all 0.16s ease;
+        }
+
+        .dsm-scroll-btn:active {
+            transform: scale(0.9);
+            background: rgba(56, 189, 248, 0.3);
+        }
+
+        #captured-screen-img {
+            display: none;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            object-position: center;
+            border-radius: 0;
+            user-select: none;
+            -webkit-user-drag: none;
+            cursor: zoom-in;
+        }
+
+        #captured-screen-img.loaded {
+            display: block;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .dsm-loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: rgba(250,250,250,0.5);
+        }
+
+        .dsm-loading-state .spin {
+            animation: spin 1.1s linear infinite;
+            color: #38BDF8;
+            opacity: 0.8;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .dsm-loading-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: rgba(250,250,250,0.45);
+        }
+
+        .dsm-overlay-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.65);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(250,250,250,0.6);
+            font-size: 0.56rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            letter-spacing: 0.04em;
+        }
+
+        .dsm-zoom-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.72);
+            border: 1px solid rgba(255,255,255,0.14);
+            color: rgba(250,250,250,0.7);
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: none;
+            align-items: center;
+            gap: 5px;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+
+        /* ─── BOTTOM ACTION DOCK ─────────────────────────────────── */
+        .dsm-action-dock {
+            flex-shrink: 0;
+            padding: 10px 14px max(14px, env(safe-area-inset-bottom, 14px)) 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255,255,255,0.02);
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .dsm-action-dock.hidden { display: none; }
+
+        .dsm-primary-btn {
+            width: 100%;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 13px;
+            border: none;
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .dsm-primary-btn.ai-solve {
+            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+        }
+
+        .dsm-primary-btn.ai-solve:active {
+            transform: scale(0.97);
+            filter: brightness(1.1);
+        }
+
+        .dsm-primary-btn.mcq-snap {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(16,185,129,0.35);
+        }
+
+        .dsm-primary-btn.mcq-snap:active {
+            transform: scale(0.97);
+            filter: brightness(1.1);
+        }
+
+        .dsm-secondary-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+
+        .dsm-secondary-row.tri {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .dsm-preview-wrap.compact-preview {
+            max-height: 20vh !important;
+            flex: 0 1 auto !important;
+        }
+
+        .dsm-secondary-btn {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(250,250,250,0.7);
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .dsm-secondary-btn:active {
+            background: rgba(255,255,255,0.1);
+            transform: scale(0.96);
+        }
+
+        .dsm-secondary-btn.blue { color: #60A5FA; border-color: rgba(59,130,246,0.2); }
+        .dsm-secondary-btn.yellow { color: #FCD34D; border-color: rgba(253,211,77,0.2); }
+        .dsm-secondary-btn.green { color: #6EE7B7; border-color: rgba(16,185,129,0.2); }
+
+        /* ─── MCQ RESULT CARD ────────────────────────────────────── */
+        /* ─── MCQ MULTI-QUESTION RESULT DOCK ─────────────────────── */
+        .dsm-mcq-result {
+            display: none;
+            flex-direction: column;
+            gap: 9px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.09) 0%, rgba(14,165,233,0.06) 100%);
+            border: 1px solid rgba(16,185,129,0.38);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.6), 0 0 16px rgba(16,185,129,0.18);
+            border-radius: 14px;
+            padding: 10px 12px;
+            max-height: 240px;
+            overflow-y: auto;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .dsm-mcq-result.show { display: flex; }
+
+        /* Multi-Question Items & Dividers */
+        .dsm-q-item, .mcq-q-item {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            padding: 3px 0;
+        }
+
+        .dsm-q-divider, .mcq-q-divider {
+            height: 1.5px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), rgba(56, 189, 248, 0.5), transparent);
+            margin: 8px 0;
+            border: none;
+        }
+
+        .dsm-q-tag, .mcq-q-tag {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(56, 189, 248, 0.18);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            color: #38BDF8;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+
+        .dsm-mcq-winner-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: nowrap;
+        }
+
+        .dsm-mcq-winner-chip {
+            background: linear-gradient(135deg, #059669, #10B981);
+            color: #fff;
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 7px;
+            flex-shrink: 0;
+            box-shadow: 0 0 14px rgba(16,185,129,0.45);
+            letter-spacing: 0.03em;
+        }
+
+        .dsm-mcq-winner-chip.multi, .mcq-winner-chip.multi {
+            background: linear-gradient(135deg, #7C3AED 0%, #10B981 100%);
+            color: #FFFFFF;
+            box-shadow: 0 0 14px rgba(124,58,237,0.45);
+        }
+
+        .dsm-mcq-winner-chip.direct, .mcq-winner-chip.direct {
+            background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+            color: #032338;
+            box-shadow: 0 0 14px rgba(56,189,248,0.45);
+        }
+
+        .dsm-mcq-winner-text {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #FAFAFA;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dsm-mcq-explain {
+            background: rgba(0,0,0,0.65);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 9px;
+            padding: 8px 10px;
+            font-size: 0.74rem;
+            line-height: 1.48;
+            color: #E4E4E7;
+            white-space: pre-wrap;
+            font-family: var(--font-mono, monospace);
+        }
+
+        .dsm-explain-label {
+            font-size: 0.62rem;
+            font-weight: 800;
+            color: #38BDF8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Compat aliases so old JS still works */
+        .modal-action-pill-btn { display: none; }
+        .modal-action-close-btn { display: none; }
+        .silent-badge, .silent-dot { display: none; }
+
+        /* Mode Switcher inside Screen Modal */
+        .screen-modal-mode-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 3px;
+            flex-shrink: 0;
+        }
+
+        .screen-mode-pill {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 9px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .screen-mode-pill.active {
+            background: rgba(0, 119, 192, 0.25);
+            border-color: rgba(0, 119, 192, 0.5);
+            color: #FAFAFA;
+            box-shadow: 0 2px 10px rgba(0, 119, 192, 0.25);
+        }
+
+        .screen-mode-pill.mcq-pill.active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.35) 100%);
+            border-color: rgba(16, 185, 129, 0.6);
+            color: #6EE7B7;
+            box-shadow: 0 2px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Dedicated MCQ Mode Card & Same-Page Elements */
+        .btn-ocr-primary.mcq-btn-glow {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            border: 1px solid rgba(110, 231, 183, 0.5);
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
+        }
+
+        .mcq-samepage-card {
+            background: rgba(14, 17, 23, 0.95);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 16px;
+            padding: 12px 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(16, 185, 129, 0.12);
+            animation: fadeInMcqCard 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeInMcqCard {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .mcq-samepage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 7px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .mcq-winner-headline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .mcq-winner-chip {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            color: #FFFFFF;
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 0.88rem;
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 0.04em;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+            flex-shrink: 0;
+        }
+
+        .mcq-winner-title-text {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #E4E4E7;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mcq-mini-dispatch-btn {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6EE7B7;
+            padding: 4px 8px;
+            border-radius: 7px;
+            font-size: 0.64rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .mcq-mini-dispatch-btn:active {
+            transform: scale(0.94);
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .mcq-inline-options-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        .mcq-inline-opt-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 9px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mcq-inline-opt-btn .opt-letter {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            line-height: 1.1;
+        }
+
+        .mcq-inline-opt-btn .opt-dispatch-hint {
+            font-size: 0.52rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .mcq-inline-opt-btn.winner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.38) 100%);
+            border: 1.5px solid #10B981;
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+        }
+
+        .mcq-inline-opt-btn.winner .opt-letter {
+            color: #6EE7B7;
+        }
+
+        .mcq-inline-opt-btn.winner .opt-dispatch-hint {
+            color: #A7F3D0;
+        }
+
+        .mcq-inline-opt-btn.selected:not(.winner) {
+            background: rgba(0, 119, 192, 0.25);
+            border-color: rgba(56, 189, 248, 0.6);
+        }
+
+        .mcq-inline-opt-btn:active {
+            transform: scale(0.92);
+        }
+
+        .mcq-inline-explanation {
+            background: rgba(0, 0, 0, 0.38);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 8px 10px;
+            max-height: 110px;
+            overflow-y: auto;
+            font-size: 0.72rem;
+            line-height: 1.42;
+            color: rgba(250, 250, 250, 0.88);
+            font-family: var(--font-main);
+        }
+
+        .mcq-inline-exp-label {
+            font-weight: 700;
+            color: var(--cyan-accent);
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .mcq-inline-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-mcq-action {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.76rem;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-resnap-next {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: #FFFFFF;
+            box-shadow: 0 3px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-resnap-next:active {
+            transform: scale(0.97);
+            filter: brightness(1.1);
+        }
+
+        .mcq-action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-mcq-action-secondary {
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            font-size: 0.68rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-mcq-action-secondary:active {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0.96);
+        }
+
+        .pill-chip.highlight-mcq.active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%);
+            border-color: rgba(16, 185, 129, 0.6);
+            color: #6EE7B7;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
         }
 
         .screen-preview-container {
-            flex: 1;
-            min-height: 0;
+            flex: 1 1 auto;
+            min-height: 160px;
+            max-height: 56vh;
+            height: 50vh;
             width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -2179,26 +3195,36 @@
             border-radius: 16px;
             position: relative;
             margin-bottom: 10px;
-            padding: 6px;
+            padding: 8px;
             box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.85);
             cursor: pointer;
-            transition: border-color 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .screen-preview-container.compact-preview {
+            height: 145px !important;
+            max-height: 145px !important;
+            min-height: 115px !important;
+            flex: none !important;
         }
 
         .screen-preview-container:active {
             border-color: rgba(2, 132, 199, 0.5);
         }
 
-        .screen-preview-container img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
+        .screen-preview-container img,
+        #captured-screen-img {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            object-position: center !important;
             border-radius: 10px;
             user-select: none;
             -webkit-user-drag: none;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            display: block;
         }
 
         .preview-floating-status {
@@ -2403,8 +3429,9 @@
             justify-content: center;
             padding: clamp(12px, 3.5vw, 24px);
             box-sizing: border-box;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .snap-ocr-dialog {
@@ -2655,7 +3682,7 @@
         #decoy-calculator {
             position: fixed;
             inset: 0;
-            width: 100vw;
+            width: 100%;
             height: 100vh;
             height: 100dvh;
             background: #000000;
@@ -2845,13 +3872,266 @@
             opacity: 1;
         }
 
-        .spin {
-            animation: spin 1s linear infinite;
+        /* ── DESKTOP WORKSTATION ADAPTATION (>= 900px) ──────────────── */
+        @media (min-width: 900px) {
+            #app-wrapper {
+                max-width: 1440px !important;
+                width: 96% !important;
+                margin: 0 auto !important;
+                padding: 16px 28px 48px !important;
+            }
+
+            .view {
+                display: grid !important;
+                grid-template-columns: 460px 1fr !important;
+                column-gap: 28px !important;
+                row-gap: 20px !important;
+                padding: 0 !important;
+                align-items: start !important;
+            }
+
+            header {
+                grid-column: 1 / -1 !important;
+                padding-bottom: 12px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .top-nav-bar {
+                padding: 4px 0 8px 0 !important;
+            }
+
+            .exam-title-text {
+                font-size: 1.05rem !important;
+                letter-spacing: 0.05em !important;
+            }
+
+            .controls-row {
+                gap: 12px !important;
+            }
+
+            .header-btn {
+                padding: 10px 18px !important;
+                font-size: 0.78rem !important;
+            }
+
+            /* Columns */
+            .desktop-sidebar-col {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+                grid-column: 1 !important;
+                position: sticky !important;
+                top: 20px !important;
+            }
+
+            .desktop-main-col {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+                grid-column: 2 !important;
+                min-width: 0 !important;
+            }
+
+            /* Desktop Screen Card */
+            .desktop-screen-card {
+                display: flex !important;
+                flex-direction: column !important;
+                background: rgba(10, 14, 22, 0.78) !important;
+                border: 1px solid rgba(56, 189, 248, 0.28) !important;
+                border-radius: 16px !important;
+                overflow: hidden !important;
+                box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(56, 189, 248, 0.1) !important;
+                backdrop-filter: blur(14px) !important;
+            }
+
+            .desktop-screen-card-header {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                padding: 10px 14px !important;
+                background: rgba(13, 17, 23, 0.95) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .desktop-screen-title {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                font-size: 0.8rem !important;
+                font-weight: 700 !important;
+                color: #F0F6FC !important;
+                letter-spacing: 0.02em !important;
+            }
+
+            .desktop-mini-link-btn {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+                padding: 4px 9px !important;
+                border-radius: 6px !important;
+                background: rgba(56, 189, 248, 0.12) !important;
+                border: 1px solid rgba(56, 189, 248, 0.35) !important;
+                color: #38BDF8 !important;
+                font-size: 0.72rem !important;
+                font-weight: 700 !important;
+                text-decoration: none !important;
+                transition: all 0.15s ease !important;
+            }
+
+            .desktop-mini-link-btn:hover {
+                background: rgba(56, 189, 248, 0.22) !important;
+                border-color: rgba(56, 189, 248, 0.6) !important;
+                color: #fff !important;
+            }
+
+            .desktop-screen-preview {
+                position: relative !important;
+                width: 100% !important;
+                height: 270px !important;
+                background: #020408 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                overflow: hidden !important;
+                cursor: pointer !important;
+            }
+
+            .desktop-screen-preview img {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                object-fit: contain !important;
+            }
+
+            .desktop-screen-watermark {
+                position: absolute !important;
+                bottom: 8px !important;
+                left: 8px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                padding: 3px 8px !important;
+                border-radius: 5px !important;
+                background: rgba(0, 0, 0, 0.65) !important;
+                font-size: 0.68rem !important;
+                font-family: var(--font-mono) !important;
+                color: rgba(255, 255, 255, 0.6) !important;
+                pointer-events: none !important;
+            }
+
+            .desktop-screen-actions {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                padding: 10px 12px !important;
+                background: rgba(10, 14, 22, 0.95) !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+            }
+
+            /* Remote IDE controls dock on desktop */
+            .remote-ide-dock {
+                border-radius: 16px !important;
+                margin-top: 0 !important;
+                border-color: rgba(56, 189, 248, 0.2) !important;
+            }
+
+            .remote-ide-dock.collapsed .remote-keys-container {
+                display: flex !important;
+            }
+
+            .remote-dock-header {
+                cursor: default !important;
+            }
+
+            .remote-dock-status-wrap .collapse-icon {
+                display: none !important;
+            }
+
+            /* Desktop Speed Quick Selector */
+            .desktop-speed-panel {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                padding: 12px 14px !important;
+                background: rgba(13, 17, 23, 0.6) !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                border-radius: 14px !important;
+            }
+
+            .speed-panel-header {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                font-size: 0.72rem !important;
+                font-weight: 700 !important;
+                color: var(--text-muted) !important;
+                letter-spacing: 0.04em !important;
+            }
+
+            .speed-selector {
+                display: flex !important;
+                gap: 6px !important;
+                overflow-x: auto !important;
+            }
+
+            /* Editor on desktop */
+            .editor-card {
+                border-radius: 18px !important;
+                margin-top: 0 !important;
+                border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+            }
+
+            .editor-textarea-wrapper textarea {
+                min-height: 420px !important;
+                font-size: 0.92rem !important;
+                line-height: 1.65 !important;
+            }
+
+            .actions-grid {
+                margin-top: 0 !important;
+            }
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        /* Default / Mobile fallbacks */
+        .desktop-sidebar-col, .desktop-main-col {
+            display: contents;
+        }
+
+        .desktop-screen-card, .desktop-speed-panel {
+            display: none;
+        }
+
+        @media (max-width: 899px) {
+            .desktop-screen-card, .desktop-speed-panel {
+                display: none !important;
+            }
+            .desktop-sidebar-col, .desktop-main-col {
+                display: contents !important;
+            }
+            .editor-card { order: 10 !important; }
+            .remote-ide-dock { order: 20 !important; }
+            .actions-grid { order: 30 !important; }
+        }
+
+        .monitor-link-header-btn {
+            text-decoration: none;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(14, 165, 233, 0.12)) !important;
+            border: 1px solid rgba(56, 189, 248, 0.35) !important;
+            color: #38BDF8 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 700;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .monitor-link-header-btn:hover {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(14, 165, 233, 0.25)) !important;
+            border-color: rgba(56, 189, 248, 0.65) !important;
+            color: #fff !important;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
         }
     </style>
 </head>
@@ -2895,6 +4175,11 @@
                         <i data-lucide="monitor" size="15"></i>
                         <span>DEVICE SCREEN</span>
                     </button>
+                    <!-- Dedicated Remote Screen Monitor (AnyDesk / UltraViewer Mode) -->
+                    <a href="/monitor" target="_blank" class="header-btn monitor-link-header-btn" title="Open Full AnyDesk / UltraViewer Remote Screen Monitor in New Tab">
+                        <i data-lucide="tv-2" size="15"></i>
+                        <span>REMOTE MONITOR</span>
+                    </a>
                     <!-- Snap button with camera / gallery upload -->
                     <button class="header-btn" id="camera-snap-btn" title="Snap / Upload & OCR Question">
                         <i data-lucide="camera" size="15"></i>
@@ -2907,159 +4192,278 @@
             <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
             <input type="file" id="gallery-input" accept="image/*" style="display: none;">
 
-            <!-- Unified IDE Code Workspace Card -->
-            <div class="editor-card">
-                <!-- Integrated Problem Tabs Header -->
-                <div class="editor-tabs-bar">
-                    <div class="tabs-group" id="question-tabs-group">
-                        <button class="q-tab active" data-tab="q1">Q1</button>
-                        <button class="q-tab" data-tab="q2">Q2</button>
-                        <button class="q-tab" data-tab="q3">Q3</button>
-                        <button class="q-tab" data-tab="scratch">Scratchpad</button>
-                    </div>
-                    <div class="editor-tabs-actions">
-                        <span class="tab-save-indicator" id="tab-save-indicator">✓ Saved</span>
-                        <button class="editor-mini-btn" id="editor-copy-btn" title="Copy Code to Clipboard">
-                            <i data-lucide="copy" size="12"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Languages & AI Solve Action Bar -->
-                <div class="editor-toolbar">
-                    <div class="template-bar" id="language-mode-bar">
-                        <button class="pill-chip active" data-lang="python" onclick="selectEditorMode('python', true)">
-                            <span class="mode-dot"></span>Python 3
-                        </button>
-                        <button class="pill-chip" data-lang="java" onclick="selectEditorMode('java', true)">
-                            <span class="mode-dot"></span>Java
-                        </button>
-                        <button class="pill-chip" data-lang="cpp" onclick="selectEditorMode('cpp', true)">
-                            <span class="mode-dot"></span>C++
-                        </button>
-                        <button class="pill-chip" data-lang="sql" onclick="selectEditorMode('sql', true)">
-                            <span class="mode-dot"></span>SQL
-                        </button>
-                        <button class="pill-chip" data-lang="js" onclick="selectEditorMode('js', true)">
-                            <span class="mode-dot"></span>JS/TS
-                        </button>
-                        <button class="pill-chip" data-lang="mcq" onclick="selectEditorMode('mcq', true)">
-                            <span class="mode-dot"></span>MCQ / Aptitude
-                        </button>
-                        <button class="pill-chip" data-lang="theory" onclick="selectEditorMode('theory', true)">
-                            <span class="mode-dot"></span>Theory / Text
-                        </button>
-                        <button class="pill-chip" data-lang="auto" onclick="selectEditorMode('auto', true)">
-                            <span class="mode-dot"></span>Auto-Detect
-                        </button>
-                    </div>
-                    <button class="ai-solve-pill-btn" id="ai-solve-editor-btn" title="Generate optimal solution with AI in selected mode">
-                        <i data-lucide="sparkles" size="12"></i>
-                        <span id="ai-solve-btn-text">AI Solve (Python)</span>
-                    </button>
-                </div>
-
-                <!-- Syntax-ready IDE Textarea -->
-                <div class="editor-textarea-wrapper">
-                    <textarea id="payload-text" placeholder="Paste or type code, snap problem screen, or tap AI Solve..."></textarea>
-                    <span id="char-count" class="char-counter-badge">0 chars</span>
-                </div>
-                
-                <div id="ocr-progress-bar">
-                    <i data-lucide="loader" size="14" class="spin"></i>
-                    <span id="ocr-status-text">Scanning image with Neural OCR...</span>
-                </div>
-
-                <!-- Dedicated MCQ Options Dock -->
-                <div class="mcq-dock" id="mcq-options-dock" style="display: none;">
-                    <div class="mcq-dock-header">
-                        <div class="mcq-dock-title">
-                            <i data-lucide="check-circle-2" size="13" style="color: #38bdf8;"></i>
-                            <span>MCQ OPTION DISPATCH</span>
+            <!-- LEFT WORKSTATION COLUMN (DESKTOP SIDEBAR) -->
+            <div class="desktop-sidebar-col">
+                <!-- Desktop Live Screen Card -->
+                <div class="desktop-screen-card" id="desktop-screen-card">
+                    <div class="desktop-screen-card-header">
+                        <div class="desktop-screen-title">
+                            <i data-lucide="monitor" size="14" style="color: var(--cyan-accent);"></i>
+                            <span>Laptop Display • Live</span>
+                            <span class="dsm-live-dot"></span>
                         </div>
-                        <span class="mcq-detected-badge" id="mcq-detected-badge">Tap option to send to laptop</span>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <a href="/monitor" target="_blank" class="desktop-mini-link-btn" title="Open Full AnyDesk / UltraViewer Monitor">
+                                <i data-lucide="external-link" size="12"></i>
+                                <span>Full Monitor</span>
+                            </a>
+                        </div>
                     </div>
-                    <div class="mcq-options-grid">
-                        <button class="mcq-opt-btn" data-opt="A" onclick="handleMcqOptionClick('A')" title="Dispatch Option A to Laptop">
-                            <span class="opt-letter">A</span>
-                            <span class="opt-label">Option A</span>
+                    <div class="desktop-screen-preview" onclick="runDeviceScreenMcqSolve(true)" title="Click to Re-Snap & Analyze Screen">
+                        <img id="desktop-captured-screen-img" alt="Laptop Display Preview" style="display:none;" />
+                        <!-- Loading spinner overlay -->
+                        <div id="desktop-screen-spinner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;">
+                            <div style="width:32px;height:32px;border:3px solid rgba(56,189,248,0.2);border-top-color:#38BDF8;border-radius:50%;animation:dspSpin 0.8s linear infinite;"></div>
+                        </div>
+                        <!-- Error / Retry overlay (hidden by default) -->
+                        <div id="desktop-screen-error-overlay" style="position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:3;background:rgba(2,4,8,0.85);cursor:pointer;" onclick="event.stopPropagation(); desktopScreenRetry();">
+                            <svg width="28" height="28" fill="none" stroke="rgba(248,113,113,0.7)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            <span style="color:rgba(255,255,255,0.5);font-size:0.7rem;font-family:var(--font-mono);">Tap to retry capture</span>
+                        </div>
+                        <div class="desktop-screen-watermark">
+                            <i data-lucide="crosshair" size="12"></i>
+                            <span>DESKTOP LIVE PREVIEW</span>
+                        </div>
+                    </div>
+                    <style>@keyframes dspSpin{to{transform:rotate(360deg)}}</style>
+                    <script>
+                    (function(){
+                        var dImg = document.getElementById("desktop-captured-screen-img");
+                        var dSpinner = document.getElementById("desktop-screen-spinner");
+                        var dError = document.getElementById("desktop-screen-error-overlay");
+                        if (!dImg) return;
+                        dImg.onload = function() {
+                            dImg.style.display = "block";
+                            if (dSpinner) dSpinner.style.display = "none";
+                            if (dError) dError.style.display = "none";
+                        };
+                        dImg.onerror = function() {
+                            dImg.style.display = "none";
+                            if (dSpinner) dSpinner.style.display = "none";
+                            if (dError) dError.style.display = "flex";
+                        };
+                        dImg.src = "/api/device/screenshot?refresh=1&t=" + Date.now();
+                        var refreshTimer = null;
+                        function startLiveRefresh() {
+                            if (refreshTimer) return;
+                            refreshTimer = setInterval(function() {
+                                if (document.hidden) return;
+                                var card = document.getElementById("desktop-screen-card");
+                                if (card && card.offsetParent !== null) {
+                                    dImg.src = "/api/device/screenshot?refresh=1&t=" + Date.now();
+                                }
+                            }, 3500);
+                        }
+                        function stopLiveRefresh() {
+                            if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+                        }
+                        if (window.innerWidth >= 900) startLiveRefresh();
+                        window.addEventListener("resize", function() {
+                            if (window.innerWidth >= 900) startLiveRefresh(); else stopLiveRefresh();
+                        });
+                        window.desktopScreenRetry = function() {
+                            if (dSpinner) dSpinner.style.display = "flex";
+                            if (dError) dError.style.display = "none";
+                            dImg.src = "/api/device/screenshot?refresh=1&t=" + Date.now();
+                        };
+                    })();
+                    </script>
+                    <div class="desktop-screen-actions">
+                        <button class="dsm-primary-btn mcq-snap" style="padding: 7px 10px; font-size: 0.74rem;" onclick="runDeviceScreenMcqSolve(true)">
+                            <i data-lucide="camera" size="13"></i>
+                            <span>⚡ Re-Snap & Solve</span>
                         </button>
-                        <button class="mcq-opt-btn" data-opt="B" onclick="handleMcqOptionClick('B')" title="Dispatch Option B to Laptop">
-                            <span class="opt-letter">B</span>
-                            <span class="opt-label">Option B</span>
+                        <button class="dsm-secondary-btn" style="padding: 7px 8px; font-size: 0.72rem;" onclick="triggerRemoteLaptopScroll('up', 6)" title="Scroll Laptop Screen Up">
+                            <i data-lucide="chevron-up" size="12"></i>
+                            <span>Scroll ▲</span>
                         </button>
-                        <button class="mcq-opt-btn" data-opt="C" onclick="handleMcqOptionClick('C')" title="Dispatch Option C to Laptop">
-                            <span class="opt-letter">C</span>
-                            <span class="opt-label">Option C</span>
+                        <button class="dsm-secondary-btn" style="padding: 7px 8px; font-size: 0.72rem;" onclick="triggerRemoteLaptopScroll('down', 6)" title="Scroll Laptop Screen Down">
+                            <i data-lucide="chevron-down" size="12"></i>
+                            <span>Scroll ▼</span>
                         </button>
-                        <button class="mcq-opt-btn" data-opt="D" onclick="handleMcqOptionClick('D')" title="Dispatch Option D to Laptop">
-                            <span class="opt-letter">D</span>
-                            <span class="opt-label">Option D</span>
+                        <button class="dsm-secondary-btn blue" style="padding: 7px 10px; font-size: 0.74rem;" onclick="if (ocrScreenBtn) ocrScreenBtn.click();">
+                            <i data-lucide="file-text" size="13"></i>
+                            <span>OCR Text</span>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Remote IDE Controls Dock -->
+                <div class="remote-ide-dock collapsed" id="remote-ide-dock">
+                    <div class="remote-dock-header" id="remote-dock-toggle" title="Tap to toggle remote controls">
+                        <div class="remote-dock-title">
+                            <i data-lucide="terminal" size="12" style="color: var(--cyan-accent);"></i>
+                            <span>REMOTE LAPTOP CONTROLS</span>
+                        </div>
+                        <div class="remote-dock-status-wrap">
+                            <span class="remote-dock-sub">NO TOUCH</span>
+                            <i data-lucide="chevron-down" size="13" id="remote-dock-arrow" class="collapse-icon"></i>
+                        </div>
+                    </div>
+                    <div class="remote-keys-container" id="remote-keys-body">
+                        <div class="remote-keys-row">
+                            <button class="remote-key-btn primary-run" id="remote-run-btn" title="Run Code on Laptop (Cmd+Enter / Ctrl+Enter)">
+                                <i data-lucide="play" size="12"></i>
+                                <span>RUN</span>
+                            </button>
+                            <button class="remote-key-btn" id="remote-clear-btn" title="Select All & Delete (Cmd+A + Backspace)">
+                                <i data-lucide="scissors" size="12"></i>
+                                <span>Clear IDE</span>
+                            </button>
+                            <button class="remote-key-btn" id="remote-tab-btn" title="Insert Tab">
+                                <span>⇥ Tab</span>
+                            </button>
+                        </div>
+                        <div class="remote-dpad-row">
+                            <button class="dpad-btn" id="dpad-left" title="Cursor Left">◀</button>
+                            <button class="dpad-btn" id="dpad-up" title="Cursor Up">▲</button>
+                            <button class="dpad-btn" id="dpad-down" title="Cursor Down">▼</button>
+                            <button class="dpad-btn" id="dpad-right" title="Cursor Right">▶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Speed & Dynamics Quick Panel -->
+                <div class="desktop-speed-panel">
+                    <div class="speed-panel-header">
+                        <i data-lucide="gauge" size="12" style="color: var(--accent-color);"></i>
+                        <span>KEYSTROKE INJECTION SPEED</span>
+                    </div>
+                    <div class="speed-selector">
+                        <button class="speed-btn" onclick="setSpeed(35, this)">35 WPM</button>
+                        <button class="speed-btn active" onclick="setSpeed(65, this)">65 WPM</button>
+                        <button class="speed-btn" onclick="setSpeed(120, this)">120 WPM</button>
+                        <button class="speed-btn" onclick="setSpeed(240, this)">240 WPM</button>
+                        <button class="speed-btn" onclick="setSpeed(480, this)">480 WPM</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Remote IDE Controls Dock -->
-            <div class="remote-ide-dock collapsed" id="remote-ide-dock">
-                <div class="remote-dock-header" id="remote-dock-toggle" title="Tap to toggle remote controls">
-                    <div class="remote-dock-title">
-                        <i data-lucide="terminal" size="12" style="color: var(--cyan-accent);"></i>
-                        <span>REMOTE LAPTOP CONTROLS</span>
+            <!-- RIGHT WORKSTATION COLUMN (DESKTOP MAIN) -->
+            <div class="desktop-main-col">
+                <!-- Unified IDE Code Workspace Card -->
+                <div class="editor-card">
+                    <!-- Integrated Problem Tabs Header -->
+                    <div class="editor-tabs-bar">
+                        <div class="tabs-group" id="question-tabs-group">
+                            <button class="q-tab active" data-tab="q1">Q1</button>
+                            <button class="q-tab" data-tab="q2">Q2</button>
+                            <button class="q-tab" data-tab="q3">Q3</button>
+                            <button class="q-tab" data-tab="scratch">Scratchpad</button>
+                        </div>
+                        <div class="editor-tabs-actions">
+                            <span class="tab-save-indicator" id="tab-save-indicator">✓ Saved</span>
+                            <button class="editor-mini-btn" id="editor-copy-btn" title="Copy Code to Clipboard">
+                                <i data-lucide="copy" size="12"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="remote-dock-status-wrap">
-                        <span class="remote-dock-sub">NO TOUCH</span>
-                        <i data-lucide="chevron-down" size="13" id="remote-dock-arrow" class="collapse-icon"></i>
+
+                    <!-- Languages & AI Solve Action Bar -->
+                    <div class="editor-toolbar">
+                        <button class="mode-all-trigger-btn" id="mode-all-trigger-btn" onclick="openModePickerModal()" title="View & select all 8 exam modes">
+                            <i data-lucide="layout-grid" size="12"></i>
+                            <span class="mode-trigger-text" id="mode-trigger-label">Modes</span>
+                            <i data-lucide="chevron-down" size="11"></i>
+                        </button>
+                        <div class="template-bar" id="language-mode-bar">
+                            <button class="pill-chip highlight-mcq" data-lang="mcq" onclick="selectEditorMode('mcq', true)">
+                                <span class="mode-dot mcq-dot"></span>🎯 MCQ<span class="desktop-only-text"> / Aptitude</span>
+                            </button>
+                            <button class="pill-chip active" data-lang="python" onclick="selectEditorMode('python', true)">
+                                <span class="mode-dot"></span>Python<span class="desktop-only-text"> 3</span>
+                            </button>
+                            <button class="pill-chip" data-lang="java" onclick="selectEditorMode('java', true)">
+                                <span class="mode-dot"></span>Java
+                            </button>
+                            <button class="pill-chip" data-lang="cpp" onclick="selectEditorMode('cpp', true)">
+                                <span class="mode-dot"></span>C++
+                            </button>
+                            <button class="pill-chip" data-lang="sql" onclick="selectEditorMode('sql', true)">
+                                <span class="mode-dot"></span>SQL
+                            </button>
+                            <button class="pill-chip" data-lang="js" onclick="selectEditorMode('js', true)">
+                                <span class="mode-dot"></span>JS/TS
+                            </button>
+                            <button class="pill-chip" data-lang="theory" onclick="selectEditorMode('theory', true)">
+                                <span class="mode-dot"></span>Theory<span class="desktop-only-text"> / Text</span>
+                            </button>
+                            <button class="pill-chip" data-lang="auto" onclick="selectEditorMode('auto', true)">
+                                <span class="mode-dot"></span>Auto<span class="desktop-only-text">-Detect</span>
+                            </button>
+                        </div>
+                        <button class="ai-solve-pill-btn" id="ai-solve-editor-btn" title="Generate optimal solution with AI in selected mode">
+                            <i data-lucide="sparkles" size="12"></i>
+                            <span id="ai-solve-btn-text">
+                                <span class="desktop-solve-text">AI Solve (Python)</span>
+                                <span class="mobile-solve-text">AI Solve</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Syntax-ready IDE Textarea -->
+                    <div class="editor-textarea-wrapper">
+                        <textarea id="payload-text" placeholder="Paste or type code, snap problem screen, or tap AI Solve..."></textarea>
+                        <span id="char-count" class="char-counter-badge">0 chars</span>
+                    </div>
+                    
+                    <div id="ocr-progress-bar">
+                        <i data-lucide="loader" size="14" class="spin"></i>
+                        <span id="ocr-status-text">Scanning image with Neural OCR...</span>
+                    </div>
+
+                    <!-- Dedicated MCQ Solution Card (Correct Option & 2-3 Line Explanation/Calculation) -->
+                    <div class="mcq-solution-card" id="mcq-solution-card" style="display: none;">
+                        <div id="mcq-multi-items-container">
+                            <div class="mcq-q-item">
+                                <div class="mcq-solution-header">
+                                    <div class="mcq-correct-badge-wrap">
+                                        <span class="mcq-correct-label">CORRECT OPTION</span>
+                                        <div class="mcq-winner-chip" id="mcq-winner-letter-chip">
+                                            <i data-lucide="check-circle-2" size="14"></i>
+                                            <span id="mcq-winner-letter-text">Option --</span>
+                                        </div>
+                                    </div>
+                                    <div class="mcq-winner-full-text" id="mcq-winner-full-text">AI Ready</div>
+                                </div>
+                                <div class="mcq-explanation-box" id="mcq-explanation-box">
+                                    <div class="mcq-explanation-label">
+                                        <i data-lucide="sparkles" size="12"></i>
+                                        <span>Explanation & Calculation</span>
+                                    </div>
+                                    <div class="mcq-explanation-content" id="mcq-explanation-content">Tap AI Solve or Snap & OCR to calculate the correct option & derivation.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="remote-keys-container" id="remote-keys-body">
-                    <div class="remote-keys-row">
-                        <button class="remote-key-btn primary-run" id="remote-run-btn" title="Run Code on Laptop (Cmd+Enter / Ctrl+Enter)">
-                            <i data-lucide="play" size="12"></i>
-                            <span>RUN</span>
+
+                <!-- Action Command Deck -->
+                <div class="actions-grid">
+                    <button class="btn-inject-stealth" id="inject-btn">
+                        <i data-lucide="zap" size="17"></i>
+                        <span>INJECT ALL (KEYSTROKES)</span>
+                    </button>
+
+                    <button class="btn-chunk" id="chunk-inject-btn">
+                        <i data-lucide="layers" size="14" style="color: var(--accent-color);"></i>
+                        <span id="chunk-btn-text">Inject Step-by-Step (Block 1)</span>
+                    </button>
+
+                    <div class="panic-row">
+                        <button class="btn-panic" id="panic-stop-btn">
+                            <i data-lucide="alert-octagon" size="14"></i>
+                            <span id="panic-btn-text">PANIC STOP</span>
                         </button>
-                        <button class="remote-key-btn" id="remote-clear-btn" title="Select All & Delete (Cmd+A + Backspace)">
-                            <i data-lucide="scissors" size="12"></i>
-                            <span>Clear IDE</span>
+                        <button class="btn-ghost" id="ghost-desktop-btn" title="Hide laptop active window & enter phone Decoy Mode immediately">
+                            <i data-lucide="shield-alert" size="13"></i>
+                            <span>👻 GHOST</span>
                         </button>
-                        <button class="remote-key-btn" id="remote-tab-btn" title="Insert Tab">
-                            <span>⇥ Tab</span>
+                        <button class="btn-clear" id="clear-btn" title="Clear Editor Buffer">
+                            <i data-lucide="trash-2" size="13"></i>
+                            <span>Clear</span>
                         </button>
                     </div>
-                    <div class="remote-dpad-row">
-                        <button class="dpad-btn" id="dpad-left" title="Cursor Left">◀</button>
-                        <button class="dpad-btn" id="dpad-up" title="Cursor Up">▲</button>
-                        <button class="dpad-btn" id="dpad-down" title="Cursor Down">▼</button>
-                        <button class="dpad-btn" id="dpad-right" title="Cursor Right">▶</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Command Deck -->
-            <div class="actions-grid">
-                <button class="btn-inject-stealth" id="inject-btn">
-                    <i data-lucide="zap" size="17"></i>
-                    <span>INJECT ALL (KEYSTROKES)</span>
-                </button>
-
-                <button class="btn-chunk" id="chunk-inject-btn">
-                    <i data-lucide="layers" size="14" style="color: var(--accent-color);"></i>
-                    <span id="chunk-btn-text">Inject Step-by-Step (Block 1)</span>
-                </button>
-
-                <div class="panic-row">
-                    <button class="btn-panic" id="panic-stop-btn">
-                        <i data-lucide="alert-octagon" size="14"></i>
-                        <span id="panic-btn-text">PANIC STOP</span>
-                    </button>
-                    <button class="btn-ghost" id="ghost-desktop-btn" title="Hide laptop active window & enter phone Decoy Mode immediately">
-                        <i data-lucide="shield-alert" size="13"></i>
-                        <span>👻 GHOST</span>
-                    </button>
-                    <button class="btn-clear" id="clear-btn" title="Clear Editor Buffer">
-                        <i data-lucide="trash-2" size="13"></i>
-                        <span>Clear</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -3229,60 +4633,241 @@
         </div>
     </div>
 
-    <!-- ── CONNECTED DEVICE SCREEN MODAL ───────────────────────── -->
-    <div id="device-screen-modal">
-        <div class="modal-header">
-            <div class="modal-title-wrap">
-                <div class="modal-title-icon-box">
-                    <i data-lucide="monitor" size="15"></i>
+    <!-- ── EXAM MODE PICKER BOTTOM SHEET / MODAL ── -->
+    <div id="mode-picker-modal" class="mode-picker-backdrop" onclick="if(event.target === this) closeModePickerModal();">
+        <div class="mode-picker-sheet">
+            <div class="mode-picker-handle"></div>
+            <div class="mode-picker-header">
+                <div class="mode-picker-title-group">
+                    <div class="mode-picker-icon-badge">
+                        <i data-lucide="layers" size="17"></i>
+                    </div>
+                    <div>
+                        <div class="mode-picker-title">Select Exam Mode</div>
+                        <div class="mode-picker-subtitle">Syntax templates, option solver & AI models</div>
+                    </div>
                 </div>
-                <div class="modal-title-text-group">
-                    <span class="modal-title">LAPTOP DISPLAY</span>
-                    <span class="silent-badge"><span class="silent-dot"></span>SILENT</span>
+                <button class="mode-picker-close-btn" onclick="closeModePickerModal()" title="Close">
+                    <i data-lucide="x" size="16"></i>
+                </button>
+            </div>
+
+            <div class="mode-picker-grid">
+                <!-- 1. MCQ / Aptitude -->
+                <div class="mode-card" data-mode="mcq" onclick="selectEditorMode('mcq', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">🎯</span>
+                        <span class="mode-card-tag popular">POPULAR</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">MCQ / Aptitude</div>
+                    <div class="mode-card-desc">Auto-finds correct option (A, B, C, D) & explanation</div>
+                </div>
+
+                <!-- 2. Python 3 -->
+                <div class="mode-card active" data-mode="python" onclick="selectEditorMode('python', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">🐍</span>
+                        <span class="mode-card-tag">DEFAULT</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">Python 3</div>
+                    <div class="mode-card-desc">Clean competitive solutions & standard algorithms</div>
+                </div>
+
+                <!-- 3. Java -->
+                <div class="mode-card" data-mode="java" onclick="selectEditorMode('java', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">☕</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">Java</div>
+                    <div class="mode-card-desc">Java 17 OOP class & algorithm implementations</div>
+                </div>
+
+                <!-- 4. C++ -->
+                <div class="mode-card" data-mode="cpp" onclick="selectEditorMode('cpp', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">⚡</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">C++</div>
+                    <div class="mode-card-desc">High-speed C++20 with STL & competitive templates</div>
+                </div>
+
+                <!-- 5. SQL -->
+                <div class="mode-card" data-mode="sql" onclick="selectEditorMode('sql', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">🗄️</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">SQL</div>
+                    <div class="mode-card-desc">MySQL & PostgreSQL database query solutions</div>
+                </div>
+
+                <!-- 6. JS/TS -->
+                <div class="mode-card" data-mode="js" onclick="selectEditorMode('js', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">🌐</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">JS / TS</div>
+                    <div class="mode-card-desc">Modern ECMAScript & TypeScript coding templates</div>
+                </div>
+
+                <!-- 7. Theory / Text -->
+                <div class="mode-card" data-mode="theory" onclick="selectEditorMode('theory', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">📝</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">Theory / Text</div>
+                    <div class="mode-card-desc">Structured technical answers & conceptual explanations</div>
+                </div>
+
+                <!-- 8. Auto-Detect -->
+                <div class="mode-card" data-mode="auto" onclick="selectEditorMode('auto', true); closeModePickerModal();">
+                    <div class="mode-card-badge-row">
+                        <span class="mode-card-icon">✨</span>
+                        <span class="mode-card-check"><i data-lucide="check" size="12"></i></span>
+                    </div>
+                    <div class="mode-card-name">Auto-Detect</div>
+                    <div class="mode-card-desc">Infers language automatically from screen or text</div>
                 </div>
             </div>
-            <div class="modal-header-actions">
-                <button class="modal-action-pill-btn" id="silent-refresh-screen-btn" title="Capture Fresh Screen">
+
+            <div class="mode-picker-footer">
+                <div class="mode-picker-active-info">
+                    Current Mode: <strong id="mode-picker-current-label">Python 3</strong>
+                </div>
+                <button class="mode-picker-done-btn" onclick="closeModePickerModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CONNECTED DEVICE SCREEN MODAL (REDESIGNED) ──────────── -->
+    <div id="device-screen-modal">
+
+        <!-- TOP BAR -->
+        <div class="dsm-topbar">
+            <div class="dsm-topbar-left">
+                <div class="dsm-icon-box">
+                    <i data-lucide="monitor" size="16"></i>
+                </div>
+                <div class="dsm-title-group">
+                    <span class="dsm-title">Laptop Display</span>
+                    <span class="dsm-subtitle">Tap screen to zoom &bull; Silent capture</span>
+                </div>
+                <div class="dsm-live-badge">
+                    <span class="dsm-live-dot"></span>
+                    SILENT
+                </div>
+            </div>
+            <div class="dsm-topbar-right">
+                <button class="dsm-btn-snap" id="silent-refresh-screen-btn">
                     <i data-lucide="refresh-cw" size="13"></i>
-                    <span>Snap Fresh</span>
+                    <span>Refresh</span>
                 </button>
-                <button class="modal-action-close-btn" id="close-screen-modal-btn" title="Close Preview">
+                <button class="dsm-btn-close" id="close-screen-modal-btn">
                     <i data-lucide="x" size="16"></i>
                 </button>
             </div>
         </div>
 
-        <div class="screen-preview-container" id="screen-preview-box" title="Tap image to preview and zoom in/out">
-            <img id="captured-screen-img" src="" alt="Connected Device Screen" style="display: none;">
-            <div id="screen-loading-spinner" style="display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--stealth-gold); font-size: 0.74rem; font-weight: 700;">
-                <i data-lucide="loader" size="26" class="spin"></i>
-                <span id="screen-loading-text">Fetching device screen...</span>
+        <!-- MODE TABS -->
+        <div class="dsm-mode-tabs">
+            <button class="dsm-tab mcq-tab" id="screen-mode-mcq" onclick="setScreenModalMode('mcq')">
+                <i data-lucide="check-circle-2" size="12"></i>
+                <span>🎯 MCQ</span>
+            </button>
+            <button class="dsm-tab active" id="screen-mode-code" onclick="setScreenModalMode('code')">
+                <i data-lucide="code" size="12"></i>
+                <span id="screen-mode-code-label">💻 Code / General</span>
+            </button>
+        </div>
+
+        <!-- SCREEN PREVIEW — fills all available space between tabs and dock -->
+        <div class="dsm-preview-wrap" id="screen-preview-box">
+            <img id="captured-screen-img" alt="Laptop Screen" />
+            <!-- Loading state -->
+            <div class="dsm-loading-state" id="screen-loading-spinner">
+                <i data-lucide="loader" size="28" class="spin"></i>
+                <span class="dsm-loading-label" id="screen-loading-text">Capturing laptop screen…</span>
             </div>
-            <div class="preview-floating-status" id="screen-telemetry-tag" style="display: none;">
-                <span class="silent-dot"></span>
-                <span>0 BLUR &bull; PHONE CONTROL</span>
+            <!-- Overlay badges -->
+            <div class="dsm-overlay-badge" id="screen-telemetry-tag">
+                <span class="dsm-live-dot"></span>
+                <span>PHONE CONTROL</span>
             </div>
-            <div class="zoom-hint-badge" id="zoom-hint-badge" style="display: none;">
-                <i data-lucide="maximize-2" size="11"></i>
+            <div class="dsm-zoom-hint" id="zoom-hint-badge">
+                <i data-lucide="zoom-in" size="11"></i>
                 <span>Tap to Zoom</span>
+            </div>
+
+            <!-- Floating Quick Scroll Dock (Mobile Screen Modal) -->
+            <div class="dsm-floating-scroll-dock">
+                <button class="dsm-scroll-btn" onclick="event.stopPropagation(); triggerRemoteLaptopScroll('up', 6);" title="Scroll Laptop Display Up">
+                    <i data-lucide="chevron-up" size="18"></i>
+                </button>
+                <button class="dsm-scroll-btn" onclick="event.stopPropagation(); triggerRemoteLaptopScroll('down', 6);" title="Scroll Laptop Display Down">
+                    <i data-lucide="chevron-down" size="18"></i>
+                </button>
             </div>
         </div>
 
-        <div class="modal-actions-grid">
-            <button id="ocr-ai-solve-btn" class="btn-ocr-primary" style="background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); border-color: rgba(147, 51, 234, 0.5); box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);">
+        <!-- BOTTOM ACTION DOCK — Code / General -->
+        <div class="dsm-action-dock" id="screen-modal-actions-generic">
+            <button id="ocr-ai-solve-btn" class="dsm-primary-btn ai-solve">
                 <i data-lucide="sparkles" size="16"></i>
-                <span id="ocr-ai-solve-text">⚡ 1-TAP OCR &rarr; AI SOLVE</span>
+                <span id="ocr-ai-solve-text">⚡ OCR → AI Solve</span>
             </button>
-            <button id="ocr-screen-btn" class="btn-save-secondary" style="color: #60A5FA; border-color: rgba(59, 130, 246, 0.3);">
-                <i data-lucide="scan-text" size="14"></i>
-                <span>Extract OCR Only &rarr; Textbox</span>
-            </button>
-            <a id="download-screen-link" href="#" download="laptop_screen.jpg" style="text-decoration: none; width: 100%;">
-                <button class="btn-save-secondary">
-                    <i data-lucide="download" size="14"></i>
-                    <span>Save Image to Device</span>
+            <div class="dsm-secondary-row">
+                <button id="ocr-screen-btn" class="dsm-secondary-btn blue">
+                    <i data-lucide="scan-text" size="13"></i>
+                    <span>Extract Text</span>
                 </button>
-            </a>
+                <a id="download-screen-link" href="#" download="laptop_screen.jpg" style="text-decoration:none;">
+                    <button class="dsm-secondary-btn" style="width:100%;">
+                        <i data-lucide="download" size="13"></i>
+                        <span>Save Image</span>
+                    </button>
+                </a>
+            </div>
+        </div>
+
+        <!-- BOTTOM ACTION DOCK — MCQ -->
+        <div class="dsm-action-dock hidden" id="screen-modal-actions-mcq">
+            <!-- MCQ Multi-Question Results Container (No Dispatch) -->
+            <div class="dsm-mcq-result" id="dsm-mcq-result-card">
+                <div id="dsm-mcq-items-container">
+                    <div class="dsm-q-item">
+                        <div class="dsm-mcq-winner-row">
+                            <span class="dsm-q-tag">Q1</span>
+                            <div class="dsm-mcq-winner-chip" id="dsm-mcq-winner-chip">OPTION --</div>
+                            <div class="dsm-mcq-winner-text" id="dsm-mcq-winner-summary">AI Ready</div>
+                        </div>
+                        <div class="dsm-mcq-explain" id="dsm-mcq-explain-box" style="display: none;">
+                            <div class="dsm-explain-label"><i data-lucide="sparkles" size="11"></i> Explanation & Calculation</div>
+                            <div id="dsm-mcq-explain-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="mcq-re-snap-solve-btn" class="dsm-primary-btn mcq-snap" onclick="runDeviceScreenMcqSolve(true)">
+                <i data-lucide="camera" size="16"></i>
+                <span id="mcq-re-snap-solve-text">⚡ Re-Snap & Find Answer</span>
+            </button>
+            <div class="dsm-secondary-row">
+                <button id="mcq-extract-ocr-only-btn" class="dsm-secondary-btn blue" onclick="if (ocrScreenBtn) ocrScreenBtn.click();">
+                    <i data-lucide="file-text" size="13"></i>
+                    <span>OCR Text</span>
+                </button>
+                <button id="mcq-open-editor-btn" class="dsm-secondary-btn" onclick="deviceScreenModal.style.display = 'none'; deviceScreenModal.classList.remove('visible'); selectEditorMode('mcq');">
+                    <i data-lucide="edit-3" size="13"></i>
+                    <span>Open in Editor</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -3420,13 +5005,17 @@
     <div id="toast">Ready</div>
 
     <script>
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
 
         // State variables
         let activeWpm = 55;
         let cachedChunks = [];
         let currentChunkIndex = 0;
         let lastCapturedScreenUrl = null;
+        var currentScreenModalMode = 'code';
+        var currentDetectedMcqWinner = null;
+        var lastMcqExtractedText = "";
+        var lastMcqSolution = "";
 
         // DOM elements
         const payloadText = document.getElementById('payload-text');
@@ -3627,110 +5216,254 @@
             auto: "Auto-Detect"
         };
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function parseExamSolutions(rawText) {
+            if (!rawText || !rawText.trim()) return [];
+
+            // Strip markdown bold and italic asterisks before parsing so delimiters are never obstructed
+            const text = (rawText || '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/\*(.*?)\*/g, '$1')
+                .trim();
+
+            // Split by horizontal rules (---) or question headers (### Question \d+, Q\d+, Question \d+)
+            let rawBlocks = text.split(/(?:\r?\n)(?:---+(?:\r?\n)*|(?=(?:###?\s*)?(?:Question|Q)\s*\d+[\:\.\)\s]))/i);
+            if (rawBlocks.length <= 1) {
+                const alt = text.split(/(?:\r?\n)(?=(?:###?\s*)?(?:Question|Q)\s*\d+[\:\.\)\s])/i);
+                if (alt.length > 1) rawBlocks = alt;
+            }
+
+            const results = [];
+            for (let idx = 0; idx < rawBlocks.length; idx++) {
+                const b = rawBlocks[idx].trim();
+                if (!b) continue;
+
+                // Extract question number if present
+                const qNumMatch = b.match(/(?:###?\s*)?(?:Question|Q)\s*(\d+)/i);
+                const qTag = qNumMatch ? `Q${qNumMatch[1]}` : (rawBlocks.length > 1 ? `Q${results.length + 1}` : 'Q1');
+
+                // Check for multiple correct options (MSQ): e.g. "Correct Options: A, C" or "Options: A and B"
+                const multiMatch = b.match(/(?:correct\s*(?:options|answers)|winning\s*options|options)\s*[:\-]?\s*([A-D](?:\s*[,&/]|(?:\s+and\s+))\s*[A-D](?:[\s,&/]+[A-D])*)/i);
+
+                // Check for single correct option: must be [A-D] followed by delimiter and NOT part of word like Answer
+                const singleMatch = b.match(/(?:correct\s*(?:option|choice|answer)|winning\s*(?:option|choice|answer)|^option|^choice)\s*[:\-]?\s*([A-D])(?:\)|\:|\.|\s|\-)*(?![a-zA-Z0-9])\s*(.*?)(?:\n|$)/im);
+
+                // Check for direct answer (numerical / short answer / fill in):
+                const directMatch = b.match(/(?:correct\s*answer|exact\s*answer|numerical\s*value|answer|result|value)\s*[:\-]?\s*(.*?)(?:\n|$)/i);
+
+                const lines = b.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+                let badgeText = "ANSWER";
+                let badgeClass = "direct";
+                let summaryText = "";
+
+                if (multiMatch) {
+                    const opts = multiMatch[1].replace(/\s+/g, ' ').toUpperCase();
+                    badgeText = `OPTIONS ${opts}`;
+                    badgeClass = "multi";
+                    let sumLine = "";
+                    for (const l of lines) {
+                        if (l.toLowerCase().includes(multiMatch[0].toLowerCase())) {
+                            sumLine = l;
+                            break;
+                        }
+                    }
+                    summaryText = sumLine || `Options ${opts} are correct`;
+                } else if (singleMatch && singleMatch[1]) {
+                    const opt = singleMatch[1].toUpperCase();
+                    badgeText = `OPTION ${opt}`;
+                    badgeClass = "single";
+                    const optDetail = (singleMatch[2] || '').trim();
+                    summaryText = optDetail ? `Option ${opt}: ${optDetail}` : `Option ${opt} Verified`;
+                } else if (directMatch && directMatch[1].trim()) {
+                    const ansVal = directMatch[1].trim();
+                    badgeText = ansVal.length <= 12 ? `ANS: ${ansVal}` : "DIRECT ANS";
+                    badgeClass = "direct";
+                    summaryText = ansVal;
+                } else {
+                    badgeText = "ANSWER";
+                    badgeClass = "direct";
+                    summaryText = lines[0] || "Solution calculated";
+                }
+
+                // Extract explanation / calculation lines (filter out question headers, answer lines, and clean Explanation: prefix)
+                const expLines = lines
+                    .filter(l => 
+                        !l.match(/^(?:###?\s*)?(?:question|q)\s*\d*[\:\.\)]?$/i) && 
+                        !l.match(/^(?:correct\s*(?:option|answer|options|choice)|winning|answer\s*[:\-])/i) &&
+                        !l.match(/^---+$/)
+                    )
+                    .map(l => l.replace(/^(?:###?\s*)?(?:Explanation|Calculation|Reasoning|Derivation)\s*[:\-]\s*/i, '').trim())
+                    .filter(l => l.length > 0);
+
+                const explanation = expLines.slice(0, 4).join('\n').trim() || 
+                    (lines.length > 1 ? lines.slice(1, 4).join('\n').trim() : "Direct derivation verified from problem statement.");
+
+                results.push({
+                    qTag,
+                    badgeText,
+                    badgeClass,
+                    summaryText,
+                    explanation
+                });
+            }
+
+            return results;
+        }
+
         function updateMcqState() {
             const val = (payloadText ? payloadText.value : '') || '';
-            const mcqDock = document.getElementById('mcq-options-dock');
+            const mcqCard = document.getElementById('mcq-solution-card');
             const isMcq = (currentEditorMode === 'mcq');
             
-            // Check if text has MCQ markers
-            const hasMcqMarkers = /(?:[A-D]\s*[\)\.\:]|Option\s+[A-D]|Correct\s*Option)/i.test(val);
-            if (mcqDock) {
-                mcqDock.style.display = (isMcq || (currentEditorMode === 'auto' && hasMcqMarkers)) ? 'block' : 'none';
+            // Check if text has MCQ markers or answers
+            const hasMcqMarkers = /(?:[A-D]\s*[\)\.\:]|Option\s+[A-D]|Correct\s*(?:Option|Answer|Options)|Q\d+\s*[\:\.])/i.test(val);
+            const shouldShow = isMcq || (currentEditorMode === 'auto' && hasMcqMarkers);
+
+            if (mcqCard) {
+                mcqCard.style.display = shouldShow ? 'flex' : 'none';
+            }
+
+            if (!shouldShow) return;
+
+            const parsedQuestions = parseExamSolutions(val);
+            const editorContainer = document.getElementById('mcq-multi-items-container') || document.getElementById('mcq-solution-card');
+
+            if (editorContainer && parsedQuestions.length > 0) {
+                let html = '';
+                parsedQuestions.forEach((q, idx) => {
+                    if (idx > 0) {
+                        html += `<div class="mcq-q-divider"></div>`;
+                    }
+                    html += `
+                        <div class="mcq-q-item">
+                            <div class="mcq-solution-header">
+                                <div class="mcq-correct-badge-wrap">
+                                    ${parsedQuestions.length > 1 ? `<span class="mcq-q-tag">${escapeHtml(q.qTag)}</span>` : '<span class="mcq-correct-label">CORRECT OPTION</span>'}
+                                    <div class="mcq-winner-chip ${q.badgeClass}">
+                                        <i data-lucide="check-circle-2" size="14"></i>
+                                        <span>${escapeHtml(q.badgeText)}</span>
+                                    </div>
+                                </div>
+                                <div class="mcq-winner-full-text" title="${escapeHtml(q.summaryText)}">${escapeHtml(q.summaryText)}</div>
+                            </div>
+                            <div class="mcq-explanation-box">
+                                <div class="mcq-explanation-label">
+                                    <i data-lucide="sparkles" size="12"></i>
+                                    <span>Explanation & Calculation</span>
+                                </div>
+                                <div class="mcq-explanation-content">${escapeHtml(q.explanation)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                editorContainer.innerHTML = html;
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
 
-            // Extract winning option from text if present
-            const match = val.match(/(?:correct\s*(?:option|answer)?\s*[:\-]?\s*|winning\s*option\s*[:\-]?\s*|answer\s*[:\-]?\s*|best\s*option\s*[:\-]?\s*|^option\s*)([A-D])(?:\)|\:|\.|\s|$)/im);
-            const winnerBadge = document.getElementById('mcq-detected-badge');
-            const optButtons = document.querySelectorAll('.mcq-opt-btn');
-
-            if (match && match[1]) {
-                detectedWinnerOption = match[1].toUpperCase();
-                if (winnerBadge) {
-                    winnerBadge.innerText = `🎯 Correct: Option ${detectedWinnerOption}`;
-                    winnerBadge.classList.add('winner');
-                }
-            } else {
-                detectedWinnerOption = null;
-                if (winnerBadge) {
-                    winnerBadge.innerText = selectedMcqOption ? `Selected: Option ${selectedMcqOption}` : "Tap option to send to laptop";
-                    winnerBadge.classList.remove('winner');
-                }
-            }
-
-            optButtons.forEach(btn => {
-                const opt = btn.getAttribute('data-opt');
-                btn.classList.toggle('winner', opt === detectedWinnerOption);
-                btn.classList.toggle('selected', opt === selectedMcqOption && opt !== detectedWinnerOption);
-            });
-
-            // Update main inject button text
+            // Keep standard keystroke typing button labels
             const injectBtn = document.getElementById('inject-btn');
             const chunkBtnText = document.getElementById('chunk-btn-text');
-            if (isMcq && injectBtn) {
-                const span = injectBtn.querySelector('span');
-                const targetOpt = detectedWinnerOption || selectedMcqOption;
-                if (span) {
-                    if (targetOpt) {
-                        span.innerText = `SELECT OPTION (${targetOpt}) ON LAPTOP`;
-                    } else {
-                        span.innerText = "INJECT ANSWER (KEYSTROKES)";
-                    }
-                }
-                if (chunkBtnText) {
-                    chunkBtnText.innerText = "Inject Derivation / Steps (Keystrokes)";
-                }
-            } else if (injectBtn) {
-                const span = injectBtn.querySelector('span');
-                if (span && span.innerText.includes('OPTION')) {
-                    span.innerText = "INJECT ALL (KEYSTROKES)";
-                }
-            }
-        }
-
-        async function handleMcqOptionClick(opt) {
-            selectedMcqOption = opt;
-            triggerHaptic([35]);
-            
-            const optButtons = document.querySelectorAll('.mcq-opt-btn');
-            optButtons.forEach(btn => {
-                const bOpt = btn.getAttribute('data-opt');
-                btn.classList.toggle('selected', bOpt === opt);
-            });
-
-            const winnerBadge = document.getElementById('mcq-detected-badge');
-            if (winnerBadge && !detectedWinnerOption) {
-                winnerBadge.innerText = `Selected: Option ${opt}`;
-            }
-
-            const injectBtn = document.getElementById('inject-btn');
             if (injectBtn) {
                 const span = injectBtn.querySelector('span');
-                if (span) span.innerText = `SELECT OPTION (${opt}) ON LAPTOP`;
+                if (span) {
+                    span.innerText = isMcq ? "INJECT ANSWER (KEYSTROKES)" : "INJECT ALL (KEYSTROKES)";
+                }
             }
-
-            showToast(`⚡ Dispatched Option ${opt} to Laptop!`);
-            await sendRemoteKey(`option_${opt.toLowerCase()}`);
+            if (chunkBtnText) {
+                chunkBtnText.innerText = isMcq ? "Inject Derivation / Steps" : `Inject Step-by-Step (Block ${currentChunkIndex + 1})`;
+            }
         }
 
-        function selectEditorMode(mode, loadSnippet = false) {
+        function openModePickerModal() {
+            const modal = document.getElementById('mode-picker-modal');
+            if (!modal) return;
+            const modeCards = modal.querySelectorAll('.mode-card');
+            modeCards.forEach(card => {
+                if (card.getAttribute('data-mode') === currentEditorMode) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+            const lbl = modeLabels[currentEditorMode] || (currentEditorMode || 'python').toUpperCase();
+            const curLabelEl = document.getElementById('mode-picker-current-label');
+            if (curLabelEl) curLabelEl.innerText = lbl;
+
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                modal.classList.add('visible');
+            });
+            triggerHaptic([20]);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeModePickerModal() {
+            const modal = document.getElementById('mode-picker-modal');
+            if (!modal) return;
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                if (!modal.classList.contains('visible')) {
+                    modal.style.display = 'none';
+                }
+            }, 260);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModePickerModal();
+            }
+        });
+
+        function selectEditorMode(mode, loadSnippet = false, silent = false) {
             currentEditorMode = mode;
             
             // Update active pill chips
             const chips = document.querySelectorAll('#language-mode-bar .pill-chip');
+            let activeChip = null;
             chips.forEach(chip => {
                 if (chip.getAttribute('data-lang') === mode) {
                     chip.classList.add('active');
+                    activeChip = chip;
                 } else {
                     chip.classList.remove('active');
                 }
             });
 
-            // Update AI Solve button label
+            // Smoothly scroll active chip into view inside template-bar
+            if (activeChip) {
+                activeChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+
+            // Sync mode cards inside mode-picker-modal
+            const modeCards = document.querySelectorAll('#mode-picker-modal .mode-card');
+            modeCards.forEach(card => {
+                if (card.getAttribute('data-mode') === mode) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
             const label = modeLabels[mode] || mode.toUpperCase();
+            const curLabelEl = document.getElementById('mode-picker-current-label');
+            if (curLabelEl) {
+                curLabelEl.innerText = label;
+            }
+
+            // Update AI Solve button label (responsive desktop + mobile)
             const aiSolveBtnText = document.getElementById('ai-solve-btn-text');
             if (aiSolveBtnText) {
-                aiSolveBtnText.innerText = `AI Solve (${label})`;
+                aiSolveBtnText.innerHTML = `<span class="desktop-solve-text">AI Solve (${label})</span><span class="mobile-solve-text">AI Solve</span>`;
             }
 
             // Also update Vision OCR modal solve button if open
@@ -3750,11 +5483,11 @@
                 }
             }
 
-            // Insert template if editor is empty or default snippet is present
+            // Insert template only if editor is empty or default snippet is present
             if (loadSnippet && snippets[mode]) {
                 const currentVal = payloadText.value.trim();
                 const isDefaultSnippet = Object.values(snippets).some(s => s.trim() && s.trim() === currentVal);
-                if (!currentVal || isDefaultSnippet || confirm(`Load clean ${label} template? Current text will be replaced.`)) {
+                if (!currentVal || isDefaultSnippet) {
                     payloadText.value = snippets[mode];
                     payloadText.dispatchEvent(new Event('input'));
                 }
@@ -3762,9 +5495,202 @@
 
             updateMcqState();
 
-            triggerHaptic([25]);
-            showToast(`Active Mode: ${label}`);
+            // Sync screen modal mode if user switched to mcq
+            if (typeof setScreenModalMode === 'function') {
+                if (mode === 'mcq') {
+                    setScreenModalMode('mcq', true);
+                } else if (currentScreenModalMode === 'mcq') {
+                    setScreenModalMode('code', true);
+                }
+            }
+
+            if (!silent) {
+                triggerHaptic([25]);
+                showToast(`Active Mode: ${label}`);
+            }
         }
+
+
+        function setScreenModalMode(mode, silent = false) {
+            currentScreenModalMode = mode;
+            const mcqPill = document.getElementById('screen-mode-mcq');
+            const codePill = document.getElementById('screen-mode-code');
+            const mcqActions = document.getElementById('screen-modal-actions-mcq');
+            const genericActions = document.getElementById('screen-modal-actions-generic');
+            const previewBox = document.getElementById('screen-preview-box');
+
+            // Update tab active state
+            document.querySelectorAll('.dsm-tab').forEach(t => t.classList.remove('active'));
+            if (mode === 'mcq') {
+                if (mcqPill) mcqPill.classList.add('active');
+            } else {
+                if (codePill) codePill.classList.add('active');
+            }
+            if (previewBox) previewBox.classList.toggle('compact-preview', mode === 'mcq');
+
+            if (mode === 'mcq') {
+                if (genericActions) genericActions.classList.add('hidden');
+                if (mcqActions) mcqActions.classList.remove('hidden');
+                if (!silent) {
+                    triggerHaptic([30]);
+                    showToast("🎯 Screen Modal: MCQ Mode Activated");
+                }
+            } else {
+                if (mcqActions) mcqActions.classList.add('hidden');
+                if (genericActions) genericActions.classList.remove('hidden');
+                if (!silent) {
+                    triggerHaptic([25]);
+                    showToast("💻 Screen Modal: Code / General Mode");
+                }
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        window.setScreenModalMode = setScreenModalMode;
+
+        async function runDeviceScreenMcqSolve(isResnap = true) {
+            const btn = document.getElementById('mcq-re-snap-solve-btn');
+            const btnText = document.getElementById('mcq-re-snap-solve-text');
+            const resultCard = document.getElementById('dsm-mcq-result-card');
+            const winnerChip = document.getElementById('dsm-mcq-winner-chip');
+            const winnerSummary = document.getElementById('dsm-mcq-winner-summary');
+            const explainBox = document.getElementById('dsm-mcq-explain-box');
+            const explainText = document.getElementById('dsm-mcq-explain-text');
+            const previewBox = document.getElementById('screen-preview-box');
+
+            triggerHaptic([35]);
+            if (btn) btn.disabled = true;
+
+            // Step 1: Optional snap fresh screen
+            if (isResnap) {
+                if (btnText) btnText.innerText = "1/3 Snapping Screen...";
+                showToast("Step 1/3: Capturing fresh laptop display...");
+                try {
+                    const snapRes = await fetch(`/api/device/screen?t=${Date.now()}`);
+                    if (snapRes.ok) {
+                        const data = await snapRes.json();
+                        if (data.status === 'success' && data.screen_url) {
+                            if (capturedScreenImg) {
+                                capturedScreenImg.src = data.screen_url;
+                                capturedScreenImg.classList.add('loaded');
+                            }
+                            const desktopImg = document.getElementById('desktop-captured-screen-img');
+                            if (desktopImg) desktopImg.src = data.screen_url;
+                            if (downloadScreenLink) downloadScreenLink.href = data.screen_url;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Screen snap error:", e);
+                }
+            }
+
+            // Step 2: Extract text via OCR
+            if (btnText) btnText.innerText = "2/3 Reading Question (OCR)...";
+            showToast("Step 2/3: Reading screen text (OCR)...");
+
+            let extractedText = "";
+            try {
+                const ocrUrl = isResnap ? `/api/device/ocr?refresh=true&t=${Date.now()}` : `/api/device/ocr?t=${Date.now()}`;
+                const res = await fetch(ocrUrl);
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.status === "success" && d.text && d.text.trim()) {
+                        extractedText = d.text.trim();
+                    }
+                }
+            } catch (e) {
+                console.error("OCR error:", e);
+            }
+
+            if (!extractedText && capturedScreenImg && capturedScreenImg.src) {
+                try {
+                    const res = await fetch('/api/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: capturedScreenImg.src })
+                    });
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.status === "success" && d.text && d.text.trim()) {
+                            extractedText = d.text.trim();
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            if (!extractedText) {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.innerText = "⚡ Re-Snap & Find Answer";
+                showToast("⚠️ Could not read question from screen. Try snapping again.");
+                return;
+            }
+
+            lastMcqExtractedText = extractedText;
+
+            // Step 3: AI Solve All Questions on Screen
+            if (btnText) btnText.innerText = "3/3 AI Solving All Questions...";
+            showToast("Step 3/3: Solving all questions & calculating derivations...");
+
+            const solution = await requestAISolution(extractedText, 'mcq');
+            if (btn) btn.disabled = false;
+            if (btnText) btnText.innerText = "⚡ Re-Snap & Find Answer";
+
+            if (!solution) {
+                showToast("AI solver did not return an answer");
+                return;
+            }
+
+            lastMcqSolution = solution;
+
+            // Parse all questions on screen (1, 2, 3, 4+)
+            const parsedQuestions = parseExamSolutions(solution);
+            const container = document.getElementById('dsm-mcq-items-container') || document.getElementById('dsm-mcq-result-card');
+
+            if (container && parsedQuestions.length > 0) {
+                let html = '';
+                parsedQuestions.forEach((q, idx) => {
+                    if (idx > 0) {
+                        html += `<div class="dsm-q-divider"></div>`;
+                    }
+                    html += `
+                        <div class="dsm-q-item">
+                            <div class="dsm-mcq-winner-row">
+                                ${parsedQuestions.length > 1 ? `<span class="dsm-q-tag">${escapeHtml(q.qTag)}</span>` : ''}
+                                <div class="dsm-mcq-winner-chip ${q.badgeClass}">${escapeHtml(q.badgeText)}</div>
+                                <div class="dsm-mcq-winner-text" title="${escapeHtml(q.summaryText)}">${escapeHtml(q.summaryText)}</div>
+                            </div>
+                            <div class="dsm-mcq-explain" style="display: block;">
+                                <div class="dsm-explain-label"><i data-lucide="sparkles" size="11"></i> Explanation & Calculation</div>
+                                <div class="dsm-mcq-explain-text">${escapeHtml(q.explanation)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                triggerHaptic([60, 40, 60]);
+                showToast(parsedQuestions.length > 1 ? `🎯 Solved ${parsedQuestions.length} Questions on Screen!` : `🎯 Answer: ${parsedQuestions[0].badgeText}`);
+            }
+
+            // Reveal result card and compact preview
+            if (resultCard) {
+                resultCard.classList.add('show');
+            }
+            if (previewBox) {
+                previewBox.classList.add('compact-preview');
+            }
+
+            // Also synchronize editor buffer and storage
+            if (payloadText) {
+                payloadText.value = solution;
+                payloadText.dispatchEvent(new Event('input'));
+                saveCurrentTab();
+            }
+            updateMcqState();
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        window.runDeviceScreenMcqSolve = runDeviceScreenMcqSolve;
 
         function insertSnippet(lang) {
             selectEditorMode(lang, true);
@@ -3776,13 +5702,20 @@
             
             if (wantScreen) {
                 deviceScreenModal.style.display = "flex";
-                screenLoadingSpinner.style.display = "flex";
+                deviceScreenModal.classList.add('visible');
+                if (currentEditorMode === 'mcq' || currentScreenModalMode === 'mcq') {
+                    setScreenModalMode('mcq', true);
+                } else {
+                    setScreenModalMode('code', true);
+                }
+                // Show spinner, hide image
+                if (screenLoadingSpinner) screenLoadingSpinner.style.display = "flex";
                 if (screenLoadingText) screenLoadingText.innerText = "Capturing laptop screen...";
-                capturedScreenImg.style.display = "none";
+                capturedScreenImg.classList.remove('loaded');
                 if (zoomHintBadge) zoomHintBadge.style.display = "none";
                 const telemetryTag = document.getElementById('screen-telemetry-tag');
                 if (telemetryTag) telemetryTag.style.display = "none";
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 if (!silentMode) showToast("Capturing laptop display...");
             } else if (!silentMode) {
                 showToast("Fetching laptop clipboard...");
@@ -3801,21 +5734,23 @@
                         
                         // Load image with smooth callback
                         capturedScreenImg.onload = () => {
-                            screenLoadingSpinner.style.display = "none";
-                            capturedScreenImg.style.display = "block";
+                            if (screenLoadingSpinner) screenLoadingSpinner.style.display = "none";
+                            capturedScreenImg.classList.add('loaded');
                             if (zoomHintBadge) zoomHintBadge.style.display = "flex";
                             const telTag = document.getElementById('screen-telemetry-tag');
                             if (telTag) telTag.style.display = "flex";
-                            lucide.createIcons();
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
                             if (!silentMode) showToast("Display captured successfully!");
                         };
                         capturedScreenImg.onerror = () => {
-                            screenLoadingSpinner.style.display = "none";
+                            if (screenLoadingSpinner) screenLoadingSpinner.style.display = "none";
                             showToast("Failed to render preview image");
                         };
                         capturedScreenImg.src = data.screen_url;
+                        const desktopImg = document.getElementById('desktop-captured-screen-img');
+                        if (desktopImg) desktopImg.src = data.screen_url;
                     } else if (wantScreen) {
-                        screenLoadingSpinner.style.display = "none";
+                        if (screenLoadingSpinner) screenLoadingSpinner.style.display = "none";
                         showToast("Screen capture unavailable - check permissions");
                     }
 
@@ -3828,11 +5763,11 @@
                     }
                 } else {
                     showToast(data.message || "Device fetch failed");
-                    screenLoadingSpinner.style.display = "none";
+                    if (screenLoadingSpinner) screenLoadingSpinner.style.display = "none";
                 }
             } catch (err) {
                 showToast("Connection error: " + err);
-                screenLoadingSpinner.style.display = "none";
+                if (screenLoadingSpinner) screenLoadingSpinner.style.display = "none";
             }
         }
 
@@ -3843,6 +5778,30 @@
                 showToast("Refreshing laptop screen...");
                 fetchSilentDeviceState(false, true);
             });
+        }
+
+        // Remote Laptop Scrolling (Simple, Instant, and Smooth)
+        let lastExamScrollTime = 0;
+        async function triggerRemoteLaptopScroll(direction, clicks = 6) {
+            triggerHaptic([25]);
+            const now = Date.now();
+            if (now - lastExamScrollTime < 70) return;
+            lastExamScrollTime = now;
+            try {
+                showToast(direction === 'up' ? "▲ Scrolling Laptop Up..." : "▼ Scrolling Laptop Down...");
+                await fetch('/api/device/scroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ direction, clicks })
+                });
+                setTimeout(() => {
+                    const dImg = document.getElementById('desktop-captured-screen-img');
+                    if (dImg) dImg.src = `/api/device/screenshot?t=${Date.now()}`;
+                    if (capturedScreenImg && deviceScreenModal.style.display !== 'none') {
+                        capturedScreenImg.src = `/api/device/screenshot?t=${Date.now()}`;
+                    }
+                }, 130);
+            } catch (e) {}
         }
 
         // ── FULLSCREEN INTERACTIVE IMAGE ZOOM & PAN (LIGHTBOX) ────
@@ -3889,7 +5848,7 @@
             imageZoomLightbox.style.display = 'flex';
             resetZoomState();
             triggerHaptic([30]);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeImageLightbox() {
@@ -4054,11 +6013,13 @@
 
         closeScreenModalBtn.addEventListener('click', () => {
             deviceScreenModal.style.display = "none";
+            deviceScreenModal.classList.remove('visible');
         });
 
         deviceScreenModal.addEventListener('click', (e) => {
             if (e.target === deviceScreenModal) {
                 deviceScreenModal.style.display = "none";
+                deviceScreenModal.classList.remove('visible');
             }
         });
 
@@ -4528,13 +6489,6 @@
 
         // Send all
         injectBtn.addEventListener('click', () => {
-            if (currentEditorMode === 'mcq') {
-                const targetOpt = detectedWinnerOption || selectedMcqOption;
-                if (targetOpt) {
-                    handleMcqOptionClick(targetOpt);
-                    return;
-                }
-            }
             sendInjection(payloadText.value);
         });
 
@@ -5155,6 +7109,11 @@
                 lastZ = acc.z;
             }
         });
+
+        // Initial setup for editor mode
+        setTimeout(() => {
+            selectEditorMode(currentEditorMode || 'python', false, true);
+        }, 60);
     </script>
 </body>
 

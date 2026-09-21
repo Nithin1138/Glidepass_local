@@ -137,8 +137,10 @@ def is_currently_licensed() -> bool:
             monetization_enabled = data.get("monetization_enabled", False)
             free_enabled = data.get("free_enabled", False)
     except Exception:
-        monetization_enabled = True
-        free_enabled = False
+        # Network unreachable (offline WiFi, restricted network, etc.)
+        # Default to permissive: allow local LAN functions to continue working
+        monetization_enabled = False
+        free_enabled = True
 
     if not monetization_enabled:
         return True
@@ -186,6 +188,7 @@ def is_currently_licensed() -> bool:
 
 def license_enforcer_loop(controller):
     import time
+    is_server_only = "--server-only" in sys.argv
     unlicensed_since = None
     while True:
         try:
@@ -197,13 +200,20 @@ def license_enforcer_loop(controller):
                     controller.server_manager.start()
             else:
                 if controller.server_manager.should_be_running:
-                    if unlicensed_since is None:
-                        unlicensed_since = time.time()
-                        print("[security] Unlicensed state detected. Grace period started (60s)...")
-                    elif time.time() - unlicensed_since >= 60:
-                        print("[security] Unlicensed state detected for 60s. Stopping backend server...")
-                        controller.stop_backend()
-                        unlicensed_since = None
+                    if is_server_only:
+                        # In --server-only mode (desktop Flutter app), never kill the backend.
+                        # The Flutter app manages the server lifecycle directly.
+                        if unlicensed_since is None:
+                            unlicensed_since = time.time()
+                            print("[security] Unlicensed state in server-only mode — server stays running.")
+                    else:
+                        if unlicensed_since is None:
+                            unlicensed_since = time.time()
+                            print("[security] Unlicensed state detected. Grace period started (60s)...")
+                        elif time.time() - unlicensed_since >= 60:
+                            print("[security] Unlicensed state detected for 60s. Stopping backend server...")
+                            controller.stop_backend()
+                            unlicensed_since = None
                 else:
                     unlicensed_since = None
         except Exception as e:
@@ -394,30 +404,10 @@ if __name__ == "__main__":
         multiprocessing.freeze_support()
 
 def check_mac_accessibility():
-    import sys
-    if sys.platform != 'darwin':
-        return
-    try:
-        import ctypes
-        app_services = ctypes.cdll.LoadLibrary('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
-        app_services.AXIsProcessTrusted.restype = ctypes.c_bool
-        if not app_services.AXIsProcessTrusted():
-            import os, tempfile
-            lock_file = os.path.join(tempfile.gettempdir(), "lanpad_accessibility_prompt.lock")
-            if os.path.exists(lock_file):
-                return
-            with open(lock_file, "w") as f:
-                f.write("1")
-                
-            script = """
-            display alert "LANpad Needs Permissions" message "To auto-type text from your phone, macOS requires you to grant Accessibility permissions to LANpad.\\n\\n1. Open System Settings -> Privacy & Security -> Accessibility.\\n2. IMPORTANT: If LANpad is already listed, you MUST remove it first (select it and click the '-' button).\\n3. Click the '+' button and add LANpad.app again.\\n4. Restart LANpad." buttons {"Open Settings", "Later"} default button "Open Settings"
-            if button returned of result is "Open Settings" then
-                open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-            end if
-            """
-            os.system(f"osascript -e '{script}' ; rm -f {lock_file} &")
-    except Exception as e:
-        pass
+    """No-op on macOS. The Flutter desktop frontend handles permission prompts natively,
+    ensuring only a single, non-duplicated prompt occurs when permissions are missing.
+    """
+    return True
 
 if __name__ == "__main__":
     if "--gui" not in sys.argv:

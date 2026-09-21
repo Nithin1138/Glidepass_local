@@ -68,9 +68,7 @@ class ServerService {
       final List<String> pythonCandidates = [];
       if (Platform.isWindows) {
         pythonCandidates.addAll([
-          'python',
-          'python3',
-          'py',
+          // Check common explicit install locations first
           p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python313', 'python.exe'),
           p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python312', 'python.exe'),
           p.join(Platform.environment['LOCALAPPDATA'] ?? '', 'Programs', 'Python', 'Python311', 'python.exe'),
@@ -78,6 +76,17 @@ class ServerService {
           p.join(Platform.environment['ProgramFiles'] ?? '', 'Python313', 'python.exe'),
           p.join(Platform.environment['ProgramFiles'] ?? '', 'Python312', 'python.exe'),
           p.join(Platform.environment['ProgramFiles'] ?? '', 'Python311', 'python.exe'),
+          p.join(Platform.environment['ProgramFiles'] ?? '', 'Python310', 'python.exe'),
+          r'C:\Python313\python.exe',
+          r'C:\Python312\python.exe',
+          r'C:\Python311\python.exe',
+          r'C:\Python310\python.exe',
+          p.join(exeDir, 'python', 'python.exe'),
+          p.join(exeDir, 'backend', 'python.exe'),
+          p.join(workingDir, 'python', 'python.exe'),
+          'py',
+          'python',
+          'python3',
         ]);
       } else {
         pythonCandidates.addAll([
@@ -95,6 +104,23 @@ class ServerService {
 
       for (final pyBin in pythonCandidates) {
         try {
+          // On Windows, ignore the Microsoft Store dummy reparse alias
+          if (Platform.isWindows && pyBin.toLowerCase().contains(r'microsoft\windowsapps')) {
+            continue;
+          }
+
+          // Verify the candidate actually runs and is a valid Python interpreter
+          if (Platform.isWindows) {
+            try {
+              final testRun = await Process.run(pyBin, ['-c', 'print("LANPAD_OK")']).timeout(const Duration(milliseconds: 1500));
+              if (testRun.exitCode != 0 || !testRun.stdout.toString().contains('LANPAD_OK')) {
+                continue;
+              }
+            } catch (_) {
+              continue;
+            }
+          }
+
           proc = await Process.start(
             pyBin,
             [appPyPath, '--server-only'],
@@ -104,7 +130,6 @@ class ServerService {
               'PYTHONUTF8': '1',
             },
           );
-          print('[ServerService] Started server with: $pyBin $appPyPath');
           break;
         } catch (_) {
           proc = null;
@@ -113,19 +138,25 @@ class ServerService {
       }
 
       if (proc == null) {
-        print('[ServerService] Could not find a working Python interpreter.');
+        _crashLog = Platform.isWindows
+            ? "Python was not detected on this Windows PC.\n\n"
+              "To run this PC as a LANpad Host/Server, please install Python:\n"
+              "  1. Open PowerShell and run:\n"
+              "     winget install Python.Python.3.12\n"
+              "  2. Or download installer from: https://www.python.org\n\n"
+              "If you just want to control or monitor another device,\n"
+              "click 'Continue as Remote Client' below (no Python needed!)."
+            : "Python 3 was not found on this system.";
+        _hasCrashed = true;
         _stopTracking();
         return;
       }
 
       _process = proc;
 
-      // Stream process output for debug logging
-      _process!.stdout.transform(utf8.decoder).listen((data) {
-        print("[python stdout] $data");
-      });
+      // Stream process output for crash logging without console printing
+      _process!.stdout.transform(utf8.decoder).listen((data) {});
       _process!.stderr.transform(utf8.decoder).listen((data) {
-        print("[python stderr] $data");
         _crashLog += data;
         if (_crashLog.length > 5000) {
           _crashLog = _crashLog.substring(_crashLog.length - 5000);
@@ -145,7 +176,6 @@ class ServerService {
       _isStarting = false;
     } catch (e) {
       _isStarting = false;
-      print("[ServerService] Failed to start python server: $e");
       _stopTracking();
     }
   }
@@ -153,20 +183,17 @@ class ServerService {
   Future<void> _freePort() async {
     try {
       if (Platform.isMacOS || Platform.isLinux) {
-        final result = await Process.run('sh', [
+        await Process.run('sh', [
           '-c',
           'pid=\$(lsof -t -i tcp:8000) && [ -n "\$pid" ] && kill -9 \$pid || true'
         ]);
-        print("[ServerService] Freed port 8000: ${result.exitCode}");
       } else if (Platform.isWindows) {
-        final result = await Process.run('cmd', [
+        await Process.run('cmd', [
           '/c',
           'for /f "tokens=5" %a in (\'netstat -aon ^| findstr 8000\') do taskkill /f /pid %a'
         ]);
-        print("[ServerService] Freed port 8000: ${result.exitCode}");
       }
-    } catch (e) {
-      print("[ServerService] Error trying to free port 8000: $e");
+    } catch (_) {
     }
   }
 
@@ -180,6 +207,9 @@ class ServerService {
     }
     _stopTracking();
   }
+
+  String _lanIp = '';
+  String get lanIp => _lanIp;
 
   HttpClient? _trackingClient;
 
@@ -206,14 +236,15 @@ class ServerService {
           }
         }
 
-        // 2. Fetch Connection Info / Device Name
-        if (_deviceName.isEmpty) {
+        // 2. Fetch Connection Info / Device Name / LAN IP
+        if (_deviceName.isEmpty || _lanIp.isEmpty) {
           final infoReq = await client.getUrl(Uri.parse('http://127.0.0.1:8000/api/connection/info'));
           final infoResp = await infoReq.close();
           if (infoResp.statusCode == 200) {
             final dataStr = await infoResp.transform(utf8.decoder).join();
             final data = jsonDecode(dataStr);
             _deviceName = data['device_name'] ?? '';
+            _lanIp = data['lan_ip'] ?? '';
             changed = true;
           }
         }
@@ -251,6 +282,7 @@ class ServerService {
     _process = null;
     _sessionToken = '';
     _deviceName = '';
+    _lanIp = '';
     _connectedCount = 0;
     _connectedDevices.clear();
     _statusController.add(null);

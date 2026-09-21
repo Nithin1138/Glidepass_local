@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../desktop_state.dart';
 import '../desktop_theme.dart';
 
-enum DesktopView { home, files, resources, history, settings, input, terms, setupPermissions, connectionRecovery, filePreviews, licenses }
+enum DesktopView { home, remoteControl, input, files, resources, history, settings, terms, setupPermissions, connectionRecovery, filePreviews, licenses }
 
 class DesktopSidebar extends StatelessWidget {
   final DesktopView currentView;
@@ -122,6 +122,7 @@ class DesktopSidebar extends StatelessWidget {
                 builder: (context) {
                   final views = [
                     DesktopView.home,
+                    DesktopView.remoteControl,
                     DesktopView.input,
                     DesktopView.files,
                     DesktopView.resources,
@@ -161,6 +162,9 @@ class DesktopSidebar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _NavItem(icon: LucideIcons.house, label: 'Home', view: DesktopView.home,
+                            current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
+                            itemHeight: itemHeight, itemSpacing: itemSpacing),
+                          _NavItem(icon: LucideIcons.monitor, label: 'Remote Screen', view: DesktopView.remoteControl,
                             current: currentView, onTap: onNavigate, isOpen: state.isSidebarOpen,
                             itemHeight: itemHeight, itemSpacing: itemSpacing),
                           _NavItem(icon: LucideIcons.keyboard, label: 'Input', view: DesktopView.input,
