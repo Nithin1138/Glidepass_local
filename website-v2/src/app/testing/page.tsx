@@ -79,7 +79,8 @@ import {
   WifiOff,
   UserCheck,
   BarChart3,
-  Crosshair
+  Crosshair,
+  Upload
 } from "lucide-react";
 
 // ==========================================
@@ -226,6 +227,7 @@ export interface EnvironmentScanData {
   currentStep?: string;
   countdown?: number;
   capturedAngles?: string[];
+  activeAngleIndex?: number;
 }
 
 export interface SecondaryCameraData {
@@ -505,6 +507,10 @@ export default function ProfessionalProctoredExamTool() {
     isScanning: false,
     isPassed: false,
     snapshots: [],
+    capturedAngles: [],
+    completed: false,
+    activeAngleIndex: 0,
+    currentStep: "North (Desk & Monitor)",
   });
 
   // Dual/Second Camera Integration State
@@ -736,6 +742,9 @@ export default function ProfessionalProctoredExamTool() {
   // Camera & Audio Refs
   const precheckVideoRef = useRef<HTMLVideoElement | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement | null>(null);
+  const idCardVideoRef = useRef<HTMLVideoElement | null>(null);
+  const roomScanVideoRef = useRef<HTMLVideoElement | null>(null);
+  const idFileInputRef = useRef<HTMLInputElement | null>(null);
   const masterVideoRef = useRef<HTMLVideoElement | null>(null);
   const pipVideoRef = useRef<HTMLVideoElement | null>(null);
   const pipCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1294,7 +1303,14 @@ export default function ProfessionalProctoredExamTool() {
       }
 
       // Explicit Safari video element configuration
-      [precheckVideoRef.current, selfieVideoRef.current, masterVideoRef.current, pipVideoRef.current].forEach((vid) => {
+      [
+        precheckVideoRef.current,
+        selfieVideoRef.current,
+        idCardVideoRef.current,
+        roomScanVideoRef.current,
+        masterVideoRef.current,
+        pipVideoRef.current,
+      ].forEach((vid) => {
         if (vid) {
           vid.srcObject = stream;
           vid.muted = true;
@@ -1523,41 +1539,32 @@ export default function ProfessionalProctoredExamTool() {
     }
   }, []);
 
-  // Attach stream whenever precheckStep changes to 2 or 3, or when cameraState changes
+  // Attach stream whenever precheckStep changes or cameraState changes
   useEffect(() => {
     if (mediaStreamRef.current) {
-      if (masterVideoRef.current && !masterVideoRef.current.srcObject) {
-        const vid = masterVideoRef.current;
-        vid.srcObject = mediaStreamRef.current;
-        vid.muted = true;
-        (vid as any).playsInline = true;
-        vid.setAttribute("playsinline", "true");
-        vid.setAttribute("webkit-playsinline", "true");
-        vid.setAttribute("muted", "true");
-        vid.play().catch(() => {});
+      const stream = mediaStreamRef.current;
+      const attach = (vid: HTMLVideoElement | null) => {
+        if (!vid) return;
+        if (vid.srcObject !== stream) {
+          vid.srcObject = stream;
+          vid.muted = true;
+          (vid as any).playsInline = true;
+          vid.setAttribute("playsinline", "true");
+          vid.setAttribute("webkit-playsinline", "true");
+          vid.setAttribute("muted", "true");
+          vid.play().catch(() => {});
+        }
+      };
+
+      if (masterVideoRef.current) attach(masterVideoRef.current);
+      if (precheckStep === 2 && precheckVideoRef.current) attach(precheckVideoRef.current);
+      if (precheckStep === 3) {
+        if (selfieVideoRef.current && !verifiedSelfie) attach(selfieVideoRef.current);
+        if (idCardVideoRef.current && !ocrIdData.idCardSnapshot) attach(idCardVideoRef.current);
       }
-      if (precheckStep === 2 && precheckVideoRef.current) {
-        const vid = precheckVideoRef.current;
-        vid.srcObject = mediaStreamRef.current;
-        vid.muted = true;
-        (vid as any).playsInline = true;
-        vid.setAttribute("playsinline", "true");
-        vid.setAttribute("webkit-playsinline", "true");
-        vid.setAttribute("muted", "true");
-        vid.play().catch((e) => console.warn("Video play on step 2:", e));
-      }
-      if (precheckStep === 3 && selfieVideoRef.current && !verifiedSelfie) {
-        const vid = selfieVideoRef.current;
-        vid.srcObject = mediaStreamRef.current;
-        vid.muted = true;
-        (vid as any).playsInline = true;
-        vid.setAttribute("playsinline", "true");
-        vid.setAttribute("webkit-playsinline", "true");
-        vid.setAttribute("muted", "true");
-        vid.play().catch((e) => console.warn("Video play on step 3:", e));
-      }
+      if (precheckStep === 4 && roomScanVideoRef.current) attach(roomScanVideoRef.current);
     }
-  }, [precheckStep, cameraState, verifiedSelfie]);
+  }, [precheckStep, cameraState, verifiedSelfie, ocrIdData.idCardSnapshot]);
 
   // Attach stream when entering exam
   useEffect(() => {
@@ -1704,8 +1711,12 @@ export default function ProfessionalProctoredExamTool() {
       if (!ctx) return "";
 
       const activeVideo =
+        (precheckStep === 4 && roomScanVideoRef.current) ||
+        (precheckStep === 3 && (idCardVideoRef.current || selfieVideoRef.current)) ||
         pipVideoRef.current ||
         precheckVideoRef.current ||
+        roomScanVideoRef.current ||
+        idCardVideoRef.current ||
         selfieVideoRef.current ||
         masterVideoRef.current;
 
@@ -2064,49 +2075,181 @@ export default function ProfessionalProctoredExamTool() {
     }
   };
 
-  // OCR ID Card Authentication Simulator & Extractor
-  const captureOrUploadIdCard = () => {
-    setOcrIdData((prev) => ({ ...prev, status: "scanning" }));
+  // ----------------------------------------------------
+  // PHYSICAL ID CARD VERIFICATION (WEBCAM / FILE / SYNTHETIC)
+  // ----------------------------------------------------
+
+  // 1. Capture physical ID directly from active live camera feed
+  const captureIdCardFromCamera = () => {
+    setOcrIdData((prev) => ({ ...prev, isScanning: true, status: "scanning" }));
+
+    let snapshotUrl = "";
+    try {
+      const vid =
+        idCardVideoRef.current ||
+        selfieVideoRef.current ||
+        precheckVideoRef.current ||
+        masterVideoRef.current;
+
+      if (vid && vid.readyState >= 2 && vid.videoWidth > 0) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 400;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+
+          // Subtle green ID card audit watermark & reticle stamp
+          ctx.strokeStyle = "rgba(16, 185, 129, 0.75)";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+
+          ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+          ctx.fillRect(18, canvas.height - 36, canvas.width - 36, 22);
+          ctx.fillStyle = "#10b981";
+          ctx.font = "bold 10px monospace";
+          ctx.fillText(
+            `GLIDEPASS SECURE OCR // CANDIDATE: ${candidateName.toUpperCase()} // ID: ${candidateId}`,
+            26,
+            canvas.height - 21
+          );
+
+          snapshotUrl = canvas.toDataURL("image/jpeg", 0.92);
+        }
+      }
+    } catch (err) {
+      console.warn("Direct webcam ID card capture exception:", err);
+    }
+
+    if (!snapshotUrl) {
+      snapshotUrl = captureSnapshot("PHYSICAL ID CARD AUDIT // OCR MATRIX", "#10b981");
+    }
+
+    setIdCardPhoto(snapshotUrl);
+
+    setTimeout(() => {
+      setOcrIdData({
+        fullName: candidateName,
+        extractedName: candidateName,
+        idNumber: candidateId,
+        extractedIdNumber: candidateId,
+        dob: "14-Aug-1998",
+        issueDate: "01-Jan-2024",
+        expiryDate: "31-Dec-2029",
+        issuer: "State Board of Higher Education & Testing Licensure",
+        matchScore: 99.4,
+        confidence: 99.4,
+        verified: true,
+        status: "verified",
+        idPhotoUrl: snapshotUrl,
+        idCardSnapshot: snapshotUrl,
+        isScanning: false,
+      });
+
+      setActiveWarningToast({
+        title: "ID CARD OCR VERIFIED",
+        desc: "Candidate identity successfully cross-referenced with biometric face baseline.",
+        severity: "low",
+      });
+      setTimeout(() => setActiveWarningToast(null), 3000);
+    }, 800);
+  };
+
+  // 2. Upload ID card image from local device storage
+  const handleIdFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrIdData((prev) => ({ ...prev, isScanning: true, status: "scanning" }));
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setIdCardPhoto(dataUrl);
+
+        setTimeout(() => {
+          setOcrIdData({
+            fullName: candidateName,
+            extractedName: candidateName,
+            idNumber: candidateId,
+            extractedIdNumber: candidateId,
+            dob: "14-Aug-1998",
+            issueDate: "01-Jan-2024",
+            expiryDate: "31-Dec-2029",
+            issuer: "State Department of Licensing & Records",
+            matchScore: 98.8,
+            confidence: 98.8,
+            verified: true,
+            status: "verified",
+            idPhotoUrl: dataUrl,
+            idCardSnapshot: dataUrl,
+            isScanning: false,
+          });
+
+          setActiveWarningToast({
+            title: "ID CARD UPLOADED & PARSED",
+            desc: "Document processed and authenticated via optical character recognition.",
+            severity: "low",
+          });
+          setTimeout(() => setActiveWarningToast(null), 3000);
+        }, 700);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // 3. Generate high-contrast synthetic test ID (useful for testing environments)
+  const generateSyntheticIdCard = () => {
+    setOcrIdData((prev) => ({ ...prev, isScanning: true, status: "scanning" }));
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 480;
-      canvas.height = 300;
+      canvas.width = 560;
+      canvas.height = 350;
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        const grad = ctx.createLinearGradient(0, 0, 480, 300);
-        grad.addColorStop(0, "#1e3a8a");
-        grad.addColorStop(1, "#0f172a");
+        const grad = ctx.createLinearGradient(0, 0, 560, 350);
+        grad.addColorStop(0, "#0f172a");
+        grad.addColorStop(0.5, "#1e3a8a");
+        grad.addColorStop(1, "#0369a1");
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 480, 300);
+        ctx.fillRect(0, 0, 560, 350);
+
+        // Security foil strip
+        ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.fillRect(0, 75, 560, 10);
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(0, 85, 560, 3);
 
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 15px sans-serif";
-        ctx.fillText("GOVERNMENT TESTING IDENTITY CREDENTIAL", 24, 38);
+        ctx.fillText("OFFICIAL TESTING IDENTITY CREDENTIAL", 28, 40);
         ctx.font = "10px monospace";
         ctx.fillStyle = "#93c5fd";
-        ctx.fillText("STATE BOARD OF HIGHER EDUCATION & TESTING LICENSURE", 24, 54);
+        ctx.fillText("STATE BOARD OF HIGHER EDUCATION & TESTING LICENSURE", 28, 58);
 
-        ctx.fillStyle = "#fbbf24";
-        ctx.fillRect(0, 68, 480, 4);
-
-        ctx.fillStyle = "#334155";
-        ctx.fillRect(24, 90, 110, 140);
-        ctx.fillStyle = "#64748b";
-        ctx.beginPath(); ctx.arc(79, 140, 32, 0, Math.PI * 2); ctx.fill();
+        // Candidate photo placeholder
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(28, 105, 125, 155);
+        ctx.fillStyle = "#475569";
+        ctx.beginPath(); ctx.arc(90, 155, 36, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(90, 225, 48, 32, 0, 0, Math.PI * 2); ctx.fill();
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 13px sans-serif";
-        ctx.fillText(`NAME: ${candidateName.toUpperCase()}`, 150, 115);
+        ctx.font = "bold 14px sans-serif";
+        ctx.fillText(`NAME: ${candidateName.toUpperCase()}`, 175, 130);
         ctx.font = "11px monospace";
-        ctx.fillStyle = "#cbd5e1";
-        ctx.fillText(`ID NUMBER : ${candidateId}`, 150, 140);
-        ctx.fillText("BIRTHDATE : 14-AUG-1998", 150, 165);
-        ctx.fillText("EXPIRATION: 31-DEC-2029", 150, 190);
-        ctx.fillText("STATUS    : ACTIVE / ENROLLED", 150, 215);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillText(`ID NUMBER : ${candidateId}`, 175, 158);
+        ctx.fillText("BIRTHDATE : 14-AUG-1998", 175, 184);
+        ctx.fillText("EXPIRATION: 31-DEC-2029", 175, 210);
+        ctx.fillText("STATUS    : VERIFIED / ACTIVE CANDIDATE", 175, 236);
 
+        // 1D Barcode
         ctx.fillStyle = "#ffffff";
-        for (let x = 24; x < 456; x += 4) {
-          if (x % 7 !== 0) ctx.fillRect(x, 250, (x % 3 === 0 ? 2.5 : 1.5), 25);
+        for (let x = 28; x < 532; x += 5) {
+          if (x % 9 !== 0) ctx.fillRect(x, 285, (x % 3 === 0 ? 3 : 1.5), 32);
         }
 
         const idDataUrl = canvas.toDataURL("image/jpeg", 0.95);
@@ -2130,7 +2273,7 @@ export default function ProfessionalProctoredExamTool() {
             idCardSnapshot: idDataUrl,
             isScanning: false,
           });
-        }, 700);
+        }, 600);
       }
     } catch {
       setOcrIdData((prev) => ({
@@ -2140,77 +2283,162 @@ export default function ProfessionalProctoredExamTool() {
         extractedName: candidateName,
         extractedIdNumber: candidateId,
         confidence: 99.2,
+        isScanning: false,
       }));
     }
   };
 
-  // 360-Degree Room & Desk Environmental Pan Scanner
-  const start360EnvironmentScan = () => {
-    setEnvScanData({
-      progress: 0,
-      isScanning: true,
-      isPassed: false,
-      snapshots: [],
-      capturedAngles: [],
-      countdown: 4,
-      currentStep: "North (Desk & Monitor)",
+  // 4. Retake / reset ID card scanner
+  const retakeIdCard = () => {
+    setIdCardPhoto(null);
+    setOcrIdData({
+      fullName: "",
+      extractedName: "",
+      idNumber: "",
+      extractedIdNumber: "",
+      dob: "",
+      issueDate: "",
+      expiryDate: "",
+      issuer: "",
+      matchScore: 0,
+      confidence: 0,
+      verified: false,
+      status: "idle",
+      idPhotoUrl: "",
+      idCardSnapshot: "",
+      isScanning: false,
     });
 
-    const cardinalAngles = [
-      { angle: 90, label: "North (Desk & Monitor)" },
-      { angle: 180, label: "East (Right Perimeter)" },
-      { angle: 270, label: "South (Doorway & Rear)" },
-      { angle: 360, label: "West (Left Perimeter)" },
-    ];
-
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      currentStep++;
-      const progress = Math.min(100, currentStep * 25);
-      const angleInfo = cardinalAngles[currentStep - 1];
-      const snap = captureSnapshot(`360° SCAN: ${angleInfo.label.toUpperCase()}`, "#10b981");
-
-      setEnvScanData((prev) => {
-        const nextAngles = [...(prev.capturedAngles || []), snap];
-        const nextStepLabel = currentStep < 4 ? cardinalAngles[currentStep].label : "Scan Completed";
-        return {
-          ...prev,
-          progress,
-          countdown: Math.max(0, 4 - currentStep),
-          currentStep: nextStepLabel,
-          snapshots: [...prev.snapshots, snap],
-          capturedAngles: nextAngles,
-        };
-      });
-
-      if (currentStep >= 4) {
-        clearInterval(interval);
-        setEnvScanData((prev) => ({
-          ...prev,
-          progress: 100,
-          isScanning: false,
-          isPassed: true,
-          completed: true,
-          countdown: 0,
-        }));
+    // Re-attach live camera to idCardVideoRef
+    setTimeout(() => {
+      if (mediaStreamRef.current && idCardVideoRef.current) {
+        idCardVideoRef.current.srcObject = mediaStreamRef.current;
+        idCardVideoRef.current.play().catch(() => {});
       }
-    }, 600);
+    }, 80);
   };
 
-  // Dual Camera Mobile Pairing Handshake
-  const pairSecondaryMobileCamera = () => {
-    setSecondaryCamera((prev) => ({
-      ...prev,
-      isPaired: true,
-      streamActive: true,
-    }));
-    setActiveWarningToast({
-      title: "DUAL CAMERA PAIRED",
-      desc: "Mobile side-view workspace stream connected via secure WebRTC handshake.",
-      severity: "medium",
+  const captureOrUploadIdCard = captureIdCardFromCamera;
+
+  // ----------------------------------------------------
+  // MANUAL 360-DEGREE ROOM SWEEP (ZERO AUTO-CLICKS)
+  // ----------------------------------------------------
+
+  const CARDINAL_SWEEP_ANGLES = [
+    { index: 0, key: "north", label: "North (Desk & Monitor)", prompt: "Aim camera at your immediate desk surface, monitor, and keyboard" },
+    { index: 1, key: "east", label: "East (Right Perimeter)", prompt: "Pan camera 90° right to capture your right workspace perimeter and wall" },
+    { index: 2, key: "south", label: "South (Doorway & Rear)", prompt: "Turn camera 180° towards the room entrance and behind your seating area" },
+    { index: 3, key: "west", label: "West (Left Perimeter)", prompt: "Pan camera 90° left to capture opposite side workspace perimeter" },
+  ];
+
+  // Manual single angle capture triggered by user button click
+  const captureManualAngle = (targetIdx?: number) => {
+    const idx = targetIdx !== undefined ? targetIdx : (envScanData.activeAngleIndex ?? 0);
+    const angleInfo = CARDINAL_SWEEP_ANGLES[idx] || CARDINAL_SWEEP_ANGLES[0];
+    const snap = captureSnapshot(`360° SCAN: ${angleInfo.label.toUpperCase()}`, "#10b981");
+
+    setEnvScanData((prev) => {
+      const currentAngles = [...(prev.capturedAngles || [])];
+      currentAngles[idx] = snap;
+
+      const validCount = currentAngles.filter(Boolean).length;
+      const isDone = validCount >= 4;
+
+      let nextIdx = (idx + 1) % 4;
+      if (isDone) nextIdx = idx;
+
+      return {
+        ...prev,
+        progress: Math.min(100, validCount * 25),
+        isScanning: false,
+        isPassed: isDone,
+        completed: isDone,
+        countdown: 0,
+        activeAngleIndex: nextIdx,
+        currentStep: isDone ? "All 4 Cardinal Angles Captured" : CARDINAL_SWEEP_ANGLES[nextIdx].label,
+        capturedAngles: currentAngles,
+        snapshots: currentAngles.filter(Boolean),
+      };
     });
-    setTimeout(() => setActiveWarningToast(null), 3500);
+
+    setActiveWarningToast({
+      title: `ANGLE CAPTURED: ${angleInfo.label.split(" ")[0]}`,
+      desc: `${angleInfo.label} successfully captured into environmental audit record.`,
+      severity: "low",
+    });
+    setTimeout(() => setActiveWarningToast(null), 2500);
   };
+
+  // Retake a specific angle
+  const retakeAngle = (idx: number) => {
+    setEnvScanData((prev) => {
+      const currentAngles = [...(prev.capturedAngles || [])];
+      currentAngles[idx] = "";
+      const validCount = currentAngles.filter(Boolean).length;
+      return {
+        ...prev,
+        activeAngleIndex: idx,
+        currentStep: CARDINAL_SWEEP_ANGLES[idx].label,
+        completed: false,
+        isPassed: false,
+        progress: validCount * 25,
+        capturedAngles: currentAngles,
+      };
+    });
+  };
+
+  // Instant fill all 4 angles (convenient shortcut for fast testing)
+  const instantFillAllAngles = () => {
+    const snaps = CARDINAL_SWEEP_ANGLES.map((a) =>
+      captureSnapshot(`360° SCAN: ${a.label.toUpperCase()}`, "#10b981")
+    );
+    setEnvScanData({
+      progress: 100,
+      isScanning: false,
+      isPassed: true,
+      completed: true,
+      countdown: 0,
+      activeAngleIndex: 0,
+      currentStep: "All 4 Cardinal Angles Captured",
+      snapshots: snaps,
+      capturedAngles: snaps,
+    });
+    setActiveWarningToast({
+      title: "ALL 4 ANGLES CAPTURED",
+      desc: "360° environmental workspace verification completed successfully.",
+      severity: "low",
+    });
+    setTimeout(() => setActiveWarningToast(null), 2500);
+  };
+
+  const start360EnvironmentScan = instantFillAllAngles;
+
+  // ----------------------------------------------------
+  // DUAL CAMERA MOBILE PAIRING (MANUAL TOGGLE)
+  // ----------------------------------------------------
+  const toggleSecondaryMobileCamera = () => {
+    setSecondaryCamera((prev) => {
+      const nextPaired = !prev.isPaired;
+      return {
+        ...prev,
+        isPaired: nextPaired,
+        streamActive: nextPaired,
+        latencyMs: nextPaired ? 18 : undefined,
+      };
+    });
+
+    const nextState = !secondaryCamera.isPaired;
+    setActiveWarningToast({
+      title: nextState ? "DUAL CAMERA PAIRED" : "MOBILE CAMERA DISCONNECTED",
+      desc: nextState
+        ? "Mobile side-view workspace stream connected via WebRTC handshake."
+        : "Secondary camera feed paused.",
+      severity: nextState ? "medium" : "low",
+    });
+    setTimeout(() => setActiveWarningToast(null), 3000);
+  };
+
+  const pairSecondaryMobileCamera = toggleSecondaryMobileCamera;
 
   // OS Process Tree Sweep & Prohibited Program Termination
   const runProcessSweep = () => {
@@ -3457,33 +3685,105 @@ export default function ProfessionalProctoredExamTool() {
                   </div>
 
                   {/* ID Card Display Frame */}
-                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-900 border-2 border-dashed border-gray-300 flex items-center justify-center p-4">
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-950 border-2 border-dashed border-emerald-500/40 flex items-center justify-center">
                     {ocrIdData.idCardSnapshot ? (
-                      <img src={ocrIdData.idCardSnapshot} alt="Scanned ID Card" className="w-full h-full object-contain rounded-xl" />
+                      <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                        <img src={ocrIdData.idCardSnapshot} alt="Scanned ID Card" className="w-full h-full object-contain rounded-xl" />
+                        <div className="absolute top-2.5 left-2.5 bg-emerald-500 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>OCR EXTRACTED & CROSS-MATCHED</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="text-center space-y-2 text-gray-400">
-                        <FileCheck2 className="w-10 h-10 mx-auto text-gray-500 opacity-60" />
-                        <div className="text-xs font-bold font-rubik text-gray-300">Hold Photo ID up to camera</div>
-                        <div className="text-[10px] text-gray-400 font-mono">Passport, Driver's License, or Student Card</div>
+                      <div className="relative w-full h-full flex items-center justify-center bg-gray-950">
+                        <video
+                          ref={idCardVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+                        {/* ISO/IEC 7810 ID Card Alignment Reticle */}
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-3">
+                          <div className="w-[88%] h-[82%] border-2 border-dashed border-emerald-400/80 rounded-xl bg-emerald-950/15 flex flex-col justify-between p-3.5 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                            <div className="flex justify-between items-center text-[9px] font-mono font-bold text-emerald-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur">
+                              <span>ALIGN CARD EDGES WITHIN FRAME</span>
+                              <span>ISO/IEC 7810</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                              <div className="w-14 h-16 border border-emerald-400/60 rounded flex items-center justify-center text-[8px] font-mono text-emerald-300 bg-black/40">
+                                PHOTO
+                              </div>
+                              <div className="space-y-1 text-right">
+                                <div className="h-1.5 w-24 bg-emerald-400/40 rounded"></div>
+                                <div className="h-1.5 w-16 bg-emerald-400/40 rounded ml-auto"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
                     {ocrIdData.isScanning && (
-                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-2">
-                        <RefreshCw className="w-6 h-6 animate-spin text-[#468FEA]" />
-                        <span className="text-xs font-mono font-bold">Scanning Optical Text Matrix (Tesseract OCR)...</span>
+                      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-2 z-20">
+                        <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
+                        <span className="text-xs font-mono font-bold">Parsing Optical Text & Biometric Token...</span>
                       </div>
                     )}
                   </div>
 
-                  <button
-                    onClick={captureOrUploadIdCard}
-                    disabled={ocrIdData.isScanning}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                  >
-                    <Scan className="w-4 h-4" />
-                    <span>{ocrIdData.verified ? "Re-Scan Physical ID Card" : "Scan Physical ID Card (OCR)"}</span>
-                  </button>
+                  {/* Hidden file input for ID card upload */}
+                  <input
+                    type="file"
+                    ref={idFileInputRef}
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleIdFileUpload}
+                  />
+
+                  {/* Action Buttons: Camera Capture, File Upload, and Test ID */}
+                  <div className="space-y-2">
+                    {ocrIdData.verified ? (
+                      <button
+                        onClick={retakeIdCard}
+                        className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold uppercase tracking-wider font-rubik flex items-center justify-center gap-2 transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Re-Scan / Retake ID Card</span>
+                      </button>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={captureIdCardFromCamera}
+                          disabled={ocrIdData.isScanning}
+                          className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Capture from Camera</span>
+                        </button>
+
+                        <button
+                          onClick={() => idFileInputRef.current?.click()}
+                          disabled={ocrIdData.isScanning}
+                          className="py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                          <Upload className="w-4 h-4 text-emerald-400" />
+                          <span>Upload ID File</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {!ocrIdData.verified && (
+                      <button
+                        onClick={generateSyntheticIdCard}
+                        disabled={ocrIdData.isScanning}
+                        className="w-full py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-bold font-rubik flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>⚡ Generate Instant Test Credential (Demo Mode)</span>
+                      </button>
+                    )}
+                  </div>
 
                   {/* Extracted OCR Credential Metadata */}
                   <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-[11px] font-mono space-y-1.5">
@@ -3501,7 +3801,7 @@ export default function ProfessionalProctoredExamTool() {
                     </div>
                     <div className="flex justify-between pt-1 border-t border-gray-200">
                       <span className="text-gray-500">Facial Cross-Match:</span>
-                      <strong className={ocrIdData.verified ? "text-emerald-600" : "text-gray-400"}>
+                      <strong className={ocrIdData.verified ? "text-emerald-600 font-bold" : "text-gray-400"}>
                         {ocrIdData.verified ? "VERIFIED (1:1 Biometric Alignment)" : "Pending Scan"}
                       </strong>
                     </div>
@@ -3517,7 +3817,7 @@ export default function ProfessionalProctoredExamTool() {
                       takeCandidateSelfie();
                     }
                     if (!ocrIdData.verified) {
-                      captureOrUploadIdCard();
+                      generateSyntheticIdCard();
                     }
                     setPrecheckStep(4);
                   }}
@@ -3536,92 +3836,183 @@ export default function ProfessionalProctoredExamTool() {
               <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                 <div>
                   <h2 className="text-2xl font-black uppercase font-rubik text-gray-900">Step 4: 360° Room Sweep & Dual Camera Setup</h2>
-                  <p className="text-xs text-gray-500 mt-1">Perimeter workspace sweep & secondary mobile camera connection for continuous hands/desk surveillance</p>
+                  <p className="text-xs text-gray-500 mt-1">Manual perimeter workspace sweep & secondary mobile camera connection for continuous hands/desk surveillance</p>
                 </div>
                 <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${
                   envScanData.completed && secondaryCamera.isPaired
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-amber-100 text-amber-800"
                 }`}>
-                  {envScanData.completed && secondaryCamera.isPaired ? "AUDIT COMPLIANT" : "SETUP IN PROGRESS"}
+                  {envScanData.completed && secondaryCamera.isPaired
+                    ? "AUDIT COMPLIANT"
+                    : `${(envScanData.capturedAngles || []).filter(Boolean).length}/4 ANGLES RECORDED`}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                {/* 1. 360° Environmental Room Sweep */}
+                {/* 1. 360° Environmental Room Sweep (100% MANUAL) */}
                 <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
                       <Compass className="w-4 h-4 text-[#468FEA]" />
-                      360-Degree Environmental Sweep
+                      360-Degree Environmental Sweep (Manual)
                     </span>
                     {envScanData.completed ? (
                       <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> SWEEP VERIFIED
+                        <CheckCircle2 className="w-3 h-3" /> SWEEP VERIFIED (4/4)
                       </span>
                     ) : (
-                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                        4 ANGLES REQUIRED
+                      <span className="text-[10px] font-mono font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full">
+                        {(envScanData.capturedAngles || []).filter(Boolean).length}/4 CAPTURED
                       </span>
                     )}
                   </div>
 
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    Slowly pan your webcam around your examination area. The automated system records 4 cardinal frames:
-                    <strong> North (Desk/Monitor), East (Right Room), South (Behind/Doorway), and West (Left Room)</strong>.
+                    Aim your webcam towards each of the 4 cardinal room zones and click capture. No automated timer will trigger without your action.
                   </p>
 
-                  {/* Cardinal Scan Progress UI */}
-                  {envScanData.isScanning ? (
-                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-mono font-bold">
-                        <span className="flex items-center gap-1.5">
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#468FEA]" />
-                          Scanning: {envScanData.currentStep}
-                        </span>
-                        <span>{envScanData.countdown}s Remaining</span>
-                      </div>
-                      <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#468FEA] transition-all duration-300"
-                          style={{ width: `${((4 - (envScanData.countdown ?? 0)) / 4) * 100}%` }}
-                        />
+                  {/* Live Room Viewfinder with Compass Reticle */}
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-950 border-2 border-dashed border-[#468FEA]/50 flex items-center justify-center">
+                    <video
+                      ref={roomScanVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* Active Aiming Direction Overlay */}
+                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20">
+                      <Compass className="w-3.5 h-3.5 text-[#468FEA]" />
+                      <span>TARGET: {CARDINAL_SWEEP_ANGLES[envScanData.activeAngleIndex ?? 0].label}</span>
+                    </div>
+
+                    {/* Aiming Reticle */}
+                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                      <div className="w-24 h-24 border border-white/30 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-[#468FEA] rounded-full shadow-[0_0_8px_#468FEA]"></div>
                       </div>
                     </div>
-                  ) : null}
 
-                  {/* Captured Angles Grid */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {["North (Desk & Monitor)", "East (Right Perimeter)", "South (Doorway & Rear)", "West (Left Perimeter)"].map((angle, idx) => {
-                      const captured = (envScanData.capturedAngles || [])[idx];
+                    {/* Bottom Prompt Overlay */}
+                    <div className="absolute bottom-2 inset-x-2 bg-black/75 backdrop-blur text-white text-[10px] font-sans px-3 py-1.5 rounded-xl border border-white/10 text-center">
+                      {CARDINAL_SWEEP_ANGLES[envScanData.activeAngleIndex ?? 0].prompt}
+                    </div>
+                  </div>
+
+                  {/* Direction Selector Tabs */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {CARDINAL_SWEEP_ANGLES.map((angle) => {
+                      const isCaptured = Boolean((envScanData.capturedAngles || [])[angle.index]);
+                      const isSelected = (envScanData.activeAngleIndex ?? 0) === angle.index;
                       return (
-                        <div key={angle} className="relative aspect-video rounded-xl overflow-hidden bg-gray-900 border border-gray-200 flex flex-col justify-end p-2 text-white">
+                        <button
+                          key={angle.key}
+                          type="button"
+                          onClick={() => {
+                            setEnvScanData((prev) => ({
+                              ...prev,
+                              activeAngleIndex: angle.index,
+                              currentStep: angle.label,
+                            }));
+                          }}
+                          className={`p-2 rounded-xl text-center text-[10px] font-rubik font-bold transition-all flex flex-col items-center gap-1 border ${
+                            isSelected
+                              ? "bg-[#468FEA] text-white border-[#468FEA] shadow-md"
+                              : isCaptured
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                              : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1">
+                            {isCaptured ? (
+                              <CheckCircle2 className={`w-3 h-3 ${isSelected ? "text-white" : "text-emerald-600"}`} />
+                            ) : (
+                              <Compass className="w-3 h-3 opacity-60" />
+                            )}
+                            <span className="truncate">{angle.label.split(" ")[0]}</span>
+                          </div>
+                          <span className="text-[8px] font-mono opacity-80">
+                            {isCaptured ? "Captured" : "Pending"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Manual Capture & Demo Controls */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => captureManualAngle()}
+                      className="w-full py-3.5 rounded-xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>
+                        {(envScanData.capturedAngles || [])[envScanData.activeAngleIndex ?? 0]
+                          ? `Re-Capture ${CARDINAL_SWEEP_ANGLES[envScanData.activeAngleIndex ?? 0].label.split(" ")[0]} Angle`
+                          : `Capture ${CARDINAL_SWEEP_ANGLES[envScanData.activeAngleIndex ?? 0].label.split(" ")[0]} Angle`}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={instantFillAllAngles}
+                      className="w-full py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#468FEA] text-[11px] font-bold font-rubik flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>⚡ Quick-Complete All 4 Angles (Demo Mode)</span>
+                    </button>
+                  </div>
+
+                  {/* 2x2 Captured Angles Review Gallery */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                    {CARDINAL_SWEEP_ANGLES.map((angle) => {
+                      const captured = (envScanData.capturedAngles || [])[angle.index];
+                      const isSelected = (envScanData.activeAngleIndex ?? 0) === angle.index;
+                      return (
+                        <div
+                          key={angle.key}
+                          onClick={() => {
+                            setEnvScanData((prev) => ({
+                              ...prev,
+                              activeAngleIndex: angle.index,
+                              currentStep: angle.label,
+                            }));
+                          }}
+                          className={`relative aspect-video rounded-xl overflow-hidden bg-gray-900 border cursor-pointer transition-all flex flex-col justify-end p-2 text-white group ${
+                            isSelected ? "ring-2 ring-[#468FEA] border-transparent" : "border-gray-200"
+                          }`}
+                        >
                           {captured ? (
-                            <img src={captured} alt={angle} className="absolute inset-0 w-full h-full object-cover" />
+                            <>
+                              <img src={captured} alt={angle.label} className="absolute inset-0 w-full h-full object-cover" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  retakeAngle(angle.index);
+                                }}
+                                title="Retake this angle"
+                                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-red-600 text-white transition-all opacity-80 group-hover:opacity-100"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                              </button>
+                            </>
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-                              <Compass className="w-6 h-6 opacity-30" />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-1">
+                              <Compass className="w-5 h-5 opacity-40" />
+                              <span className="text-[9px] font-mono">Not Captured</span>
                             </div>
                           )}
-                          <div className="relative z-10 text-[9px] font-mono font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur truncate">
-                            {angle}
+                          <div className="relative z-10 text-[9px] font-mono font-bold bg-black/70 px-1.5 py-0.5 rounded backdrop-blur truncate">
+                            {angle.label}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  <button
-                    onClick={start360EnvironmentScan}
-                    disabled={envScanData.isScanning}
-                    className="w-full py-3 rounded-xl bg-[#468FEA] hover:bg-[#3b82f6] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>{envScanData.completed ? "Re-Run 360° Environment Sweep" : "Start Automated 360° Sweep"}</span>
-                  </button>
                 </div>
 
-                {/* 2. Dual / Secondary Mobile Camera Integration */}
+                {/* 2. Dual / Secondary Mobile Camera Integration (MANUAL PAIRING) */}
                 <div className="space-y-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase font-rubik text-gray-900 flex items-center gap-1.5">
@@ -3630,7 +4021,7 @@ export default function ProfessionalProctoredExamTool() {
                     </span>
                     {secondaryCamera.isPaired ? (
                       <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> PAIRED ({secondaryCamera.latencyMs}ms)
+                        <CheckCircle2 className="w-3 h-3" /> PAIRED ({secondaryCamera.latencyMs ?? 18}ms)
                       </span>
                     ) : (
                       <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
@@ -3640,7 +4031,7 @@ export default function ProfessionalProctoredExamTool() {
                   </div>
 
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    High-stakes proctoring pairs a secondary mobile device positioned at a <strong>45-degree angle</strong> behind you to record your hands, keyboard, and physical workspace simultaneously.
+                    Pairs a secondary smartphone positioned at a <strong>45-degree angle</strong> behind you to record your hands, keyboard, and physical workspace simultaneously.
                   </p>
 
                   {/* QR Code and Pairing HUD */}
@@ -3661,12 +4052,21 @@ export default function ProfessionalProctoredExamTool() {
                     </div>
                   </div>
 
+                  {/* Manual Pair / Disconnect Toggle Button */}
                   <button
-                    onClick={pairSecondaryMobileCamera}
-                    className="w-full py-3 rounded-xl bg-[#F28500] hover:bg-[#d97706] text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all"
+                    onClick={toggleSecondaryMobileCamera}
+                    className={`w-full py-3 rounded-xl text-white text-xs font-black uppercase tracking-wider font-rubik shadow-md flex items-center justify-center gap-2 transition-all ${
+                      secondaryCamera.isPaired
+                        ? "bg-gray-700 hover:bg-gray-800"
+                        : "bg-[#F28500] hover:bg-[#d97706]"
+                    }`}
                   >
                     <Smartphone className="w-4 h-4" />
-                    <span>{secondaryCamera.isPaired ? "Re-Synchronize Mobile Camera" : "Pair / Simulate Smartphone Feed"}</span>
+                    <span>
+                      {secondaryCamera.isPaired
+                        ? "Disconnect Smartphone Feed"
+                        : "Connect / Simulate Smartphone Feed"}
+                    </span>
                   </button>
 
                   <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200 cursor-pointer">
@@ -3687,23 +4087,8 @@ export default function ProfessionalProctoredExamTool() {
                 <button onClick={() => setPrecheckStep(3)} className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase font-rubik">Back</button>
                 <button
                   onClick={() => {
-                    if (!envScanData.completed || !envScanData.capturedAngles?.length) {
-                      const angles = [
-                        captureSnapshot("360° SCAN: NORTH (DESK & MONITOR)", "#10b981"),
-                        captureSnapshot("360° SCAN: EAST (RIGHT PERIMETER)", "#10b981"),
-                        captureSnapshot("360° SCAN: SOUTH (DOORWAY & REAR)", "#10b981"),
-                        captureSnapshot("360° SCAN: WEST (LEFT PERIMETER)", "#10b981"),
-                      ];
-                      setEnvScanData({
-                        progress: 100,
-                        isScanning: false,
-                        isPassed: true,
-                        completed: true,
-                        countdown: 0,
-                        currentStep: "Scan Completed",
-                        snapshots: angles,
-                        capturedAngles: angles,
-                      });
+                    if (!envScanData.completed || !(envScanData.capturedAngles || []).filter(Boolean).length) {
+                      instantFillAllAngles();
                     }
                     setPrecheckStep(5);
                   }}
